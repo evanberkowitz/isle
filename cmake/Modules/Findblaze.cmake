@@ -7,62 +7,49 @@
 #  blaze_LINKER_FLAGS  - Flags for linker
 #
 
-# search for blaze itself
+### search for blaze itself ###
 set(BLAZE "" CACHE STRING "Path to folder containing blaze headers. (Expects to find \$BLAZE/blaze/Blaze.h)")
 find_path(BLAZE_INCLUDE_DIR blaze/Blaze.h PATHS ${BLAZE} NO_DEFAULT_PATH)
 find_path(BLAZE_INCLUDE_DIR blaze/Blaze.h)
 
 
-# search for BLAS and LAPACK
-set(BLAS_VENDOR "None" CACHE STRING "Implementation of BLAS library to use")
+### search for BLAS and LAPACK ###
+set(BLAS_VENDOR "Generic" CACHE STRING "Implementation of BLAS library to use")
+set(PARALLEL_BLAS "FALSE" CACHE STRING "Set to TRUE if BLAS library is parallelized")
 
-set(BLAS_OK "FALSE")
-if ("${BLAS_VENDOR}" STREQUAL "None")
-  set(blaze_CXX_FLAGS "-DBLAZE_BLAS_MODE=0")
-  set(blaze_LIBRARIES "")
-  set(blaze_LINKER_FLAGS "")
-  set(BLAS_OK "TRUE")
-  message(STATUS "Using blaze without BLAS/LAPACK")
+if ("${BLAS_VENDOR}" STREQUAL "All")
+  message(FATAL_ERROR "BLAS vendor (BLAS_VENDOR) is set to 'All'. An unknown implementation cannot be used because its parallelization might interfere with blaze.")
 
-elseif ("${BLAS_VENDOR}" STREQUAL "All")
-  set(blaze_CXX_FLAGS "-DBLAZE_BLAS_MODE=0")
-  set(blaze_LIBRARIES "")
-  set(blaze_LINKER_FLAGS "")
-  set(BLAS_OK "TRUE")
-  message(WARNING "BLAS vendor (BLA_VENDOR) is set to 'All'. An unknown implementation cannot be used because its parallelization might interfere with blaze. Fall back to non BLAS mode.")
+elseif ("${BLAS_VENDOR}" STREQUAL "Generic")
+  message(STATUS "Using generic BLAS/LAPACK. Might be slow!")
+  if (NOT ${PARALLEL_BLAS})
+    message(WARNING "Assuming BLAS is not parallel. This cannot be verified for the generic library.")
+  endif ()
+
+elseif ("${BLAS_VENDOR}" MATCHES "^Intel.*")
+  set(PARALLEL_BLAS "TRUE")
+  message(STATUS "Using Intel MKL for BLAS/LAPACK (${BLAS_VENDOR})")
 
 else ()
-  # check that BLAS / LAPACK vendor is ok
-  if ("${BLAS_VENDOR}" STREQUAL "Generic")
-    set(blaze_CXX_FLAGS "-DBLAZE_BLAS_MODE=1 -DBLAZE_BLAS_IS_PARALLEL=0")
-    set(BLAS_OK "TRUE")
-    message(STATUS "Using generic BLAS/LAPACK. Might be slow!")
-  endif ()
-
-  string(REGEX MATCH "^Intel.*" IS_INTEL ${BLAS_VENDOR})
-  if (IS_INTEL)
-    set(blaze_CXX_FLAGS "-DBLAZE_BLAS_MODE=1 -DBLAZE_BLAS_IS_PARALLEL=1")
-    set(BLAS_OK "TRUE")
-    message(STATUS "Using Intel MKL for BLAS/LAPACK (${BLAS_VENDOR})")
-  endif ()
-  unset(IS_INTEL)
-  
-  if (NOT ${BLAS_OK})
-    message(SEND_ERROR "BLAS vendor not recognized: ${BLAS_VENDOR}. Supported values are None, All, Generic, Intel10_32, Intel10_64lp, Intel10_64lp_seq, Intel\nSee CMake documentation on FindBLAS for details.")
-  endif ()
-
-  # link against BLAS and LAPACK and tell blaze about it
-  set(ENV{BLA_VENDOR} "${BLAS_VENDOR}")
-  find_package(BLAS REQUIRED)
-  find_package(LAPACK REQUIRED)
-  set(blaze_LIBRARIES ${LAPACK_LIBRARIES})
-  set(blaze_LINKER_FLAGS ${LAPACK_LINKER_FLAGS})
+  message(FATAL_ERROR "BLAS vendor (BLAS_VENDOR) is not set. An unknown implementation cannot be used because its parallelization might interfere with blaze.")
 
 endif ()
 
+if (${PARALLEL_BLAS})
+  set(BLAZE_CXX_FLAGS "-DBLAZE_BLAS_MODE=1 -DBLAS_IS_PARALLEL=1")
+else ()
+  set(BLAZE_CXX_FLAGS "-DBLAZE_BLAS_MODE=1 -DBLAS_IS_PARALLEL=0")
+endif ()
+
+# link against BLAS and LAPACK and tell blaze about it
+set(ENV{BLA_VENDOR} "${BLAS_VENDOR}")
+find_package(BLAS REQUIRED)
+find_package(LAPACK REQUIRED)
+set(blaze_LIBRARIES ${LAPACK_LIBRARIES})
+set(blaze_LINKER_FLAGS ${LAPACK_LINKER_FLAGS})
+
 include(FindPackageHandleStandardArgs)
-find_package_handle_standard_args(blaze DEFAULT_MSG BLAZE_INCLUDE_DIR BLAS_OK)
+find_package_handle_standard_args(blaze DEFAULT_MSG BLAZE_INCLUDE_DIR BLAZE_CXX_FLAGS)
 mark_as_advanced(BLAZE_INCLUDE_DIR)
-unset(BLAS_OK)
 
 set(blaze_INCLUDE_DIRS ${BLAZE_INCLUDE_DIR})
