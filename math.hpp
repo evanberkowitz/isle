@@ -18,4 +18,7 @@ using SparseMatrix = blaze::CompressedMatrix<ET>;
 template <typename ET>
 using IdMatrix = blaze::IdentityMatrix<ET>;
 
+template <typename ET>
+using SymmetricMatrix = blaze::SymmetricMatrix<blaze::DynamicMatrix<ET>>;
+
 #endif  // ndef MATH_HPP
