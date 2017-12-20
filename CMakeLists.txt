@@ -20,6 +20,9 @@ endif ()
 find_package(Pybind11 REQUIRED)
 set_target_properties(cns PROPERTIES PREFIX "" SUFFIX "${PYBIND11_LIB_SUFFIX}")
 include_directories(SYSTEM "${PYBIND11_INCLUDE_DIRS}")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${PYBIND11_CXX_FLAGS}")
+target_link_libraries(cns ${PYBIND11_LIBRARIES})
+set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} ${PYBIND11_LINKER_FLAGS}")
 
 # blaze
 find_package(blaze REQUIRED)
