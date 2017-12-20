@@ -19,3 +19,4 @@ CMake supports the following options: (use `-DOPT=VAL` in call to cmake)
 - BLAS_VENDOR: select vendor of BLAS/LAPACK library. Supported values are:
     - `Generic` Reference implementation
     - `Intel10_32`, `Intel10_64lp`, `Intel10_64lp_seq`, `Intel` for MKL, see https://cmake.org/cmake/help/v3.0/module/FindBLAS.html
+- PARALLEL_BLAS: Set whether the BLAS implementation is parallelized or not.
