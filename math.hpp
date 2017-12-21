@@ -34,7 +34,6 @@ using IdMatrix = blaze::IdentityMatrix<ET>;
 template <typename ET>
 using SymmetricMatrix = blaze::SymmetricMatrix<blaze::DynamicMatrix<ET>>;
 
-
 /// Multiply a space matrix with a space time vector.
 /**
  * Let \f$v, u\f$ be vectors in spacetime and \f$M\f$ a matrix in space.

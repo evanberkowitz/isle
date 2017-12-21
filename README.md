@@ -1,6 +1,8 @@
 Some CNS stuff (bat nano?) (name pending...)
 
 # Requirements
+- C++14 compiler
+- Python 3
 - blaze
 - Pybind11
 - BLAS/LAPACK

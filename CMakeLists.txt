@@ -4,8 +4,8 @@ set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/cmake/Modules/")
 
 project(cns CXX)
 
-set(SOURCE
-  bindings.cpp)
+set(SOURCE)
+add_subdirectory(bind)
 
 add_library(cns SHARED ${SOURCE})
 set_target_properties(cns PROPERTIES CXX_STANDARD 14
