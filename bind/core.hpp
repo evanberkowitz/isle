@@ -14,6 +14,9 @@
 #include <pybind11/stl.h>
 #include <pybind11/operators.h>
 #include <pybind11/functional.h>
+// #include <pybind11/buffer_info.h>
+#include <pybind11/numpy.h>
+#include <pybind11/complex.h>
 
 // remove macro defined in termios.h on Mac to avoid clash in blaze
 #ifdef VT1

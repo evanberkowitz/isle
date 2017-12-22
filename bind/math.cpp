@@ -189,7 +189,8 @@ namespace {
         static void f(py::module &mod) {
             // make a new Pybind11 class and add basic functions
             using VT = Vector<ET>;
-            auto &vec = py::class_<VT>(mod, vecName<ET>().c_str())
+
+            auto &vec = py::class_<VT>(mod, vecName<ET>().c_str(), py::buffer_protocol{})
                 .def(py::init([](const std::size_t size){ return VT(size); }))
                 .def("__getitem__", py::overload_cast<std::size_t>(&VT::operator[]))
                 .def("__setitem__", [](VT &vec, const std::size_t i,
@@ -205,7 +206,13 @@ namespace {
                         oss << vec;
                         return oss.str();
                     })
+                .def_buffer([](VT &vec) {
+                        return py::buffer_info{
+                            &vec[0], sizeof(ET), py::format_descriptor<ET>::format(),
+                            1, {vec.size()}, {sizeof(ET)}};
+                    })
                 ;
+
             // bind operators for all right hand sides
             foreach<ElementalTypes, bindVectorOps, VT>::f(vec);
         }
