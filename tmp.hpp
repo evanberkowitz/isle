@@ -17,6 +17,22 @@
 #include <utility>
 
 
+/// Check whether type is specialization of template
+/**
+ * Is `true_type` iff T is specialization of template C.
+ * \tparam C Template to check against.
+ * \tparam T Type to check.
+ */
+template <template <typename ...> class C, typename T>
+struct is_specialization_of : public std::false_type { };
+/// Matching version of check.
+template <template <typename ...> class C, typename ...Args>
+struct is_specialization_of<C, C<Args...>> : public std::true_type { };
+
+/// Map sequence of type to void, useful to detect valid expressions.
+template <typename...>
+using void_t = void;
+
 /// Holds a list of types in a head, tail structure.
 template <typename T, typename... Args>
 struct Types {
@@ -78,17 +94,5 @@ struct foreach {
                                     F, TParam...>::f(std::forward<Args>(args)...);
     }
 };
-
-/// Check whether type is specialization of template
-/**
- * Is `true_type` iff T is specialization of template C.
- * \tparam C Template to check against.
- * \tparam T Type to check.
- */
-template <template <typename ...> class C, typename T>
-struct is_specialization_of : public std::false_type { };
-/// Matching version of check.
-template <template <typename ...> class C, typename ...Args>
-struct is_specialization_of<C, C<Args...>> : public std::true_type { };
 
 #endif  // ndef TMP_HPP
