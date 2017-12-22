@@ -169,7 +169,7 @@ auto spaceVecSpacetimeVec(const XT &spaceVector,
                                      blaze::unaligned, blaze::unpadded>;
 
     // do computation
-    blaze::DynamicMatrix<RT> result;
+    blaze::DynamicVector<RT> result;
     result = spaceVector * STMV{&spacetimeVector[0], nx, nt};
     return result;
 }
