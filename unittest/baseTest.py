@@ -127,7 +127,7 @@ class AbstractVectorTest(metaclass=abc.ABCMeta):
   # C++ base type
   cvecType   = None
   # to be checked operator overloads
-  # { operation: ( (InputType1, InputType2), outPutClas ), ...}
+  # { operation: ( (InputType1, InputType2), outPutClass ), ...}
   operations = {}
 
   #----------init test ------------------
