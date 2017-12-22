@@ -20,13 +20,7 @@ namespace {
     constexpr char const *typeName<int> = "I";
 
     template <>
-    constexpr char const *typeName<float> = "F";
-
-    template <>
     constexpr char const *typeName<double> = "D";
-
-    template <>
-    constexpr char const *typeName<std::complex<float>> = "CF";
 
     template <>
     constexpr char const *typeName<std::complex<double>> = "CD";
@@ -101,7 +95,7 @@ namespace {
     struct bindIMul<LHS, RHS> {
         template <typename CT>
         static void f(CT &UNUSED(vec)) { }
-    };    
+    };
 
     /// Bind __idiv_ operator if possible for two given types.
     template <typename LHS, typename RHS,
@@ -119,22 +113,34 @@ namespace {
     struct bindIDiv<LHS, RHS> {
         template <typename CT>
         static void f(CT &UNUSED(vec)) { }
-    };    
+    };
 
 
     /// Bind operators to the vector type.
     /**
+     * Only binds operations if the operation `typename VT::ElementType{} * ET{}` is well
+     * formed. I.e. if left and right hand sides can be multiplied. This rules out
+     * combining complex numbers and integers, for example.
+     *
      * \tparam ET Elemental type for right hand side.
      * \tparam VT Vector type for left hand side.
      * \tparam CT Pybind11 class type.
      * \param vec Pybind11 vector class to bind to.
      */
-    template <typename ET, typename VT>
+    template <typename ET, typename VT, typename = void_t<>>
     struct bindVectorOps {
+        template <typename CT>
+        static void f(CT &UNUSED(vec)) { }
+    };
+
+    /// Overload that actually binds something.
+    template <typename ET, typename VT>
+    struct bindVectorOps<ET, VT, void_t<decltype(typename VT::ElementType{} * ET{})>> {
         template <typename CT>
         static void f(CT &vec) {
             // return vector type
             using RVT = Vector<decltype(typename VT::ElementType{} * ET{})>;
+
             // with Vector
             vec.def("__add__", [](const VT &v, const Vector<ET> &w) {
                     return RVT(v+w);
@@ -171,6 +177,7 @@ namespace {
         }
     };
 
+    
     /// Bind a single vector.
     /**
      * \tparam ET Elemental type for the vector to bind.
@@ -185,15 +192,15 @@ namespace {
             auto &vec = py::class_<VT>(mod, vecName<ET>().c_str())
                 .def(py::init([](const std::size_t size){ return VT(size); }))
                 .def("__getitem__", py::overload_cast<std::size_t>(&VT::operator[]))
-                .def("__setitem__", [](VT &vec, std::size_t const i,
-                                       typename VT::ElementType const x) {
+                .def("__setitem__", [](VT &vec, const std::size_t i,
+                                       const typename VT::ElementType x) {
                          vec[i] = x;
                      })
                 .def("__iter__", [](VT &vec) {
                         return py::make_iterator(vec.begin(), vec.end());
                     })
                 .def("__len__", &VT::size)
-                .def("__repr__", [](VT const &vec) {
+                .def("__repr__", [](const VT &vec) {
                         std::ostringstream oss;
                         oss << vec;
                         return oss.str();
@@ -207,12 +214,10 @@ namespace {
 
 
 void bindTensors(py::module &mod) {
-    // TODO bool and complex cause some problems
+    // TODO what about bool
     // TODO can we treat floordiv as well?
-    
-    // using ElementalTypes = Types<int, float, double, std::complex<float>, std::complex<double>>;
-    // using ElementalTypes = Types<int, std::complex<float>>;
-    using ElementalTypes = Types<int, double>;
+
+    using ElementalTypes = Types<int, double, std::complex<double>>;
     
     foreach<ElementalTypes, bindVector, ElementalTypes>::f(mod);
 }
