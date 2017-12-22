@@ -17,6 +17,13 @@
 #include <pybind11/operators.h>
 #include <pybind11/functional.h>
 
+/**
+ *  Protect from stupid VT1 macro being defined by Mac headers.
+ */
+#ifdef VT1  
+#undef VT1
+#endif
+
 namespace py = pybind11;
 
 
