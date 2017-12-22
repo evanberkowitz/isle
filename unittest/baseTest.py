@@ -146,9 +146,9 @@ class AbstractVectorTest(metaclass=abc.ABCMeta):
     try:
       self.assertTrue(EQ.isEqual(cOut, pyOut))
     except AssertionError as e:
-      logger.info("Equality check failed for cVec = pyVec")
-      logger.info("cOut  = {cOut}".format(cOut=cOut))
-      logger.info("pyOut = {pyOut}".format(pyOut=pyOut))
+      logger.error("Equality check failed for cVec = pyVec")
+      logger.error("cOut  = {cOut}".format(cOut=cOut))
+      logger.error("pyOut = {pyOut}".format(pyOut=pyOut))
       raise e
 
   #----------failing test ------------------
@@ -172,7 +172,7 @@ class AbstractVectorTest(metaclass=abc.ABCMeta):
         try:
           self.assertTrue(isinstance(cOut, outInstance))
         except AssertionError as e:
-          logger.info(
+          logger.error(
             "Type check failed for {cIn1} {op} {cIn2} = {cOut}".format(
               cIn1=inTypes[0], op=opType, cIn2=inTypes[1], cOut=outInstance
             )
@@ -182,7 +182,7 @@ class AbstractVectorTest(metaclass=abc.ABCMeta):
         try:
           self.assertTrue(EQ.isEqual(cOut, pyOut))
         except AssertionError as e:
-          logger.info(
+          logger.error(
             "Equality check failed for {cIn1} {op} {cIn2} = {cOut}".format(
               cIn1=inTypes[0], op=opType, cIn2=inTypes[1], cOut=outInstance
             )
