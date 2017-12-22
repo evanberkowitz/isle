@@ -43,8 +43,8 @@ struct Types {
 /// Base case for Types template.
 template <typename T>
 struct Types<T> {
-    using Head = T;
-    using Tail = void;
+    using Head = T; ///< Single type, the only member of the list.
+    using Tail = void; ///< And the base-case void type.
 };
 
 /// Internals of template meta programming.
