@@ -31,10 +31,9 @@ class TestDVector(baseTest.AbstractVectorTest, unittest.TestCase):
   # C++ base type
   cvecType   = cns.DVector
   # to be checked operator overloads
-  # { operation: ( (InputType1, InputType2), outPutClas ), ...}
+  # { operation: ( (InputType1, InputType2), outPutClass ), ...}
   operations = {
     "*" : [
-     
       (("DVector", "DVector"), cns.DVector),
       (("DVector", "int"    ), cns.DVector),
       (("DVector", "double" ), cns.DVector),
@@ -59,14 +58,13 @@ class TestDVector(baseTest.AbstractVectorTest, unittest.TestCase):
 
 #-------------------------------
 class TestIVector(baseTest.AbstractVectorTest, unittest.TestCase):
-  "DVector test class"
+  "IVector test class"
   # C++ base type
   cvecType   = cns.IVector
   # to be checked operator overloads
-  # { operation: ( (InputType1, InputType2), outPutClas ), ...}
+  # { operation: ( (InputType1, InputType2), outPutClass ), ...}
   operations = {
     "*" : [
-      # input types            output types
       (("IVector", "IVector"), cns.IVector),
       (("IVector", "int"    ), cns.IVector),
       (("IVector", "double" ), cns.DVector),

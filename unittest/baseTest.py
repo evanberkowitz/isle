@@ -127,7 +127,7 @@ class AbstractVectorTest(metaclass=abc.ABCMeta):
   # C++ base type
   cvecType   = None
   # to be checked operator overloads
-  # { operation: ( (InputType1, InputType2), outPutClas ), ...}
+  # { operation: ( (InputType1, InputType2), outPutClass ), ...}
   operations = {}
 
   #----------init test ------------------
@@ -143,13 +143,12 @@ class AbstractVectorTest(metaclass=abc.ABCMeta):
     "Test setter and getter of components work"
     logger.info("Testing setter of {vecType}".format(vecType=self.cvecType))
     cOut, pyOut = RI.initialize(self.cvecType)
-    try:
-      self.assertTrue(EQ.isEqual(cOut, pyOut))
-    except AssertionError as e:
-      logger.info("Equality check failed for cVec = pyVec")
-      logger.info("cOut  = {cOut}".format(cOut=cOut))
-      logger.info("pyOut = {pyOut}".format(pyOut=pyOut))
-      raise e
+    self.assertTrue(
+      EQ.isEqual(cOut, pyOut),
+      msg="Equality check failed for cVec = pyVec\n" + \
+       "cOut  = {cOut}\n".format(cOut=cOut) + \
+       "pyOut = {pyOut}".format(pyOut=pyOut)
+    )
 
   #----------failing test ------------------
   def test_2_test_operators(self):
@@ -169,27 +168,23 @@ class AbstractVectorTest(metaclass=abc.ABCMeta):
         cOut  = OperatorDict[opType](cIn1,  cIn2 )
         pyOut = OperatorDict[opType](pyIn1, pyIn2)
         # Type check
-        try:
-          self.assertTrue(isinstance(cOut, outInstance))
-        except AssertionError as e:
-          logger.info(
-            "Type check failed for {cIn1} {op} {cIn2} = {cOut}".format(
-              cIn1=inTypes[0], op=opType, cIn2=inTypes[1], cOut=outInstance
-            )
+        self.assertIsInstance(
+          cOut, 
+          outInstance,
+          msg= "Type check failed for {cIn1} {op} {cIn2} = {cOut}".format(
+            cIn1=inTypes[0], op=opType, cIn2=inTypes[1], cOut=outInstance
           )
-          raise e
+        )
         # Value check
-        try:
-          self.assertTrue(EQ.isEqual(cOut, pyOut))
-        except AssertionError as e:
-          logger.info(
-            "Equality check failed for {cIn1} {op} {cIn2} = {cOut}".format(
-              cIn1=inTypes[0], op=opType, cIn2=inTypes[1], cOut=outInstance
-            )
-          )
-          logger.info("cIn1 = {cIn1}".format(cIn1=cIn1))
-          logger.info("cIn2 = {cIn2}".format(cIn2=cIn2))
-          logger.info("cOut = {cOut}".format(cOut=cOut))
-          logger.info("pyOut = {pyOut}".format(pyOut=pyOut))
-          raise e
+        self.assertTrue(
+          EQ.isEqual(cOut, pyOut),
+          msg="Equality check failed for {cIn1} {op} {cIn2} = {cOut}\n".format(
+            cIn1=inTypes[0], op=opType, cIn2=inTypes[1], cOut=outInstance
+          )                                         +
+            "cIn1 = {cIn1}\n".format(cIn1=cIn1)     +
+            "cIn2 = {cIn2}\n".format(cIn2=cIn2)     +
+            "cOut = {cOut}\n".format(cOut=cOut)     +
+            "pyOut = {pyOut}\n".format(pyOut=pyOut)
+        )
+
 
