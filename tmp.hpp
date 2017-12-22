@@ -79,4 +79,16 @@ struct foreach {
     }
 };
 
+/// Check whether type is specialization of template
+/**
+ * Is `true_type` iff T is specialization of template C.
+ * \tparam C Template to check against.
+ * \tparam T Type to check.
+ */
+template <template <typename ...> class C, typename T>
+struct is_specialization_of : public std::false_type { };
+/// Matching version of check.
+template <template <typename ...> class C, typename ...Args>
+struct is_specialization_of<C, C<Args...>> : public std::true_type { };
+
 #endif  // ndef TMP_HPP
