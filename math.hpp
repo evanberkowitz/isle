@@ -16,21 +16,45 @@
 
 #include "core.hpp"
 
+/**
+ * \brief Holds a Space, Time, or SpaceTime vector.
+ * \tparam ET Element Type
+ */
 template <typename ET>
 using Vector = blaze::DynamicVector<ET>;
 
+/**
+ * \brief Holds spatial coordinates.
+ * \tparam ET Element Type
+ */
 template <typename ET>
 using Vec3 = blaze::StaticVector<ET, 3>;
 
+/**
+ * \brief Holds a (Space, Time, or SpaceTime)*(Space, Time, or SpaceTime) dense matrix.
+ * \tparam ET Element Type
+ */
 template <typename ET>
 using Matrix = blaze::DynamicMatrix<ET>;
 
+/**
+ * \brief Holds a (Space, Time, or SpaceTime)*(Space, Time, or SpaceTime) sparse matrix.
+ * \tparam ET Element Type
+ */
 template <typename ET>
 using SparseMatrix = blaze::CompressedMatrix<ET>;
 
+/**
+ * \brief Holds a (Space, Time, or SpaceTime)*(Space, Time, or SpaceTime) identity matrix.
+ * \tparam ET Element Type
+ */
 template <typename ET>
 using IdMatrix = blaze::IdentityMatrix<ET>;
 
+/**
+ * \brief Holds a (Space, Time, or SpaceTime)*(Space, Time, or SpaceTime) symmetric matrix.
+ * \tparam ET Element Type
+ */
 template <typename ET>
 using SymmetricMatrix = blaze::SymmetricMatrix<blaze::DynamicMatrix<ET>>;
 
