@@ -109,7 +109,7 @@ auto spaceMatSpacetimeVec(const MT &spaceMatrix,
     // space time matrix type for input vector
     using STMV = blaze::CustomMatrix<std::add_const_t<typename VT::ElementType>,
                                      blaze::unaligned, blaze::unpadded>;
-    // dpace time matrix type for returned vector
+    // space time matrix type for returned vector
     using STMR = blaze::CustomMatrix<typename RT::ElementType,
                                      blaze::unaligned, blaze::unpadded>;
 
