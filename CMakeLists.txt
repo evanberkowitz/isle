@@ -30,3 +30,25 @@ include_directories(SYSTEM ${blaze_INCLUDE_DIRS})
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${blaze_CXX_FLAGS}")
 target_link_libraries(cns ${blaze_LIBRARIES})
 set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} ${blaze_LINKER_FLAGS}")
+
+###
+### docs
+###
+
+# The docs are automatically generated with doxygen.
+find_package(Doxygen)
+
+# First, we need to make sure the docs directory exists in the source directory.
+add_custom_target(make-docs-mkdir
+    COMMAND ${CMAKE_COMMAND} -E make_directory ${CMAKE_SOURCE_DIR}/docs)
+option(BUILD_DOCUMENTATION "Create and install the HTML based API documentation (requires Doxygen)" ${DOXYGEN_FOUND})
+
+# Then, we need a target for executing doxygen.
+add_custom_target(
+  docs
+  COMMAND ${DOXYGEN_EXECUTABLE} doxyfile.conf ${CMAKE_SOURCE_DIR}
+  WORKING_DIRECTORY ${CMAKE_SOURCE_DIR} 
+  COMMENT "Generating API documentation with Doxygen"
+  DEPENDS make-docs-mkdir
+  VERBATIM
+)
