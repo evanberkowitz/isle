@@ -8,7 +8,9 @@
 
 #include "core.hpp"
 
-/// Bind Vector, Matrix, and SparseMatrix.
-void bindTensors(py::module &mod);
+namespace bind {
+    /// Bind Vector, Matrix, and SparseMatrix.
+    void bindTensors(py::module &mod);
+}
 
 #endif  // ndef BIND_MATH_HPP

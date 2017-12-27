@@ -2,5 +2,5 @@
 #include "math.hpp"
 
 PYBIND11_MODULE(cnxx, mod) {
-    bindTensors(mod);
+    bind::bindTensors(mod);
 }

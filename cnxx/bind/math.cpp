@@ -10,20 +10,18 @@
 
 /// Internals for binding math routines and classes.
 namespace {
+    /// Prefix for names of linear algebra classes.
     template <typename T>
-    constexpr char const *typeName = "_";
+    constexpr char typeName[] = "_";
 
     template <>
-    constexpr char const *typeName<bool> = "B";
+    constexpr char typeName<int>[] = "I";
 
     template <>
-    constexpr char const *typeName<int> = "I";
+    constexpr char typeName<double>[] = "D";
 
     template <>
-    constexpr char const *typeName<double> = "D";
-
-    template <>
-    constexpr char const *typeName<std::complex<double>> = "CD";
+    constexpr char typeName<std::complex<double>>[] = "CD";
 
     /// Returns the name for vectors in Python.
     template <typename T>
@@ -43,7 +41,7 @@ namespace {
         return std::string{typeName<T>} + "SparseMatrix";
     }
 
-    /// Bind __iadd_ operator if possible for two given types.
+    /// Bind __iadd__ operator if possible for two given types.
     template <typename LHS, typename RHS,
               typename = decltype(LHS{} += RHS{})>
     struct bindIAdd {
@@ -61,7 +59,7 @@ namespace {
         static void f(CT &UNUSED(vec)) { }
     };
 
-    /// Bind __isub_ operator if possible for two given types.
+    /// Bind __isub__ operator if possible for two given types.
     template <typename LHS, typename RHS,
               typename = decltype(LHS{} -= RHS{})>
     struct bindISub {
@@ -79,7 +77,7 @@ namespace {
         static void f(CT &UNUSED(vec)) { }
     };
 
-    /// Bind __imul_ operator if possible for two given types.
+    /// Bind __imul__ operator if possible for two given types.
     template <typename LHS, typename RHS,
               typename = decltype(LHS{} *= RHS{})>
     struct bindIMul {
@@ -97,7 +95,7 @@ namespace {
         static void f(CT &UNUSED(vec)) { }
     };
 
-    /// Bind __idiv_ operator if possible for two given types.
+    /// Bind __idiv__ operator if possible for two given types.
     template <typename LHS, typename RHS,
               typename = decltype(LHS{} /= RHS{})>
     struct bindIDiv {
@@ -192,6 +190,17 @@ namespace {
 
             auto &vec = py::class_<VT>(mod, vecName<ET>().c_str(), py::buffer_protocol{})
                 .def(py::init([](const std::size_t size){ return VT(size); }))
+                .def(py::init([](py::buffer &buf) {
+                            const py::buffer_info binfo = buf.request();
+                            if (binfo.format != py::format_descriptor<ET>::format())
+                                throw std::runtime_error("Incompatible buffer format: mismatched elemental data type");
+                            if (binfo.ndim != 1)
+                                throw std::runtime_error("Wrong buffer dimention to construct vector.");
+                            return VT(binfo.shape.at(0), static_cast<ET const *>(binfo.ptr));
+                        }))
+                .def(py::init([](const std::vector<ET> &arr) {
+                            return VT(arr.size(), &arr[0]);
+                        }))
                 .def("__getitem__", py::overload_cast<std::size_t>(&VT::operator[]))
                 .def("__setitem__", [](VT &vec, const std::size_t i,
                                        const typename VT::ElementType x) {
@@ -219,12 +228,13 @@ namespace {
     };
 }
 
+namespace bind {
+    void bindTensors(py::module &mod) {
+        // TODO what about bool
+        // TODO can we treat floordiv as well?
 
-void bindTensors(py::module &mod) {
-    // TODO what about bool
-    // TODO can we treat floordiv as well?
-
-    using ElementalTypes = Types<int, double, std::complex<double>>;
+        using ElementalTypes = Types<int, double, std::complex<double>>;
     
-    foreach<ElementalTypes, bindVector, ElementalTypes>::f(mod);
+        foreach<ElementalTypes, bindVector, ElementalTypes>::f(mod);
+    }
 }
