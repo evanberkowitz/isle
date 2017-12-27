@@ -58,10 +58,9 @@ endif ()
 # turn it into a list
 string(REPLACE " " ";" AUX_LIST ${RAW_INCLUDES})
 # split
-extract_flags_paths(AUX_LIST "-I" AUX_FLAGS PYBIND11_INCLUDE_DIR)
+extract_flags_paths(AUX_LIST "-I" PYBIND11_CXX_FLAGS PYBIND11_INCLUDE_DIR)
 # back to string
 set(PYBIND11_CXX_FLAGS "${PYBIND11_CXX_FLAGS};-fvisibility=hidden")
-unset(AUX_FLAGS)
 unset(AUX_LIST)
 unset(RAW_INCLUDES)
 
@@ -76,9 +75,7 @@ unset(AUX_LIST)
 unset(AUX)
 
 # hijack extract function to separate actual libraries from flags
-extract_flags_paths(AUX_FLAGS "-l" AUX_LINKER_FLAGS AUX_LIBS)
-string(REPLACE ";" " " PYBIND11_LINKER_FLAGS "${AUX_LINKER_FLAGS}")
-unset(AUX_LINKER_FLAGS)
+extract_flags_paths(AUX_FLAGS "-l" PYBIND11_LINKER_FLAGS AUX_LIBS)
 unset(AUX_FLAGS)
 
 # search for all libs
