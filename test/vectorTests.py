@@ -5,9 +5,11 @@ Example python module for unittests.
 import unittest
 import baseTest
 try:
-  import cns
+  import core
+  core.prepare_cnxx_import()
+  import cnxx
 except ModuleNotFoundError as e:
-  print("[WARNING] Please copy the build `cns` module in this directory before running the tests...")
+  print("[WARNING] Please copy the build `cnxx` module in this directory before running the tests...")
   raise e
 
 #===============================================================================
@@ -29,26 +31,26 @@ version = str(sub.check_output(["git", "rev-parse", "HEAD"]).strip())
 class TestDVector(baseTest.AbstractVectorTest, unittest.TestCase):
   "DVector test class"
   # C++ base type
-  cvecType   = cns.DVector
+  cvecType   = cnxx.DVector
   # to be checked operator overloads
   # { operation: ( (InputType1, InputType2), outPutClass ), ...}
   operations = {
     "*" : [
-      (("DVector", "DVector"), cns.DVector),
-      (("DVector", "int"    ), cns.DVector),
-      (("DVector", "double" ), cns.DVector),
-      (("int"    , "DVector"), cns.DVector),
-      (("double" , "DVector"), cns.DVector),
+      (("DVector", "DVector"), cnxx.DVector),
+      (("DVector", "int"    ), cnxx.DVector),
+      (("DVector", "double" ), cnxx.DVector),
+      (("int"    , "DVector"), cnxx.DVector),
+      (("double" , "DVector"), cnxx.DVector),
     ],
     "/" : [
-      (("DVector", "int"),    cns.DVector),
-      (("DVector", "double"), cns.DVector),
+      (("DVector", "int"),    cnxx.DVector),
+      (("DVector", "double"), cnxx.DVector),
     ],
     "+" : [
-      (("DVector", "DVector"), cns.DVector),
+      (("DVector", "DVector"), cnxx.DVector),
     ],
     "-" : [
-      (("DVector", "DVector"), cns.DVector),
+      (("DVector", "DVector"), cnxx.DVector),
     ],
     "@" : [
       (("DVector", "DVector"), float),
@@ -60,26 +62,26 @@ class TestDVector(baseTest.AbstractVectorTest, unittest.TestCase):
 class TestIVector(baseTest.AbstractVectorTest, unittest.TestCase):
   "IVector test class"
   # C++ base type
-  cvecType   = cns.IVector
+  cvecType   = cnxx.IVector
   # to be checked operator overloads
   # { operation: ( (InputType1, InputType2), outPutClass ), ...}
   operations = {
     "*" : [
-      (("IVector", "IVector"), cns.IVector),
-      (("IVector", "int"    ), cns.IVector),
-      (("IVector", "double" ), cns.DVector),
-      (("int"    , "IVector"), cns.IVector),
-      (("double" , "IVector"), cns.DVector),
+      (("IVector", "IVector"), cnxx.IVector),
+      (("IVector", "int"    ), cnxx.IVector),
+      (("IVector", "double" ), cnxx.DVector),
+      (("int"    , "IVector"), cnxx.IVector),
+      (("double" , "IVector"), cnxx.DVector),
     ],
    # "/" : [
-   #   (("IVector", "int"),    cns.IVector),
-   #   (("IVector", "double"), cns.DVector),
+   #   (("IVector", "int"),    cnxx.IVector),
+   #   (("IVector", "double"), cnxx.DVector),
    # ],
     "+" : [
-      (("IVector", "IVector"), cns.IVector),
+      (("IVector", "IVector"), cnxx.IVector),
     ],
     "-" : [
-      (("IVector", "IVector"), cns.IVector),
+      (("IVector", "IVector"), cnxx.IVector),
     ],
     "@" : [
       (("IVector", "IVector"), int),

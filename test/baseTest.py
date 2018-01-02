@@ -3,9 +3,11 @@
 Base implementation of unittests
 """
 try:
-  import cns
+  import core
+  core.prepare_cnxx_import()
+  import cnxx
 except ModuleNotFoundError as e:
-  print("[WARNING] Please copy the build `cns` module in this directory before running the tests...")
+  print("[WARNING] Please copy the build `cnxx` module in this directory before running the tests...")
   raise e
 
 import numpy as np
@@ -42,10 +44,10 @@ class RandomInitializer(object):
       "int"      : lambda **kwargs : self._init_scalar(int,       **kwargs),
       "float"    : lambda **kwargs : self._init_scalar(float,     **kwargs),
       "double"   : lambda **kwargs : self._init_scalar(float,     **kwargs),
-      "DVector"  : lambda **kwargs : self._init_cvec(cns.DVector, dtype=float, **kwargs),
-      "IVector"  : lambda **kwargs : self._init_cvec(cns.IVector, dtype=int, **kwargs),
-      cns.DVector: lambda **kwargs : self._init_cvec(cns.DVector, dtype=float, **kwargs),
-      cns.IVector: lambda **kwargs : self._init_cvec(cns.IVector, dtype=int, **kwargs),
+      "DVector"  : lambda **kwargs : self._init_cvec(cnxx.DVector, dtype=float, **kwargs),
+      "IVector"  : lambda **kwargs : self._init_cvec(cnxx.IVector, dtype=int, **kwargs),
+      cnxx.DVector: lambda **kwargs : self._init_cvec(cnxx.DVector, dtype=float, **kwargs),
+      cnxx.IVector: lambda **kwargs : self._init_cvec(cnxx.IVector, dtype=int, **kwargs),
     }
 
   #----- Initialize a scalar -----
