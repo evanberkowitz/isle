@@ -58,23 +58,6 @@ using IdMatrix = blaze::IdentityMatrix<ET>;
 template <typename ET>
 using SymmetricMatrix = blaze::SymmetricMatrix<blaze::DynamicMatrix<ET>>;
 
-/*
-  overloads for heterogeneous operators with std::complex
-
-template <typename T1, typename T2>
-constexpr std::complex<decltype(T1{} * T2{})>
-operator*(const std::complex<T1> &lhs, const T2 &rhs) {
-    return {std::real(lhs)*rhs, std::imag(lhs)*rhs};
-}
-
-template <typename T1, typename T2>
-constexpr std::complex<decltype(T1{} * T2{})>
-operator*(const T2 &lhs, const std::complex<T1> &rhs) {
-    return {lhs*std::real(rhs), lhs*std::imag(rhs)};
-}
-
-*/
-
 
 /// Multiply a space matrix with a space time vector.
 /**
@@ -159,7 +142,7 @@ auto spaceMatSpacetimeVec(const MT &spaceMatrix,
  *  Does not throw if macro `NDEBUG` is defined.
  */
 /*
- * Works by wrapping input and output vectors in a blaze::CustomMatrix
+ * Works by wrapping the input vector in a blaze::CustomMatrix
  * to treat a spacetime vector v_{(it)} as a matrix vm_{i,t}.
  * Then x*v can be performed as x*vm.
  */
