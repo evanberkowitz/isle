@@ -188,7 +188,7 @@ namespace {
             // make a new Pybind11 class and add basic functions
             using VT = Vector<ET>;
 
-            auto &vec = py::class_<VT>(mod, vecName<ET>().c_str(), py::buffer_protocol{})
+            auto vec = py::class_<VT>{mod, vecName<ET>().c_str(), py::buffer_protocol{}}
                 .def(py::init([](const std::size_t size){ return VT(size); }))
                 .def(py::init([](py::buffer &buf) {
                             const py::buffer_info binfo = buf.request();
@@ -226,15 +226,33 @@ namespace {
             foreach<ElementalTypes, bindVectorOps, VT>::f(vec);
         }
     };
+
+    /// Create Python wrappers around Tensors for different datatypes.
+    void defineWrapperClasses(py::module &mod) {
+        py::exec(R"(
+class Vector:
+    def __new__(self, *args, dtype=float, **kwargs):
+        import cnxx
+        if dtype == float:
+            return cnxx.DVector(*args, **kwargs)
+        if dtype == int:
+            return cnxx.IVector(*args, **kwargs)
+        if dtype == complex:
+            return cnxx.CDVector(*args, **kwargs)
+)", py::globals(), mod.attr("__dict__"));
+    }
 }
 
 namespace bind {
+    
     void bindTensors(py::module &mod) {
-        // TODO what about bool
         // TODO can we treat floordiv as well?
+        // TODO int format_descriptor does not match
 
         using ElementalTypes = Types<int, double, std::complex<double>>;
     
         foreach<ElementalTypes, bindVector, ElementalTypes>::f(mod);
+
+        defineWrapperClasses(mod);
     }
 }
