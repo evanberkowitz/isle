@@ -22,7 +22,7 @@ RAND_MAX = +1
 
 
 #===============================================================================
-#     Abstract basis Test
+#     Abstract basic test
 #===============================================================================
 class AbstractVectorTest(metaclass=abc.ABCMeta):
     "Abstract vector class test. Vector test must inherit from this class"
@@ -155,7 +155,7 @@ class AbstractVectorTest(metaclass=abc.ABCMeta):
 
 
 #===============================================================================
-#     Unit Tests
+#     Unittest for vectors  --- needs to be further extended
 #===============================================================================
 class TestVector(AbstractVectorTest, unittest.TestCase):
     "Test for all cVec types and opertions"
@@ -166,8 +166,8 @@ class TestVector(AbstractVectorTest, unittest.TestCase):
         cnxx.CDVector,
     ]
     scalarTypes = {               # Element type maps
-        cnxx.IVector :  int,
-        cnxx.DVector :  float,
+        cnxx.IVector : int,
+        cnxx.DVector : float,
         cnxx.CDVector: complex,
     }
     operations = {                # Operations to be tested
