@@ -11,6 +11,7 @@
 #define MATH_HPP
 
 #include <type_traits>
+#include <memory>
 
 #include <blaze/Math.h>
 
@@ -185,6 +186,41 @@ auto spaceVecSpacetimeVec(const XT &spaceVector,
     blaze::DynamicVector<RT> result;
     result = spaceVector * STMV{&spacetimeVector[0], nx, nt};
     return result;
+}
+
+/// Compute the logarithm of the determinant of a matrix.
+/**
+ * \tparam ET Element type of the matrix.
+ * \tparam SO Storage order of the matrix.
+ * \param mat Matrix to compute the determinant of; must be square.
+ * \return \f$y = \log \det(\mathrm{mat})\f$ as a complex number
+ *         projected onto the first Riemann sheet of the logarithm,
+ *         i.e. \f$y \in (-\pi, \pi]\f$.
+ */
+template <typename ET, bool SO>
+std::complex<ET> logdet(blaze::DynamicMatrix<ET, SO> mat) {
+    const std::size_t n = mat.rows();
+#ifndef NDEBUG
+    if (n != mat.columns())
+        throw std::invalid_argument("Invalid non-square matrix provided");
+#endif
+
+    // pivot indices
+    std::unique_ptr<int[]> ipiv = std::make_unique<int[]>(n);
+    // perform LU decomposition (mat = PLU)
+    blaze::getrf(mat, ipiv.get());
+
+    std::complex<ET> res = 0;
+    int detP = 1;
+    for (std::size_t i = 0; i < n; ++i) {
+        // determinant of pivot matrix P
+        if (ipiv[i] != blaze::numeric_cast<int>(i))
+            detP = -detP;
+        // log det of U (diagonal elements)
+        res += std::log(std::complex<ET>{mat(i, i)});
+    }
+    // combine log dets and project to (-pi, pi]
+    return toFirstLogBranch(res + (detP == 1 ? 0 : std::complex<ET>{0, pi<ET>}));
 }
 
 #endif  // ndef MATH_HPP
