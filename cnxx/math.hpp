@@ -59,6 +59,11 @@ template <typename ET>
 using SymmetricMatrix = blaze::SymmetricMatrix<blaze::DynamicMatrix<ET>>;
 
 
+/// Value template for pi up to long double precision.
+template <typename T>
+constexpr T pi = static_cast<T>(3.1415926535897932384626433832795028841971693993751058209749L);
+
+
 /// Multiply a space matrix with a space time vector.
 /**
  * Let \f$v, u\f$ be vectors in spacetime and \f$M\f$ a matrix in space.
