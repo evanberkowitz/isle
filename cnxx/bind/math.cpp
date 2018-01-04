@@ -2,6 +2,7 @@
 
 #include <string>
 #include <complex>
+#include <cmath>
 
 #include "core.hpp"
 #include "../math.hpp"
@@ -113,6 +114,90 @@ namespace {
         static void f(CT &UNUSED(vec)) { }
     };
 
+    /// Perform Python truediv operation on vector and vector.
+    template <typename VT1, typename VT2, typename ET1, typename ET2>
+    struct truediv_vv {
+        static auto f(const VT1 &vec1, const VT2 vec2) {
+            using RVT = Vector<decltype(ET1{} / ET2{})>;
+            return RVT(vec1/vec2);
+        }
+    };
+    /// Perform Python truediv operation on vector of int and vector of int.
+    template <typename VT1, typename VT2>
+    struct truediv_vv<VT1, VT2, int, int> {
+        static auto f(const VT1 &vec1, const VT2 vec2) {
+            using RVT = typename VT1::template Rebind<double>::Other;
+            return RVT(RVT(vec1) / vec2);
+        }
+    };
+
+    /// Perform Python truediv operation on vector and scalar.
+    template <typename VT, typename ET, typename ST>
+    struct truediv_vs {
+        static auto f(const VT &vec, const ST scalar) {
+            using RVT = Vector<decltype(ET{} / ST{})>;
+            return RVT(vec/scalar);
+        }
+    };
+    /// Perform Python truediv operation on vector of int and int.
+    template <typename VT>
+    struct truediv_vs<VT, int, int> {
+        static auto f(const VT &vec, const int scalar) {
+            using RVT = typename VT::template Rebind<double>::Other;
+            return RVT(vec/static_cast<double>(scalar));
+        }
+    };
+
+    /// Perform Python floordiv on vector and scalar.
+    template <typename VT, typename ET, typename ST, typename Enable = void>
+    struct floordiv_vs {
+        static auto f(const VT &vec, const ST scalar) {
+            using RVT = Vector<decltype(ET{} / ST{})>;
+            return RVT(blaze::floor(vec/scalar));
+        }
+    };
+    /// Throws std::invalid_argument; floordiv not allowed with complex numbers.
+    template <typename VT, typename ET, typename ST>
+    struct floordiv_vs<VT, ET, ST,
+                       std::enable_if_t<(is_specialization_of<std::complex, ET>::value
+                                         || is_specialization_of<std::complex, ST>::value)>> {
+        [[noreturn]] static auto f(const VT &UNUSED(vec), const ST UNUSED(scalar)) {
+            throw std::invalid_argument("can't take floor of complex number.");
+        }
+    };
+    /// Perform Python floordiv on vector of int and int.
+    template <typename VT>
+    struct floordiv_vs<VT, int, int, void> {
+        static auto f(const VT &vec, const int scalar) {
+            return VT(vec/scalar);
+        }
+    };
+
+    /// Perform Python floordiv on vector and vector.
+    template <typename VT1, typename VT2, typename ET1, typename ET2,
+              typename Enable = void>
+    struct floordiv_vv {
+        static auto f(const VT1 &vec1, const VT2 vec2) {
+            using RVT = Vector<decltype(ET1{} / ET2{})>;
+            return RVT(blaze::floor(vec1/vec2));
+        }
+    };
+    /// Throws std::invalid_argument; floordiv not allowed with complex numbers.
+    template <typename VT1, typename VT2, typename ET1, typename ET2>
+    struct floordiv_vv<VT1, VT2, ET1, ET2,
+                       std::enable_if_t<(is_specialization_of<std::complex, ET1>::value
+                                         || is_specialization_of<std::complex, ET2>::value)>> {
+        [[noreturn]] static auto f(const VT1 &UNUSED(vec1), const VT2 UNUSED(vec2)) {
+            throw std::invalid_argument("can't take floor of complex number.");
+        }
+    };
+    /// Perform Python floordiv on vector of int and int.
+    template <typename VT1, typename VT2>
+    struct floordiv_vv<VT1, VT2, int, int, void> {
+        static auto f(const VT1 &vec1, const VT2 vec2) {
+            return VT1(vec1/vec2);
+        }
+    };
 
     /// Bind operators to the vector type.
     /**
@@ -152,14 +237,13 @@ namespace {
             vec.def("__matmul__", [](const VT &v, const Vector<ET> &w) {
                     return (v, w);
                 });
-            vec.def("__truediv__", [](const VT &v, const Vector<ET> &w) {
-                    return RVT(v/w);
-                });
+            vec.def("__truediv__", truediv_vv<VT, Vector<ET>, typename VT::ElementType, ET>::f);
+            vec.def("__floordiv__", floordiv_vv<VT, Vector<ET>, typename VT::ElementType, ET>::f);
             bindIAdd<VT, Vector<ET>>::f(vec);
             bindISub<VT, Vector<ET>>::f(vec);
             bindIMul<VT, Vector<ET>>::f(vec);
             bindIDiv<VT, Vector<ET>>::f(vec);
-                                                
+
             // with scalar
             vec.def("__mul__", [](const VT &v, const ET &x) {
                     return RVT(v*x);
@@ -167,9 +251,9 @@ namespace {
             vec.def("__rmul__", [](const VT &v, const ET &x) {
                     return RVT(x*v);
                 });
-            vec.def("__truediv__", [](const VT &v, const ET &x) {
-                    return RVT(v/x);
-                });
+            vec.def("__truediv__", truediv_vs<VT, typename VT::ElementType, ET>::f);
+            vec.def("__floordiv__", floordiv_vs<VT, typename VT::ElementType, ET>::f);
+
             bindIMul<VT, ET>::f(vec);
             bindIDiv<VT, ET>::f(vec);
         }
