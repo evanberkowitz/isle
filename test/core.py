@@ -4,6 +4,7 @@ Basic helpers for test scripts.
 
 from pathlib import Path
 import numpy as np
+import operator 
 
 #: Absolute path to test directory.
 TEST_PATH = Path(__file__).resolve().parent
@@ -52,7 +53,7 @@ def type_eq(typ0, typ1):
     return typ0 == typ1
 
 
-def equal(a, b):
+def isEqual(a, b):
     "Check whether two numbers or iterables are equal wiht precision core.PREC."
 
     ahasit = hasattr(a, "__iter__")
@@ -63,7 +64,7 @@ def equal(a, b):
             return False
 
         for aelem, belem in zip(a, b):
-            if not equal(aelem, belem):
+            if not isEqual(aelem, belem):
                 return False
         return True
 
@@ -78,3 +79,16 @@ def equal(a, b):
     else:
         # one is scalar, the other iterable
         return False
+
+
+OperatorDict = {
+  '+'  : operator.add,
+  '+=' : operator.iadd,
+  '-'  : operator.sub,
+  '-=' : operator.isub,
+  '*'  : operator.mul,
+  '*=' : operator.imul,
+  '/'  : operator.truediv,
+  '/=' : operator.itruediv,
+  '@'  : operator.matmul
+}
