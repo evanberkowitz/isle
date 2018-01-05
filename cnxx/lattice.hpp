@@ -12,134 +12,142 @@
 
 /// Represents a spacetime lattice.
 /**
- * Holds topology and geometry of the spatial lattice. Here; 'site' means site on the
- * spatial lattice and 'neighbor' means nearest neighbor on the spatial lattice.
+ * Holds topology and geometry of the spatial lattice. Here; 'site' and 'neighbor'
+ * refer to sites on the spatial lattice.
  *
- * A fixed number of neighbors is used for each site. The lattice dimensions cannot be
- * changed after creation.
- *
- * Performs bounds checks on all indices unless `#ndebug == true`.
- * Throws an instance of `std::out_of_range` if a check fails.
+ * Performs consistency checks on all inputs unless `#ndebug == true`.
+ * Throws an instance of `std::out_of_range` or `std::invalid_argument` if a check fails.
  */
 class Lattice {
 public:
-    
     /// Construct with given numbers of sites and neighbors per site.
-    Lattice(std::size_t const nt, std::size_t const nx, std::size_t const nNeighbors_)
-        : nTslice{nt}, lambda{nt*nx}, neighbors{nx, nNeighbors_},
-          strengths{nx, nNeighbors_}, distances{nx} { }
+    Lattice(std::size_t const nt, std::size_t const nx)
+        : nTslice{nt}, nSpatial{nx},
+          hoppingMat{nx, nx}, distMat{nx} { }
 
-    /// Get the index of a neighbor of a site.
+    /// Get the hopping strengths from a given site to all others.
     /**
-     * \param site `site < nSpatial()`.
-     * \param neigh `neigh < nNeighbors()`.
-     * \returns The index of the site of neighbor `neigh` of site `site`.
+     * \param site Index of a site (`site < nx()`).
+     * \return A view on a row of the hopping strength matrix for the given site.
      */
-    std::size_t getNeighbor(std::size_t const site,
-                            std::size_t const neigh) const noexcept(ndebug) {
+    auto hopping(const std::size_t site) const noexcept(ndebug) {
 #ifndef NDEBUG
-        if (!(neigh < nNeighbors()))
-            throw std::out_of_range("Neighbor index out of range");
-        if (!(site < nSpatial()))
+        if (!(site < nx()))
             throw std::out_of_range("Site index out of range");
 #endif
-        return neighbors(site, neigh);
+        return blaze::row(hoppingMat, site);
     }
 
-    /// Set the index of a neighbor of a site.
-    /**
-     * \param site `site < nSpatial()`.
-     * \param neigh `neigh < nNeighbors()`.
-     * \param idx Site index of the neighbor, `idx < nSpatial()`.
-     */
-    void setNeighbor(std::size_t const site, std::size_t const neigh,
-                     std::size_t const idx) noexcept(ndebug) {
-#ifndef NDEBUG
-        if (!(neigh < nNeighbors()))
-            throw std::out_of_range("Neighbor index out of range");
-        if (!(site < nSpatial()))
-            throw std::out_of_range("Site index out of range");
-        if (!(idx < nSpatial()))
-            throw std::out_of_range("Index 'idx' out of range");
-#endif
-        neighbors(site, neigh) = idx;
+    /// Get the full hopping matrix.
+    SymmetricSparseMatrix<double> &hopping() noexcept {
+        return hoppingMat;
+    }
+    /// Get the full hopping matrix.
+    const SymmetricSparseMatrix<double> &hopping() const noexcept {
+        return hoppingMat;
     }
 
-    /// Get the hopping strength of a connection.
+    /// Set the hopping strength for a pair of sites.
     /**
-     * \param site `site < nSpatial()`.
-     * \param neigh `neigh < nNeighbors()`.
-     * \returns Hopping strength of the link `site <-> Lattice::getNeighbor(site, neigh)`.
+     * Keeps the hopping matrix symmetric. Connections with zero strength are only
+     * inserted if there already is a connection in the matrix.
+     *
+     * \param i Index of one site.
+     * \param j Index of the other site.
+     * \param strength Hopping strength between i and j. If set to exactly 0, the
+     *                 element is erased from the matrix.
      */
-    double getStrength(std::size_t const site,
-                       std::size_t const neigh) const noexcept(ndebug) {
+    void setNeighbor(const std::size_t i, const std::size_t j,
+                     const double strength) {
 #ifndef NDEBUG
-        if (!(neigh < nNeighbors()))
-            throw std::out_of_range("Neighbor index out of range");
-        if (!(site < nSpatial()))
-            throw std::out_of_range("Site index out of range");
+        if (!(i < nx()))
+            throw std::out_of_range("Index i out of range");
+        if (!(j < nx()))
+            throw std::out_of_range("Index j out of range");
 #endif
-        return strengths(site, neigh);
+        if (strength == 0)
+            hoppingMat.erase(i, j);
+        else
+            hoppingMat.set(i, j, strength);
     }
 
-    /// Set the hopping strength of a connection.
+    // TODO can this work with a SymmetricSparseMatrix?
+    /// Set all hopping strengths for a given site.
     /**
-     * \param site `site < nSpatial()`.
-     * \param neigh `neigh < nNeighbors()`.
-     * \param strength Hopping strength of the link `site <-> Lattice::getNeighbor(site, neigh)`.
+     * This function must be called for each site `i` in order of ascending index.
+     * It must even be called for sites whose connections have already been specified.
+     * Note the condition on the indices under parameter `strengths`!
+     *
+     * \param i Index of one site.
+     * \param strengths Each element is an edge in the connectivity graph represented as
+     *                  a pair `(idx, strength)`.<BR>
+     *                  `idx` is the 'target' index, i.e. the edge connects sites `i`
+     *                  and `idx`. It must satisfy `idx > i`.<BR>
+     *                  `strength` is the hopping strength along that connection.<BR>
+     *                  Do not pass `strength==0` elements as they clobber up the
+     *                  sparse matrix.
+     *
+     * <B>Example</B>: \code
+       Lattice lat{1, 3};
+       lat.setNeighbors(0, {{1, 1}});
+       lat.setNeighbors(1, {{2, 2}});
+     \endcode
+     *
      */
-    void setStrength(std::size_t const site, std::size_t const neigh,
-                     double const strength) noexcept(ndebug) {
-#ifndef NDEBUG
-        if (!(neigh < nNeighbors()))
-            throw std::out_of_range("Neighbor index out of range");
-        if (!(site < nSpatial()))
-            throw std::out_of_range("Site index out of range");
-#endif
-        strengths(site, neigh) = strength;
-    }
+//     void setNeighbors(const std::size_t i,
+//                       const std::vector<std::pair<std::size_t, double>> &strengths) {
+// #ifndef NDEBUG
+//         if (!(i < nx()))
+//             throw std::out_of_range("Index i out of range");
+//         if (strengths.size() >= nx()) // too many includes hopping from i to i
+//             throw std::invalid_argument("Too many hopping strengths given");
+// #endif
+//         hoppingMat.reserve(i, strengths.size());
+//         for (const auto &edge : strengths) {
+// #ifndef NDEBUG
+//             if (std::get<0>(edge) >= nx())
+//                 throw std::out_of_range("Target site index out of range");
+//             if (std::get<0>(edge) == i)
+//                 throw std::invalid_argument("Target index equal to index i");
+//             if (std::get<0>(edge) < i)
+//                 throw std::invalid_argument("Target index less than index i");
+// #endif
+//             hoppingMat.append(i, std::get<0>(edge), std::get<1>(edge));
+//         }
+//         hoppingMat.finalize(i);
+//     }
 
     /// Get the physical distance between two spatial sites.
     /**
-     * \param i `i < nSpatial()`.
-     * \param j `j < nSpatial()`.
+     * \param i `i < nx()`.
+     * \param j `j < nx()`.
      * \returns Distance between sites `i` and `j`.
      */
-    double getDistance(std::size_t const i, std::size_t const j) const noexcept(ndebug) {
+    double distance(const std::size_t i, const std::size_t j) const noexcept(ndebug) {
 #ifndef NDEBUG
-        if (!(i < nSpatial()))
+        if (!(i < nx()))
             throw std::out_of_range("First index out of range");
-        if (!(j < nSpatial()))
+        if (!(j < nx()))
             throw std::out_of_range("Second index out of range");
 #endif
-        return distances(i, j);
+        return distMat(i, j);
     }
 
     /// Set the physical distance between two spatial sites.
     /**
-     * \param i `i < nSpatial()`.
-     * \param j `j < nSpatial()`.
+     * \param i `i < nx()`.
+     * \param j `j < nx()`.
      * \param distance Physical distance between sites `i` and `j`.
      */    
-    void setDistance(std::size_t const i, std::size_t const j,
-                     double const distance) noexcept(ndebug) {
+    void distance(const std::size_t i, const std::size_t j,
+                  const double distance) noexcept(ndebug) {
 #ifndef NDEBUG
-        if (!(i < nSpatial()))
+        if (!(i < nx()))
             throw std::out_of_range("First index out of range");
-        if (!(j < nSpatial()))
+        if (!(j < nx()))
             throw std::out_of_range("Second index out of range");
 #endif
-        distances(i, j) = distance;
-    }
-
-    /// Returns the number of spatial sites.
-    std::size_t nSpatial() const noexcept {
-        return neighbors.rows();
-    }
-
-    /// Returns the number of neighbors per site.
-    std::size_t nNeighbors() const noexcept {
-        return neighbors.columns();
+        distMat(i, j) = distance;
     }
 
     /// Returns the number of time slices.
@@ -147,32 +155,26 @@ public:
         return nTslice;
     }
 
-    /// Returns the total size of the lattice in space and time.
-    std::size_t size() const noexcept {
-        return lambda;
+    /// Returns the number of spatial sites.
+    std::size_t nx() const noexcept {
+        return nSpatial;
     }
 
-    /// Returns the matrix of neighbor indices.
-    Matrix<std::size_t> const &neighborMat() const noexcept {
-        return neighbors;
-    }
-
-    /// Returns the matrix of hopping strengths.
-    Matrix<double> const &strengthMat() const noexcept {
-        return strengths;
+    /// Returns the total lattice size.
+    std::size_t lattSize() const noexcept {
+        return nSpatial*nTslice;
     }
 
     /// Returns the matrix of physical distances between spatial sites.
-    SymmetricMatrix<double> const &distanceMat() const noexcept {
-        return distances;
+    const SymmetricMatrix<double> &distances() const noexcept {
+        return distMat;
     }
 
 private:
-    std::size_t const nTslice;          ///< Number of time slices.
-    std::size_t const lambda;           ///< Total size of the lattice.
-    Matrix<std::size_t> neighbors;      ///< Matrix of neighbors (`nSpatial() x nNeighbors()`).
-    Matrix<double> strengths;           ///< Matrix of hopping strengths (`nSpatial() x nNeighbors()`).
-    SymmetricMatrix<double> distances;  ///< matrix of physical distances (`nSpatial() x nSpatial()`).
+    const std::size_t nTslice;  ///< Number of time slices.
+    const std::size_t nSpatial;  ///< Number of spatial lattice sites.
+    SymmetricSparseMatrix<double> hoppingMat;  ///< Matrix of hopping strengths (`nx() x nx()`).
+    SymmetricMatrix<double> distMat;  ///< matrix of physical distances (`nx() x nx()`).
 };
 
 #endif  // ndef LATTICE_HPP
