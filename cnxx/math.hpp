@@ -59,8 +59,15 @@ using IdMatrix = blaze::IdentityMatrix<ET>;
 template <typename ET>
 using SymmetricMatrix = blaze::SymmetricMatrix<blaze::DynamicMatrix<ET>>;
 
+/**
+ * \brief Holds a (Space, Time, or SpaceTime)*(Space, Time, or SpaceTime) symmetric sparse matrix.
+ * \tparam ET Element Type
+ */
+template <typename ET>
+using SymmetricSparseMatrix = blaze::SymmetricMatrix<blaze::CompressedMatrix<ET>>;
 
-/// Value template for pi up to long double precision.
+
+/// Variable template for pi up to long double precision.
 template <typename T>
 constexpr T pi = static_cast<T>(3.1415926535897932384626433832795028841971693993751058209749L);
 
