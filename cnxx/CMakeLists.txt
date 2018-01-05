@@ -30,3 +30,10 @@ include_directories(SYSTEM ${blaze_INCLUDE_DIRS})
 target_compile_options(cnxx PUBLIC ${blaze_CXX_FLAGS})
 target_link_libraries(cnxx ${blaze_LIBRARIES})
 set_target_properties(cnxx PROPERTIES LINK_FLAGS "${blaze_LINKER_FLAGS}")
+
+# install library under ../modules
+if (CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT)
+  set(CMAKE_INSTALL_PREFIX "${CMAKE_SOURCE_DIR}/../modules" CACHE PATH
+    "Directory to install the library" FORCE)
+endif ()
+install(TARGETS cnxx DESTINATION ".")
