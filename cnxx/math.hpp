@@ -16,6 +16,7 @@
 #include <blaze/Math.h>
 
 #include "core.hpp"
+#include "tmp.hpp"
 
 /**
  * \brief Holds a Space, Time, or SpaceTime vector.
@@ -65,6 +66,23 @@ using SymmetricMatrix = blaze::SymmetricMatrix<blaze::DynamicMatrix<ET>>;
  */
 template <typename ET>
 using SymmetricSparseMatrix = blaze::SymmetricMatrix<blaze::CompressedMatrix<ET>>;
+
+
+/// Get the elemental type from a given compound type T.
+template <typename T, typename = void>
+struct ElementType {
+    using type = T;
+};
+
+/// Overload for std::complex.
+template <typename T>
+struct ElementType<T, std::enable_if_t<is_specialization_of<std::complex, T>::value>> {
+    using type = typename T::value_type;
+};
+
+/// Helper typedef for ElementType.
+template <typename T>
+using ElementType_t = typename ElementType<T>::type;
 
 
 /// Variable template for pi up to long double precision.
@@ -195,17 +213,20 @@ auto spaceVecSpacetimeVec(const XT &spaceVector,
     return result;
 }
 
-/// Compute the logarithm of the determinant of a matrix.
+/// Compute the logarithm of the determinant of a dense matrix.
 /**
- * \tparam ET Element type of the matrix.
+ * Note that the matrix is copied in order to leave the original unchanged.
+ * \tparam MT Specific matrix type.
  * \tparam SO Storage order of the matrix.
  * \param mat Matrix to compute the determinant of; must be square.
  * \return \f$y = \log \det(\mathrm{mat})\f$ as a complex number
  *         projected onto the first Riemann sheet of the logarithm,
  *         i.e. \f$y \in (-\pi, \pi]\f$.
  */
-template <typename ET, bool SO>
-std::complex<ET> logdet(blaze::DynamicMatrix<ET, SO> mat) {
+template <typename MT, bool SO>
+auto logdet(blaze::DenseMatrix<MT, SO> const &matrix) {
+    using ET = ElementType_t<typename MT::ElementType>;
+    MT mat{matrix};
     const std::size_t n = mat.rows();
 #ifndef NDEBUG
     if (n != mat.columns())
