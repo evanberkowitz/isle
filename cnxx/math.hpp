@@ -93,7 +93,7 @@ constexpr T pi = static_cast<T>(3.1415926535897932384626433832795028841971693993
 /// Project a complex number to the first branch of the logarithm (-pi, pi].
 template <typename RT>
 std::complex<RT> toFirstLogBranch(const std::complex<RT> &x) {
-    return {std::real(x), std::fmod(std::imag(x)+pi<RT>, 2*pi<RT>) - pi<RT>};
+    return {std::real(x), std::remainder(std::imag(x), 2*pi<RT>)};
 }
 
 
