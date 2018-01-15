@@ -6,6 +6,7 @@ namespace bind {
     void bindLattice(py::module &mod) {
         py::class_<Lattice>{mod, "Lattice"}
             .def(py::init<std::size_t, std::size_t>())
+            .def("areNeighbors", &Lattice::areNeighbors)
             .def("setNeighbor", &Lattice::setNeighbor)
             .def("getNeighbor", [](const Lattice &self,
                                    const std::size_t i, const std::size_t j) {

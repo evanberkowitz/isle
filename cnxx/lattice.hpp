@@ -47,6 +47,11 @@ public:
         return hoppingMat;
     }
 
+    /// Returns true if sites i and j are neighbors.
+    bool areNeighbors(const std::size_t i, const std::size_t j) const {
+        return hoppingMat.find(i, j) != hoppingMat.end(i);
+    }
+    
     /// Set the hopping strength for a pair of sites.
     /**
      * Keeps the hopping matrix symmetric. Connections with zero strength are only
