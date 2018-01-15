@@ -292,7 +292,7 @@ namespace {
                      })
                 .def("__iter__", [](VT &vec) {
                         return py::make_iterator(vec.begin(), vec.end());
-                    })
+                    }, py::keep_alive<0, 1>())
                 .def("__len__", &VT::size)
                 .def("__repr__", [](const VT &vec) {
                         std::ostringstream oss;
@@ -330,7 +330,6 @@ class Vector:
 namespace bind {
     
     void bindTensors(py::module &mod) {
-        // TODO can we treat floordiv as well?
         // TODO int format_descriptor does not match
 
         using ElementalTypes = Types<int, double, std::complex<double>>;
