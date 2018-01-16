@@ -5,12 +5,14 @@
 #include <cmath>
 
 #include "core.hpp"
+#include "operators.hpp"
 #include "../math.hpp"
 #include "../tmp.hpp"
 
 
 /// Internals for binding math routines and classes.
 namespace {
+    // TODO change to prefixName
     /// Prefix for names of linear algebra classes.
     template <typename T>
     constexpr char typeName[] = "_";
@@ -23,7 +25,7 @@ namespace {
 
     template <>
     constexpr char typeName<std::complex<double>>[] = "CD";
-
+    
     /// Returns the name for vectors in Python.
     template <typename T>
     std::string vecName() {
@@ -41,6 +43,26 @@ namespace {
     std::string sparseMatName() {
         return std::string{typeName<T>} + "SparseMatrix";
     }
+
+    /// Bind a given operation to class cls; this version does not bind anything.
+    template <typename LHS, typename RHS, typename OP, typename = void>
+    struct bindOp {
+        template <typename CT>
+        static void f(CT &&UNUSED(cls)) { }
+    };
+    /// Specialization to actually bind op if possible.
+    // Use & in std::declval<LHS&>() to make sure to have an lvalue for modifying operations.
+    template <typename LHS, typename RHS, typename OP>
+    struct bindOp<LHS, RHS, OP,
+                  void_t<decltype(OP::f(std::declval<LHS&>(),
+                                        std::declval<const RHS>()))>> {
+        template <typename CT>
+        static void f(CT &&cls) {
+            cls.def(bind::op::name<OP>, [](LHS &lhs, const RHS &rhs) {
+                    return blaze::evaluate(OP::f(lhs, rhs));
+                });
+        }
+    };
 
     /// Bind __iadd__ operator if possible for two given types.
     template <typename LHS, typename RHS,
@@ -213,27 +235,22 @@ namespace {
     template <typename ET, typename VT, typename = void_t<>>
     struct bindVectorOps {
         template <typename CT>
-        static void f(CT &UNUSED(vec)) { }
+        static void f(CT &&UNUSED(vec)) { }
     };
 
     /// Overload that actually binds something.
     template <typename ET, typename VT>
     struct bindVectorOps<ET, VT, void_t<decltype(typename VT::ElementType{} * ET{})>> {
         template <typename CT>
-        static void f(CT &vec) {
+        static void f(CT &&vec) {
             // return vector type
             using RVT = Vector<decltype(typename VT::ElementType{} * ET{})>;
 
             // with Vector
-            vec.def("__add__", [](const VT &v, const Vector<ET> &w) {
-                    return RVT(v+w);
-                });
-            vec.def("__sub__", [](const VT &v, const Vector<ET> &w) {
-                    return RVT(v-w);
-                });
-            vec.def("__mul__", [](const VT &v, const Vector<ET> &w) {
-                    return RVT(v*w);
-                });
+            bindOp<VT, Vector<ET>, bind::op::add>::f(vec);
+            bindOp<VT, Vector<ET>, bind::op::sub>::f(vec);
+            bindOp<VT, Vector<ET>, bind::op::mul>::f(vec);
+
             vec.def("__matmul__", [](const VT &v, const Vector<ET> &w) {
                     return (v, w);
                 });
@@ -245,9 +262,7 @@ namespace {
             bindIDiv<VT, Vector<ET>>::f(vec);
 
             // with scalar
-            vec.def("__mul__", [](const VT &v, const ET &x) {
-                    return RVT(v*x);
-                });
+            bindOp<VT, ET, bind::op::mul>::f(vec);
             vec.def("__rmul__", [](const VT &v, const ET &x) {
                     return RVT(x*v);
                 });
