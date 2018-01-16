@@ -33,6 +33,10 @@ struct is_specialization_of<C, C<Args...>> : public std::true_type { };
 template <typename...>
 using void_t = void;
 
+/// Contains a value that is always false, useful to defer evaluation of static_assert.
+template <typename T>
+struct always_false { static constexpr bool value = false; };
+
 /// Holds a list of types in a head, tail structure.
 template <typename T, typename... Args>
 struct Types {
