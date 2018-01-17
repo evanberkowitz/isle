@@ -48,17 +48,19 @@ namespace {
     template <typename LHS, typename RHS, typename OP, typename = void>
     struct bindOp {
         template <typename CT>
-        static void f(CT &&UNUSED(cls)) { }
+        static void f(CT &&UNUSED(cls), const char * const UNUSED(name)) { }
     };
     /// Specialization to actually bind op if possible.
-    // Use & in std::declval<LHS&>() to make sure to have an lvalue for modifying operations.
+    // Enable this version if the operator can be called on lvalues of the elemental types
+    // of LHS and RHS. The & in declval makes sure that we have lvalues.
     template <typename LHS, typename RHS, typename OP>
     struct bindOp<LHS, RHS, OP,
-                  void_t<decltype(OP::f(std::declval<LHS&>(),
-                                        std::declval<const RHS>()))>> {
+                  void_t<decltype(OP::f(std::declval<ElementType_t<LHS>&>(),
+                                        std::declval<ElementType_t<RHS>&>()))>>
+    {
         template <typename CT>
-        static void f(CT &&cls) {
-            cls.def(bind::op::name<OP>, [](LHS &lhs, const RHS &rhs) {
+        static void f(CT &&cls, const char * const name) {
+            cls.def(name, [](LHS &lhs, RHS &rhs) {
                     return blaze::evaluate(OP::f(lhs, rhs));
                 });
         }
@@ -181,8 +183,8 @@ namespace {
     /// Throws std::invalid_argument; floordiv not allowed with complex numbers.
     template <typename VT, typename ET, typename ST>
     struct floordiv_vs<VT, ET, ST,
-                       std::enable_if_t<(is_specialization_of<std::complex, ET>::value
-                                         || is_specialization_of<std::complex, ST>::value)>> {
+                       std::enable_if_t<(IsSpecialization<std::complex, ET>::value
+                                         || IsSpecialization<std::complex, ST>::value)>> {
         [[noreturn]] static auto f(const VT &UNUSED(vec), const ST UNUSED(scalar)) {
             throw std::invalid_argument("can't take floor of complex number.");
         }
@@ -207,8 +209,8 @@ namespace {
     /// Throws std::invalid_argument; floordiv not allowed with complex numbers.
     template <typename VT1, typename VT2, typename ET1, typename ET2>
     struct floordiv_vv<VT1, VT2, ET1, ET2,
-                       std::enable_if_t<(is_specialization_of<std::complex, ET1>::value
-                                         || is_specialization_of<std::complex, ET2>::value)>> {
+                       std::enable_if_t<(IsSpecialization<std::complex, ET1>::value
+                                         || IsSpecialization<std::complex, ET2>::value)>> {
         [[noreturn]] static auto f(const VT1 &UNUSED(vec1), const VT2 UNUSED(vec2)) {
             throw std::invalid_argument("can't take floor of complex number.");
         }
@@ -232,45 +234,50 @@ namespace {
      * \tparam CT Pybind11 class type.
      * \param vec Pybind11 vector class to bind to.
      */
-    template <typename ET, typename VT, typename = void_t<>>
-    struct bindVectorOps {
-        template <typename CT>
-        static void f(CT &&UNUSED(vec)) { }
-    };
+    // template <typename ET, typename VT, typename = void_t<>>
+    // struct bindVectorOps {
+    //     template <typename CT>
+    //     static void f(CT &&UNUSED(vec)) { }
+    // };
 
     /// Overload that actually binds something.
-    template <typename ET, typename VT>
-    struct bindVectorOps<ET, VT, void_t<decltype(typename VT::ElementType{} * ET{})>> {
+    // template <typename ET, typename VT>
+    // struct bindVectorOps<ET, VT, void_t<decltype(typename VT::ElementType{} * ET{})>> {
+
+    template <typename ET, typename VT, typename = void_t<>>
+    struct bindVectorOps {
+        
         template <typename CT>
         static void f(CT &&vec) {
             // return vector type
-            using RVT = Vector<decltype(typename VT::ElementType{} * ET{})>;
+            // using RVT = Vector<decltype(typename VT::ElementType{} * ET{})>;
 
             // with Vector
-            bindOp<VT, Vector<ET>, bind::op::add>::f(vec);
-            bindOp<VT, Vector<ET>, bind::op::sub>::f(vec);
-            bindOp<VT, Vector<ET>, bind::op::mul>::f(vec);
+            bindOp<VT, Vector<ET>, bind::op::add>::f(vec, "__add__");
+            bindOp<VT, Vector<ET>, bind::op::sub>::f(vec, "__sub__");
+            bindOp<VT, Vector<ET>, bind::op::mul>::f(vec, "__mul__");
 
-            vec.def("__matmul__", [](const VT &v, const Vector<ET> &w) {
-                    return (v, w);
-                });
-            vec.def("__truediv__", truediv_vv<VT, Vector<ET>, typename VT::ElementType, ET>::f);
-            vec.def("__floordiv__", floordiv_vv<VT, Vector<ET>, typename VT::ElementType, ET>::f);
-            bindIAdd<VT, Vector<ET>>::f(vec);
-            bindISub<VT, Vector<ET>>::f(vec);
-            bindIMul<VT, Vector<ET>>::f(vec);
-            bindIDiv<VT, Vector<ET>>::f(vec);
+            // vec.def("__matmul__", [](const VT &v, const Vector<ET> &w) {
+            //         return (v, w);
+            //     });
+            // vec.def("__truediv__", truediv_vv<VT, Vector<ET>, typename VT::ElementType, ET>::f);
+            // vec.def("__floordiv__", floordiv_vv<VT, Vector<ET>, typename VT::ElementType, ET>::f);
+            // // bindIAdd<VT, Vector<ET>>::f(vec);
+            // bindOp<VT, Vector<ET>, bind::op::iadd>::f(vec);
+            // bindISub<VT, Vector<ET>>::f(vec);
+            // bindIMul<VT, Vector<ET>>::f(vec);
+            // bindIDiv<VT, Vector<ET>>::f(vec);
 
-            // with scalar
-            bindOp<VT, ET, bind::op::mul>::f(vec);
-            vec.def("__rmul__", [](const VT &v, const ET &x) {
-                    return RVT(x*v);
-                });
-            vec.def("__truediv__", truediv_vs<VT, typename VT::ElementType, ET>::f);
-            vec.def("__floordiv__", floordiv_vs<VT, typename VT::ElementType, ET>::f);
+            // // with scalar
+            bindOp<VT, ET, bind::op::mul>::f(vec, "__mul__");
+            // vec.def("__rmul__", [](const VT &v, const ET &x) {
+            //         return RVT(x*v);
+            //     });
+            // vec.def("__truediv__", truediv_vs<VT, typename VT::ElementType, ET>::f);
+            // vec.def("__floordiv__", floordiv_vs<VT, typename VT::ElementType, ET>::f);
 
-            bindIMul<VT, ET>::f(vec);
-            bindIDiv<VT, ET>::f(vec);
+            // bindIMul<VT, ET>::f(vec);
+            // bindIDiv<VT, ET>::f(vec);
         }
     };
 
