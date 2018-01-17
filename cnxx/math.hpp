@@ -68,19 +68,68 @@ template <typename ET>
 using SymmetricSparseMatrix = blaze::SymmetricMatrix<blaze::CompressedMatrix<ET>>;
 
 
-/// Get the elemental type from a given compound type T.
-template <typename T, typename = void>
-struct ElementType {
-    using type = T;
+/// Get the value type from a given compound type.
+/**
+ * Falls back to give type if no specific overload or specialization exists.
+ *
+ * \see ElementType %ValueType does not retrieve the element type from containers.
+ *                  This is done by %ElementType.
+ */
+template <typename T>
+struct ValueType {
+    using type = T;  ///< Deduced value type.
 };
 
 /// Overload for std::complex.
 template <typename T>
-struct ElementType<T, std::enable_if_t<is_specialization_of<std::complex, T>::value>> {
-    using type = typename T::value_type;
+struct ValueType<std::complex<T>> {
+    using type = typename T::value_type;  ///< Deduced value type.
 };
 
-/// Helper typedef for ElementType.
+/// Helper alias for ValueType.
+template <typename T>
+using ValueType_t = typename ValueType<T>::type;
+
+
+/// Get the element type of a linear algebra type (vector, matrix).
+/**
+ * Falls back to given type if it is arithmetic or std::complex.
+ * Causes failure of a static assertion if the type is not recognized.
+ *
+ * \see ValueType %ElementType does not retrieve the value type from a compund type
+ *                like std::complex but only operates on collections of elemental variables.
+ */
+template <typename T, typename = void>
+struct ElementType {
+    static_assert(AlwaysFalse_v<T>, "Cannot deduce element type.");
+};
+
+/// Overload for arithmetic types and std::complex.
+template <typename T>
+struct ElementType<T, std::enable_if_t<std::is_arithmetic<T>::value
+                                       || IsSpecialization<std::complex, T>::value>> {
+    using type = T;  ///< Deduced element type.
+};
+
+/// Overload for blaze::DynamicVector.
+template <typename ET, bool TF>
+struct ElementType<blaze::DynamicVector<ET, TF>> {
+    using type = ET;  ///< Deduced element type.
+};
+
+/// Overload for blaze::DynamicMatrix.
+template <typename ET, bool TF>
+struct ElementType<blaze::DynamicMatrix<ET, TF>> {
+    using type = ET;  ///< Deduced element type.
+};
+
+/// Overload for blaze::SparseMatrix.
+template <typename ET, bool TF>
+struct ElementType<blaze::SparseMatrix<ET, TF>> {
+    using type = ET;  ///< Deduced element type.
+};
+
+/// Convenience alias for ElementType.
 template <typename T>
 using ElementType_t = typename ElementType<T>::type;
 
@@ -223,14 +272,14 @@ auto spaceVecSpacetimeVec(const XT &spaceVector,
  * Note that the matrix is copied in order to leave the original unchanged.
  * \tparam MT Specific matrix type.
  * \tparam SO Storage order of the matrix.
- * \param mat Matrix to compute the determinant of; must be square.
+ * \param matrix Matrix to compute the determinant of; must be square.
  * \return \f$y = \log \det(\mathrm{mat})\f$ as a complex number
  *         projected onto the first Riemann sheet of the logarithm,
  *         i.e. \f$y \in (-\pi, \pi]\f$.
  */
 template <typename MT, bool SO>
 auto logdet(blaze::DenseMatrix<MT, SO> const &matrix) {
-    using ET = ElementType_t<typename MT::ElementType>;
+    using ET = ValueType_t<typename MT::ElementType>;
     MT mat{matrix};
     const std::size_t n = mat.rows();
 #ifndef NDEBUG
