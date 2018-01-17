@@ -24,10 +24,10 @@
  * \tparam T Type to check.
  */
 template <template <typename ...> class C, typename T>
-struct is_specialization_of : public std::false_type { };
+struct IsSpecialization : public std::false_type { };
 /// Matching version of check.
 template <template <typename ...> class C, typename ...Args>
-struct is_specialization_of<C, C<Args...>> : public std::true_type { };
+struct IsSpecialization<C, C<Args...>> : public std::true_type { };
 
 /// Map sequence of type to void, useful to detect valid expressions.
 template <typename...>
@@ -35,7 +35,12 @@ using void_t = void;
 
 /// Contains a value that is always false, useful to defer evaluation of static_assert.
 template <typename T>
-struct always_false { static constexpr bool value = false; };
+struct AlwaysFalse {
+    static constexpr bool value = false;  ///< False.
+};
+/// Convenience alias for AlwaysFalse.
+template <typename T>
+constexpr bool AlwaysFalse_v = AlwaysFalse<T>::value;
 
 /// Holds a list of types in a head, tail structure.
 template <typename T, typename... Args>
@@ -68,7 +73,7 @@ namespace _tmp_internal {
         }
     };
 
-    /// base case of 'foreach' iteration, calls F one last time.
+    /// Base case of 'foreach' iteration, calls F one last time.
     template <typename Cur, template <typename...> class F,
               typename... TParam>
     struct foreach_impl<Cur, void, F, TParam...> {
