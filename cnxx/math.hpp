@@ -91,6 +91,9 @@ constexpr T pi = static_cast<T>(3.1415926535897932384626433832795028841971693993
 
 
 /// Project a complex number to the first branch of the logarithm (-pi, pi].
+/**
+ * \todo Verify!
+ */
 template <typename RT>
 std::complex<RT> toFirstLogBranch(const std::complex<RT> &x) {
     return {std::real(x), std::remainder(std::imag(x), 2*pi<RT>)};
@@ -215,6 +218,8 @@ auto spaceVecSpacetimeVec(const XT &spaceVector,
 
 /// Compute the logarithm of the determinant of a dense matrix.
 /**
+ * \todo Verify!
+ *
  * Note that the matrix is copied in order to leave the original unchanged.
  * \tparam MT Specific matrix type.
  * \tparam SO Storage order of the matrix.
