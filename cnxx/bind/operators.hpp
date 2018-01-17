@@ -3,6 +3,8 @@
 
 #include <utility>
 
+#include "../math.hpp"
+
 namespace bind {
     /// Metafunctions and names for arithmetic operators.
     namespace op {
@@ -12,7 +14,7 @@ namespace bind {
             template <typename LHS, typename RHS>
             static auto f(LHS &&lhs, RHS &&rhs)
                 -> decltype(std::forward<LHS>(lhs) + std::forward<RHS>(rhs)) {
-                return lhs + rhs;
+                return std::forward<LHS>(lhs) + std::forward<RHS>(rhs);
             }
         };
 
@@ -21,7 +23,7 @@ namespace bind {
             template <typename LHS, typename RHS>
             static auto f(LHS &&lhs, RHS &&rhs)
                 -> decltype(std::forward<LHS>(lhs) - std::forward<RHS>(rhs)) {
-                return lhs - rhs;
+                return std::forward<LHS>(lhs) - std::forward<RHS>(rhs);
             }
         };
 
@@ -30,7 +32,7 @@ namespace bind {
             template <typename LHS, typename RHS>
             static auto f(LHS &&lhs, RHS &&rhs)
                 -> decltype(std::forward<LHS>(lhs) * std::forward<RHS>(rhs)) {
-                return lhs * rhs;
+                return std::forward<LHS>(lhs) * std::forward<RHS>(rhs);
             }
         };
 
@@ -39,7 +41,7 @@ namespace bind {
             template <typename RHS, typename LHS>
             static auto f(RHS &&rhs, LHS &&lhs)
                 -> decltype(std::forward<RHS>(rhs) * std::forward<LHS>(lhs)) {
-                return lhs * rhs;
+                return std::forward<RHS>(rhs) * std::forward<LHS>(lhs);
             }
         };
 
@@ -48,7 +50,7 @@ namespace bind {
             template <typename LHS, typename RHS>
             static auto f(LHS &&lhs, RHS &&rhs)
                 -> decltype(std::forward<LHS>(lhs) += std::forward<RHS>(rhs)) {
-                return lhs += rhs;
+                return std::forward<LHS>(lhs) += std::forward<RHS>(rhs);
             }
         };
         
@@ -57,7 +59,7 @@ namespace bind {
             template <typename LHS, typename RHS>
             static auto f(LHS &&lhs, RHS &&rhs)
                 -> decltype(std::forward<LHS>(lhs) -= std::forward<RHS>(rhs)) {
-                return lhs -= rhs;
+                return std::forward<LHS>(lhs) -= std::forward<RHS>(rhs);
             }
         };
 
@@ -66,7 +68,16 @@ namespace bind {
             template <typename LHS, typename RHS>
             static auto f(LHS &&lhs, RHS &&rhs)
                 -> decltype(std::forward<LHS>(lhs) *= std::forward<RHS>(rhs)) {
-                return lhs *= rhs;
+                return std::forward<LHS>(lhs) *= std::forward<RHS>(rhs);
+            }
+        };
+        
+        /// Dot product operator.
+        struct dot {
+            template <typename LHS, typename RHS>
+            static auto f(LHS &&lhs, RHS &&rhs)
+                -> decltype(blaze::dot(std::forward<LHS>(lhs), std::forward<RHS>(rhs))) {
+                return blaze::dot(std::forward<LHS>(lhs), std::forward<RHS>(rhs));
             }
         };
     }
