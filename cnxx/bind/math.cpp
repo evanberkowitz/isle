@@ -256,6 +256,9 @@ namespace {
             bindOp<VT, Vector<ET>, bind::op::add>::f(vec, "__add__");
             bindOp<VT, Vector<ET>, bind::op::sub>::f(vec, "__sub__");
             bindOp<VT, Vector<ET>, bind::op::mul>::f(vec, "__mul__");
+            bindOp<VT, Vector<ET>, bind::op::iadd>::f(vec, "__iadd__");
+            bindOp<VT, Vector<ET>, bind::op::isub>::f(vec, "__isub__");
+            // imul of vectors not possible, blaze uses e.g. complex<double>*int internally
 
             // vec.def("__matmul__", [](const VT &v, const Vector<ET> &w) {
             //         return (v, w);
@@ -270,9 +273,8 @@ namespace {
 
             // // with scalar
             bindOp<VT, ET, bind::op::mul>::f(vec, "__mul__");
-            // vec.def("__rmul__", [](const VT &v, const ET &x) {
-            //         return RVT(x*v);
-            //     });
+            bindOp<VT, ET, bind::op::rmul>::f(vec, "__rmul__");
+            bindOp<VT, ET, bind::op::imul>::f(vec, "__imul__");
             // vec.def("__truediv__", truediv_vs<VT, typename VT::ElementType, ET>::f);
             // vec.def("__floordiv__", floordiv_vs<VT, typename VT::ElementType, ET>::f);
 
