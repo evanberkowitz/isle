@@ -34,18 +34,14 @@ namespace bind {
             }
         };
 
-        /// Python name for operators.
-        template <typename OP>
-        constexpr char name[] = "_";
-
-        template <>
-        constexpr char name<add>[] = "__add__";
-
-        template <>
-        constexpr char name<sub>[] = "__sub__";
-
-        template <>
-        constexpr char name<mul>[] = "__mul__";
+        /// In place addition operator.
+        struct iadd {
+            template <typename LHS, typename RHS>
+            static auto f(LHS &&lhs, RHS &&rhs)
+                -> decltype(std::forward<LHS>(lhs) += std::forward<RHS>(rhs)) {
+                return lhs += rhs;
+            }
+        };
     }
 }
 
