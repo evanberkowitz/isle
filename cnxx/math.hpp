@@ -125,7 +125,7 @@ struct ElementType<blaze::DynamicMatrix<ET, TF>> {
 
 /// Overload for blaze::SparseMatrix.
 template <typename ET, bool TF>
-struct ElementType<blaze::SparseMatrix<ET, TF>> {
+struct ElementType<blaze::CompressedMatrix<ET, TF>> {
     using type = ET;  ///< Deduced element type.
 };
 
