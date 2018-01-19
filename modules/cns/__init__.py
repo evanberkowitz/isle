@@ -18,5 +18,4 @@ prepare_cnxx_import("../../cnxx/build")
 
 from cnxx import *
 
-import cns.parse
-import cns.export
+import cns.yaml_io as yaml

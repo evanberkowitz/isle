@@ -1,16 +1,9 @@
 #!/usr/bin/env python3
 
-import cns
 import yaml
+import cns
 
-print("Imported cns!")
-
-with open('test.yaml','r') as f:
-    y = yaml.load(f)
-
-L=cns.parse.lattice(y["Lattice"])
-
-print(L)
-
-l=cns.export.lattice(L)
-print(l)
+with open("c60_ipr.yml", "r") as yamlf:
+    lat = yaml.safe_load(yamlf)
+with open("out.yml", "w") as yamlf:
+    yaml.dump(lat, yamlf)
