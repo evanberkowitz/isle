@@ -25,13 +25,16 @@
  */
 template <template <typename ...> class C, typename T>
 struct IsSpecialization : public std::false_type { };
+
 /// Matching version of check.
 template <template <typename ...> class C, typename ...Args>
 struct IsSpecialization<C, C<Args...>> : public std::true_type { };
 
+
 /// Map sequence of type to void, useful to detect valid expressions.
 template <typename...>
 using void_t = void;
+
 
 /// Contains a value that is always false, useful to defer evaluation of static_assert.
 template <typename T>
@@ -41,6 +44,29 @@ struct AlwaysFalse {
 /// Convenience alias for AlwaysFalse.
 template <typename T>
 constexpr bool AlwaysFalse_v = AlwaysFalse<T>::value;
+
+
+/// Select a new type based on an old one and a new elemental type.
+/**
+ * \tparam Orig Original type, can be fundamental or a linear algebra type.
+ * \tparam Other New elemental type.
+ */
+template <typename Orig, typename Other, typename = void>
+struct Rebind {
+    using type = Other;  ///< Rebound type. Can be `Other` or `Orig<Other>` if Orig is a linear algebra type.
+};
+
+/// Specialization for types supporting rebinding themselves.
+template <typename Orig, typename Other>
+struct Rebind<Orig, Other,
+              void_t<typename Orig::template Rebind<Other>::Other>> {
+    using type = typename Orig::template Rebind<Other>::Other;
+};
+
+/// Convenience alias for Rebind.
+template <typename Orig, typename Other>
+using Rebind_t = typename Rebind<Orig, Other>::type;
+
 
 /// Holds a list of types in a head, tail structure.
 template <typename T, typename... Args>
@@ -55,6 +81,7 @@ struct Types<T> {
     using Head = T; ///< Single type, the only member of the list.
     using Tail = void; ///< And the base-case void type.
 };
+
 
 /// Internals of template meta programming.
 namespace _tmp_internal {
