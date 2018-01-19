@@ -302,8 +302,11 @@ namespace {
                                 throw std::runtime_error("Wrong buffer dimention to construct vector.");
                             return VT(binfo.shape.at(0), static_cast<ET const *>(binfo.ptr));
                         }))
-                .def(py::init([](const std::vector<ET> &arr) {
-                            return VT(arr.size(), &arr[0]);
+                .def(py::init([](const py::list &list) {
+                            auto v = VT(list.size());
+                            for (py::size_t i = 0; i < list.size(); ++i)
+                                v[i] = list[i].cast<ET>();
+                            return v;
                         }))
                 .def("__getitem__", py::overload_cast<std::size_t>(&VT::operator[]))
                 .def("__setitem__", [](VT &vec, const std::size_t i,
