@@ -8,102 +8,6 @@
 #include "../math.hpp"
 #include "../tmp.hpp"
 
-
-
-
-
-
-    
-    
-
-    // /// Perform Python truediv operation on vector and vector.
-    // template <typename VT1, typename VT2, typename ET1, typename ET2>
-    // struct truediv_vv {
-    //     static auto f(const VT1 &vec1, const VT2 vec2) {
-    //         using RVT = Vector<decltype(ET1{} / ET2{})>;
-    //         return RVT(vec1/vec2);
-    //     }
-    // };
-    // /// Perform Python truediv operation on vector of int and vector of int.
-    // template <typename VT1, typename VT2>
-    // struct truediv_vv<VT1, VT2, int, int> {
-    //     static auto f(const VT1 &vec1, const VT2 vec2) {
-    //         using RVT = typename VT1::template Rebind<double>::Other;
-    //         return RVT(RVT(vec1) / vec2);
-    //     }
-    // };
-
-    // /// Perform Python truediv operation on vector and scalar.
-    // template <typename VT, typename ET, typename ST>
-    // struct truediv_vs {
-    //     static auto f(const VT &vec, const ST scalar) {
-    //         using RVT = Vector<decltype(ET{} / ST{})>;
-    //         return RVT(vec/scalar);
-    //     }
-    // };
-    // /// Perform Python truediv operation on vector of int and int.
-    // template <typename VT>
-    // struct truediv_vs<VT, int, int> {
-    //     static auto f(const VT &vec, const int scalar) {
-    //         using RVT = typename VT::template Rebind<double>::Other;
-    //         return RVT(vec/static_cast<double>(scalar));
-    //     }
-    // };
-
-    // /// Perform Python floordiv on vector and scalar.
-    // template <typename VT, typename ET, typename ST, typename Enable = void>
-    // struct floordiv_vs {
-    //     static auto f(const VT &vec, const ST scalar) {
-    //         using RVT = Vector<decltype(ET{} / ST{})>;
-    //         return RVT(blaze::floor(vec/scalar));
-    //     }
-    // };
-    // /// Throws std::invalid_argument; floordiv not allowed with complex numbers.
-    // template <typename VT, typename ET, typename ST>
-    // struct floordiv_vs<VT, ET, ST,
-    //                    std::enable_if_t<(IsSpecialization<std::complex, ET>::value
-    //                                      || IsSpecialization<std::complex, ST>::value)>> {
-    //     [[noreturn]] static auto f(const VT &UNUSED(vec), const ST UNUSED(scalar)) {
-    //         throw std::invalid_argument("can't take floor of complex number.");
-    //     }
-    // };
-    // /// Perform Python floordiv on vector of int and int.
-    // template <typename VT>
-    // struct floordiv_vs<VT, int, int, void> {
-    //     static auto f(const VT &vec, const int scalar) {
-    //         return VT(vec/scalar);
-    //     }
-    // };
-
-    // /// Perform Python floordiv on vector and vector.
-    // template <typename VT1, typename VT2, typename ET1, typename ET2,
-    //           typename Enable = void>
-    // struct floordiv_vv {
-    //     static auto f(const VT1 &vec1, const VT2 vec2) {
-    //         using RVT = Vector<decltype(ET1{} / ET2{})>;
-    //         return RVT(blaze::floor(vec1/vec2));
-    //     }
-    // };
-    // /// Throws std::invalid_argument; floordiv not allowed with complex numbers.
-    // template <typename VT1, typename VT2, typename ET1, typename ET2>
-    // struct floordiv_vv<VT1, VT2, ET1, ET2,
-    //                    std::enable_if_t<(IsSpecialization<std::complex, ET1>::value
-    //                                      || IsSpecialization<std::complex, ET2>::value)>> {
-    //     [[noreturn]] static auto f(const VT1 &UNUSED(vec1), const VT2 UNUSED(vec2)) {
-    //         throw std::invalid_argument("can't take floor of complex number.");
-    //     }
-    // };
-    // /// Perform Python floordiv on vector of int and int.
-    // template <typename VT1, typename VT2>
-    // struct floordiv_vv<VT1, VT2, int, int, void> {
-    //     static auto f(const VT1 &vec1, const VT2 vec2) {
-    //         return VT1(vec1/vec2);
-    //     }
-    // };
-
-
-
-
 /// Internals for binding math routines and classes.
 namespace {
     // TODO change to prefixName
@@ -139,18 +43,24 @@ namespace {
     }
 
 
+    /// Labels for all algebraic operators.
     enum class Op {
-        add, sub, mul, rmul, iadd, isub, imul, dot
+        add, sub, mul, rmul, truediv, floordiv, iadd, isub, imul, dot
     };
 
 
-    template <Op op, typename LHS, typename RHS, typename = void>
+    /// Bind an operator for given left- and righ-hand-sides.
+    // This is the fallback which does not bind anything.
+    // Specializations are enabled if operand types support the operation.
+    template <Op op,  // identify operator
+              typename LHS, typename RHS,  // types for operands
+              typename = void>  // dummy for SFINAE
     struct bindOp {
         template <typename CT>
         static void f(CT &&UNUSED(cls), const char * const UNUSED(name)) { }
     };
 
-
+    /// Bind operator add.
     template <typename LHS, typename RHS>
     struct bindOp<Op::add, LHS, RHS,
                   void_t<decltype(std::declval<LHS&>()+std::declval<RHS&>()),
@@ -164,6 +74,7 @@ namespace {
         }
     };
 
+    /// Bind operator sub.
     template <typename LHS, typename RHS>
     struct bindOp<Op::sub, LHS, RHS,
                   void_t<decltype(std::declval<LHS&>()-std::declval<RHS&>()),
@@ -177,6 +88,7 @@ namespace {
         }
     };
 
+    /// Bind operator mul.
     template <typename LHS, typename RHS>
     struct bindOp<Op::mul, LHS, RHS,
                   void_t<decltype(std::declval<LHS&>()*std::declval<RHS&>()),
@@ -190,6 +102,7 @@ namespace {
         }
     };
 
+    /// Bind reverse mul operator.
     template <typename LHS, typename RHS>
     struct bindOp<Op::rmul, LHS, RHS,
                   void_t<decltype(std::declval<RHS&>()*std::declval<LHS&>()),
@@ -203,7 +116,78 @@ namespace {
         }
     };
 
-    
+    /// Bind operator truediv.
+    template <typename LHS, typename RHS>
+    struct bindOp<Op::truediv, LHS, RHS,
+                  void_t<decltype(std::declval<LHS&>()/std::declval<RHS&>()),
+                         decltype(std::declval<ElementType_t<LHS>&>()/std::declval<ElementType_t<RHS>&>())>>
+    {
+        /// Indicate whether operands need to be converted to floating point numbers.
+        static constexpr bool needConversion = std::is_same<ElementType_t<LHS>, int>::value
+            && std::is_same<ElementType_t<RHS>, int>::value;
+
+        /// Bind with convertion.
+        template <typename CT, bool convert = needConversion,
+                  typename std::enable_if<convert, int>::type = 0>
+        static void f(CT &&cls, const char * const name) {
+            cls.def(name, [](const LHS &lhs, const RHS &rhs) {
+                    return blaze::evaluate(lhs / Rebind_t<RHS, double>(rhs));
+                });
+        }
+
+        /// Bind without conversion.
+        template <typename CT, bool convert = needConversion,
+                  typename std::enable_if<!convert, int>::type = 0>
+        static void f(CT &&cls, const char * const name) {
+            cls.def(name, [](const LHS &lhs, const RHS &rhs) {
+                    return blaze::evaluate(lhs / rhs);
+                });
+        }
+    };
+
+    /// Bind operator floordiv.
+    template <typename LHS, typename RHS>
+    struct bindOp<Op::floordiv, LHS, RHS,
+                  void_t<decltype(std::declval<LHS&>()/std::declval<RHS&>()),
+                         decltype(std::declval<ElementType_t<LHS>&>()/std::declval<ElementType_t<RHS>&>())>>
+    {
+        /// Indicate whether floor needs to be taken explicitly.
+        static constexpr bool needFloor = !std::is_same<ElementType_t<LHS>, int>::value
+            || !std::is_same<ElementType_t<RHS>, int>::value;
+        /// Indicate whether it is possible to take floor.
+        static constexpr bool floorAllowed = !IsSpecialization<std::complex,
+                                                              ElementType_t<LHS>>::value
+            && !IsSpecialization<std::complex, ElementType_t<RHS>>::value;
+
+        /// Bind with implicit flooring.
+        template <typename CT, bool floor = needFloor,
+                  typename std::enable_if<!floor, int>::type = 0>
+        static void f(CT &&cls, const char * const name) {
+            cls.def(name, [](const LHS &lhs, const RHS &rhs) {
+                    return blaze::evaluate(lhs / rhs);
+                });
+        }
+
+        /// Bind with explicit flooring.
+        template <typename CT, bool floor = needFloor,
+                  typename std::enable_if<floor && floorAllowed, int>::type = 0>
+        static void f(CT &&cls, const char * const name) {
+            cls.def(name, [](const LHS &lhs, const RHS &rhs) {
+                    return blaze::evaluate(blaze::floor(lhs / rhs));
+                });
+        }
+
+        /// Bind function that throws a std::invalid_argument because operands cannot be floored.
+        template <typename CT, bool floor = needFloor,
+                  std::enable_if_t<floor && !floorAllowed, int> = 0>
+        static void f(CT &&cls, const char * const name) {
+            cls.def(name, [](const LHS &UNUSED(lhs), const RHS &UNUSED(rhs)) {
+                    throw std::invalid_argument("can't take floor of complex number.");
+                });
+        }
+    };
+
+    /// Bind inplace addition operator.
     template <typename LHS, typename RHS>
     struct bindOp<Op::iadd, LHS, RHS,
                   void_t<decltype(std::declval<LHS&>()+=std::declval<RHS&>()),
@@ -217,6 +201,7 @@ namespace {
         }
     };
 
+    /// Bind inplace subtraction operator.
     template <typename LHS, typename RHS>
     struct bindOp<Op::isub, LHS, RHS,
                   void_t<decltype(std::declval<LHS&>()-=std::declval<RHS&>()),
@@ -230,9 +215,10 @@ namespace {
         }
     };
 
-    // additional test for operator* because blaze uses it internally and
+    /// Bind inplace multiplication operator.
+    // Additional test for operator* because blaze uses it internally and
     // operator*=(std::complex<double>, int) exists but operator*(std::complex<double>, int)
-    // does not
+    // does not.
     template <typename LHS, typename RHS>
     struct bindOp<Op::imul, LHS, RHS,
                   void_t<decltype(std::declval<LHS&>()*=std::declval<RHS&>()),
@@ -247,8 +233,7 @@ namespace {
         }
     };
 
-
-    
+    /// Bind dot product ("operator").
     template <typename LHS, typename RHS>
     struct bindOp<Op::dot, LHS, RHS,
                   void_t<decltype(blaze::dot(std::declval<LHS&>(), std::declval<RHS&>())),
@@ -264,8 +249,7 @@ namespace {
     };
 
 
-
-    
+    /// Bind all operators that are members of Vector.
     template <typename ET, typename VT>
     struct bindVectorOps {
         template <typename CT>
@@ -275,29 +259,27 @@ namespace {
             bindOp<Op::sub, VT, Vector<ET>>::f(vec, "__sub__");
             bindOp<Op::mul, VT, Vector<ET>>::f(vec, "__mul__");
             bindOp<Op::rmul, VT, Vector<ET>>::f(vec, "__rmul__");
+            bindOp<Op::truediv, VT, Vector<ET>>::f(vec, "__truediv__");
+            bindOp<Op::floordiv, VT, Vector<ET>>::f(vec, "__floordiv__");
 
             bindOp<Op::iadd, VT, Vector<ET>>::f(vec, "__iadd__");
             bindOp<Op::isub, VT, Vector<ET>>::f(vec, "__isub__");
             bindOp<Op::imul, VT, Vector<ET>>::f(vec, "__imul__");
 
             bindOp<Op::dot, VT, Vector<ET>>::f(vec, "__matmul__");
-            
-            // vec.def("__truediv__", truediv_vv<VT, Vector<ET>, typename VT::ElementType, ET>::f);
-            // vec.def("__floordiv__", floordiv_vv<VT, Vector<ET>, typename VT::ElementType, ET>::f);
-            
+            bindOp<Op::dot, VT, Vector<ET>>::f(vec, "dot");
 
-            // // with scalar
+            // with scalar
             bindOp<Op::mul, VT, ET>::f(vec, "__mul__");
             bindOp<Op::rmul, VT, ET>::f(vec, "__rmul__");
-            bindOp<Op::imul, VT, ET>::f(vec, "__imul__");
-            // vec.def("__truediv__", truediv_vs<VT, typename VT::ElementType, ET>::f);
-            // vec.def("__floordiv__", floordiv_vs<VT, typename VT::ElementType, ET>::f);
+            bindOp<Op::truediv, VT, ET>::f(vec, "__truediv__");
+            bindOp<Op::floordiv, VT, ET>::f(vec, "__floordiv__");
 
-            // bindIDiv<VT, ET>::f(vec);
+            bindOp<Op::imul, VT, ET>::f(vec, "__imul__");
         }
     };
 
-    
+
     /// Bind a single vector.
     /**
      * \tparam ET Elemental type for the vector to bind.
