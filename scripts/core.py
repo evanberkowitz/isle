@@ -6,11 +6,11 @@ from pathlib import Path
 #: Absolute path to script directory.
 SCRIPT_PATH = Path(__file__).resolve().parent
 
-def prepare_cnxx_import(path=Path("../cnxx/build")):
+def prepare_module_import(path=Path("../modules")):
     """
-    Prepare site for scripts based on cnxx. Call before importing cnxx.
+    Prepare site to import modules from ../modules.
     Arguments:
-        path: Path to directory that contains cnxx library. Relative to TEST_PATH.
+        path: Path to directory that contains the modules. Relative to SCRIPT_PATH.
     """
 
     import site
