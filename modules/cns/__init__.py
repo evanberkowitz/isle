@@ -1,21 +1,13 @@
+"""
+Import base functions and classes.
 
-from pathlib import Path
-#: Absolute path to script directory.
-SCRIPT_PATH = Path(__file__).resolve().parent
+Imports everything from cnxx into namespace cns.
+Requires that the cnxx module is installed in the parent directory.
+"""
 
-def prepare_cnxx_import(path=Path("../cnxx/build")):
-    """
-    Prepare site for scripts based on cnxx. Call before importing cnxx.
-    Arguments:
-        path: Path to directory that contains cnxx library. Relative to TEST_PATH.
-    """
+from cns.core import prepare_cnxx_import
 
-    import site
-    site.addsitedir(str(SCRIPT_PATH/path))
-
-
-prepare_cnxx_import("../../cnxx/build")
-
+prepare_cnxx_import()
 from cnxx import *
 
 import cns.yaml_io as yaml
