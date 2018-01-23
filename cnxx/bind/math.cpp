@@ -402,7 +402,6 @@ namespace {
                                        const std::tuple<std::size_t, std::size_t> &idxs) {
                          return mat(std::get<0>(idxs), std::get<1>(idxs));
                      })
-                      
                 .def("__setitem__", [](MT &mat,
                                        const std::tuple<std::size_t, std::size_t> &idxs,
                                        const typename MT::ElementType x) {
@@ -428,6 +427,90 @@ namespace {
 
             // bind operators for all right hand sides
             foreach<ElementalTypes, bindMatrixOps, MT>::f(cls);
+        }
+    };
+
+    
+    // /// Bind all operators that are members of Matrix.
+    // template <typename ET, typename MT>
+    // struct bindMatrixOps {
+    //     template <typename CT>
+    //     static void f(CT &&mat) {
+    //         // with Matrix
+    //         bindOp<Op::add, MT, Matrix<ET>>::f(mat, "__add__");
+    //         bindOp<Op::sub, MT, Matrix<ET>>::f(mat, "__sub__");
+    //         bindOp<Op::mul, MT, Matrix<ET>>::f(mat, "__mul__");
+
+    //         bindOp<Op::iadd, MT, Matrix<ET>>::f(mat, "__iadd__");
+    //         bindOp<Op::isub, MT, Matrix<ET>>::f(mat, "__isub__");
+    //         bindOp<Op::imul, MT, Matrix<ET>>::f(mat, "__imul__");
+
+    //         // with Vector
+    //         bindOp<Op::mul, MT, Vector<ET>>::f(mat, "__mul__");
+
+    //         // with scalar
+    //         bindOp<Op::mul, MT, ET>::f(mat, "__mul__");
+    //         bindOp<Op::rmul, MT, ET>::f(mat, "__rmul__");
+    //         bindOp<Op::truediv, MT, ET>::f(mat, "__truediv__");
+    //         bindOp<Op::floordiv, MT, ET>::f(mat, "__floordiv__");
+
+    //         bindOp<Op::imul, MT, ET>::f(mat, "__imul__");
+    //     }
+    // };
+
+    /// Bind a SparseMatrix with given elemental type.
+    /**
+     * \tparam ET Elemental type for the SparseMatrix to bind.
+     * \tparam ElementalTypes Instance of Types template of all elemental types for the right hand side.
+     * \param mod Pybind11 module to bind to.
+     */
+    template <typename ET, typename ElementalTypes>
+    struct bindSparseMatrix {
+        static void f(py::module &mod) {
+            // make a new Pybind11 class and add basic functions
+            using MT = SparseMatrix<ET>;
+
+            auto cls = py::class_<MT>{mod, sparseMatName<ET>().c_str()}
+                .def(py::init([](const std::size_t nx, const std::size_t ny){
+                            return MT(nx, ny);
+                        }))
+                .def("__getitem__", [](const MT &mat,
+                                       const std::tuple<std::size_t, std::size_t> &idxs) {
+                         if (mat.find(std::get<0>(idxs), std::get<1>(idxs))
+                             != mat.end(std::get<0>(idxs)))
+                             return mat(std::get<0>(idxs), std::get<1>(idxs));
+                         else
+                             throw std::invalid_argument("No matrix element at given indices");
+                     })
+                .def("__setitem__", [](MT &mat,
+                                       const std::tuple<std::size_t, std::size_t> &idxs,
+                                       const typename MT::ElementType x) {
+#ifndef NDEBUG
+                         if (!(std::get<0>(idxs) < mat.rows()))
+                             throw std::out_of_range("Row index out of range");
+                         if (!(std::get<1>(idxs) < mat.columns()))
+                             throw std::out_of_range("Column index out of range");
+#endif
+                         mat.set(std::get<0>(idxs), std::get<1>(idxs), x);
+                     })
+                .def("erase", [](MT &mat,
+                                 const std::size_t i, const std::size_t j) {
+                         mat.erase(i, j);
+                     })
+                .def("row", [](MT &mat, std::size_t i) {
+                        return py::make_iterator(mat.begin(i), mat.end(i));
+                    }, py::keep_alive<0, 1>())
+                .def("rows", &MT::rows)
+                .def("columns", &MT::columns)
+                .def("__repr__", [](const MT &mat) {
+                        std::ostringstream oss;
+                        oss << mat;
+                        return oss.str();
+                    })
+                ;
+
+            // bind operators for all right hand sides
+            // foreach<ElementalTypes, bindMatrixOps, MT>::f(cls);
         }
     };
     
@@ -456,6 +539,7 @@ namespace bind {
     
         foreach<ElementalTypes, bindVector, ElementalTypes>::f(mod);
         foreach<ElementalTypes, bindMatrix, ElementalTypes>::f(mod);
+        foreach<ElementalTypes, bindSparseMatrix, ElementalTypes>::f(mod);
 
         defineWrapperClasses(mod);
     }
