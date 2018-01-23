@@ -287,7 +287,7 @@ namespace {
      * \param mod Pybind11 module to bind to.
      */
     template <typename ET, typename ElementalTypes>
-    struct bindVector{
+    struct bindVector {
         static void f(py::module &mod) {
             // make a new Pybind11 class and add basic functions
             using VT = Vector<ET>;
@@ -300,10 +300,11 @@ namespace {
                                 throw std::runtime_error("Incompatible buffer format: mismatched elemental data type");
                             if (binfo.ndim != 1)
                                 throw std::runtime_error("Wrong buffer dimention to construct vector.");
-                            return VT(binfo.shape.at(0), static_cast<ET const *>(binfo.ptr));
+                            return VT(binfo.shape.at(0),
+                                      static_cast<const ET *>(binfo.ptr));
                         }))
                 .def(py::init([](const py::list &list) {
-                            auto v = VT(list.size());
+                            VT v(list.size());
                             for (py::size_t i = 0; i < list.size(); ++i)
                                 v[i] = list[i].cast<ET>();
                             return v;
@@ -334,6 +335,77 @@ namespace {
         }
     };
 
+
+    /// Bind a single Matrix.
+    /**
+     * \tparam ET Elemental type for the Matrix to bind.
+     * \tparam ElementalTypes Instance of Types template of all elemental types for the right hand side.
+     * \param mod Pybind11 module to bind to.
+     */
+    template <typename ET, typename ElementalTypes>
+    struct bindMatrix {
+        static void f(py::module &mod) {
+            // make a new Pybind11 class and add basic functions
+            using MT = Matrix<ET>;
+
+            static_assert(blaze::StorageOrder<MT>::value == blaze::rowMajor,
+                          "Need row major storage order to bind matrices using buffer protocol.");
+
+            auto vec = py::class_<MT>{mod, matName<ET>().c_str(), py::buffer_protocol{}}
+                .def(py::init([](const std::size_t nx, const std::size_t ny){
+                            return MT(nx, ny);
+                        }))
+                .def(py::init([](py::buffer &buf) {
+                            const py::buffer_info binfo = buf.request();
+                            if (binfo.format != py::format_descriptor<ET>::format())
+                                throw std::runtime_error("Incompatible buffer format: mismatched elemental data type");
+                            if (binfo.ndim != 2)
+                                throw std::runtime_error("Wrong buffer dimention to construct matrix.");
+                            return MT(binfo.shape.at(0), binfo.shape.at(1),
+                                      static_cast<const ET *>(binfo.ptr));
+                        }))
+                .def(py::init([](const py::list &list) {
+                            MT mat(list.size(), list[0].cast<py::list>().size());
+                            for (py::size_t i = 0; i < list.size(); ++i) {
+                                const py::list &inner = list[i].cast<py::list>();
+                                for (py::size_t j = 0; j < inner.size(); ++j)
+                                    mat(i, j) = inner[j].cast<ET>();
+                            }
+                            return mat;
+                        }))
+                .def("__getitem__", [](const MT &mat,
+                                       const std::tuple<std::size_t, std::size_t> &idxs) {
+                         return mat(std::get<0>(idxs), std::get<1>(idxs));
+                     })
+                      
+                .def("__setitem__", [](MT &mat,
+                                       const std::tuple<std::size_t, std::size_t> &idxs,
+                                       const typename MT::ElementType x) {
+                         mat(std::get<0>(idxs), std::get<1>(idxs)) = x;
+                     })
+                .def("row", [](MT &mat, std::size_t i) {
+                        return py::make_iterator(mat.begin(i), mat.end(i));
+                    }, py::keep_alive<0, 1>())
+                .def("rows", &MT::rows)
+                .def("columns", &MT::columns)
+                .def("__repr__", [](const MT &mat) {
+                        std::ostringstream oss;
+                        oss << mat;
+                        return oss.str();
+                    })
+                .def_buffer([](MT &mat) {
+                        return py::buffer_info{
+                            &mat(0, 0), sizeof(ET), py::format_descriptor<ET>::format(),
+                            2, {mat.rows(), mat.columns()},
+                            {sizeof(ET)*mat.columns(), sizeof(ET)}};
+                    })
+                ;
+
+            // bind operators for all right hand sides
+            // foreach<ElementalTypes, bindVectorOps, VT>::f(vec);
+        }
+    };
+    
     /// Create Python wrappers around Tensors for different datatypes.
     void defineWrapperClasses(py::module &mod) {
         py::exec(R"(
@@ -358,6 +430,7 @@ namespace bind {
         using ElementalTypes = Types<int, double, std::complex<double>>;
     
         foreach<ElementalTypes, bindVector, ElementalTypes>::f(mod);
+        foreach<ElementalTypes, bindMatrix, ElementalTypes>::f(mod);
 
         defineWrapperClasses(mod);
     }
