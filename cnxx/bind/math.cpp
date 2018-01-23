@@ -103,10 +103,10 @@ namespace {
     };
 
     /// Bind reverse mul operator.
-    template <typename LHS, typename RHS>
-    struct bindOp<Op::rmul, LHS, RHS,
-                  void_t<decltype(std::declval<RHS&>()*std::declval<LHS&>()),
-                         decltype(std::declval<ElementType_t<RHS>&>()*std::declval<ElementType_t<LHS>&>())>>
+    template <typename RHS, typename LHS>
+    struct bindOp<Op::rmul, RHS, LHS,
+                  void_t<decltype(std::declval<LHS&>()*std::declval<RHS&>()),
+                         decltype(std::declval<ElementType_t<LHS>&>()*std::declval<ElementType_t<RHS>&>())>>
     {
         template <typename CT>
         static void f(CT &&cls, const char * const name) {
@@ -258,7 +258,6 @@ namespace {
             bindOp<Op::add, VT, Vector<ET>>::f(vec, "__add__");
             bindOp<Op::sub, VT, Vector<ET>>::f(vec, "__sub__");
             bindOp<Op::mul, VT, Vector<ET>>::f(vec, "__mul__");
-            bindOp<Op::rmul, VT, Vector<ET>>::f(vec, "__rmul__");
             bindOp<Op::truediv, VT, Vector<ET>>::f(vec, "__truediv__");
             bindOp<Op::floordiv, VT, Vector<ET>>::f(vec, "__floordiv__");
 
@@ -279,8 +278,7 @@ namespace {
         }
     };
 
-
-    /// Bind a single vector.
+    /// Bind a vector with given elemental type.
     /**
      * \tparam ET Elemental type for the vector to bind.
      * \tparam ElementalTypes Instance of Types template of all elemental types for the right hand side.
@@ -292,7 +290,7 @@ namespace {
             // make a new Pybind11 class and add basic functions
             using VT = Vector<ET>;
 
-            auto vec = py::class_<VT>{mod, vecName<ET>().c_str(), py::buffer_protocol{}}
+            auto cls = py::class_<VT>{mod, vecName<ET>().c_str(), py::buffer_protocol{}}
                 .def(py::init([](const std::size_t size){ return VT(size); }))
                 .def(py::init([](py::buffer &buf) {
                             const py::buffer_info binfo = buf.request();
@@ -331,12 +329,39 @@ namespace {
                 ;
 
             // bind operators for all right hand sides
-            foreach<ElementalTypes, bindVectorOps, VT>::f(vec);
+            foreach<ElementalTypes, bindVectorOps, VT>::f(cls);
         }
     };
 
 
-    /// Bind a single Matrix.
+    /// Bind all operators that are members of Matrix.
+    template <typename ET, typename MT>
+    struct bindMatrixOps {
+        template <typename CT>
+        static void f(CT &&mat) {
+            // with Matrix
+            bindOp<Op::add, MT, Matrix<ET>>::f(mat, "__add__");
+            bindOp<Op::sub, MT, Matrix<ET>>::f(mat, "__sub__");
+            bindOp<Op::mul, MT, Matrix<ET>>::f(mat, "__mul__");
+
+            bindOp<Op::iadd, MT, Matrix<ET>>::f(mat, "__iadd__");
+            bindOp<Op::isub, MT, Matrix<ET>>::f(mat, "__isub__");
+            bindOp<Op::imul, MT, Matrix<ET>>::f(mat, "__imul__");
+
+            // with Vector
+            bindOp<Op::mul, MT, Vector<ET>>::f(mat, "__mul__");
+
+            // with scalar
+            bindOp<Op::mul, MT, ET>::f(mat, "__mul__");
+            bindOp<Op::rmul, MT, ET>::f(mat, "__rmul__");
+            bindOp<Op::truediv, MT, ET>::f(mat, "__truediv__");
+            bindOp<Op::floordiv, MT, ET>::f(mat, "__floordiv__");
+
+            bindOp<Op::imul, MT, ET>::f(mat, "__imul__");
+        }
+    };
+
+    /// Bind a Matrix with given elemental type.
     /**
      * \tparam ET Elemental type for the Matrix to bind.
      * \tparam ElementalTypes Instance of Types template of all elemental types for the right hand side.
@@ -351,7 +376,7 @@ namespace {
             static_assert(blaze::StorageOrder<MT>::value == blaze::rowMajor,
                           "Need row major storage order to bind matrices using buffer protocol.");
 
-            auto vec = py::class_<MT>{mod, matName<ET>().c_str(), py::buffer_protocol{}}
+            auto cls = py::class_<MT>{mod, matName<ET>().c_str(), py::buffer_protocol{}}
                 .def(py::init([](const std::size_t nx, const std::size_t ny){
                             return MT(nx, ny);
                         }))
@@ -402,7 +427,7 @@ namespace {
                 ;
 
             // bind operators for all right hand sides
-            // foreach<ElementalTypes, bindVectorOps, VT>::f(vec);
+            foreach<ElementalTypes, bindMatrixOps, MT>::f(cls);
         }
     };
     
