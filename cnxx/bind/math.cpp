@@ -360,6 +360,13 @@ namespace {
             bindOp<Op::isub, MT, Matrix<ET>>::f(mat, "__isub__");
             bindOp<Op::imul, MT, Matrix<ET>>::f(mat, "__imul__");
 
+            // with SparseMatrix
+            bindOp<Op::add, MT, SparseMatrix<ET>>::f(mat, "__add__");
+            bindOp<Op::sub, MT, SparseMatrix<ET>>::f(mat, "__sub__");
+            bindOp<Op::mul, MT, SparseMatrix<ET>>::f(mat, "__mul__");
+
+            bindOp<Op::imul, MT, SparseMatrix<ET>>::f(mat, "__imul__");
+
             // with Vector
             bindOp<Op::mul, MT, Vector<ET>>::f(mat, "__mul__");
 
@@ -455,32 +462,37 @@ namespace {
     };
 
     
-    // /// Bind all operators that are members of Matrix.
-    // template <typename ET, typename MT>
-    // struct bindMatrixOps {
-    //     template <typename CT>
-    //     static void f(CT &&mat) {
-    //         // with Matrix
-    //         bindOp<Op::add, MT, Matrix<ET>>::f(mat, "__add__");
-    //         bindOp<Op::sub, MT, Matrix<ET>>::f(mat, "__sub__");
-    //         bindOp<Op::mul, MT, Matrix<ET>>::f(mat, "__mul__");
+    /// Bind all operators that are members of SparseMatrix.
+    template <typename ET, typename MT>
+    struct bindSparseMatrixOps {
+        template <typename CT>
+        static void f(CT &&mat) {
+            // with SparseMatrix
+            bindOp<Op::add, MT, SparseMatrix<ET>>::f(mat, "__add__");
+            bindOp<Op::sub, MT, SparseMatrix<ET>>::f(mat, "__sub__");
+            bindOp<Op::mul, MT, SparseMatrix<ET>>::f(mat, "__mul__");
 
-    //         bindOp<Op::iadd, MT, Matrix<ET>>::f(mat, "__iadd__");
-    //         bindOp<Op::isub, MT, Matrix<ET>>::f(mat, "__isub__");
-    //         bindOp<Op::imul, MT, Matrix<ET>>::f(mat, "__imul__");
+            bindOp<Op::imul, MT, SparseMatrix<ET>>::f(mat, "__imul__");
 
-    //         // with Vector
-    //         bindOp<Op::mul, MT, Vector<ET>>::f(mat, "__mul__");
+            // with Matrix
+            bindOp<Op::add, MT, Matrix<ET>>::f(mat, "__add__");
+            bindOp<Op::sub, MT, Matrix<ET>>::f(mat, "__sub__");
+            bindOp<Op::mul, MT, Matrix<ET>>::f(mat, "__mul__");
 
-    //         // with scalar
-    //         bindOp<Op::mul, MT, ET>::f(mat, "__mul__");
-    //         bindOp<Op::rmul, MT, ET>::f(mat, "__rmul__");
-    //         bindOp<Op::truediv, MT, ET>::f(mat, "__truediv__");
-    //         bindOp<Op::floordiv, MT, ET>::f(mat, "__floordiv__");
+            bindOp<Op::imul, MT, Matrix<ET>>::f(mat, "__imul__");
 
-    //         bindOp<Op::imul, MT, ET>::f(mat, "__imul__");
-    //     }
-    // };
+            // with Vector
+            bindOp<Op::mul, MT, Vector<ET>>::f(mat, "__mul__");
+
+            // with scalar
+            bindOp<Op::mul, MT, ET>::f(mat, "__mul__");
+            bindOp<Op::rmul, MT, ET>::f(mat, "__rmul__");
+            bindOp<Op::truediv, MT, ET>::f(mat, "__truediv__");
+            bindOp<Op::floordiv, MT, ET>::f(mat, "__floordiv__");
+
+            bindOp<Op::imul, MT, ET>::f(mat, "__imul__");
+        }
+    };
 
     /// Bind a SparseMatrix with given elemental type.
     /**
@@ -540,7 +552,7 @@ namespace {
                 ;
 
             // bind operators for all right hand sides
-            // foreach<ElementalTypes, bindMatrixOps, MT>::f(cls);
+            foreach<ElementalTypes, bindSparseMatrixOps, MT>::f(cls);
         }
     };
     
