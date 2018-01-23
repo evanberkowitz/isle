@@ -291,25 +291,37 @@ namespace {
             using VT = Vector<ET>;
 
             auto cls = py::class_<VT>{mod, vecName<ET>().c_str(), py::buffer_protocol{}}
-                .def(py::init([](const std::size_t size){ return VT(size); }))
-                .def(py::init([](py::buffer &buf) {
-                            const py::buffer_info binfo = buf.request();
-                            if (binfo.format != py::format_descriptor<ET>::format())
-                                throw std::runtime_error("Incompatible buffer format: mismatched elemental data type");
-                            if (binfo.ndim != 1)
-                                throw std::runtime_error("Wrong buffer dimention to construct vector.");
-                            return VT(binfo.shape.at(0),
-                                      static_cast<const ET *>(binfo.ptr));
-                        }))
-                .def(py::init([](const py::list &list) {
-                            VT v(list.size());
-                            for (py::size_t i = 0; i < list.size(); ++i)
-                                v[i] = list[i].cast<ET>();
-                            return v;
-                        }))
-                .def("__getitem__", py::overload_cast<std::size_t>(&VT::operator[]))
+            .def(py::init([](const std::size_t size){ return VT(size); }))
+                 .def(py::init([](py::buffer &buf) {
+                             const py::buffer_info binfo = buf.request();
+                             if (binfo.format != py::format_descriptor<ET>::format())
+                                 throw std::runtime_error("Incompatible buffer format: mismatched elemental data type");
+                             if (binfo.ndim != 1)
+                                 throw std::runtime_error("Wrong buffer dimention to construct vector.");
+                             return VT(binfo.shape.at(0),
+                                       static_cast<const ET *>(binfo.ptr));
+                         }))
+                 .def(py::init([](const py::list &list) {
+                             VT v(list.size());
+                             for (py::size_t i = 0; i < list.size(); ++i)
+                                 v[i] = list[i].cast<ET>();
+                             return v;
+                         }))
+#ifdef NDEBUG
+                 .def("__getitem__", py::overload_cast<std::size_t>(&VT::operator[]))
+#else
+                 .def("__getitem__", [](VT &vec, const std::size_t i) {
+                         if (!(i < vec.size()))
+                             throw std::out_of_range("Index out of range");
+                         return vec[i];
+                     })
+#endif
                 .def("__setitem__", [](VT &vec, const std::size_t i,
                                        const typename VT::ElementType x) {
+#ifndef NDEBUG
+                         if (!(i < vec.size()))
+                             throw std::out_of_range("Index out of range");
+#endif
                          vec[i] = x;
                      })
                 .def("__iter__", [](VT &vec) {
@@ -400,11 +412,23 @@ namespace {
                         }))
                 .def("__getitem__", [](const MT &mat,
                                        const std::tuple<std::size_t, std::size_t> &idxs) {
+#ifndef NDEBUG
+                         if (!(std::get<0>(idxs) < mat.rows()))
+                             throw std::out_of_range("Row index out of range");
+                         if (!(std::get<1>(idxs) < mat.columns()))
+                             throw std::out_of_range("Column index out of range");
+#endif
                          return mat(std::get<0>(idxs), std::get<1>(idxs));
                      })
                 .def("__setitem__", [](MT &mat,
                                        const std::tuple<std::size_t, std::size_t> &idxs,
                                        const typename MT::ElementType x) {
+#ifndef NDEBUG
+                         if (!(std::get<0>(idxs) < mat.rows()))
+                             throw std::out_of_range("Row index out of range");
+                         if (!(std::get<1>(idxs) < mat.columns()))
+                             throw std::out_of_range("Column index out of range");
+#endif
                          mat(std::get<0>(idxs), std::get<1>(idxs)) = x;
                      })
                 .def("row", [](MT &mat, std::size_t i) {
@@ -495,6 +519,12 @@ namespace {
                      })
                 .def("erase", [](MT &mat,
                                  const std::size_t i, const std::size_t j) {
+#ifndef NDEBUG
+                         if (!(i < mat.rows()))
+                             throw std::out_of_range("Row index out of range");
+                         if (!(j < mat.columns()))
+                             throw std::out_of_range("Column index out of range");
+#endif
                          mat.erase(i, j);
                      })
                 .def("row", [](MT &mat, std::size_t i) {
