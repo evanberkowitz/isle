@@ -555,21 +555,6 @@ namespace {
             foreach<ElementalTypes, bindSparseMatrixOps, MT>::f(cls);
         }
     };
-    
-    /// Create Python wrappers around Tensors for different datatypes.
-    void defineWrapperClasses(py::module &mod) {
-        py::exec(R"(
-class Vector:
-    def __new__(self, *args, dtype=float, **kwargs):
-        import cnxx
-        if dtype == float:
-            return cnxx.DVector(*args, **kwargs)
-        if dtype == int:
-            return cnxx.IVector(*args, **kwargs)
-        if dtype == complex:
-            return cnxx.CDVector(*args, **kwargs)
-)", py::globals(), mod.attr("__dict__"));
-    }
 }
 
 namespace bind {
@@ -582,7 +567,5 @@ namespace bind {
         foreach<ElementalTypes, bindVector, ElementalTypes>::f(mod);
         foreach<ElementalTypes, bindMatrix, ElementalTypes>::f(mod);
         foreach<ElementalTypes, bindSparseMatrix, ElementalTypes>::f(mod);
-
-        defineWrapperClasses(mod);
     }
 }
