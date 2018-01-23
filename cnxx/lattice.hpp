@@ -42,6 +42,7 @@ public:
     SymmetricSparseMatrix<double> &hopping() noexcept {
         return hoppingMat;
     }
+
     /// Get the full hopping matrix.
     const SymmetricSparseMatrix<double> &hopping() const noexcept {
         return hoppingMat;
@@ -51,7 +52,7 @@ public:
     bool areNeighbors(const std::size_t i, const std::size_t j) const {
         return hoppingMat.find(i, j) != hoppingMat.end(i);
     }
-    
+
     /// Set the hopping strength for a pair of sites.
     /**
      * Keeps the hopping matrix symmetric. Connections with zero strength are only
@@ -75,52 +76,6 @@ public:
         else
             hoppingMat.set(i, j, strength);
     }
-
-    // TODO can this work with a SymmetricSparseMatrix?
-    /// Set all hopping strengths for a given site.
-    /**
-     * This function must be called for each site `i` in order of ascending index.
-     * It must even be called for sites whose connections have already been specified.
-     * Note the condition on the indices under parameter `strengths`!
-     *
-     * \param i Index of one site.
-     * \param strengths Each element is an edge in the connectivity graph represented as
-     *                  a pair `(idx, strength)`.<BR>
-     *                  `idx` is the 'target' index, i.e. the edge connects sites `i`
-     *                  and `idx`. It must satisfy `idx > i`.<BR>
-     *                  `strength` is the hopping strength along that connection.<BR>
-     *                  Do not pass `strength==0` elements as they clobber up the
-     *                  sparse matrix.
-     *
-     * <B>Example</B>: \code
-       Lattice lat{1, 3};
-       lat.setNeighbors(0, {{1, 1}});
-       lat.setNeighbors(1, {{2, 2}});
-     \endcode
-     *
-     */
-//     void setNeighbors(const std::size_t i,
-//                       const std::vector<std::pair<std::size_t, double>> &strengths) {
-// #ifndef NDEBUG
-//         if (!(i < nx()))
-//             throw std::out_of_range("Index i out of range");
-//         if (strengths.size() >= nx()) // too many includes hopping from i to i
-//             throw std::invalid_argument("Too many hopping strengths given");
-// #endif
-//         hoppingMat.reserve(i, strengths.size());
-//         for (const auto &edge : strengths) {
-// #ifndef NDEBUG
-//             if (std::get<0>(edge) >= nx())
-//                 throw std::out_of_range("Target site index out of range");
-//             if (std::get<0>(edge) == i)
-//                 throw std::invalid_argument("Target index equal to index i");
-//             if (std::get<0>(edge) < i)
-//                 throw std::invalid_argument("Target index less than index i");
-// #endif
-//             hoppingMat.append(i, std::get<0>(edge), std::get<1>(edge));
-//         }
-//         hoppingMat.finalize(i);
-//     }
 
     /// Get the physical distance between two spatial sites.
     /**
