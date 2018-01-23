@@ -10,36 +10,35 @@
 
 /// Internals for binding math routines and classes.
 namespace {
-    // TODO change to prefixName
     /// Prefix for names of linear algebra classes.
     template <typename T>
-    constexpr char typeName[] = "_";
+    constexpr char prefixName[] = "_";
 
     template <>
-    constexpr char typeName<int>[] = "I";
+    constexpr char prefixName<int>[] = "I";
 
     template <>
-    constexpr char typeName<double>[] = "D";
+    constexpr char prefixName<double>[] = "D";
 
     template <>
-    constexpr char typeName<std::complex<double>>[] = "CD";
+    constexpr char prefixName<std::complex<double>>[] = "CD";
     
     /// Returns the name for vectors in Python.
     template <typename T>
     std::string vecName() {
-        return std::string{typeName<T>} + "Vector";
+        return std::string{prefixName<T>} + "Vector";
     }
 
     /// Returns the name for dense matrices in Python.
     template <typename T>
     std::string matName() {
-        return std::string{typeName<T>} + "Matrix";
+        return std::string{prefixName<T>} + "Matrix";
     }
 
     /// Returns the name for sparce matrices in Python.
     template <typename T>
     std::string sparseMatName() {
-        return std::string{typeName<T>} + "SparseMatrix";
+        return std::string{prefixName<T>} + "SparseMatrix";
     }
 
 
@@ -297,7 +296,7 @@ namespace {
                              if (binfo.format != py::format_descriptor<ET>::format())
                                  throw std::runtime_error("Incompatible buffer format: mismatched elemental data type");
                              if (binfo.ndim != 1)
-                                 throw std::runtime_error("Wrong buffer dimention to construct vector.");
+                                 throw std::runtime_error("Wrong buffer dimention to construct vector");
                              return VT(binfo.shape.at(0),
                                        static_cast<const ET *>(binfo.ptr));
                          }))
@@ -404,7 +403,7 @@ namespace {
                             if (binfo.format != py::format_descriptor<ET>::format())
                                 throw std::runtime_error("Incompatible buffer format: mismatched elemental data type");
                             if (binfo.ndim != 2)
-                                throw std::runtime_error("Wrong buffer dimention to construct matrix.");
+                                throw std::runtime_error("Wrong buffer dimention to construct matrix");
                             return MT(binfo.shape.at(0), binfo.shape.at(1),
                                       static_cast<const ET *>(binfo.ptr));
                         }))
