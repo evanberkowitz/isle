@@ -19,7 +19,7 @@
 #include "tmp.hpp"
 
 /**
- * \brief Holds a Space, Time, or SpaceTime vector.
+ * \brief A generic dense vector.
  * \tparam ET Element Type
  */
 template <typename ET>
@@ -33,35 +33,35 @@ template <typename ET>
 using Vec3 = blaze::StaticVector<ET, 3>;
 
 /**
- * \brief Holds a (Space, Time, or SpaceTime)*(Space, Time, or SpaceTime) dense matrix.
+ * \brief A generic dense matrix.
  * \tparam ET Element Type
  */
 template <typename ET>
 using Matrix = blaze::DynamicMatrix<ET>;
 
 /**
- * \brief Holds a (Space, Time, or SpaceTime)*(Space, Time, or SpaceTime) sparse matrix.
+ * \brief A generic sparse matrix.
  * \tparam ET Element Type
  */
 template <typename ET>
 using SparseMatrix = blaze::CompressedMatrix<ET>;
 
 /**
- * \brief Holds a (Space, Time, or SpaceTime)*(Space, Time, or SpaceTime) identity matrix.
+ * \brief An identity matrix.
  * \tparam ET Element Type
  */
 template <typename ET>
 using IdMatrix = blaze::IdentityMatrix<ET>;
 
 /**
- * \brief Holds a (Space, Time, or SpaceTime)*(Space, Time, or SpaceTime) symmetric matrix.
+ * \brief A generic symmetric dense matrix.
  * \tparam ET Element Type
  */
 template <typename ET>
 using SymmetricMatrix = blaze::SymmetricMatrix<blaze::DynamicMatrix<ET>>;
 
 /**
- * \brief Holds a (Space, Time, or SpaceTime)*(Space, Time, or SpaceTime) symmetric sparse matrix.
+ * \brief A generic symmetric sparse matrix.
  * \tparam ET Element Type
  */
 template <typename ET>
@@ -137,6 +137,21 @@ using ElementType_t = typename ElementType<T>::type;
 /// Variable template for pi up to long double precision.
 template <typename T>
 constexpr T pi = static_cast<T>(3.1415926535897932384626433832795028841971693993751058209749L);
+
+
+/// Return the flat spacetime coordinate for a given pair of space and time coordinates.
+/**
+ * \param x Spatial coordinate.
+ * \param t Temporal coordinate.
+ * \param nx Number of spatial lattice sites.
+ * \param nt Number of temporal lattice sites.
+ */
+constexpr std::size_t spacetimeCoord(const std::size_t x,
+                                     const std::size_t t,
+                                     const std::size_t UNUSED(nx),
+                                     const std::size_t nt) noexcept {
+    return x*nt + t;
+}
 
 
 /// Project a complex number to the first branch of the logarithm (-pi, pi].
