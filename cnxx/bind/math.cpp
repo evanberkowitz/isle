@@ -41,6 +41,12 @@ namespace {
         return std::string{prefixName<T>} + "SparseMatrix";
     }
 
+    /// Returns the name for sparce matrices in Python.
+    template <typename T>
+    std::string symmetricSparseMatName() {
+        return std::string{prefixName<T>} + "SymmetricSparseMatrix";
+    }
+
 
     /// Labels for all algebraic operators.
     enum class Op {
@@ -509,6 +515,9 @@ namespace {
                 .def(py::init([](const std::size_t nx, const std::size_t ny){
                             return MT(nx, ny);
                         }))
+                .def(py::init([](const SymmetricSparseMatrix<ET> &other){
+                            return MT(other);
+                        }))
                 .def("__getitem__", [](const MT &mat,
                                        const std::tuple<std::size_t, std::size_t> &idxs) {
                          if (mat.find(std::get<0>(idxs), std::get<1>(idxs))
@@ -554,6 +563,63 @@ namespace {
             foreach<ElementalTypes, bindSparseMatrixOps, MT>::f(cls);
         }
     };
+
+
+    template <typename ET>
+    struct bindSymmetricSparseMatrix {
+        static void f(py::module &mod) {
+            // make a new Pybind11 class and add basic functions
+            using MT = SymmetricSparseMatrix<ET>;
+
+            auto cls = py::class_<MT>(mod, symmetricSparseMatName<ET>().c_str())
+                .def(py::init([](const std::size_t nx, const std::size_t ny){
+                            return MT(nx, ny);
+                        }))
+                .def(py::init([](const SparseMatrix<ET> &other){
+                            return MT(other);
+                        }))
+                .def("__getitem__", [](const MT &mat,
+                                       const std::tuple<std::size_t, std::size_t> &idxs) {
+                         if (mat.find(std::get<0>(idxs), std::get<1>(idxs))
+                             != mat.end(std::get<0>(idxs)))
+                             return mat(std::get<0>(idxs), std::get<1>(idxs));
+                         else
+                             throw std::invalid_argument("No matrix element at given indices");
+                     })
+                .def("__setitem__", [](MT &mat,
+                                       const std::tuple<std::size_t, std::size_t> &idxs,
+                                       const typename MT::ElementType x) {
+#ifndef NDEBUG
+                         if (!(std::get<0>(idxs) < mat.rows()))
+                             throw std::out_of_range("Row index out of range");
+                         if (!(std::get<1>(idxs) < mat.columns()))
+                             throw std::out_of_range("Column index out of range");
+#endif
+                         mat.set(std::get<0>(idxs), std::get<1>(idxs), x);
+                     })
+                .def("erase", [](MT &mat,
+                                 const std::size_t i, const std::size_t j) {
+#ifndef NDEBUG
+                         if (!(i < mat.rows()))
+                             throw std::out_of_range("Row index out of range");
+                         if (!(j < mat.columns()))
+                             throw std::out_of_range("Column index out of range");
+#endif
+                         mat.erase(i, j);
+                     })
+                .def("row", [](MT &mat, std::size_t i) {
+                        return py::make_iterator(mat.begin(i), mat.end(i));
+                    }, py::keep_alive<0, 1>())
+                .def("rows", &MT::rows)
+                .def("columns", &MT::columns)
+                .def("__repr__", [](const MT &mat) {
+                        std::ostringstream oss;
+                        oss << mat;
+                        return oss.str();
+                    })
+                ;
+        }
+    };        
 }
 
 namespace bind {
@@ -566,5 +632,6 @@ namespace bind {
         foreach<ElementalTypes, bindVector, ElementalTypes>::f(mod);
         foreach<ElementalTypes, bindMatrix, ElementalTypes>::f(mod);
         foreach<ElementalTypes, bindSparseMatrix, ElementalTypes>::f(mod);
+        foreach<ElementalTypes, bindSymmetricSparseMatrix>::f(mod);
     }
 }

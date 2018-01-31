@@ -7,7 +7,9 @@ namespace bind {
         using HFM = HubbardFermiMatrix;
 
         py::class_<HFM> hfm{mod, "HubbardFermiMatrix"};
-        hfm.def(py::init<SparseMatrix<double>, Vector<std::complex<double>>,
+        hfm.def(py::init<SymmetricSparseMatrix<double>, Vector<std::complex<double>>,
+                double, std::int8_t, std::int8_t>())
+            .def(py::init<SparseMatrix<double>, Vector<std::complex<double>>,
                 double, std::int8_t, std::int8_t>())
             .def("P", py::overload_cast<>(&HFM::P, py::const_))
             .def("Q", py::overload_cast<std::size_t>(&HFM::Q, py::const_))
