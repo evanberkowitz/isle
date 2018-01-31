@@ -1,20 +1,27 @@
 Some CNS stuff
 
+
 # Requirements
+
 - C++14 compiler
 - Python 3
 - blaze
 - Pybind11
 - BLAS/LAPACK
 
-# Build
+
+# Build and install cnxx
+
 ```
 cd cnxx
 mkdir build
 cd build
 cmake ..
 make
+make install
 ```
+This will compile and install the `cnxx` Python module under `modules/cnxx.suffix` with
+a system specific suffix.
 
 CMake supports the following options: (use `-DOPT=VAL` in call to cmake)
 - PYTHON: select Python 3 interpreter
@@ -26,3 +33,19 @@ CMake supports the following options: (use `-DOPT=VAL` in call to cmake)
 
 You can set the compiler via `-DCMAKE_CXX_COMPILER` when calling CMake.
 Remember to configure in release mode (`-DCMAKE_BUILD_TYPE=RELEASE`) when compiling for production.
+
+
+# Usage
+
+After installing `cnxx`, the Python package `cns` can be imported from `modules/cns`.
+It provides a high level interface for `cnxx` and extra routines.
+
+
+# Documentation
+
+Go into `docs` and run `make` to generate source code documentation for `cnxx` and some
+Python scipts using Doxygen. Note that the `C++` interface is not identical to the
+`Python` interface. Documentation of the `Python` side is incomplete as of now.
+
+If you don't want to look at Doxygens ugly default style, initialize the git submodule
+`that_style` under `docs`.
