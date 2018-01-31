@@ -174,14 +174,17 @@ Matrix<std::complex<double>> HubbardFermiMatrix::LU::reconstruct() const {
         || l.size() != nt-1 || h.size() != nt-2)
         throw std::runtime_error("Components of LU not fully initialized");
 #endif
+
     const std::size_t nx = d[0].rows();
 
     Matrix<std::complex<double>> recon(nx*nt, nx*nt, 0);
 
+    // zeroth row, all columns
     blaze::submatrix(recon, 0, 0, nx, nx) = d[0];
     blaze::submatrix(recon, 0, nx, nx, nx) = u[0];
     blaze::submatrix(recon, 0, (nt-1)*nx, nx, nx) = v[0];
 
+    // rows 1 - nt-3 (all 'regular' ones), all columns
     for (std::size_t i = 1; i < nt-2; ++i) {
         blaze::submatrix(recon, i*nx, i*nx, nx, nx) = d[i] + l[i-1]*u[i-1];
         blaze::submatrix(recon, i*nx, (i-1)*nx, nx, nx) = l[i-1]*d[i-1];
@@ -189,14 +192,17 @@ Matrix<std::complex<double>> HubbardFermiMatrix::LU::reconstruct() const {
         blaze::submatrix(recon, i*nx, (nt-1)*nx, nx, nx) = l[i-1]*v[i-1] + v[i];
     }
 
+    // row nt-2, all columns
     blaze::submatrix(recon, (nt-2)*nx, (nt-2)*nx, nx, nx) = d[nt-2] + l[nt-3]*u[nt-3];
     blaze::submatrix(recon, (nt-2)*nx, (nt-3)*nx, nx, nx) = l[nt-3]*d[nt-3];
     blaze::submatrix(recon, (nt-2)*nx, (nt-1)*nx, nx, nx) = l[nt-3]*v[nt-3] + u[nt-2];
 
+    // row nt-1, up to column nt-3
     blaze::submatrix(recon, (nt-1)*nx, 0, nx, nx) = h[0]*d[0];
     for (std::size_t i = 1; i < nt-2; ++i)
         blaze::submatrix(recon, (nt-1)*nx, i*nx, nx, nx) = h[i-1]*u[i-1] + h[i]*d[i];
 
+    // row nt-1, columns nt-2, nt-1
     blaze::submatrix(recon, (nt-1)*nx, (nt-2)*nx, nx, nx) = h[nt-3]*u[nt-3] + l[nt-2]*d[nt-2];
     blaze::submatrix(recon, (nt-1)*nx, (nt-1)*nx, nx, nx) = d[nt-1] + l[nt-2]*u[nt-2];
     for (std::size_t i = 0; i < nt-2; ++i)
@@ -268,4 +274,18 @@ HubbardFermiMatrix::LU getLU(const HubbardFermiMatrix &hfm) {
         lu.d[nt-1] -= lu.h[i]*lu.v[i];
 
     return lu;
+}
+
+std::complex<double> logdet(const HubbardFermiMatrix &hfm) {
+    return logdet(getLU(hfm));
+}
+
+std::complex<double> logdet(const HubbardFermiMatrix::LU &lu) {
+    std::complex<double> ldet;
+
+    for (const auto &d : lu.d) {
+        ldet += logdet(d);
+    }
+
+    return toFirstLogBranch(ldet);
 }

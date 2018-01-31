@@ -163,4 +163,7 @@ private:
 
 HubbardFermiMatrix::LU getLU(const HubbardFermiMatrix &hfm);
 
+std::complex<double> logdet(const HubbardFermiMatrix &hfm);
+std::complex<double> logdet(const HubbardFermiMatrix::LU &lu);
+
 #endif  // ndef HUBBARD_FERMI_MATRIX_HPP
