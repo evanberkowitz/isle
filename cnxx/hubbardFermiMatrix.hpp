@@ -48,6 +48,59 @@
  * where the indices on \f$Q\f$ and \f$Q^\dagger\f$ are the row index \f$t'\f$.
  *
  *
+ * ## LU-decomposition
+ * Using its sparsity, a cyclic tridiagonal matrix can easily be LU-decomposed with a
+ * special purpose algorithm. Use the ansatz
+ \f[
+   L =
+  \begin{pmatrix}
+    1   &     &        &        &        &\\
+    l_0 & 1   &        &        &        &\\
+        & l_1 & \ddots &        &        &\\
+        &     & \ddots & 1      &        &\\
+        &     &        & l_{N_t-3} & 1      & \\
+    h_0 & h_1 & \cdots  & h_{N_t-3} & l_{N_T-2} & 1
+  \end{pmatrix}
+  \quad U =
+  \begin{pmatrix}
+    d_0 & u_0 &        &        &        & v_0    \\
+        & d_1 & u_1    &        &        & v_1    \\
+        &     & d_2    & \ddots &        & \vdots \\
+        &     &        & \ddots & u_{N_T-3} & v_{N_T-3} \\
+        &     &        &        & d_{N_T-2} & u_{N_T-2} \\
+        &     &        &        &        & d_{N_T-1}
+  \end{pmatrix}.
+ \f]
+ * This results in the following scheme:
+ * Compute all except last \f$d, u, l\f$
+ \f[
+ \begin{matrix}
+ d_0 = P                  & u_0 = Q_0^\dagger & l_0 = Q_1 d_{0}^{-1} & \\
+ d_i = P - l_{i-1}u_{i-1} & u_i = Q_i^\dagger & l_i = Q_{i+1} d_{1}^{-1} & \forall i \in [1, N_t-3] \\
+ d_{N_t-2} = P - l_{N_t-3} u_{N_t-3} & & &
+ \end{matrix}
+ \f]
+ * Compute all \f$v, h\f$
+ \f[
+ \begin{matrix}
+ v_0 = Q_0               & h_0 = Q_{N_t-1}^\dagger d_0^{-1} & \\
+ v_i = - l_{i-1} v_{i-1} & h_i = - h_{i-1} u_{i-1} d_{i}^{-1} & \forall i \in [1, N_t-3]
+ \end{matrix}
+ \f]
+ * Compute remaining \f$d, u, l\f$
+ \f[
+ u_{N_t-2} = Q_{N_t-2}^\dagger - l_{N_t-3} v_{N_t-3} \qquad l_{N_t-2} = (Q_{N_t-1} - h_{N_t-3} u_{N_t-3}) d_{N_t-2}^{-1}\\
+ d_{N_t-1} = P - l_{N_t-2}u_{N_t-2} - \sum_{i=0}^{N_t-3} h_i v_i
+ \f]
+ *
+ * In the case of the fermion matrix, each element of \f$L\f$ and \f$U\f$ is a spacial
+ * \f$N_x \times N_x\f$ matrix. Hence each inverse of \f$d\f$ requires a full
+ * matrix inversion. This means that the algorithm requires \f$\mathrm{O}(N_t N_x^3)\f$
+ * steps.
+ * After the initial steps, all matrices are dense. For simplicity, all inversions
+ * are performed using <TT>LAPACK</TT>.
+ *
+ *
  * ## Usage
  * `%HubbardFermiMatrix` needs \f$\tilde{\kappa}, \phi, \tilde{\mu}, \sigma_\tilde{\mu}, \mathrm{and} \sigma_\tilde{\kappa}\f$
  * as inputs and can construct the individual blocks \f$P, Q, \mathrm{and} Q^\dagger\f$ or
@@ -56,6 +109,14 @@
  * Neither the full matrix nor any of its blocks are stored explicitly. Instead,
  * each block needs to be constructed using P(), Q(), and Qdag() or MMdag() for the
  * full matrix. Note that these operations are fairly expensive.
+ *
+ * The result of an LU-decomposition is stored in HubbardFermiMatrix::LU to save memory
+ * and give easier access to the components compared to a `blaze::Matrix`.
+ *
+ * \sa
+ *  - HubbardFermiMatrix::LU getLU(const HubbardFermiMatrix &hfm)
+ *  - std::complex<double> logdet(const HubbardFermiMatrix &hfm)
+ *  - std::complex<double> logdet(const HubbardFermiMatrix::LU &lu)
  */
 class HubbardFermiMatrix {
 public:
@@ -140,15 +201,22 @@ public:
     std::size_t nt() const noexcept;
 
 
+    /// Result of an LU-decomposition.
+    /**
+     * See documentation of HubbardFermiMatrix for the definition of
+     * all member variables.
+     */
     struct LU {
-        std::vector<Matrix<std::complex<double>>> d;
-        std::vector<Matrix<std::complex<double>>> u;
-        std::vector<Matrix<std::complex<double>>> v;
-        std::vector<Matrix<std::complex<double>>> l;
-        std::vector<Matrix<std::complex<double>>> h;
+        std::vector<Matrix<std::complex<double>>> d; ///< See definition of U.
+        std::vector<Matrix<std::complex<double>>> u; ///< See definition of U.
+        std::vector<Matrix<std::complex<double>>> v; ///< See definition of U.
+        std::vector<Matrix<std::complex<double>>> l; ///< See definition of L.
+        std::vector<Matrix<std::complex<double>>> h; ///< See definition of L.
 
+        /// Reserves space for std::vectors but does not construct matrices.
         explicit LU(std::size_t nt);
 
+        /// Reconstruct the fermion matrix as a dense matrix.
         Matrix<std::complex<double>> reconstruct() const;
     };
 
@@ -161,9 +229,24 @@ private:
 };
 
 
+/// Perform an LU-decomposition on a HubbardFermiMatrix.
 HubbardFermiMatrix::LU getLU(const HubbardFermiMatrix &hfm);
 
+/// Compute \f$\log(\det(M M^\dagger))\f$ by means of an LU-decomposition.
+/**
+ * \todo Document properly.
+ * \bug Imaginary part does not seem to be correct.
+ * \param hfm %HubbardFermiMatrix to compute the determinant of.
+ * \see `std::complex<double> logdet(const HubbardFermiMatrix::LU &lu)` in case you
+ *      already have the LU-decomposition.
+ */
 std::complex<double> logdet(const HubbardFermiMatrix &hfm);
+
+/// Compute \f$\log(\det(M M^\dagger))\f$ given an LU-decomposition.
+/**
+ * \param lu LU-decomposed HubbardFermiMatrix.
+ * \see `std::complex<double> logdet(const HubbardFermiMatrix &hfm)`
+ */
 std::complex<double> logdet(const HubbardFermiMatrix::LU &lu);
 
 #endif  // ndef HUBBARD_FERMI_MATRIX_HPP

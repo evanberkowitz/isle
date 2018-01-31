@@ -35,9 +35,9 @@ namespace bind {
     template <typename Iterator, typename Sentinel,
               bool KeyIterator, py::return_value_policy Policy>
     struct IteratorState {
-        Iterator it;
-        Sentinel end;
-        bool firstOrDone;
+        Iterator it;  ///< C++ iterator to represent the state of.
+        Sentinel end;  ///< C++ iterator to 'element one past end'.
+        bool firstOrDone;  ///< `true` if on first element or done iterating, `false` otherwise.
     };
 
     /// Make an interator over indices and values.
