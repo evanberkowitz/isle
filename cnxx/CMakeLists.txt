@@ -4,7 +4,7 @@ set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/cmake/Modules/")
 
 project(cnxx CXX)
 
-set(SOURCE)
+set(SOURCE hubbardFermiMatrix.cpp)
 add_subdirectory(bind)
 
 add_library(cnxx SHARED ${SOURCE})
