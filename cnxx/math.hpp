@@ -83,7 +83,7 @@ struct ValueType {
 /// Overload for std::complex.
 template <typename T>
 struct ValueType<std::complex<T>> {
-    using type = typename T::value_type;  ///< Deduced value type.
+    using type = T;  ///< Deduced value type.
 };
 
 /// Helper alias for ValueType.
