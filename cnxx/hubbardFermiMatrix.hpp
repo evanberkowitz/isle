@@ -7,6 +7,9 @@
 
 #include "math.hpp"
 
+#include <vector>
+
+
 /// Represents a fermion matrix \f$M M^\dagger\f$ for the Hubbard model.
 /**
  * ## Definition
@@ -136,6 +139,19 @@ public:
     /// Return number of temporal lattice sites; deduced from kappa and phi.
     std::size_t nt() const noexcept;
 
+
+    struct LU {
+        std::vector<Matrix<std::complex<double>>> d;
+        std::vector<Matrix<std::complex<double>>> u;
+        std::vector<Matrix<std::complex<double>>> v;
+        std::vector<Matrix<std::complex<double>>> l;
+        std::vector<Matrix<std::complex<double>>> h;
+
+        explicit LU(std::size_t nt);
+
+        Matrix<std::complex<double>> reconstruct() const;
+    };
+
 private:
     SparseMatrix<double> _kappa;  ///< Hopping matrix.
     Vector<std::complex<double>> _phi;  ///< Auxilliary HS field.
@@ -143,5 +159,8 @@ private:
     std::int8_t _sigmaMu;    ///< Sign of mu in M^dag.
     std::int8_t _sigmaKappa; ///< Sign of kappa in M^dag.
 };
+
+
+HubbardFermiMatrix::LU getLU(const HubbardFermiMatrix &hfm);
 
 #endif  // ndef HUBBARD_FERMI_MATRIX_HPP
