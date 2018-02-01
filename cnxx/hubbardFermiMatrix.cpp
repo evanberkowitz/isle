@@ -217,56 +217,60 @@ Matrix<std::complex<double>> HubbardFermiMatrix::LU::reconstruct() const {
  * -------------------------- free functions --------------------------
  */
 
-// TODO do we need to store all d^-1 or can we combine l and h such that
-//      we need to store only one at a time?
 HubbardFermiMatrix::LU getLU(const HubbardFermiMatrix &hfm) {
     const std::size_t nx = hfm.nx();
     const std::size_t nt = hfm.nt();
     HubbardFermiMatrix::LU lu{nt};
 
-    const auto P = hfm.P();
-    SparseMatrix<std::complex<double>> q;
+    const auto P = hfm.P();  // diagonal block P
+    SparseMatrix<std::complex<double>> q;  // subdiagonal blocks Q and Q^\dagger
 
-    std::vector<Matrix<std::complex<double>>> dinv;
-    dinv.reserve(nt-2);  // do not need to save the last one (d^-1_{nt-2})
-    Matrix<std::complex<double>> aux;
-    std::unique_ptr<int[]> ipiv = std::make_unique<int[]>(nx);
+    Matrix<std::complex<double>> dinv;  // inverted d, updated along the way
+    SparseMatrix<std::complex<double>> u; // previous u, updated along the way
+    std::unique_ptr<int[]> ipiv = std::make_unique<int[]>(nx);// pivot indices for inversion
 
+    // starting components of d, u, l, v, h
     lu.d.emplace_back(P);
-    hfm.Qdag(q, 0);
-    lu.u.emplace_back(q);
-    invert(aux=P, ipiv);
-    dinv.emplace_back(aux);
+    hfm.Qdag(u, 0);   // now u = lu.u[0]
+    lu.u.emplace_back(u);
+
+    invert(dinv=P, ipiv);  // now dinv = d[0]^-1
+
     hfm.Q(q, 1);
-    lu.l.emplace_back(q*aux);
-
-    for (std::size_t i = 1; i < nt-2; ++i) {
-        lu.d.emplace_back(P - lu.l[i-1]*lu.u[i-1]);
-        hfm.Qdag(q, i);
-        lu.u.emplace_back(q);
-        hfm.Q(q, i+1);
-        invert(aux=lu.d[i], ipiv);
-        dinv.emplace_back(aux);
-        lu.l.emplace_back(q*aux);
-    }
-    lu.d.emplace_back(P - lu.l[nt-3]*lu.u[nt-3]);
-
+    lu.l.emplace_back(q*dinv);
     hfm.Q(q, 0);
     lu.v.emplace_back(q);
     hfm.Qdag(q, nt-1);
-    lu.h.emplace_back(q*dinv[0]);
+    lu.h.emplace_back(q*dinv);
 
+    // iterate for i in [1, nt-3], 'regular' part of d, u, l, v, h
     for (std::size_t i = 1; i < nt-2; ++i) {
-        lu.v.emplace_back(-lu.l[i-1]*lu.v[i-1]);
-        lu.h.emplace_back(-lu.h[i-1]*lu.u[i-1]*dinv[i]);
-    }
+        // here, u = lu.u[i-1]
+        lu.d.emplace_back(P - lu.l[i-1]*u);
 
+        invert(dinv=lu.d[i], ipiv);  // now dinv = d[i]^-1
+
+        hfm.Q(q, i+1);
+        lu.l.emplace_back(q*dinv);
+        lu.h.emplace_back(-lu.h[i-1]*u*dinv);
+        lu.v.emplace_back(-lu.l[i-1]*lu.v[i-1]);
+
+        hfm.Qdag(u, i);
+        lu.u.emplace_back(u);  // now u = lu.u[i]
+    }
+    // from now on u is lu.u[nt-3]
+
+    // additional 'regular' step for d
+    lu.d.emplace_back(P - lu.l[nt-3]*u);
+
+    // final components of u, l
     hfm.Qdag(q, nt-2);
     lu.u.emplace_back(q - lu.l[nt-3]*lu.v[nt-3]);
     hfm.Q(q, nt-1);
-    invert(aux=lu.d[nt-2], ipiv);
-    lu.l.emplace_back((q - lu.h[nt-3]*lu.u[nt-3])*aux);
+    invert(dinv=lu.d[nt-2], ipiv);  // now dinv = d[nt-2]^-1
+    lu.l.emplace_back((q - lu.h[nt-3]*u)*dinv);
 
+    // final component of d
     lu.d.emplace_back(P - lu.l[nt-2]*lu.u[nt-2]);
     for (std::size_t i = 0; i < nt-2; ++i)
         lu.d[nt-1] -= lu.h[i]*lu.v[i];
