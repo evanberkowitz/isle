@@ -234,9 +234,9 @@ HubbardFermiMatrix::LU getLU(const HubbardFermiMatrix &hfm);
 
 /// Compute \f$\log(\det(M M^\dagger))\f$ by means of an LU-decomposition.
 /**
- * \todo Document properly.
- * \bug Imaginary part does not seem to be correct.
  * \param hfm %HubbardFermiMatrix to compute the determinant of.
+ * \return Value equivalent to `log(det(hfm.MMdag()))` and projected onto the
+ *         first branch of the logarithm.
  * \see `std::complex<double> logdet(const HubbardFermiMatrix::LU &lu)` in case you
  *      already have the LU-decomposition.
  */
@@ -245,8 +245,24 @@ std::complex<double> logdet(const HubbardFermiMatrix &hfm);
 /// Compute \f$\log(\det(M M^\dagger))\f$ given an LU-decomposition.
 /**
  * \param lu LU-decomposed HubbardFermiMatrix.
- * \see `std::complex<double> logdet(const HubbardFermiMatrix &hfm)`
+ * \return Value equivalent to `log(det(hfm.reconstruct()))` and projected onto the
+ *         first branch of the logarithm.
+ * \see
+ *      - `std::complex<double> logdet(const HubbardFermiMatrix &hfm)`
+ *      - `std::complex<double> ilogdet(HubbardFermiMatrix::LU &lu)`
  */
 std::complex<double> logdet(const HubbardFermiMatrix::LU &lu);
+
+/// Compute \f$\log(\det(M M^\dagger))\f$ given an LU-decomposition, overwrites input.
+/**
+ * \warning This version operates in-place and overwrites the input parameter `lu`.
+ *          See `std::complex<double> logdet(const HubbardFermiMatrix::LU &lu)` for
+ *          a version that preserves `lu`.
+ * \param lu LU-decomposed HubbardFermiMatrix.
+ * \return Value equivalent to `log(det(hfm.reconstruct()))` and projected onto the
+ *         first branch of the logarithm.
+ * \see `std::complex<double> logdet(const HubbardFermiMatrix &hfm)`
+ */
+std::complex<double> ilogdet(HubbardFermiMatrix::LU &lu);
 
 #endif  // ndef HUBBARD_FERMI_MATRIX_HPP

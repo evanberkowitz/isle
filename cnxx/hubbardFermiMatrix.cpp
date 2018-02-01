@@ -275,15 +275,22 @@ HubbardFermiMatrix::LU getLU(const HubbardFermiMatrix &hfm) {
 }
 
 std::complex<double> logdet(const HubbardFermiMatrix &hfm) {
-    return logdet(getLU(hfm));
+    auto lu = getLU(hfm);
+    return ilogdet(lu);
 }
 
 std::complex<double> logdet(const HubbardFermiMatrix::LU &lu) {
     std::complex<double> ldet;
-
-    for (const auto &d : lu.d) {
+    // calculate logdet of diagonal blocks
+    for (const auto &d : lu.d)
         ldet += logdet(d);
-    }
+    return toFirstLogBranch(ldet);
+}
 
+std::complex<double> ilogdet(HubbardFermiMatrix::LU &lu) {
+    std::complex<double> ldet;
+    // calculate logdet of diagonal blocks
+    for (auto &d : lu.d)
+        ldet += ilogdet(d);
     return toFirstLogBranch(ldet);
 }
