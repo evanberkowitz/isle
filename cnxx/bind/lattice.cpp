@@ -8,6 +8,8 @@ namespace bind {
         
         py::class_<Lattice>{mod, "Lattice"}
             .def(py::init<std::size_t, std::size_t>())
+            .def("hopping", py::overload_cast<>(&Lattice::hopping),
+                 py::return_value_policy::reference_internal)
             .def("areNeighbors", &Lattice::areNeighbors)
             .def("setNeighbor", &Lattice::setNeighbor)
             .def("getNeighbor", [](const Lattice &self,
@@ -20,8 +22,10 @@ namespace bind {
             .def("getNeighbors", [](const Lattice &self, const std::size_t i) {
                     return makeIndexValueIterator(self.hopping().begin(i), self.hopping().end(i));
                 }, py::keep_alive<0, 1>())
-            .def("distance", (double (Lattice::*)(std::size_t, std::size_t) const)&Lattice::distance)
-            .def("distance", (void (Lattice::*)(std::size_t, std::size_t, double))&Lattice::distance)
+            .def("distance", static_cast<
+                 double (Lattice::*)(std::size_t, std::size_t) const>(&Lattice::distance))
+            .def("distance", static_cast<
+                 void (Lattice::*)(std::size_t, std::size_t, double)>(&Lattice::distance))
             .def("nt", &Lattice::nt)
             .def("nx", &Lattice::nx)
             .def("lattSize", &Lattice::lattSize)
