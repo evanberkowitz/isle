@@ -333,7 +333,7 @@ namespace {
                         return py::make_iterator(vec.begin(), vec.end());
                     }, py::keep_alive<0, 1>())
                 .def("__len__", &VT::size)
-                .def("__repr__", [](const VT &vec) {
+                .def("__str__", [](const VT &vec) {
                         std::ostringstream oss;
                         oss << vec;
                         return oss.str();
@@ -448,7 +448,7 @@ namespace {
                     }, py::keep_alive<0, 1>())
                 .def("rows", &MT::rows)
                 .def("columns", &MT::columns)
-                .def("__repr__", [](const MT &mat) {
+                .def("__str__", [](const MT &mat) {
                         std::ostringstream oss;
                         oss << mat;
                         return oss.str();
@@ -552,7 +552,7 @@ namespace {
                     }, py::keep_alive<0, 1>())
                 .def("rows", &MT::rows)
                 .def("columns", &MT::columns)
-                .def("__repr__", [](const MT &mat) {
+                .def("__str__", [](const MT &mat) {
                         std::ostringstream oss;
                         oss << mat;
                         return oss.str();
@@ -612,7 +612,7 @@ namespace {
                     }, py::keep_alive<0, 1>())
                 .def("rows", &MT::rows)
                 .def("columns", &MT::columns)
-                .def("__repr__", [](const MT &mat) {
+                .def("__str__", [](const MT &mat) {
                         std::ostringstream oss;
                         oss << mat;
                         return oss.str();
