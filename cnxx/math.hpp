@@ -209,7 +209,8 @@ auto spaceMatSpacetimeVec(const MT &spaceMatrix,
 
     // return type, same as VT with adjusted element type
     using RT = typename VT::template Rebind<
-        decltype(typename MT::ElementType{} * typename VT::ElementType{})
+        decltype(std::declval<typename MT::ElementType>()
+                 * std::declval<typename VT::ElementType>())
         >::Other;
 
     // space time matrix type for input vector
@@ -267,7 +268,8 @@ auto spaceVecSpacetimeVec(const XT &spaceVector,
 
     // return type, same as VT with adjusted element type
     using RT = typename VT::template Rebind<
-        decltype(typename XT::ElementType{} * typename VT::ElementType{})
+        decltype(std::declval<typename XT::ElementType>()
+                 * std::declval<typename VT::ElementType>())
         >::Other;
 
     // space time matrix type for input vector
@@ -280,10 +282,19 @@ auto spaceVecSpacetimeVec(const XT &spaceVector,
     return result;
 }
 
+/// Invert a matrix in place.
+/**
+ * \param mat Matrix to be inverted. Is replaced by the inverse.
+ * \param ipiv Pivot indices. Must have at least `mat.rows()` elements
+ *             but can be uninitialized.
+ */
+inline void invert(Matrix<std::complex<double>> &mat, std::unique_ptr<int[]> &ipiv) {
+    blaze::getrf(mat, ipiv.get());
+    blaze::getri(mat, ipiv.get());
+}
+
 /// Compute the logarithm of the determinant of a dense matrix.
 /**
- * \todo Verify!
- *
  * Note that the matrix is copied in order to leave the original unchanged.
  * \tparam MT Specific matrix type.
  * \tparam SO Storage order of the matrix.
@@ -293,7 +304,7 @@ auto spaceVecSpacetimeVec(const XT &spaceVector,
  *         i.e. \f$y \in (-\pi, \pi]\f$.
  */
 template <typename MT, bool SO>
-auto logdet(blaze::DenseMatrix<MT, SO> const &matrix) {
+auto logdet(const blaze::DenseMatrix<MT, SO> &matrix) {
     using ET = ValueType_t<typename MT::ElementType>;
     MT mat{matrix};
     const std::size_t n = mat.rows();
@@ -308,10 +319,10 @@ auto logdet(blaze::DenseMatrix<MT, SO> const &matrix) {
     blaze::getrf(mat, ipiv.get());
 
     std::complex<ET> res = 0;
-    int detP = 1;
+    std::int8_t detP = 1;
     for (std::size_t i = 0; i < n; ++i) {
         // determinant of pivot matrix P
-        if (ipiv[i] != blaze::numeric_cast<int>(i))
+        if (ipiv[i]-1 != blaze::numeric_cast<int>(i))
             detP = -detP;
         // log det of U (diagonal elements)
         res += std::log(std::complex<ET>{mat(i, i)});
