@@ -68,15 +68,16 @@ void HubbardFermiMatrix::Q(SparseMatrix<std::complex<double>> &q,
                            const std::size_t tp) const {
     const std::size_t NX = nx();
     const std::size_t NT = nt();
-    const std::size_t t = (tp + NT - 1) % NT;  // (tp-1) and wrap around 0 properly
+    const std::size_t t = tp==0 ? NT-1 : tp-1;
+    const std::int8_t antiPSign = tp==0 ? -1 : 1;  // encode anti-periodic BCs
     resizeMatrix(q, NX);
 
     for (std::size_t xp = 0; xp < NX; ++xp) {
         for (auto it = _kappa.begin(xp), end = _kappa.end(xp); it != end; ++it) {
-            q.set(xp, it->index(), it->value()*_sigmaKappa
+            q.set(xp, it->index(), antiPSign*it->value()*_sigmaKappa
                   * std::exp(1.i*_phi[spacetimeCoord(xp, t, NX, NT)]));
         }
-        q.set(xp, xp, -(1 + _sigmaMu*_mu)
+        q.set(xp, xp, -antiPSign*(1 + _sigmaMu*_mu)
               * std::exp(1.i*_phi[spacetimeCoord(xp, t, NX, NT)]));
     }
 }
@@ -91,14 +92,15 @@ void HubbardFermiMatrix::Qdag(SparseMatrix<std::complex<double>> &qdag,
                               const std::size_t tp) const {
     const std::size_t NX = nx();
     const std::size_t NT = nt();
+    const std::int8_t antiPSign = tp==NT-1 ? -1 : 1;  // encode anti-periodic BCs
     resizeMatrix(qdag, NX);
 
     for (std::size_t xp = 0; xp < NX; ++xp) {
         for (auto it = _kappa.begin(xp), end = _kappa.end(xp); it != end; ++it) {
-            qdag(xp, it->index()) = it->value()
-                * std::exp(-1.i*_phi[spacetimeCoord(it->index(), tp, NX, NT)]);
+            qdag.set(xp, it->index(), antiPSign*it->value()
+                     * std::exp(-1.i*_phi[spacetimeCoord(it->index(), tp, NX, NT)]));
         }
-        qdag.set(xp, xp, - (1+_mu)
+        qdag.set(xp, xp, -antiPSign*(1 + _mu)
                  * std::exp(-1.i*_phi[spacetimeCoord(xp, tp, NX, NT)]));
     }
 }
@@ -215,6 +217,8 @@ Matrix<std::complex<double>> HubbardFermiMatrix::LU::reconstruct() const {
  * -------------------------- free functions --------------------------
  */
 
+// TODO do we need to store all d^-1 or can we combine l and h such that
+//      we need to store only one at a time?
 HubbardFermiMatrix::LU getLU(const HubbardFermiMatrix &hfm) {
     const std::size_t nx = hfm.nx();
     const std::size_t nt = hfm.nt();
@@ -231,9 +235,7 @@ HubbardFermiMatrix::LU getLU(const HubbardFermiMatrix &hfm) {
     lu.d.emplace_back(P);
     hfm.Qdag(q, 0);
     lu.u.emplace_back(q);
-    aux = P;
-    blaze::getrf(aux, ipiv.get());
-    blaze::getri(aux, ipiv.get());
+    invert(aux=P, ipiv);
     dinv.emplace_back(aux);
     hfm.Q(q, 1);
     lu.l.emplace_back(q*aux);
@@ -243,9 +245,7 @@ HubbardFermiMatrix::LU getLU(const HubbardFermiMatrix &hfm) {
         hfm.Qdag(q, i);
         lu.u.emplace_back(q);
         hfm.Q(q, i+1);
-        aux = lu.d[i];
-        blaze::getrf(aux, ipiv.get());
-        blaze::getri(aux, ipiv.get());
+        invert(aux=lu.d[i], ipiv);
         dinv.emplace_back(aux);
         lu.l.emplace_back(q*aux);
     }
@@ -264,9 +264,7 @@ HubbardFermiMatrix::LU getLU(const HubbardFermiMatrix &hfm) {
     hfm.Qdag(q, nt-2);
     lu.u.emplace_back(q - lu.l[nt-3]*lu.v[nt-3]);
     hfm.Q(q, nt-1);
-    aux = lu.d[nt-2];
-    blaze::getrf(aux, ipiv.get());
-    blaze::getri(aux, ipiv.get());
+    invert(aux=lu.d[nt-2], ipiv);
     lu.l.emplace_back((q - lu.h[nt-3]*lu.u[nt-3])*aux);
 
     lu.d.emplace_back(P - lu.l[nt-2]*lu.u[nt-2]);
