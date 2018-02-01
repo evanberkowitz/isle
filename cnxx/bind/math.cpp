@@ -633,5 +633,12 @@ namespace bind {
         foreach<ElementalTypes, bindMatrix, ElementalTypes>::f(mod);
         foreach<ElementalTypes, bindSparseMatrix, ElementalTypes>::f(mod);
         foreach<ElementalTypes, bindSymmetricSparseMatrix>::f(mod);
+
+        mod.def("logdet", [](const Matrix<std::complex<double>> &mat) {
+                return logdet(mat);
+            });
+        mod.def("logdet", [](const Matrix<double> &mat) {
+                return logdet(mat);
+            });
     }
 }
