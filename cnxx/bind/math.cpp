@@ -404,6 +404,9 @@ namespace {
                 .def(py::init([](const std::size_t nx, const std::size_t ny){
                             return MT(nx, ny);
                         }))
+                .def(py::init([](const SparseMatrix<ET> &other){
+                            return MT(other);
+                        }))
                 .def(py::init([](py::buffer &buf) {
                             const py::buffer_info binfo = buf.request();
                             if (binfo.format != py::format_descriptor<ET>::format())
@@ -514,6 +517,9 @@ namespace {
             auto cls = py::class_<MT>{mod, sparseMatName<ET>().c_str()}
                 .def(py::init([](const std::size_t nx, const std::size_t ny){
                             return MT(nx, ny);
+                        }))
+                .def(py::init([](const Matrix<ET> &other){
+                            return MT(other);
                         }))
                 .def(py::init([](const SymmetricSparseMatrix<ET> &other){
                             return MT(other);
