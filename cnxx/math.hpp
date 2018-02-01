@@ -155,9 +155,6 @@ constexpr std::size_t spacetimeCoord(const std::size_t x,
 
 
 /// Project a complex number to the first branch of the logarithm (-pi, pi].
-/**
- * \todo Verify!
- */
 template <typename RT>
 std::complex<RT> toFirstLogBranch(const std::complex<RT> &x) {
     return {std::real(x), std::remainder(std::imag(x), 2*pi<RT>)};
