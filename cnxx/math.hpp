@@ -296,6 +296,7 @@ inline void invert(Matrix<std::complex<double>> &mat, std::unique_ptr<int[]> &ip
 /// Compute the logarithm of the determinant of a dense matrix.
 /**
  * Note that the matrix is copied in order to leave the original unchanged.
+ * See ilogdet() for an in-place version.
  * \tparam MT Specific matrix type.
  * \tparam SO Storage order of the matrix.
  * \param matrix Matrix to compute the determinant of; must be square.
@@ -326,6 +327,44 @@ auto logdet(const blaze::DenseMatrix<MT, SO> &matrix) {
             detP = -detP;
         // log det of U (diagonal elements)
         res += std::log(std::complex<ET>{mat(i, i)});
+    }
+    // combine log dets and project to (-pi, pi]
+    return toFirstLogBranch(res + (detP == 1 ? 0 : std::complex<ET>{0, pi<ET>}));
+}
+
+/// Compute the logarithm of the determinant of a dense matrix; overwrites the input.
+/**
+ * \warning This version overwrites the input matrix. See logdet() for a version that
+ *          does not change it.
+ * \tparam MT Specific matrix type.
+ * \tparam SO Storage order of the matrix.
+ * \param matrix Matrix to compute the determinant of; must be square.
+ * \return \f$y = \log \det(\mathrm{mat})\f$ as a complex number
+ *         projected onto the first Riemann sheet of the logarithm,
+ *         i.e. \f$y \in (-\pi, \pi]\f$.
+ */
+template <typename MT, bool SO>
+auto ilogdet(blaze::DenseMatrix<MT, SO> &matrix) {
+    using ET = ValueType_t<typename MT::ElementType>;
+    const std::size_t n = matrix.rows();
+#ifndef NDEBUG
+    if (n != matrix.columns())
+        throw std::invalid_argument("Invalid non-square matrix provided");
+#endif
+
+    // pivot indices
+    std::unique_ptr<int[]> ipiv = std::make_unique<int[]>(n);
+    // perform LU decomposition (mat = PLU)
+    blaze::getrf(matrix, ipiv.get());
+
+    std::complex<ET> res = 0;
+    std::int8_t detP = 1;
+    for (std::size_t i = 0; i < n; ++i) {
+        // determinant of pivot matrix P
+        if (ipiv[i]-1 != blaze::numeric_cast<int>(i))
+            detP = -detP;
+        // log det of U (diagonal elements)
+        res += std::log(std::complex<ET>{matrix(i, i)});
     }
     // combine log dets and project to (-pi, pi]
     return toFirstLogBranch(res + (detP == 1 ? 0 : std::complex<ET>{0, pi<ET>}));
