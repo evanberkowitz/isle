@@ -346,16 +346,16 @@ auto logdet(const blaze::DenseMatrix<MT, SO> &matrix) {
 template <typename MT, bool SO>
 auto ilogdet(blaze::DenseMatrix<MT, SO> &matrix) {
     using ET = ValueType_t<typename MT::ElementType>;
-    const std::size_t n = matrix.rows();
+    const std::size_t n = (~matrix).rows();
 #ifndef NDEBUG
-    if (n != matrix.columns())
+    if (n != (~matrix).columns())
         throw std::invalid_argument("Invalid non-square matrix provided");
 #endif
 
     // pivot indices
     std::unique_ptr<int[]> ipiv = std::make_unique<int[]>(n);
     // perform LU decomposition (mat = PLU)
-    blaze::getrf(matrix, ipiv.get());
+    blaze::getrf(~matrix, ipiv.get());
 
     std::complex<ET> res = 0;
     std::int8_t detP = 1;
@@ -364,7 +364,7 @@ auto ilogdet(blaze::DenseMatrix<MT, SO> &matrix) {
         if (ipiv[i]-1 != blaze::numeric_cast<int>(i))
             detP = -detP;
         // log det of U (diagonal elements)
-        res += std::log(std::complex<ET>{matrix(i, i)});
+        res += std::log(std::complex<ET>{(~matrix)(i, i)});
     }
     // combine log dets and project to (-pi, pi]
     return toFirstLogBranch(res + (detP == 1 ? 0 : std::complex<ET>{0, pi<ET>}));
