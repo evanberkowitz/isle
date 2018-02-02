@@ -156,26 +156,26 @@ namespace {
                   void_t<decltype(std::declval<ElementType_t<LHS>&>()/std::declval<ElementType_t<RHS>&>()),
                          decltype(std::declval<LHS&>()/std::declval<RHS&>())>>
     {
-        /// Indicate whether floor needs to be taken explicitly.
-        static constexpr bool needFloor = !std::is_same<ElementType_t<LHS>, int>::value
-            || !std::is_same<ElementType_t<RHS>, int>::value;
+        /// Indicate whether vectors need to be converted.
+        static constexpr bool needConversion = std::is_same<ElementType_t<LHS>, int>::value
+            && std::is_same<ElementType_t<RHS>, int>::value;
         /// Indicate whether it is possible to take floor.
         static constexpr bool floorAllowed = !IsSpecialization<std::complex,
                                                               ElementType_t<LHS>>::value
             && !IsSpecialization<std::complex, ElementType_t<RHS>>::value;
 
-        /// Bind with implicit flooring.
-        template <typename CT, bool floor = needFloor,
-                  typename std::enable_if<!floor, int>::type = 0>
+        /// Bind with conversion.
+        template <typename CT, bool convert = needConversion,
+                  typename std::enable_if<convert, int>::type = 0>
         static void f(CT &&cls, const char * const name) {
             cls.def(name, [](const LHS &lhs, const RHS &rhs) {
-                    return blaze::evaluate(lhs / rhs);
+                    return blaze::evaluate(blaze::floor(lhs / Rebind_t<RHS, double>(rhs)));
                 });
         }
 
-        /// Bind with explicit flooring.
-        template <typename CT, bool floor = needFloor,
-                  typename std::enable_if<floor && floorAllowed, int>::type = 0>
+        /// Bind without conversion.
+        template <typename CT, bool convert = needConversion,
+                  typename std::enable_if<!convert && floorAllowed, int>::type = 0>
         static void f(CT &&cls, const char * const name) {
             cls.def(name, [](const LHS &lhs, const RHS &rhs) {
                     return blaze::evaluate(blaze::floor(lhs / rhs));
@@ -183,8 +183,8 @@ namespace {
         }
 
         /// Bind function that throws a std::invalid_argument because operands cannot be floored.
-        template <typename CT, bool floor = needFloor,
-                  std::enable_if_t<floor && !floorAllowed, int> = 0>
+        template <typename CT, bool convert = needConversion,
+                  std::enable_if_t<!convert && !floorAllowed, int> = 0>
         static void f(CT &&cls, const char * const name) {
             cls.def(name, [](const LHS &UNUSED(lhs), const RHS &UNUSED(rhs)) {
                     throw std::invalid_argument("can't take floor of complex number.");
