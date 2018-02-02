@@ -53,8 +53,11 @@ def type_eq(typ0, typ1):
     return typ0 == typ1
 
 
-def isEqual(a, b):
-    "Check whether two numbers or iterables are equal wiht precision core.PREC."
+def isEqual(a, b, nOps=1):
+    """
+    Check whether two numbers or iterables are equal wiht precision core.PREC.
+    For large scale operations, multiply scale by nOps for the check.
+    """
 
     ahasit = hasattr(a, "__iter__")
     bhasit = hasattr(b, "__iter__")
@@ -64,7 +67,7 @@ def isEqual(a, b):
             return False
 
         for aelem, belem in zip(a, b):
-            if not isEqual(aelem, belem):
+            if not isEqual(aelem, belem, nOps=nOps):
                 return False
         return True
 
@@ -72,7 +75,7 @@ def isEqual(a, b):
         # both are scalar
         scale = abs(a+b)/2
         comp = abs(a-b)/scale if scale > 1 else abs(a-b)
-        if comp < PREC:
+        if comp < PREC*nOps:
             return True
         return False
 
