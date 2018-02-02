@@ -47,7 +47,6 @@ namespace {
         return std::string{prefixName<T>} + "SymmetricSparseMatrix";
     }
 
-
     /// Labels for all algebraic operators.
     enum class Op {
         add, sub, mul, rmul, truediv, floordiv, iadd, isub, imul, dot
@@ -335,13 +334,10 @@ namespace {
                 .def("__len__", &VT::size)
                 .def("__str__", [](const VT &vec) {
                         std::ostringstream oss;
-                        oss<<"[";
-                        std::copy(
-                          vec.begin(), 
-                          vec.end()-1,  
-                          std::ostream_iterator<ET>(oss, ", ")
-                        );
-                        oss<<vec[vec.size()-1]<<"]";
+                        oss << '[';
+                        std::copy(vec.begin(), vec.end()-1,
+                                  std::ostream_iterator<ET>(oss, ", "));
+                        oss << vec[vec.size()-1] << ']';
                         return oss.str();
                     })
                 .def_buffer([](VT &vec) {
@@ -459,27 +455,21 @@ namespace {
                 .def("columns", &MT::columns)
                 .def("__str__", [](const MT &mat) {
                         std::ostringstream oss;
-                        oss<<"[";
-                        // Loop over rows
-                        for(size_t ind=0; ind<mat.rows()-1; ind++){
-                          oss<<"[";
-                          // Write columns
-                          std::copy(
-                            mat.begin(ind), 
-                            mat.end(ind)-1,  
-                            std::ostream_iterator<ET>(oss, ", ")
-                          );
-                          oss<<mat(ind, mat.columns()-1)<<"],"<<std::endl<<" ";
+                        oss << '[';
+                        // loop over rows
+                        for (std::size_t ind = 0; ind < mat.rows()-1; ++ind) {
+                            oss << '[';
+                            // write columns
+                            std::copy(mat.begin(ind), mat.end(ind)-1,
+                                      std::ostream_iterator<ET>(oss, ", "));
+                            oss << mat(ind, mat.columns()-1) << "],\n ";
                         }
-                        // Write last row
-                        size_t ind=mat.rows()-1;
-                        oss<<"[";
-                        std::copy(
-                          mat.begin(ind), 
-                          mat.end(ind)-1,  
-                          std::ostream_iterator<ET>(oss, ", ")
-                        );
-                        oss<<mat(ind, mat.columns()-1)<<"]]"<<std::endl;
+                        // write last row
+                        const std::size_t ind = mat.rows()-1;
+                        oss << '[';
+                        std::copy(mat.begin(ind), mat.end(ind)-1,
+                                  std::ostream_iterator<ET>(oss, ", "));
+                        oss << mat(ind, mat.columns()-1) << "]]\n";
                         return oss.str();
                     })
                 .def_buffer([](MT &mat) {
@@ -580,22 +570,22 @@ namespace {
                          mat.erase(i, j);
                      })
                 .def("row", [](MT &mat, std::size_t i) {
-                        return py::make_iterator(mat.begin(i), mat.end(i));
+                        return bind::makeIndexValueIterator(mat.begin(i), mat.end(i));
                     }, py::keep_alive<0, 1>())
                 .def("rows", &MT::rows)
                 .def("columns", &MT::columns)
                 .def("__str__", [](const MT &mat) {
                         std::ostringstream oss;
-                        oss<<"[";
-                        // Loop over rows
-                        for(size_t ind=0; ind<mat.rows(); ind++){
-                          // Write columns
-                          for(auto it=mat.begin(ind); it!=mat.end(ind); it++){
-                            oss<<'('<<ind<<','<<it->index()<<"): ";
-                            oss<<it->value()<<','<<std::endl<<' ';
+                        oss << '[';
+                        // loop over rows
+                        for (std::size_t ind = 0; ind < mat.rows(); ++ind) {
+                          // write columns
+                          for (auto it = mat.begin(ind); it != mat.end(ind); ++it){
+                            oss << '(' << ind << ',' << it->index() << "): ";
+                            oss << it->value() << ",\n ";
                           }
                         }
-                        oss<<"]"<<std::endl;
+                        oss << "]\n";
                         return oss.str();
                     })
                 ;
@@ -649,7 +639,7 @@ namespace {
                          mat.erase(i, j);
                      })
                 .def("row", [](MT &mat, std::size_t i) {
-                        return py::make_iterator(mat.begin(i), mat.end(i));
+                        return bind::makeIndexValueIterator(mat.begin(i), mat.end(i));
                     }, py::keep_alive<0, 1>())
                 .def("rows", &MT::rows)
                 .def("columns", &MT::columns)
