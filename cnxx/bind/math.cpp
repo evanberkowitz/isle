@@ -169,7 +169,7 @@ namespace {
                   typename std::enable_if<convert, int>::type = 0>
         static void f(CT &&cls, const char * const name) {
             cls.def(name, [](const LHS &lhs, const RHS &rhs) {
-                    return blaze::evaluate(blaze::floor(lhs / Rebind_t<RHS, double>(rhs)));
+                    return LHS{blaze::floor(lhs / Rebind_t<RHS, double>(rhs))};
                 });
         }
 
