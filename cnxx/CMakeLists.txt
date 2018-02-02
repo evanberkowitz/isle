@@ -8,8 +8,16 @@ set(SOURCE hubbardFermiMatrix.cpp)
 add_subdirectory(bind)
 
 add_library(cnxx SHARED ${SOURCE})
-set_target_properties(cnxx PROPERTIES CXX_STANDARD 14
-  CXX_STANDARD_REQUIRED ON)
+
+# set standard
+if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang"
+    OR "${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
+  # set it explicitly for GNU and Clang, gnu++14 does not work with complex literals...
+  target_compile_options(cnxx PUBLIC --std=c++14)
+else ()
+  set_target_properties(cnxx PROPERTIES CXX_STANDARD 14
+    CXX_STANDARD_REQUIRED ON)
+endif ()
 
 target_compile_options(cnxx PUBLIC -Wall -Wextra -pedantic)
 if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
