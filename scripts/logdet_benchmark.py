@@ -4,8 +4,10 @@
 Showcase HubbardFermiMatrix and logdet.
 """
 
+import timeit
 import yaml
 import numpy as np
+import matplotlib.pyplot as plt
 
 import core
 core.prepare_module_import()
@@ -15,19 +17,34 @@ def main():
     with open("../lattices/c60_ipr.yml", "r") as yamlf:
         lat = yaml.safe_load(yamlf)
 
-    # use this instead of nt read by lattice
-    nt = 4
+    nts = (4, 8, 12, 16, 20, 24, 28, 32)
+    custom = []
+    lapack = []
 
-    # create a normal distributed phi
-    phi = cns.Vector(np.random.randn(lat.nx()*nt)
-                     + 1j*np.random.randn(lat.nx()*nt), dtype=complex)
+    logdet = cns.logdet
+    for nt in nts:
+        # create a normal distributed phi
+        phi = cns.Vector(np.random.randn(lat.nx()*nt)
+                         + 1j*np.random.randn(lat.nx()*nt), dtype=complex)
 
-    # make a fermion matrix
-    hfm = cns.HubbardFermiMatrix(lat.hopping(), phi, 0, 1, -1)
+        # make a fermion matrix
+        hfm = cns.HubbardFermiMatrix(lat.hopping(), phi, 0, 1, -1)
+        mmdag = cns.Matrix(hfm.MMdag(), dtype=complex)
 
-    # compare logdets
-    print("Dense logdet (LAPACK): ", cns.logdet(cns.Matrix(hfm.MMdag(), dtype=complex)))
-    print("Sparse logdet (custom LU): ", cns.logdet(hfm))
+        # do the benchmark
+        custom.append(timeit.timeit("logdet(hfm)", globals=locals(), number=50))
+        lapack.append(timeit.timeit("logdet(mmdag)", globals=locals(), number=50))
+
+    # plot result
+    fig = plt.figure()
+    ax = fig.add_subplot(111)
+    ax.set_title("Benchmark logdet")
+    ax.set_xlabel("Nt")
+    ax.set_ylabel("time / s")
+    ax.plot(nts, custom, label="custom")
+    ax.plot(nts, lapack, label="LAPACK")
+    fig.tight_layout()
+    plt.show()
 
 if __name__ == "__main__":
     main()
