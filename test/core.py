@@ -10,13 +10,13 @@ import operator
 TEST_PATH = Path(__file__).resolve().parent
 
 #: Precision for test of floating point numbers.
-PREC = 1e-15
+PREC = 1e-14
 
-def prepare_cnxx_import(path=Path("../cnxx/build")):
+def prepare_module_import(path=Path("../modules")):
     """
-    Prepare site for scripts based on cnxx. Call before importing cnxx.
+    Prepare site to import modules from ../modules.
     Arguments:
-        path: Path to directory that contains cnxx library. Relative to TEST_PATH.
+        path: Path to directory that contains the modules. Relative to SCRIPT_PATH.
     """
 
     import site
@@ -89,6 +89,7 @@ OperatorDict = {
   '*'  : operator.mul,
   '*=' : operator.imul,
   '/'  : operator.truediv,
+  '//' : operator.floordiv,
   '/=' : operator.itruediv,
   '@'  : operator.matmul
 }
