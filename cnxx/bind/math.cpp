@@ -335,7 +335,9 @@ namespace {
                 .def("__len__", &VT::size)
                 .def("__str__", [](const VT &vec) {
                         std::ostringstream oss;
-                        oss << vec;
+                        oss<<"[";
+                        std::copy(vec.begin(), vec.end()-1,  std::ostream_iterator<ET>(oss, ", "));
+                        oss<<vec[vec.size()-1]<<"]";
                         return oss.str();
                     })
                 .def_buffer([](VT &vec) {
