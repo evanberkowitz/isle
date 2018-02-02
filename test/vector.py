@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 """
-Example python module for unittests.
+Unittest for 'cnxx' vector classes.
 """
 
 import unittest     # unittest module
@@ -10,8 +10,8 @@ import abc          # abstract classes
 import numpy as np  # numpy!
 
 import core                 # base setup and import
-core.prepare_cnxx_import()
-import cnxx                 # c++ bindings
+core.prepare_module_import()
+import cns                  # c++ bindings
 import rand                 # random initializer
 
 # RNG params
@@ -161,159 +161,170 @@ class TestVector(AbstractVectorTest, unittest.TestCase):
     "Test for all cVec types and opertions"
     Nvec        = 100             # Size of tested vectors
     cVecTypes   = [               # Initializers
-        cnxx.IVector,
-        cnxx.DVector,
-        cnxx.CDVector,
+        cns.IVector,
+        cns.DVector,
+        cns.CDVector,
     ]
     scalarTypes = {               # Element type maps
-        cnxx.IVector : int,
-        cnxx.DVector : float,
-        cnxx.CDVector: complex,
+        cns.IVector : int,
+        cns.DVector : float,
+        cns.CDVector: complex,
     }
     operations = {                # Operations to be tested
       "*"  : [
         # IVector
-        ((cnxx.IVector , cnxx.IVector ), cnxx.IVector ),
-        ((cnxx.IVector , int          ), cnxx.IVector ),
-        #((int          , cnxx.IVector ), cnxx.IVector ),
+        ((cns.IVector , cns.IVector ), cns.IVector ),
+        ((cns.IVector , int          ), cns.IVector ),
+        #((int          , cns.IVector ), cns.IVector ),
         # DVector
-        ((cnxx.DVector , cnxx.DVector ), cnxx.DVector ),
-        ((cnxx.DVector , cnxx.IVector ), cnxx.DVector ),
-        ((cnxx.IVector , cnxx.DVector ), cnxx.DVector ),
-        ((cnxx.DVector,  float        ), cnxx.DVector ),
-        ((cnxx.DVector,  int          ), cnxx.DVector ),
-        #((float        , cnxx.DVector ), cnxx.DVector ),
-        #((int        , cnxx.DVector ), cnxx.DVector ),
+        ((cns.DVector , cns.DVector ), cns.DVector ),
+        ((cns.DVector , cns.IVector ), cns.DVector ),
+        ((cns.IVector , cns.DVector ), cns.DVector ),
+        ((cns.DVector,  float        ), cns.DVector ),
+        ((cns.DVector,  int          ), cns.DVector ),
+        #((float        , cns.DVector ), cns.DVector ),
+        #((int        , cns.DVector ), cns.DVector ),
         #CVector
-        ((cnxx.CDVector, cnxx.CDVector), cnxx.CDVector),
-        ((cnxx.CDVector, cnxx.DVector ), cnxx.CDVector),
-        ((cnxx.DVector,  cnxx.CDVector), cnxx.CDVector),
-        #((cnxx.CDVector, cnxx.IVector ), cnxx.CDVector),
-        #((cnxx.IVector,  cnxx.CDVector), cnxx.CDVector),
-        ((cnxx.CDVector, complex      ), cnxx.CDVector),
-        ((cnxx.CDVector, float        ), cnxx.CDVector),
-        ((cnxx.CDVector, int          ), cnxx.CDVector),
-        #(( complex     , cnxx.CDVector), cnxx.CDVector),
-        #(( float       , cnxx.CDVector), cnxx.CDVector),
-        #(( int         , cnxx.CDVector), cnxx.CDVector),
+        ((cns.CDVector, cns.CDVector), cns.CDVector),
+        ((cns.CDVector, cns.DVector ), cns.CDVector),
+        ((cns.DVector,  cns.CDVector), cns.CDVector),
+        #((cns.CDVector, cns.IVector ), cns.CDVector),
+        #((cns.IVector,  cns.CDVector), cns.CDVector),
+        ((cns.CDVector, complex      ), cns.CDVector),
+        ((cns.CDVector, float        ), cns.CDVector),
+        ((cns.CDVector, int          ), cns.CDVector),
+        #(( complex     , cns.CDVector), cns.CDVector),
+        #(( float       , cns.CDVector), cns.CDVector),
+        #(( int         , cns.CDVector), cns.CDVector),
       ],
       "/"  : [
         # IVector
-        ((cnxx.IVector , cnxx.IVector ), cnxx.DVector ),
-        ((cnxx.IVector , int          ), cnxx.DVector ),
+        ((cns.IVector , cns.IVector ), cns.DVector ),
+        ((cns.IVector , int          ), cns.DVector ),
         # DVector
-        ((cnxx.DVector , cnxx.DVector ), cnxx.DVector ),
-        ((cnxx.DVector , cnxx.IVector ), cnxx.DVector ),
-        ((cnxx.IVector , cnxx.DVector ), cnxx.DVector ),
-        ((cnxx.DVector,  float        ), cnxx.DVector ),
-        ((cnxx.DVector,  int          ), cnxx.DVector ),
+        ((cns.DVector , cns.DVector ), cns.DVector ),
+        ((cns.DVector , cns.IVector ), cns.DVector ),
+        ((cns.IVector , cns.DVector ), cns.DVector ),
+        ((cns.DVector,  float        ), cns.DVector ),
+        ((cns.DVector,  int          ), cns.DVector ),
         #CVector
-        ((cnxx.CDVector, cnxx.CDVector), cnxx.CDVector),
-        ((cnxx.CDVector, cnxx.DVector ), cnxx.CDVector),
-        ((cnxx.DVector,  cnxx.CDVector), cnxx.CDVector),
-        #((cnxx.CDVector, cnxx.IVector ), cnxx.CDVector),
-        #((cnxx.IVector,  cnxx.CDVector), cnxx.CDVector),
-        ((cnxx.CDVector, complex      ), cnxx.CDVector),
-        ((cnxx.CDVector, float        ), cnxx.CDVector),
-        ((cnxx.CDVector, int          ), cnxx.CDVector),
+        ((cns.CDVector, cns.CDVector), cns.CDVector),
+        ((cns.CDVector, cns.DVector ), cns.CDVector),
+        ((cns.DVector,  cns.CDVector), cns.CDVector),
+        #((cns.CDVector, cns.IVector ), cns.CDVector),
+        #((cns.IVector,  cns.CDVector), cns.CDVector),
+        ((cns.CDVector, complex      ), cns.CDVector),
+        ((cns.CDVector, float        ), cns.CDVector),
+        ((cns.CDVector, int          ), cns.CDVector),
+      ],
+      "//"  : [
+        # IVector
+        ((cns.IVector , cns.IVector ), cns.IVector ),
+        ((cns.IVector , int          ), cns.IVector ),
+        # DVector
+        ((cns.DVector , cns.DVector ), cns.DVector ),
+        ((cns.DVector , cns.IVector ), cns.DVector ),
+        ((cns.IVector , cns.DVector ), cns.DVector ),
+        ((cns.DVector,  float        ), cns.DVector ),
+        ((cns.DVector,  int          ), cns.DVector ),
       ],
       "*=" : [
         # IVector
-        ((cnxx.IVector , cnxx.IVector ), cnxx.IVector ),
-        ((cnxx.IVector , int          ), cnxx.IVector ),
+        ((cns.IVector , cns.IVector ), cns.IVector ),
+        ((cns.IVector , int          ), cns.IVector ),
         # DVector
-        ((cnxx.DVector , cnxx.DVector ), cnxx.DVector ),
-        ((cnxx.DVector , cnxx.IVector ), cnxx.DVector ),
-        ((cnxx.DVector,  float        ), cnxx.DVector ),
-        ((cnxx.DVector,  int          ), cnxx.DVector ),
+        ((cns.DVector , cns.DVector ), cns.DVector ),
+        ((cns.DVector , cns.IVector ), cns.DVector ),
+        ((cns.DVector,  float        ), cns.DVector ),
+        ((cns.DVector,  int          ), cns.DVector ),
         #CVector
-        ((cnxx.CDVector, cnxx.CDVector), cnxx.CDVector),
-        ((cnxx.CDVector, cnxx.DVector ), cnxx.CDVector),
-        #((cnxx.CDVector, cnxx.IVector ), cnxx.CDVector),
-        ((cnxx.CDVector, complex      ), cnxx.CDVector),
-        ((cnxx.CDVector, float        ), cnxx.CDVector),
-        ((cnxx.CDVector, int          ), cnxx.CDVector),
+        ((cns.CDVector, cns.CDVector), cns.CDVector),
+        ((cns.CDVector, cns.DVector ), cns.CDVector),
+        #((cns.CDVector, cns.IVector ), cns.CDVector),
+        ((cns.CDVector, complex      ), cns.CDVector),
+        ((cns.CDVector, float        ), cns.CDVector),
+        ((cns.CDVector, int          ), cns.CDVector),
       ],
       "/=" : [
         # IVector
-        #((cnxx.IVector , cnxx.IVector ), cnxx.DVector ),
-        #((cnxx.IVector , int          ), cnxx.DVector ),
+        #((cns.IVector , cns.IVector ), cns.DVector ),
+        #((cns.IVector , int          ), cns.DVector ),
         # DVector
-        ((cnxx.DVector , cnxx.DVector ), cnxx.DVector ),
-        ((cnxx.DVector , cnxx.IVector ), cnxx.DVector ),
-        ((cnxx.DVector,  float        ), cnxx.DVector ),
-        ((cnxx.DVector,  int          ), cnxx.DVector ),
+        ((cns.DVector , cns.DVector ), cns.DVector ),
+        ((cns.DVector , cns.IVector ), cns.DVector ),
+        ((cns.DVector,  float        ), cns.DVector ),
+        ((cns.DVector,  int          ), cns.DVector ),
         #CVector
-        ((cnxx.CDVector, cnxx.CDVector), cnxx.CDVector),
-        ((cnxx.CDVector, cnxx.DVector ), cnxx.CDVector),
-        #((cnxx.CDVector, cnxx.IVector ), cnxx.CDVector),
-        ((cnxx.CDVector, complex      ), cnxx.CDVector),
-        ((cnxx.CDVector, float        ), cnxx.CDVector),
-        ((cnxx.CDVector, int          ), cnxx.CDVector),
+        ((cns.CDVector, cns.CDVector), cns.CDVector),
+        ((cns.CDVector, cns.DVector ), cns.CDVector),
+        #((cns.CDVector, cns.IVector ), cns.CDVector),
+        ((cns.CDVector, complex      ), cns.CDVector),
+        ((cns.CDVector, float        ), cns.CDVector),
+        ((cns.CDVector, int          ), cns.CDVector),
       ],
       "+"  : [
         # IVector
-        ((cnxx.IVector , cnxx.IVector ), cnxx.IVector ),
+        ((cns.IVector , cns.IVector ), cns.IVector ),
         # DVector
-        ((cnxx.DVector , cnxx.DVector ), cnxx.DVector ),
-        ((cnxx.DVector , cnxx.IVector ), cnxx.DVector ),
-        ((cnxx.IVector , cnxx.DVector ), cnxx.DVector ),
+        ((cns.DVector , cns.DVector ), cns.DVector ),
+        ((cns.DVector , cns.IVector ), cns.DVector ),
+        ((cns.IVector , cns.DVector ), cns.DVector ),
         #CVector
-        ((cnxx.CDVector, cnxx.CDVector), cnxx.CDVector),
-        ((cnxx.CDVector, cnxx.DVector ), cnxx.CDVector),
-        ((cnxx.DVector,  cnxx.CDVector), cnxx.CDVector),
-        #((cnxx.CDVector, cnxx.IVector ), cnxx.CDVector),
-        #((cnxx.IVector,  cnxx.CDVector), cnxx.CDVector),
+        ((cns.CDVector, cns.CDVector), cns.CDVector),
+        ((cns.CDVector, cns.DVector ), cns.CDVector),
+        ((cns.DVector,  cns.CDVector), cns.CDVector),
+        #((cns.CDVector, cns.IVector ), cns.CDVector),
+        #((cns.IVector,  cns.CDVector), cns.CDVector),
       ],
       "+=" : [
         # IVector
-        ((cnxx.IVector , cnxx.IVector ), cnxx.IVector ),
+        ((cns.IVector , cns.IVector ), cns.IVector ),
         # DVector
-        ((cnxx.DVector , cnxx.DVector ), cnxx.DVector ),
-        ((cnxx.DVector , cnxx.IVector ), cnxx.DVector ),
+        ((cns.DVector , cns.DVector ), cns.DVector ),
+        ((cns.DVector , cns.IVector ), cns.DVector ),
         #CVector
-        ((cnxx.CDVector, cnxx.CDVector), cnxx.CDVector),
-        ((cnxx.CDVector, cnxx.DVector ), cnxx.CDVector),
-        #((cnxx.CDVector, cnxx.IVector ), cnxx.CDVector),
+        ((cns.CDVector, cns.CDVector), cns.CDVector),
+        ((cns.CDVector, cns.DVector ), cns.CDVector),
+        #((cns.CDVector, cns.IVector ), cns.CDVector),
       ],
       "-"  : [
         # IVector
-        ((cnxx.IVector , cnxx.IVector ), cnxx.IVector ),
+        ((cns.IVector , cns.IVector ), cns.IVector ),
         # DVector
-        ((cnxx.DVector , cnxx.DVector ), cnxx.DVector ),
-        ((cnxx.DVector , cnxx.IVector ), cnxx.DVector ),
-        ((cnxx.IVector , cnxx.DVector ), cnxx.DVector ),
+        ((cns.DVector , cns.DVector ), cns.DVector ),
+        ((cns.DVector , cns.IVector ), cns.DVector ),
+        ((cns.IVector , cns.DVector ), cns.DVector ),
         #CVector
-        ((cnxx.CDVector, cnxx.CDVector), cnxx.CDVector),
-        ((cnxx.CDVector, cnxx.DVector ), cnxx.CDVector),
-        ((cnxx.DVector,  cnxx.CDVector), cnxx.CDVector),
-        #((cnxx.CDVector, cnxx.IVector ), cnxx.CDVector),
-        #((cnxx.IVector,  cnxx.CDVector), cnxx.CDVector),
+        ((cns.CDVector, cns.CDVector), cns.CDVector),
+        ((cns.CDVector, cns.DVector ), cns.CDVector),
+        ((cns.DVector,  cns.CDVector), cns.CDVector),
+        #((cns.CDVector, cns.IVector ), cns.CDVector),
+        #((cns.IVector,  cns.CDVector), cns.CDVector),
       ],
       "-=" : [
         # IVector
-        ((cnxx.IVector , cnxx.IVector ), cnxx.IVector ),
+        ((cns.IVector , cns.IVector ), cns.IVector ),
         # DVector
-        ((cnxx.DVector , cnxx.DVector ), cnxx.DVector ),
-        ((cnxx.DVector , cnxx.IVector ), cnxx.DVector ),
+        ((cns.DVector , cns.DVector ), cns.DVector ),
+        ((cns.DVector , cns.IVector ), cns.DVector ),
         #CVector
-        ((cnxx.CDVector, cnxx.CDVector), cnxx.CDVector),
-        ((cnxx.CDVector, cnxx.DVector ), cnxx.CDVector),
-        #((cnxx.CDVector, cnxx.IVector ), cnxx.CDVector),
+        ((cns.CDVector, cns.CDVector), cns.CDVector),
+        ((cns.CDVector, cns.DVector ), cns.CDVector),
+        #((cns.CDVector, cns.IVector ), cns.CDVector),
       ],
       "@"  : [
         # IVector
-        ((cnxx.IVector , cnxx.IVector ), int          ),
+        ((cns.IVector , cns.IVector ), int          ),
         # DVector
-        ((cnxx.DVector , cnxx.DVector ), float        ),
-        ((cnxx.DVector , cnxx.IVector ), float        ),
-        ((cnxx.IVector , cnxx.DVector ), float        ),
+        ((cns.DVector , cns.DVector ), float        ),
+        ((cns.DVector , cns.IVector ), float        ),
+        ((cns.IVector , cns.DVector ), float        ),
         #CVector
-        ((cnxx.CDVector, cnxx.CDVector), complex      ),
-        ((cnxx.CDVector, cnxx.DVector ), complex      ),
-        ((cnxx.DVector,  cnxx.CDVector), complex      ),
-        #((cnxx.CDVector, cnxx.IVector ), cnxx.CDVector),
-        #((cnxx.IVector,  cnxx.CDVector), cnxx.CDVector),
+        ((cns.CDVector, cns.CDVector), complex      ),
+        ((cns.CDVector, cns.DVector ), complex      ),
+        ((cns.DVector,  cns.CDVector), complex      ),
+        #((cns.CDVector, cns.IVector ), cns.CDVector),
+        #((cns.IVector,  cns.CDVector), cns.CDVector),
       ],
     }
 

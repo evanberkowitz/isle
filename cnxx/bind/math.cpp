@@ -336,7 +336,11 @@ namespace {
                 .def("__str__", [](const VT &vec) {
                         std::ostringstream oss;
                         oss<<"[";
-                        std::copy(vec.begin(), vec.end()-1,  std::ostream_iterator<ET>(oss, ", "));
+                        std::copy(
+                          vec.begin(), 
+                          vec.end()-1,  
+                          std::ostream_iterator<ET>(oss, ", ")
+                        );
                         oss<<vec[vec.size()-1]<<"]";
                         return oss.str();
                     })
@@ -455,7 +459,27 @@ namespace {
                 .def("columns", &MT::columns)
                 .def("__str__", [](const MT &mat) {
                         std::ostringstream oss;
-                        oss << mat;
+                        oss<<"[";
+                        // Loop over rows
+                        for(size_t ind=0; ind<mat.rows()-1; ind++){
+                          oss<<"[";
+                          // Write columns
+                          std::copy(
+                            mat.begin(ind), 
+                            mat.end(ind)-1,  
+                            std::ostream_iterator<ET>(oss, ", ")
+                          );
+                          oss<<mat(ind, mat.columns()-1)<<"],"<<std::endl<<" ";
+                        }
+                        // Write last row
+                        size_t ind=mat.rows()-1;
+                        oss<<"[";
+                        std::copy(
+                          mat.begin(ind), 
+                          mat.end(ind)-1,  
+                          std::ostream_iterator<ET>(oss, ", ")
+                        );
+                        oss<<mat(ind, mat.columns()-1)<<"]]"<<std::endl;
                         return oss.str();
                     })
                 .def_buffer([](MT &mat) {
@@ -562,7 +586,16 @@ namespace {
                 .def("columns", &MT::columns)
                 .def("__str__", [](const MT &mat) {
                         std::ostringstream oss;
-                        oss << mat;
+                        oss<<"[";
+                        // Loop over rows
+                        for(size_t ind=0; ind<mat.rows(); ind++){
+                          // Write columns
+                          for(auto it=mat.begin(ind); it!=mat.end(ind); it++){
+                            oss<<'('<<ind<<','<<it->index()<<"): ";
+                            oss<<it->value()<<','<<std::endl<<' ';
+                          }
+                        }
+                        oss<<"]"<<std::endl;
                         return oss.str();
                     })
                 ;
@@ -622,7 +655,16 @@ namespace {
                 .def("columns", &MT::columns)
                 .def("__str__", [](const MT &mat) {
                         std::ostringstream oss;
-                        oss << mat;
+                        oss<<"[";
+                        // Loop over rows
+                        for(size_t ind=0; ind<mat.rows(); ind++){
+                          // Write columns
+                          for(auto it=mat.begin(ind); it!=mat.end(ind); it++){
+                            oss<<'('<<ind<<','<<it->index()<<"): ";
+                            oss<<it->value()<<','<<std::endl<<' ';
+                          }
+                        }
+                        oss<<"]"<<std::endl;
                         return oss.str();
                     })
                 ;
