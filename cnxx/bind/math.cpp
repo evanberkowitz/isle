@@ -295,7 +295,7 @@ namespace {
             using VT = Vector<ET>;
 
             auto cls = py::class_<VT>{mod, vecName<ET>().c_str(), py::buffer_protocol{}}
-            .def(py::init([](const std::size_t size){ return VT(size); }))
+                 .def(py::init([](const std::size_t size){ return VT(size); }))
                  .def(py::init([](py::buffer &buf) {
                              const py::buffer_info binfo = buf.request();
                              if (binfo.format != py::format_descriptor<ET>::format())
@@ -638,23 +638,20 @@ namespace {
 #endif
                          mat.erase(i, j);
                      })
-                .def("row", [](MT &mat, std::size_t i) {
-                        return bind::makeIndexValueIterator(mat.begin(i), mat.end(i));
-                    }, py::keep_alive<0, 1>())
                 .def("rows", &MT::rows)
                 .def("columns", &MT::columns)
                 .def("__str__", [](const MT &mat) {
                         std::ostringstream oss;
-                        oss<<"[";
-                        // Loop over rows
-                        for(size_t ind=0; ind<mat.rows(); ind++){
-                          // Write columns
-                          for(auto it=mat.begin(ind); it!=mat.end(ind); it++){
-                            oss<<'('<<ind<<','<<it->index()<<"): ";
-                            oss<<it->value()<<','<<std::endl<<' ';
-                          }
+                        oss << '[';
+                        // loop over rows
+                        for (std::size_t ind = 0; ind < mat.rows(); ++ind) {
+                            // write columns
+                            for (auto it = mat.begin(ind); it != mat.end(ind); ++it){
+                                oss << '(' << ind << ',' << it->index() << "): ";
+                                oss << it->value() << ",\n ";
+                            }
                         }
-                        oss<<"]"<<std::endl;
+                        oss << "]\n";
                         return oss.str();
                     })
                 ;
@@ -665,8 +662,6 @@ namespace {
 namespace bind {
     
     void bindTensors(py::module &mod) {
-        // TODO int format_descriptor does not match
-
         using ElementalTypes = Types<int, double, std::complex<double>>;
     
         foreach<ElementalTypes, bindVector, ElementalTypes>::f(mod);
