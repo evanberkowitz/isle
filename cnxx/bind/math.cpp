@@ -68,8 +68,8 @@ namespace {
     /// Bind operator add.
     template <typename LHS, typename RHS>
     struct bindOp<Op::add, LHS, RHS,
-                  void_t<decltype(std::declval<LHS&>()+std::declval<RHS&>()),
-                         decltype(std::declval<ElementType_t<LHS>&>()+std::declval<ElementType_t<RHS>&>())>>
+                  void_t<decltype(std::declval<ElementType_t<LHS>&>()+std::declval<ElementType_t<RHS>&>()),
+                         decltype(std::declval<LHS&>()+std::declval<RHS&>())>>
     {
         template <typename CT>
         static void f(CT &&cls, const char * const name) {
@@ -82,8 +82,8 @@ namespace {
     /// Bind operator sub.
     template <typename LHS, typename RHS>
     struct bindOp<Op::sub, LHS, RHS,
-                  void_t<decltype(std::declval<LHS&>()-std::declval<RHS&>()),
-                         decltype(std::declval<ElementType_t<LHS>&>()-std::declval<ElementType_t<RHS>&>())>>
+                  void_t<decltype(std::declval<ElementType_t<LHS>&>()-std::declval<ElementType_t<RHS>&>()),
+                         decltype(std::declval<LHS&>()-std::declval<RHS&>())>>
     {
         template <typename CT>
         static void f(CT &&cls, const char * const name) {
@@ -96,8 +96,8 @@ namespace {
     /// Bind operator mul.
     template <typename LHS, typename RHS>
     struct bindOp<Op::mul, LHS, RHS,
-                  void_t<decltype(std::declval<LHS&>()*std::declval<RHS&>()),
-                         decltype(std::declval<ElementType_t<LHS>&>()*std::declval<ElementType_t<RHS>&>())>>
+                  void_t<decltype(std::declval<ElementType_t<LHS>&>()*std::declval<ElementType_t<RHS>&>()),
+                         decltype(std::declval<LHS&>()*std::declval<RHS&>())>>
     {
         template <typename CT>
         static void f(CT &&cls, const char * const name) {
@@ -110,8 +110,8 @@ namespace {
     /// Bind reverse mul operator.
     template <typename RHS, typename LHS>
     struct bindOp<Op::rmul, RHS, LHS,
-                  void_t<decltype(std::declval<LHS&>()*std::declval<RHS&>()),
-                         decltype(std::declval<ElementType_t<LHS>&>()*std::declval<ElementType_t<RHS>&>())>>
+                  void_t<decltype(std::declval<ElementType_t<LHS>&>()*std::declval<ElementType_t<RHS>&>()),
+                         decltype(std::declval<LHS&>()*std::declval<RHS&>())>>
     {
         template <typename CT>
         static void f(CT &&cls, const char * const name) {
@@ -124,8 +124,8 @@ namespace {
     /// Bind operator truediv.
     template <typename LHS, typename RHS>
     struct bindOp<Op::truediv, LHS, RHS,
-                  void_t<decltype(std::declval<LHS&>()/std::declval<RHS&>()),
-                         decltype(std::declval<ElementType_t<LHS>&>()/std::declval<ElementType_t<RHS>&>())>>
+                  void_t<decltype(std::declval<ElementType_t<LHS>&>()/std::declval<ElementType_t<RHS>&>()),
+                         decltype(std::declval<LHS&>()/std::declval<RHS&>())>>
     {
         /// Indicate whether operands need to be converted to floating point numbers.
         static constexpr bool needConversion = std::is_same<ElementType_t<LHS>, int>::value
@@ -153,8 +153,8 @@ namespace {
     /// Bind operator floordiv.
     template <typename LHS, typename RHS>
     struct bindOp<Op::floordiv, LHS, RHS,
-                  void_t<decltype(std::declval<LHS&>()/std::declval<RHS&>()),
-                         decltype(std::declval<ElementType_t<LHS>&>()/std::declval<ElementType_t<RHS>&>())>>
+                  void_t<decltype(std::declval<ElementType_t<LHS>&>()/std::declval<ElementType_t<RHS>&>()),
+                         decltype(std::declval<LHS&>()/std::declval<RHS&>())>>
     {
         /// Indicate whether floor needs to be taken explicitly.
         static constexpr bool needFloor = !std::is_same<ElementType_t<LHS>, int>::value
@@ -195,8 +195,8 @@ namespace {
     /// Bind inplace addition operator.
     template <typename LHS, typename RHS>
     struct bindOp<Op::iadd, LHS, RHS,
-                  void_t<decltype(std::declval<LHS&>()+=std::declval<RHS&>()),
-                         decltype(std::declval<ElementType_t<LHS>&>()+=std::declval<ElementType_t<RHS>&>())>>
+                  void_t<decltype(std::declval<ElementType_t<LHS>&>()+=std::declval<ElementType_t<RHS>&>()),
+                         decltype(std::declval<LHS&>()+=std::declval<RHS&>())>>
     {
         template <typename CT>
         static void f(CT &&cls, const char * const name) {
@@ -209,8 +209,8 @@ namespace {
     /// Bind inplace subtraction operator.
     template <typename LHS, typename RHS>
     struct bindOp<Op::isub, LHS, RHS,
-                  void_t<decltype(std::declval<LHS&>()-=std::declval<RHS&>()),
-                         decltype(std::declval<ElementType_t<LHS>&>()-=std::declval<ElementType_t<RHS>&>())>>
+                  void_t<decltype(std::declval<ElementType_t<LHS>&>()-=std::declval<ElementType_t<RHS>&>()),
+                         decltype(std::declval<LHS&>()-=std::declval<RHS&>())>>
     {
         template <typename CT>
         static void f(CT &&cls, const char * const name) {
@@ -226,9 +226,9 @@ namespace {
     // does not.
     template <typename LHS, typename RHS>
     struct bindOp<Op::imul, LHS, RHS,
-                  void_t<decltype(std::declval<LHS&>()*=std::declval<RHS&>()),
-                         decltype(std::declval<ElementType_t<LHS>&>()*=std::declval<ElementType_t<RHS>&>()),
-                         decltype(std::declval<ElementType_t<LHS>&>()*std::declval<ElementType_t<RHS>&>())>>
+                  void_t<decltype(std::declval<ElementType_t<LHS>&>()*=std::declval<ElementType_t<RHS>&>()),
+                         decltype(std::declval<ElementType_t<LHS>&>()*std::declval<ElementType_t<RHS>&>()),
+                         decltype(std::declval<LHS&>()*=std::declval<RHS&>())>>
     {
         template <typename CT>
         static void f(CT &&cls, const char * const name) {
@@ -241,9 +241,9 @@ namespace {
     /// Bind dot product ("operator").
     template <typename LHS, typename RHS>
     struct bindOp<Op::dot, LHS, RHS,
-                  void_t<decltype(blaze::dot(std::declval<LHS&>(), std::declval<RHS&>())),
-                         decltype(std::declval<ElementType_t<LHS>&>()*std::declval<ElementType_t<RHS>&>()
-                                  + std::declval<ElementType_t<LHS>&>()*std::declval<ElementType_t<RHS>&>())>>
+                  void_t<decltype(std::declval<ElementType_t<LHS>&>()*std::declval<ElementType_t<RHS>&>()
+                                  + std::declval<ElementType_t<LHS>&>()*std::declval<ElementType_t<RHS>&>()),
+                         decltype(blaze::dot(std::declval<LHS&>(), std::declval<RHS&>()))>>
     {
         template <typename CT>
         static void f(CT &&cls, const char * const name) {
