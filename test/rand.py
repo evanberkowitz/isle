@@ -16,9 +16,9 @@ def randn(low, high, size, typ):
     else:
         raise TypeError("Unknown type for RNG: {}".format(typ))
 
-    for nel, el in enumerate(res):
+    for nel, el in enumerate(res.flat):
       if abs(el) < 1.e-7:
-        res[nel] = randScalar(low, high, typ)
+        res.flat[nel] = randScalar(low, high, typ)
 
     return res
     
