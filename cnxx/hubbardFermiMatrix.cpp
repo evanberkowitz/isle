@@ -302,6 +302,11 @@ HubbardFermiMatrix::LU getLU(const HubbardFermiMatrix &hfm) {
     return lu;
 }
 
+Vector<std::complex<double>> solve(const HubbardFermiMatrix &hfm,
+                                   const Vector<std::complex<double>> &rhs) {
+    return solve(getLU(hfm), rhs);
+}
+
 Vector<std::complex<double>> solve(const HubbardFermiMatrix::LU &lu,
                                    const Vector<std::complex<double>> &rhs) {
     const std::size_t nt = lu.dinv.size();

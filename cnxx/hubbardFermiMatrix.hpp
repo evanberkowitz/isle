@@ -71,7 +71,9 @@
         &     &        &        &        & d_{N_t-1}
   \end{pmatrix}.
  \f]
- * This results in the following scheme:
+ * The original matrix can be constructed from these via \f$M M^\dagger = LU\f$.
+ * Note that the algorithm used here does not using pivoting.
+ * The components of \f$L, U\f$ can be constructed using the following scheme.<BR>
  * Compute all except last \f$d, u, l\f$
  \f[
  \begin{matrix}
@@ -90,15 +92,34 @@
  * Compute remaining \f$d, u, l\f$
  \f[
  u_{N_t-2} = Q_{N_t-2}^\dagger - l_{N_t-3} v_{N_t-3} \qquad l_{N_t-2} = (Q_{N_t-1} - h_{N_t-3} u_{N_t-3}) d_{N_t-2}^{-1}\\
- d_{N_t-1} = P - l_{N_t-2}u_{N_t-2} - \sum_{i=0}^{N_t-3} h_i v_i
+ d_{N_t-1} = P - l_{N_t-2}u_{N_t-2} - \sum_{i=0}^{N_t-3}\, h_i v_i
  \f]
  *
  * In the case of the fermion matrix, each element of \f$L\f$ and \f$U\f$ is a spacial
  * \f$N_x \times N_x\f$ matrix. Hence each inverse of \f$d\f$ requires a full
  * matrix inversion. This means that the algorithm requires \f$\mathrm{O}(N_t N_x^3)\f$
  * steps.
- * After the initial steps, all matrices are dense. For simplicity, all inversions
+ * After the initial steps, all matrices except for most \f$u\f$'s are dense. For simplicity, all inversions
  * are performed using <TT>LAPACK</TT>.
+ *
+ *
+ * ## Solver
+ * A linear system of equations \f$(M M^\dagger) x = b\f$ can easily be solved via an
+ * LU-Decomposition and forward-/back-substitution.
+ * Start by solving \f$L y = b\f$:
+ \f{align}{
+ y_0 &= b_0\\
+ y_i &= b_i - l_{i-1} y_{i-1}\quad \forall i \in [1, N_t-2]\\
+ y_{N_t-1} &= b_{N_t-1} - l_{N_t-2} y_{N_t-2} - \textstyle\sum_{j=0}^{N_t-3}\, h_j y_j
+ \f}
+ * Then solve \f$Ux = y\f$:
+ \f{align}{
+ x_{N_t-1} &= d_{N_t-1}^{-1} y_{N_t-1}\\
+ x_{N_t-2} &= d_{N_t-2}^{-1} (y_{N_t-2} - u_{N_t-2} x_{N_t-1})\\
+ x_i &= d_i^{-1} (y_i - u_i x_{i+1} - v_i x_{N_t-1}) \quad \forall i \in [0, N_t-3]
+ \f}
+ * Since the inversed \f$d_i^{-1}\f$ have already been computed by the LU-factorization,
+ * this algorithm requires only \f$\mathcal{O}(N_t N_x^2)\f$ steps.
  *
  *
  * ## Usage
@@ -117,6 +138,8 @@
  *  - HubbardFermiMatrix::LU getLU(const HubbardFermiMatrix &hfm)
  *  - std::complex<double> logdet(const HubbardFermiMatrix &hfm)
  *  - std::complex<double> logdet(const HubbardFermiMatrix::LU &lu)
+ *  - Vector<std::complex<double>> solve(const HubbardFermiMatrix &hfm, const Vector<std::complex<double>> &rhs);
+ *  - Vector<std::complex<double>> solve(const HubbardFermiMatrix::LU &lu, const Vector<std::complex<double>> &rhs);
  */
 class HubbardFermiMatrix {
 public:
@@ -235,6 +258,25 @@ private:
 /// Perform an LU-decomposition on a HubbardFermiMatrix.
 HubbardFermiMatrix::LU getLU(const HubbardFermiMatrix &hfm);
 
+/// Solve a system of equations \f$(M M^\dagger) x = b\f$.
+/**
+ * See documentation of HubbardFermiMatrix for a description of the algorithm.
+ * \param hfm Matrix \f$M M^\dagger\f$.
+ * \param rhs Right hand side \f$b\f$.
+ * \return Solution \f$x\f$.
+ * \see `std::complex<double> logdet(const HubbardFermiMatrix::LU &lu)` in case you
+ *      already have the LU-decomposition.
+ */
+Vector<std::complex<double>> solve(const HubbardFermiMatrix &hfm,
+                                   const Vector<std::complex<double>> &rhs);
+
+/// Solve a system of equations \f$(M M^\dagger) x = b\f$; use LU-decomposition directly.
+/**
+ * See documentation of HubbardFermiMatrix for a description of the algorithm.
+ * \param lu LU-Decomposition of matrix \f$M M^\dagger\f$.
+ * \param rhs Right hand side \f$b\f$.
+ * \return Solution \f$x\f$.
+ */
 Vector<std::complex<double>> solve(const HubbardFermiMatrix::LU &lu,
                                    const Vector<std::complex<double>> &rhs);
 

@@ -28,9 +28,12 @@ namespace bind {
 
         mod.def("getLU",
                 static_cast<HubbardFermiMatrix::LU(*)(const HubbardFermiMatrix&)>(getLU));
-        mod.def("solve",
-                static_cast<Vector<std::complex<double>>(*)(const HubbardFermiMatrix::LU &,
-                                                            const Vector<std::complex<double>> &rhs)>(solve));
+        mod.def("solve", static_cast<Vector<std::complex<double>>(*)(
+                    const HubbardFermiMatrix::LU &,
+                    const Vector<std::complex<double>> &rhs)>(solve));
+        mod.def("solve", static_cast<Vector<std::complex<double>>(*)(
+                    const HubbardFermiMatrix &,
+                    const Vector<std::complex<double>> &rhs)>(solve));
         mod.def("logdet",
                 static_cast<std::complex<double>(*)(const HubbardFermiMatrix&)>(logdet));
         mod.def("logdet",
