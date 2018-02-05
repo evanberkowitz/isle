@@ -193,47 +193,47 @@ Matrix<std::complex<double>> HubbardFermiMatrix::LU::reconstruct() const {
     const std::size_t nx = dinv[0].rows();
     std::unique_ptr<int[]> ipiv = std::make_unique<int[]>(nx);// pivot indices for inversion
     Matrix<std::complex<double>> aux;
-    
+
     Matrix<std::complex<double>> recon(nx*nt, nx*nt, 0);
 
     // zeroth row, all columns
     invert(aux=dinv[0], ipiv);
-    blaze::submatrix(recon, 0, 0, nx, nx) = aux;
-    blaze::submatrix(recon, 0, nx, nx, nx) = u[0];
-    blaze::submatrix(recon, 0, (nt-1)*nx, nx, nx) = v[0];
+    spacemat(recon, 0, 0, nx) = aux;
+    spacemat(recon, 0, 1, nx) = u[0];
+    spacemat(recon, 0, nt-1, nx) = v[0];
 
     // rows 1 - nt-3 (all 'regular' ones), all columns
     for (std::size_t i = 1; i < nt-2; ++i) {
         invert(aux=dinv[i], ipiv);
-        blaze::submatrix(recon, i*nx, i*nx, nx, nx) = aux + l[i-1]*u[i-1];
+        spacemat(recon, i, i, nx) = aux + l[i-1]*u[i-1];
         invert(aux=dinv[i-i], ipiv);
-        blaze::submatrix(recon, i*nx, (i-1)*nx, nx, nx) = l[i-1]*aux;
-        blaze::submatrix(recon, i*nx, (i+1)*nx, nx, nx) = u[i];
-        blaze::submatrix(recon, i*nx, (nt-1)*nx, nx, nx) = l[i-1]*v[i-1] + v[i];
+        spacemat(recon, i, i-1, nx) = l[i-1]*aux;
+        spacemat(recon, i, i+1, nx) = u[i];
+        spacemat(recon, i, nt-1, nx) = l[i-1]*v[i-1] + v[i];
     }
 
     // row nt-2, all columns
     invert(aux=dinv[nt-2], ipiv);
-    blaze::submatrix(recon, (nt-2)*nx, (nt-2)*nx, nx, nx) = aux + l[nt-3]*u[nt-3];
+    spacemat(recon, nt-2, nt-2, nx) = aux + l[nt-3]*u[nt-3];
     invert(aux=dinv[nt-3], ipiv);
-    blaze::submatrix(recon, (nt-2)*nx, (nt-3)*nx, nx, nx) = l[nt-3]*aux;
-    blaze::submatrix(recon, (nt-2)*nx, (nt-1)*nx, nx, nx) = l[nt-3]*v[nt-3] + u[nt-2];
+    spacemat(recon, nt-2, nt-3, nx) = l[nt-3]*aux;
+    spacemat(recon, nt-2, nt-1, nx) = l[nt-3]*v[nt-3] + u[nt-2];
 
     // row nt-1, up to column nt-3
     invert(aux=dinv[0], ipiv);
-    blaze::submatrix(recon, (nt-1)*nx, 0, nx, nx) = h[0]*aux;
+    spacemat(recon, nt-1, 0, nx) = h[0]*aux;
     for (std::size_t i = 1; i < nt-2; ++i) {
         invert(aux=dinv[i], ipiv);
-        blaze::submatrix(recon, (nt-1)*nx, i*nx, nx, nx) = h[i-1]*u[i-1] + h[i]*aux;
+        spacemat(recon, nt-1, i, nx) = h[i-1]*u[i-1] + h[i]*aux;
     }
 
     // row nt-1, columns nt-2, nt-1
     invert(aux=dinv[nt-2], ipiv);
-    blaze::submatrix(recon, (nt-1)*nx, (nt-2)*nx, nx, nx) = h[nt-3]*u[nt-3] + l[nt-2]*aux;
+    spacemat(recon, nt-1, nt-2, nx) = h[nt-3]*u[nt-3] + l[nt-2]*aux;
     invert(aux=dinv[nt-1], ipiv);
-    blaze::submatrix(recon, (nt-1)*nx, (nt-1)*nx, nx, nx) = aux + l[nt-2]*u[nt-2];
+    spacemat(recon, nt-1, nt-1, nx) = aux + l[nt-2]*u[nt-2];
     for (std::size_t i = 0; i < nt-2; ++i)
-        blaze::submatrix(recon, (nt-1)*nx, (nt-1)*nx, nx, nx) += h[i]*v[i];
+        spacemat(recon, nt-1, nt-1, nx) += h[i]*v[i];
 
     return recon;
 }
@@ -300,11 +300,6 @@ HubbardFermiMatrix::LU getLU(const HubbardFermiMatrix &hfm) {
     invert(lu.dinv.back());
 
     return lu;
-}
-
-template <typename VT>
-decltype(auto) spacevec(VT &&vec, const std::size_t t, const std::size_t nx) {
-    return blaze::subvector(std::forward<VT>(vec), t*nx, nx);
 }
 
 Vector<std::complex<double>> solve(const HubbardFermiMatrix::LU &lu,

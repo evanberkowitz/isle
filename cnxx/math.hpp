@@ -161,6 +161,20 @@ std::complex<RT> toFirstLogBranch(const std::complex<RT> &x) {
 }
 
 
+/// Return a view on a spatial vector for given timeslice of a spacetime vector.
+template <typename VT>
+decltype(auto) spacevec(VT &&vec, const std::size_t t, const std::size_t nx) {
+    return blaze::subvector(std::forward<VT>(vec), t*nx, nx);
+}
+
+/// Return a view on a spatial matrix for given timeslices of a spacetime matrix.
+template <typename MT>
+decltype(auto) spacemat(MT &&mat, const std::size_t tp, const std::size_t t,
+                        const std::size_t nx) {
+    return blaze::submatrix(std::forward<MT>(mat), tp*nx, t*nx, nx, nx);
+}
+
+
 /// Multiply a space matrix with a space time vector.
 /**
  * Let \f$v, u\f$ be vectors in spacetime and \f$M\f$ a matrix in space.
