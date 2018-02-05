@@ -207,7 +207,7 @@ public:
      * all member variables.
      */
     struct LU {
-        std::vector<Matrix<std::complex<double>>> d; ///< See definition of U.
+        std::vector<Matrix<std::complex<double>>> dinv; ///< \f$d^{-1}\f$, see definition of U.
         std::vector<Matrix<std::complex<double>>> u; ///< See definition of U.
         std::vector<Matrix<std::complex<double>>> v; ///< See definition of U.
         std::vector<Matrix<std::complex<double>>> l; ///< See definition of L.
