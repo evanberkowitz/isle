@@ -59,16 +59,16 @@
         & l_1 & \ddots &        &        &\\
         &     & \ddots & 1      &        &\\
         &     &        & l_{N_t-3} & 1      & \\
-    h_0 & h_1 & \cdots  & h_{N_t-3} & l_{N_T-2} & 1
+    h_0 & h_1 & \cdots  & h_{N_t-3} & l_{N_t-2} & 1
   \end{pmatrix}
   \quad U =
   \begin{pmatrix}
     d_0 & u_0 &        &        &        & v_0    \\
         & d_1 & u_1    &        &        & v_1    \\
         &     & d_2    & \ddots &        & \vdots \\
-        &     &        & \ddots & u_{N_T-3} & v_{N_T-3} \\
-        &     &        &        & d_{N_T-2} & u_{N_T-2} \\
-        &     &        &        &        & d_{N_T-1}
+        &     &        & \ddots & u_{N_t-3} & v_{N_t-3} \\
+        &     &        &        & d_{N_t-2} & u_{N_t-2} \\
+        &     &        &        &        & d_{N_t-1}
   \end{pmatrix}.
  \f]
  * This results in the following scheme:
@@ -231,6 +231,9 @@ private:
 
 /// Perform an LU-decomposition on a HubbardFermiMatrix.
 HubbardFermiMatrix::LU getLU(const HubbardFermiMatrix &hfm);
+
+Vector<std::complex<double>> solve(const HubbardFermiMatrix::LU &lu,
+                                   const Vector<std::complex<double>> &rhs);
 
 /// Compute \f$\log(\det(M M^\dagger))\f$ by means of an LU-decomposition.
 /**

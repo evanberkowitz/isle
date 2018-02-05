@@ -278,6 +278,54 @@ HubbardFermiMatrix::LU getLU(const HubbardFermiMatrix &hfm) {
     return lu;
 }
 
+template <typename VT>
+decltype(auto) spacevec(VT &&vec, const std::size_t t, const std::size_t nx) {
+    return blaze::subvector(std::forward<VT>(vec), t*nx, nx);
+}
+
+Vector<std::complex<double>> solve(const HubbardFermiMatrix::LU &lu,
+                                   const Vector<std::complex<double>> &rhs) {
+    const std::size_t nx = lu.d[0].rows();
+    const std::size_t nt = lu.d.size();
+
+#ifndef NDEBUG
+    if (rhs.size() != nx*nt) {
+        throw std::runtime_error("Right hand side does not have correct size (spacetime vector)");
+    }
+#endif
+
+    Vector<std::complex<double>> y(nt*nx);
+
+    spacevec(y, 0, nx) = spacevec(rhs, 0, nx);
+    for (std::size_t i = 1; i < nt-1; ++i)
+        spacevec(y, i, nx) = spacevec(rhs, i, nx) - lu.l[i-1]*spacevec(y, i-1, nx);
+    spacevec(y, nt-1, nx) = spacevec(rhs, nt-1, nx) - lu.l[nt-2]*spacevec(y, nt-2, nx);
+    for (std::size_t j = 0; j < nt-2; ++j)
+        spacevec(y, nt-1, nx) -= lu.h[j]*spacevec(y, j, nx);
+
+    Vector<std::complex<double>> x(nt*nx);
+    std::unique_ptr<int[]> ipiv = std::make_unique<int[]>(nx);
+
+    Matrix<std::complex<double>> dinv(nx, nx);
+
+    invert(dinv=lu.d[nt-1], ipiv);
+    spacevec(x, nt-1, nx) = dinv*spacevec(y, nt-1, nx);
+
+    invert(dinv=lu.d[nt-2], ipiv);
+    spacevec(x, nt-2, nx) = dinv*(spacevec(y, nt-2, nx)
+                                  - lu.u[nt-2]*spacevec(x, nt-1, nx));
+
+    // iterate i in [nt-3, 0]
+    for (std::size_t i = nt-3; i != static_cast<std::size_t>(-1); --i) {
+        invert(dinv=lu.d[i], ipiv);
+        spacevec(x, i, nx) = dinv*(spacevec(y, i, nx)
+                                   - lu.u[i]*spacevec(x, i+1, nx)
+                                   - lu.v[i]*spacevec(x, nt-1, nx));
+    }
+
+    return x;
+}
+
 std::complex<double> logdet(const HubbardFermiMatrix &hfm) {
     auto lu = getLU(hfm);
     return ilogdet(lu);
