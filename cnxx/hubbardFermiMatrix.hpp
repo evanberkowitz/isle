@@ -216,6 +216,9 @@ public:
         /// Reserves space for std::vectors but does not construct matrices.
         explicit LU(std::size_t nt);
 
+        /// Check whether an instance is set up properly, i.e. all vectors have consistent sizes.
+        bool isConsistent() const;
+
         /// Reconstruct the fermion matrix as a dense matrix.
         Matrix<std::complex<double>> reconstruct() const;
     };

@@ -175,12 +175,19 @@ HubbardFermiMatrix::LU::LU(const std::size_t nt) {
     h.reserve(nt-2);
 }
 
+bool HubbardFermiMatrix::LU::isConsistent() const {
+    const std::size_t nt = dinv.size();
+    if (nt == 0 || u.size() != nt-1 || v.size() != nt-2
+        || l.size() != nt-1 || h.size() != nt-2)
+        return false;
+    return true;
+}
+
 Matrix<std::complex<double>> HubbardFermiMatrix::LU::reconstruct() const {
     const std::size_t nt = dinv.size();
 #ifndef NDEBUG
-    if (nt == 0 || u.size() != nt-1 || v.size() != nt-2
-        || l.size() != nt-1 || h.size() != nt-2)
-        throw std::runtime_error("Components of LU not fully initialized");
+    if (!isConsistent())
+        throw std::runtime_error("Components of LU not initialized properly");
 #endif
 
     const std::size_t nx = dinv[0].rows();
@@ -302,16 +309,15 @@ decltype(auto) spacevec(VT &&vec, const std::size_t t, const std::size_t nx) {
 
 Vector<std::complex<double>> solve(const HubbardFermiMatrix::LU &lu,
                                    const Vector<std::complex<double>> &rhs) {
-    // TODO check that lu is properly set
-
     const std::size_t nt = lu.dinv.size();
-    const std::size_t nx = lu.dinv[0].rows();
-
 #ifndef NDEBUG
-    if (rhs.size() != nx*nt) {
+    if (!lu.isConsistent())
+        throw std::runtime_error("Components of LU not initialized properly");
+    if (rhs.size() != lu.dinv[0].rows()*nt)
         throw std::runtime_error("Right hand side does not have correct size (spacetime vector)");
-    }
 #endif
+
+    const std::size_t nx = lu.dinv[0].rows();
 
     Vector<std::complex<double>> y(nt*nx);
 
@@ -348,6 +354,11 @@ std::complex<double> logdet(const HubbardFermiMatrix &hfm) {
 }
 
 std::complex<double> logdet(const HubbardFermiMatrix::LU &lu) {
+#ifndef NDEBUG
+    if (!lu.isConsistent())
+        throw std::runtime_error("Components of LU not initialized properly");
+#endif
+
     std::complex<double> ldet;
     // calculate logdet of diagonal blocks
     for (const auto &dinv : lu.dinv)
@@ -356,6 +367,11 @@ std::complex<double> logdet(const HubbardFermiMatrix::LU &lu) {
 }
 
 std::complex<double> ilogdet(HubbardFermiMatrix::LU &lu) {
+#ifndef NDEBUG
+    if (!lu.isConsistent())
+        throw std::runtime_error("Components of LU not initialized properly");
+#endif
+
     std::complex<double> ldet;
     // calculate logdet of diagonal blocks
     for (auto &dinv : lu.dinv)
