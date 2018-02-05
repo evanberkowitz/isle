@@ -314,8 +314,8 @@ Vector<std::complex<double>> solve(const HubbardFermiMatrix::LU &lu,
 
     const std::size_t nx = lu.dinv[0].rows();
 
+    // solve L*y = rhs
     Vector<std::complex<double>> y(nt*nx);
-
     spacevec(y, 0, nx) = spacevec(rhs, 0, nx);
     for (std::size_t i = 1; i < nt-1; ++i)
         spacevec(y, i, nx) = spacevec(rhs, i, nx) - lu.l[i-1]*spacevec(y, i-1, nx);
@@ -323,22 +323,16 @@ Vector<std::complex<double>> solve(const HubbardFermiMatrix::LU &lu,
     for (std::size_t j = 0; j < nt-2; ++j)
         spacevec(y, nt-1, nx) -= lu.h[j]*spacevec(y, j, nx);
 
+    // solve U*x = y
     Vector<std::complex<double>> x(nt*nx);
-    std::unique_ptr<int[]> ipiv = std::make_unique<int[]>(nx);
-
-    Matrix<std::complex<double>> dinv(nx, nx);
-
     spacevec(x, nt-1, nx) = lu.dinv[nt-1]*spacevec(y, nt-1, nx);
-
     spacevec(x, nt-2, nx) = lu.dinv[nt-2]*(spacevec(y, nt-2, nx)
-                                  - lu.u[nt-2]*spacevec(x, nt-1, nx));
-
+                                           - lu.u[nt-2]*spacevec(x, nt-1, nx));
     // iterate i in [nt-3, 0]
-    for (std::size_t i = nt-3; i != static_cast<std::size_t>(-1); --i) {
+    for (std::size_t i = nt-3; i != static_cast<std::size_t>(-1); --i)
         spacevec(x, i, nx) = lu.dinv[i]*(spacevec(y, i, nx)
-                                   - lu.u[i]*spacevec(x, i+1, nx)
-                                   - lu.v[i]*spacevec(x, nt-1, nx));
-    }
+                                         - lu.u[i]*spacevec(x, i+1, nx)
+                                         - lu.v[i]*spacevec(x, nt-1, nx));
 
     return x;
 }
