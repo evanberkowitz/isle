@@ -1,20 +1,23 @@
 #!/usr/bin/env python3
 
 """
-Showcase HubbardFermiMatrix and logdet.
+Showcase and benchmark logdet.
 """
 
 import timeit
+import site
+from pathlib import Path
+
 import yaml
 import numpy as np
 import matplotlib.pyplot as plt
 
-import core
-core.prepare_module_import()
+BENCH_PATH = Path(__file__).resolve().parent
+site.addsitedir(str(BENCH_PATH/"../modules"))
 import cns
 
 def main():
-    with open("../lattices/c60_ipr.yml", "r") as yamlf:
+    with open(str(BENCH_PATH/"../lattices/c60_ipr.yml"), "r") as yamlf:
         lat = yaml.safe_load(yamlf)
 
     nts = (4, 8, 12, 16, 20, 24, 28, 32)
@@ -43,6 +46,7 @@ def main():
     ax.set_ylabel("time / s")
     ax.plot(nts, custom, label="custom")
     ax.plot(nts, lapack, label="LAPACK")
+    ax.legend()
     fig.tight_layout()
     plt.show()
 
