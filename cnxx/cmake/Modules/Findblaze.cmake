@@ -59,7 +59,7 @@ endif ()
 
 ### enable parallelism ###
 if ("${BLAZE_PARALLELISM}" STREQUAL "NONE")
-  set(blaze_CXX_FLAGS "${blaze_CXX_FLAGS};-BLAZE_USE_SHARED_MEMORY_PARALLELIZATION=0")
+  set(blaze_CXX_FLAGS "${blaze_CXX_FLAGS};-DBLAZE_USE_SHARED_MEMORY_PARALLELIZATION=0")
 elseif ("${BLAZE_PARALLELISM}" STREQUAL "OMP")
   find_package(OMP REQUIRED)
   set(blaze_CXX_FLAGS "${blaze_CXX_FLAGS};${OMP_CXX_FLAGS}")

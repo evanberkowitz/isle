@@ -65,7 +65,7 @@ unset(AUX_LIST)
 unset(RAW_INCLUDES)
 
 
-### get linker flags and lirbaries ###
+### get linker flags and libraries ###
 python_config("--ldflags" AUX)
 # turn it into a list
 string(REPLACE " " ";" AUX_LIST ${AUX})
@@ -79,11 +79,12 @@ extract_flags_paths(AUX_FLAGS "-l" PYBIND11_LINKER_FLAGS AUX_LIBS)
 unset(AUX_FLAGS)
 
 # search for all libs
+string(REPLACE ":" ";" LD_LIBRARY_PATH "$ENV{LD_LIBRARY_PATH}")
 set(PYBIND11_LIBRARIES)
 foreach (lib IN LISTS AUX_LIBS)
   # search twice to prefer custom paths over system paths
   find_library(aux_path ${lib} PATHS ${PYBIND11_LIB_PATHS} NO_DEFAULT_PATH)
-  find_library(aux_path ${lib} PATHS ${PYBIND11_LIB_PATHS})
+  find_library(aux_path ${lib} PATHS ${PYBIND11_LIB_PATHS};${LD_LIBRARY_PATH})
   if (NOT aux_path)
     message(FATAL_ERROR "Did not find library ${lib}. Try to adjust PYBIND11_LIB_PATHS")
   endif ()
@@ -92,6 +93,7 @@ foreach (lib IN LISTS AUX_LIBS)
   unset(aux_path CACHE)
 endforeach ()
 unset(AUX_LIBS)
+unset(LD_LIBRARY_PATH)
 
 
 ### get library extension suffix ###

@@ -18,7 +18,9 @@ else ()
   message(FATAL_ERROR "Unable to link against OpenMP for compiler ${CMAKE_CXX_COMPILER_ID}")
 endif ()
 
-find_library(OMP_LIBRARIES ${omp_lib})
+string(REPLACE ":" ";" LD_LIBRARY_PATH "$ENV{LD_LIBRARY_PATH}")
+find_library(OMP_LIBRARIES ${omp_lib} PATHS ${LD_LIBRARY_PATH})
+unset(LD_LIBRARY_PATH)
 unset(omp_lib)
 
 include(FindPackageHandleStandardArgs)
