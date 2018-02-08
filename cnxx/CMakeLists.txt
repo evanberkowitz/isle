@@ -52,6 +52,14 @@ target_compile_options(cnxx PUBLIC "${blaze_CXX_FLAGS}")
 target_link_libraries(cnxx ${blaze_LIBRARIES})
 target_linker_flags(cnxx "${blaze_LINKER_FLAGS}")
 
+# OpenMP if blaze does not use it
+if (NOT "${BLAZE_PARALLELISM}" STREQUAL "OMP")
+  find_package(OMP REQUIRED)
+  target_compile_options(cnxx "${OMP_CXX_FLAGS}")
+  target_link_libraries(cnxx ${OMP_LIBRARIES})
+  target_linker_flags(cnxx "${OMP_LINKER_FLAGS}")
+endif ()
+
 # install library under ../modules
 if (CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT)
   set(CMAKE_INSTALL_PREFIX "${CMAKE_SOURCE_DIR}/../modules" CACHE PATH
