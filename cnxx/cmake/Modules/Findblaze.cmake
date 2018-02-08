@@ -7,8 +7,12 @@
 #  blaze_LINKER_FLAGS  - Flags for linker
 #
 
-### search for blaze itself ###
+
+### control variales
 set(BLAZE "" CACHE STRING "Path to folder containing blaze headers. (Expects to find \$BLAZE/blaze/Blaze.h)")
+set(BLAZE_PARALLELISM "NONE" CACHE STRING "Kind of parallelism used by blaze. Can be NONE, OMP, CPP.")
+
+### search for blaze itself ###
 find_path(BLAZE_INCLUDE_DIR blaze/Blaze.h PATHS ${BLAZE} NO_DEFAULT_PATH)
 find_path(BLAZE_INCLUDE_DIR blaze/Blaze.h)
 
@@ -51,6 +55,22 @@ set(blaze_LINKER_FLAGS ${LAPACK_LINKER_FLAGS})
 if ("${BLAS_VENDOR}" MATCHES "^Intel.*")
   set(blaze_LIBRARIES "${blaze_LIBRARIES} -lmkl_avx2 -lmkl_def")
 endif ()
+
+
+### enable parallelism ###
+if ("${BLAZE_PARALLELISM}" STREQUAL "NONE")
+  set(blaze_CXX_FLAGS "${blaze_CXX_FLAGS};-BLAZE_USE_SHARED_MEMORY_PARALLELIZATION=0")
+elseif ("${BLAZE_PARALLELISM}" STREQUAL "OMP")
+  find_package(OMP REQUIRED)
+  set(blaze_CXX_FLAGS "${blaze_CXX_FLAGS};${OMP_CXX_FLAGS}")
+  set(blaze_LIBRARIES "${blaze_LIBRARIES};${OMP_LIBRARIES}")
+  set(blaze_LINKER_FLAGS "${blaze_LINKER_FLAGS} ${OMP_LINKER_FLAGS}")
+elseif ("${BLAZE_PARALLELISM}" STREQUAL "CPP")
+  set(blaze_CXX_FLAGS "${blaze_CXX_FLAGS};-DBLAZE_USE_CPP_THREADS")
+else()
+  message(FATAL_ERROR "Unknown parallelism for blaze: ${BLAZE_PARALLELISM}. Supported values are NONE, OMP, CPP.")
+endif ()
+
 
 include(FindPackageHandleStandardArgs)
 find_package_handle_standard_args(blaze DEFAULT_MSG BLAZE_INCLUDE_DIR BLAZE_CXX_FLAGS)
