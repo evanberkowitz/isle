@@ -2,6 +2,18 @@ cmake_minimum_required(VERSION 3.9.4)
 
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/cmake/Modules/")
 
+function (target_linker_flags target flags)
+  if (flags)
+    string(REPLACE ";" " " str_flags "${flags}")
+    get_target_property(old ${target} LINK_FLAGS)
+    if ("${old}" MATCHES "^.*-NOTFOUND")
+      set_target_properties(${target} PROPERTIES LINK_FLAGS "${str_flags}")
+    else ()
+      set_target_properties(${target} PROPERTIES LINK_FLAGS "${old} ${str_flags}")
+    endif ()
+  endif ()
+endfunction ()
+
 project(cnxx CXX)
 
 set(SOURCE hubbardFermiMatrix.cpp)
@@ -19,6 +31,7 @@ else ()
     CXX_STANDARD_REQUIRED ON)
 endif ()
 
+# target_compile_options(cnxx PUBLIC -Wall -Wextra -pedantic -DBLAZE_USE_CPP_THREADS)
 target_compile_options(cnxx PUBLIC -Wall -Wextra -pedantic)
 if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
   target_compile_options(cnxx PUBLIC -Wno-c++98-compat)
@@ -30,14 +43,14 @@ set_target_properties(cnxx PROPERTIES PREFIX "" SUFFIX "${PYBIND11_LIB_SUFFIX}")
 include_directories(SYSTEM "${PYBIND11_INCLUDE_DIRS}")
 target_compile_options(cnxx PUBLIC ${PYBIND11_CXX_FLAGS})
 target_link_libraries(cnxx ${PYBIND11_LIBRARIES})
-set_target_properties(cnxx PROPERTIES LINK_FLAGS "${PYBIND11_LINKER_FLAGS}")
+target_linker_flags(cnxx "${PYBIND11_LINKER_FLAGS}")
 
 # blaze
 find_package(blaze REQUIRED)
 include_directories(SYSTEM ${blaze_INCLUDE_DIRS})
-target_compile_options(cnxx PUBLIC ${blaze_CXX_FLAGS})
+target_compile_options(cnxx PUBLIC "${blaze_CXX_FLAGS}")
 target_link_libraries(cnxx ${blaze_LIBRARIES})
-set_target_properties(cnxx PROPERTIES LINK_FLAGS "${blaze_LINKER_FLAGS}")
+target_linker_flags(cnxx "${blaze_LINKER_FLAGS}")
 
 # install library under ../modules
 if (CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT)
