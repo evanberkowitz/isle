@@ -48,6 +48,10 @@ find_package(LAPACK REQUIRED)
 set(blaze_LIBRARIES ${LAPACK_LIBRARIES})
 set(blaze_LINKER_FLAGS ${LAPACK_LINKER_FLAGS})
 
+if ("${BLAS_VENDOR}" MATCHES "^Intel.*")
+  set(blaze_LIBRARIES "${blaze_LIBRARIES} -lmkl_avx2 -lmkl_def")
+endif ()
+
 include(FindPackageHandleStandardArgs)
 find_package_handle_standard_args(blaze DEFAULT_MSG BLAZE_INCLUDE_DIR BLAZE_CXX_FLAGS)
 mark_as_advanced(BLAZE_INCLUDE_DIR)
