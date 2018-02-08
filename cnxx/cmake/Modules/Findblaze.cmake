@@ -49,7 +49,7 @@ set(blaze_LIBRARIES ${LAPACK_LIBRARIES})
 set(blaze_LINKER_FLAGS ${LAPACK_LINKER_FLAGS})
 
 if ("${BLAS_VENDOR}" MATCHES "^Intel.*")
-  set(blaze_LIBRARIES "${blaze_LIBRARIES} libmkl_avx2.so libmkl_def.so)
+  set(blaze_LIBRARIES "${blaze_LIBRARIES} -lmkl_avx2 -lmkl_def")
 endif ()
 
 include(FindPackageHandleStandardArgs)
