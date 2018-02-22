@@ -163,17 +163,28 @@ std::size_t HubbardFermiMatrix::nt() const noexcept {
 
 HubbardFermiMatrix::LU::LU(const std::size_t nt) {
     dinv.reserve(nt);
-    u.reserve(nt-1);
-    v.reserve(nt-2);
-    l.reserve(nt-1);
-    h.reserve(nt-2);
+    if (nt > 1) {
+        u.reserve(nt-1);
+        l.reserve(nt-1);
+        if (nt > 2) {
+            v.reserve(nt-2);
+            h.reserve(nt-2);
+        }
+    }
 }
 
 bool HubbardFermiMatrix::LU::isConsistent() const {
     const std::size_t nt = dinv.size();
-    if (nt == 0 || u.size() != nt-1 || v.size() != nt-2
-        || l.size() != nt-1 || h.size() != nt-2)
+    if (nt == 0)
         return false;
+    else {
+        // check this for any nt > 0
+        if (u.size() != nt-1 || l.size() != nt-1)
+            return false;
+        // this check only works for nt > 1
+        if (nt > 1 && (v.size() != nt-2 || h.size() != nt-2))
+            return false;
+    }
     return true;
 }
 
@@ -236,66 +247,129 @@ Matrix<std::complex<double>> HubbardFermiMatrix::LU::reconstruct() const {
  * -------------------------- free functions --------------------------
  */
 
-HubbardFermiMatrix::LU getLU(const HubbardFermiMatrix &hfm) {
-    const std::size_t nx = hfm.nx();
-    const std::size_t nt = hfm.nt();
-    HubbardFermiMatrix::LU lu{nt};
+namespace {
+    /// Special case LU decomposition for nt == 1.
+    HubbardFermiMatrix::LU nt1LU(const HubbardFermiMatrix &hfm) {
+        HubbardFermiMatrix::LU lu{1};
 
-    const auto P = hfm.P();  // diagonal block P
-    SparseMatrix<std::complex<double>> q;  // subdiagonal blocks Q and Q^\dagger
+        // construct d_0
+        SparseMatrix<std::complex<double>> q;
+        hfm.Q(q, 0);
+        lu.dinv.emplace_back(hfm.P() + q);
+        hfm.Qdag(q, 0);
+        lu.dinv[0] += q;
 
-    // Matrix<std::complex<double>> dinv;  // inverted d, updated along the way
-    SparseMatrix<std::complex<double>> u; // previous u, updated along the way
-    std::unique_ptr<int[]> ipiv = std::make_unique<int[]>(nx);// pivot indices for inversion
+        // invert d_0
+        std::unique_ptr<int[]> ipiv = std::make_unique<int[]>(hfm.nx());
+        invert(lu.dinv[0]);
 
-    // starting components of d, u, l, v, h
-    lu.dinv.emplace_back(P);
-    invert(lu.dinv.back(), ipiv);
-    hfm.Qdag(u, 0);   // now u = lu.u[0]
-    lu.u.emplace_back(u);
+        return lu;
+    }
 
-    hfm.Q(q, 1);
-    lu.l.emplace_back(q*lu.dinv.back());
-    hfm.Q(q, 0);
-    lu.v.emplace_back(q);
-    hfm.Qdag(q, nt-1);
-    lu.h.emplace_back(q*lu.dinv.back());
+    /// Special case LU decomposition for nt == 2.
+    HubbardFermiMatrix::LU nt2LU(const HubbardFermiMatrix &hfm) {
+        const std::size_t nx = hfm.nx();
+        constexpr std::size_t nt = 2;
+        HubbardFermiMatrix::LU lu{nt};
 
-    // iterate for i in [1, nt-3], 'regular' part of d, u, l, v, h
-    for (std::size_t i = 1; i < nt-2; ++i) {
-        // here, u = lu.u[i-1]
-        lu.dinv.emplace_back(P - lu.l[i-1]*u);
+        const auto P = hfm.P();  // diagonal block P
+        SparseMatrix<std::complex<double>> aux0, aux1; // Q, Qdag, and u
+        std::unique_ptr<int[]> ipiv = std::make_unique<int[]>(nx);// pivot indices for inversion
+
+        // d_0
+        lu.dinv.emplace_back(P);
+        invert(lu.dinv[0], ipiv);
+
+        // l_0
+        hfm.Q(aux0, 1);
+        hfm.Qdag(aux1, 1);
+        lu.l.emplace_back((aux0+aux1)*lu.dinv[0]);
+
+        // u_0
+        hfm.Q(aux0, 0);
+        hfm.Qdag(aux1, 0);
+        aux0 += aux1;  // now aux0 = u_0
+        lu.u.emplace_back(aux0);
+        
+        // d_1
+        lu.dinv.emplace_back(P - lu.l[0]*aux0);
+        invert(lu.dinv[1], ipiv);
+
+        return lu;
+    }
+
+    /// General case LU decomposition for nt > 2.
+    HubbardFermiMatrix::LU generalLU(const HubbardFermiMatrix &hfm) {
+        const std::size_t nx = hfm.nx();
+        const std::size_t nt = hfm.nt();
+        HubbardFermiMatrix::LU lu{nt};
+
+        const auto P = hfm.P();  // diagonal block P
+        SparseMatrix<std::complex<double>> q;  // subdiagonal blocks Q and Q^\dagger
+
+        SparseMatrix<std::complex<double>> u; // previous u, updated along the way
+        std::unique_ptr<int[]> ipiv = std::make_unique<int[]>(nx);// pivot indices for inversion
+
+        // starting components of d, u, l, v, h
+        lu.dinv.emplace_back(P);
+        invert(lu.dinv.back(), ipiv);
+        hfm.Qdag(u, 0);   // now u = lu.u[0]
+        lu.u.emplace_back(u);
+
+        hfm.Q(q, 1);
+        lu.l.emplace_back(q*lu.dinv.back());
+        hfm.Q(q, 0);
+        lu.v.emplace_back(q);
+        hfm.Qdag(q, nt-1);
+        lu.h.emplace_back(q*lu.dinv.back());
+
+        // iterate for i in [1, nt-3], 'regular' part of d, u, l, v, h
+        for (std::size_t i = 1; i < nt-2; ++i) {
+            // here, u = lu.u[i-1]
+            lu.dinv.emplace_back(P - lu.l[i-1]*u);
+            invert(lu.dinv.back(), ipiv);
+
+            hfm.Q(q, i+1);
+            lu.l.emplace_back(q*lu.dinv.back());
+            lu.h.emplace_back(-lu.h[i-1]*u*lu.dinv.back());
+            lu.v.emplace_back(-lu.l[i-1]*lu.v[i-1]);
+
+            hfm.Qdag(u, i);
+            lu.u.emplace_back(u);  // now u = lu.u[i]
+        }
+        // from now on u is lu.u[nt-3]
+
+        // additional 'regular' step for d
+        lu.dinv.emplace_back(P - lu.l[nt-3]*u);
         invert(lu.dinv.back(), ipiv);
 
-        hfm.Q(q, i+1);
-        lu.l.emplace_back(q*lu.dinv.back());
-        lu.h.emplace_back(-lu.h[i-1]*u*lu.dinv.back());
-        lu.v.emplace_back(-lu.l[i-1]*lu.v[i-1]);
+        // final components of u, l
+        hfm.Qdag(q, nt-2);
+        lu.u.emplace_back(q - lu.l[nt-3]*lu.v[nt-3]);
+        hfm.Q(q, nt-1);
+        lu.l.emplace_back((q - lu.h[nt-3]*u)*lu.dinv[nt-2]);
 
-        hfm.Qdag(u, i);
-        lu.u.emplace_back(u);  // now u = lu.u[i]
+        // final component of d
+        lu.dinv.emplace_back(P - lu.l[nt-2]*lu.u[nt-2]);
+        for (std::size_t i = 0; i < nt-2; ++i)
+            lu.dinv[nt-1] -= lu.h[i]*lu.v[i];
+        invert(lu.dinv.back());
+
+        return lu;
     }
-    // from now on u is lu.u[nt-3]
-
-    // additional 'regular' step for d
-    lu.dinv.emplace_back(P - lu.l[nt-3]*u);
-    invert(lu.dinv.back(), ipiv);
-
-    // final components of u, l
-    hfm.Qdag(q, nt-2);
-    lu.u.emplace_back(q - lu.l[nt-3]*lu.v[nt-3]);
-    hfm.Q(q, nt-1);
-    lu.l.emplace_back((q - lu.h[nt-3]*u)*lu.dinv[nt-2]);
-
-    // final component of d
-    lu.dinv.emplace_back(P - lu.l[nt-2]*lu.u[nt-2]);
-    for (std::size_t i = 0; i < nt-2; ++i)
-        lu.dinv[nt-1] -= lu.h[i]*lu.v[i];
-    invert(lu.dinv.back());
-
-    return lu;
 }
 
+HubbardFermiMatrix::LU getLU(const HubbardFermiMatrix &hfm) {
+    switch (hfm.nt()) {
+    case 1:
+        return nt1LU(hfm);
+    case 2:
+        return nt2LU(hfm);
+    default:
+        return generalLU(hfm);
+    }
+}
+        
 Vector<std::complex<double>> solve(const HubbardFermiMatrix &hfm,
                                    const Vector<std::complex<double>> &rhs) {
     return solve(getLU(hfm), rhs);
@@ -318,20 +392,25 @@ Vector<std::complex<double>> solve(const HubbardFermiMatrix::LU &lu,
     spacevec(y, 0, nx) = spacevec(rhs, 0, nx);
     for (std::size_t i = 1; i < nt-1; ++i)
         spacevec(y, i, nx) = spacevec(rhs, i, nx) - lu.l[i-1]*spacevec(y, i-1, nx);
-    spacevec(y, nt-1, nx) = spacevec(rhs, nt-1, nx) - lu.l[nt-2]*spacevec(y, nt-2, nx);
-    for (std::size_t j = 0; j < nt-2; ++j)
-        spacevec(y, nt-1, nx) -= lu.h[j]*spacevec(y, j, nx);
+    if (nt > 1) {
+        spacevec(y, nt-1, nx) = spacevec(rhs, nt-1, nx) - lu.l[nt-2]*spacevec(y, nt-2, nx);
+        for (std::size_t j = 0; j < nt-2; ++j)
+            spacevec(y, nt-1, nx) -= lu.h[j]*spacevec(y, j, nx);
+    }
 
     // solve U*x = y
     Vector<std::complex<double>> x(nt*nx);
+    
     spacevec(x, nt-1, nx) = lu.dinv[nt-1]*spacevec(y, nt-1, nx);
-    spacevec(x, nt-2, nx) = lu.dinv[nt-2]*(spacevec(y, nt-2, nx)
-                                           - lu.u[nt-2]*spacevec(x, nt-1, nx));
-    // iterate i in [nt-3, 0]
-    for (std::size_t i = nt-3; i != static_cast<std::size_t>(-1); --i)
-        spacevec(x, i, nx) = lu.dinv[i]*(spacevec(y, i, nx)
-                                         - lu.u[i]*spacevec(x, i+1, nx)
-                                         - lu.v[i]*spacevec(x, nt-1, nx));
+    if (nt > 1) {
+        spacevec(x, nt-2, nx) = lu.dinv[nt-2]*(spacevec(y, nt-2, nx)
+                                               - lu.u[nt-2]*spacevec(x, nt-1, nx));
+        // iterate i in [nt-3, 0]
+        for (std::size_t i = nt-3; i != static_cast<std::size_t>(-1); --i)
+            spacevec(x, i, nx) = lu.dinv[i]*(spacevec(y, i, nx)
+                                             - lu.u[i]*spacevec(x, i+1, nx)
+                                             - lu.v[i]*spacevec(x, nt-1, nx));
+    }
 
     return x;
 }

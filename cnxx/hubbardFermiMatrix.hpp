@@ -102,6 +102,10 @@
  * After the initial steps, all matrices except for most \f$u\f$'s are dense. For simplicity, all inversions
  * are performed using <TT>LAPACK</TT>.
  *
+ * The algorithm for \f$N_t \in \{1,2\}\f$ is slightly different from the one shown
+ * here but handled correctly by the implementation. See notes in HubbardFermiMatrix::LU
+ * on the sizes of its members.
+ *
  *
  * ## Solver
  * A linear system of equations \f$(M M^\dagger) x = b\f$ can easily be solved via an
@@ -228,6 +232,18 @@ public:
     /**
      * See documentation of HubbardFermiMatrix for the definition of
      * all member variables.
+     *
+     * If set up properly, the sizes of the member vectors are:
+     *   nt | 1  | 2  | >2
+     * -----|----|----|----
+     * dinv | nt | nt | nt
+     * u    | 0  | 1  | nt-1
+     * l    | 0  | 1  | nt-1
+     * v    | 0  | 0  | nt-2
+     * h    | 0  | 0  | nt-2
+     *
+     * Use HubbardFermiMatrix::LU::isConsistent() to check whether those conditions
+     * are satisfied.
      */
     struct LU {
         std::vector<Matrix<std::complex<double>>> dinv; ///< \f$d^{-1}\f$, see definition of U.
@@ -256,9 +272,6 @@ private:
 
 
 /// Perform an LU-decomposition on a HubbardFermiMatrix.
-/**
- * \bug Needs nt > 2 (3?). Need to adjust algorithm for smaller values.
- */
 HubbardFermiMatrix::LU getLU(const HubbardFermiMatrix &hfm);
 
 /// Solve a system of equations \f$(M M^\dagger) x = b\f$.
