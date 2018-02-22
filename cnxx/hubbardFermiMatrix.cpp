@@ -1,11 +1,5 @@
 #include "hubbardFermiMatrix.hpp"
 
-
-
-
-#include <iostream>
-
-
 #include <memory>
 
 using namespace std::complex_literals;
@@ -128,10 +122,10 @@ void HubbardFermiMatrix::MMdag(SparseMatrix<std::complex<double>> &mmdag) const 
         blaze::submatrix(mmdag, tp*NX, tp*NX, NX, NX) = p;
 
         Q(q, tp);
-        blaze::submatrix(mmdag, tp*NX, (tp + NT - 1) % NT * NX, NX, NX) = q;
+        blaze::submatrix(mmdag, tp*NX, (tp + NT - 1) % NT * NX, NX, NX) += q;
 
         Qdag(q, tp);
-        blaze::submatrix(mmdag, tp*NX, (tp + 1) % NT * NX, NX, NX) = q;
+        blaze::submatrix(mmdag, tp*NX, (tp + 1) % NT * NX, NX, NX) += q;
     }
 }
 

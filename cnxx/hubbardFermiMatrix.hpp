@@ -92,7 +92,7 @@
  * Compute remaining \f$d, u, l\f$
  \f[
  u_{N_t-2} = Q_{N_t-2}^\dagger - l_{N_t-3} v_{N_t-3} \qquad l_{N_t-2} = (Q_{N_t-1} - h_{N_t-3} u_{N_t-3}) d_{N_t-2}^{-1}\\
- d_{N_t-1} = P - l_{N_t-2}u_{N_t-2} - \sum_{i=0}^{N_t-3}\, h_i v_i
+ d_{N_t-1} = P - l_{N_t-2}u_{N_t-2} - \textstyle\sum_{i=0}^{N_t-3}\, h_i v_i
  \f]
  *
  * In the case of the fermion matrix, each element of \f$L\f$ and \f$U\f$ is a spacial
@@ -256,6 +256,9 @@ private:
 
 
 /// Perform an LU-decomposition on a HubbardFermiMatrix.
+/**
+ * \bug Needs nt > 2 (3?). Need to adjust algorithm for smaller values.
+ */
 HubbardFermiMatrix::LU getLU(const HubbardFermiMatrix &hfm);
 
 /// Solve a system of equations \f$(M M^\dagger) x = b\f$.
