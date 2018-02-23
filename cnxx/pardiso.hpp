@@ -5,12 +5,12 @@
  * \brief Wrapper around PARDISO sparse solver.
  */
 
-#include <iostream>
-// #include <array>
 #include <type_traits>
 #include <memory>
+
 #include "math.hpp"
 #include "hubbardFermiMatrix.hpp"
+
 
 /// Prototype for init function in PARDISO library.
 extern "C" void pardisoinit(void *pt[64], int *mtype, int *solver, int iparm[64],
@@ -21,6 +21,7 @@ extern "C" void pardiso(void *pt[64], int *maxfct, int *mnum, int *mtype,
                         int *phase, int *n, void *a, int ia[], int ja[],
                         int perm[], int *nrhs, int iparm[64], int *msglvl,
                         void *b, void *x, int *error, double dparm[64]);
+
 
 /// Wrapper around PARDISO sparse solver.
 namespace Pardiso {
@@ -272,7 +273,7 @@ namespace Pardiso {
         std::vector<elementType> a;  ///< Array of elements.
         std::vector<int> ja;  ///< Array of column indices (1-based).
         std::vector<int> ia;  ///< Array of row indices (1-based).
-    };
+    };  // struct Matrix
 
 
     ///
@@ -432,7 +433,8 @@ namespace Pardiso {
          *
          * \return Solution vector x.
          *
-         * \throws std::runtime_error if PARDISO reports an error.
+         * \throws std::runtime_error if PARDISO reports an error or vector sizes
+         *                            do not match and in debug build.
          */
         std::vector<elementType> operator()(std::vector<elementType> &a,
                                             std::vector<int> &ia,
@@ -455,13 +457,14 @@ namespace Pardiso {
          * Thin wrapper for Pardiso::Matrix around overload for arrays.
          *
          * \param mat Sparse matrix `a`.
-         * \param b Right hand side vector. Size: `n`.
+         * \param b Right hand side vector.
          * \param startPhase Phase at which to start computation.
          * \param endPhase Phase at which to end computation.
          *
          * \return Solution vector x.
          *
-         * \throws std::runtime_error if PARDISO reports an error.
+         * \throws std::runtime_error if PARDISO reports an error or matrix and vector
+         *                            sizes do not match and in debug build.
          */
         std::vector<elementType> operator()(Pardiso::Matrix<elementType> &mat,
                                             std::vector<elementType> &b,
@@ -473,6 +476,46 @@ namespace Pardiso {
 #endif
             std::vector<elementType> x(b.size());
             (*this)(b.size(), mat.geta(), mat.getia(), mat.getja(),
+                    &b[0], &x[0], startPhase, endPhase);
+            return x;
+        }
+
+        /// Perform sparse solve by calling `pardiso`.
+        /**
+         * Solves a*x = b for x.<BR>
+         * Copies the input matrix into CRS format via Pardiso::Matrix and
+         * thus has some overhead over a plain call to `pardiso`.
+         *
+         * \param mat Sparse matrix `a`.
+         * \param b Right hand side vector.
+         * \param startPhase Phase at which to start computation.
+         * \param endPhase Phase at which to end computation.
+         *
+         * \return Solution vector x.
+         *
+         * \throws std::runtime_error if PARDISO reports an error or matrix and vector
+         *                            sizes do not match and in debug build.
+         */        
+        Vector<elementType> operator()(const SparseMatrix<elementType> &mat,
+                                       Vector<elementType> &b,
+                                       const Phase startPhase,
+                                       const Phase endPhase=Phase::SOLVE) {
+#ifndef NDEBUG
+            if (b.size() != mat.rows())
+                throw std::runtime_error("Numbers of rows of matrix and rright hand side do not match");
+#endif
+
+            // construct matrix in CRS format
+            Pardiso::Matrix<elementType> pmat(mat.nonZeros(), mat.rows());
+            for (std::size_t row = 0; row < mat.rows(); ++row) {
+                for (auto it = mat.begin(row), end = mat.end(row); it != end; ++it)
+                    pmat.add(static_cast<int>(it->index()), it->value());
+                pmat.finishRow();
+            }
+
+            // solve equation
+            Vector<elementType> x(b.size());
+            (*this)(mat.rows(), pmat.geta(), pmat.getia(), pmat.getja(),
                     &b[0], &x[0], startPhase, endPhase);
             return x;
         }
@@ -530,7 +573,7 @@ namespace Pardiso {
                 }                
             }
         }
-    };
-}
+    };  // struct State
+}  // namespace Spardiso
 
 #endif  // ndef PARDISO_HPP
