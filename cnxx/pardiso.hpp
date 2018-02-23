@@ -3,7 +3,27 @@
 
 /** \file
  * \brief Wrapper around PARDISO sparse solver.
+ *
+ * Including this file causes a compile time error unless either the macro `PARDISO`
+ * or `MKL_PARDISO` is defined. Those macros toggle which version of PARDISO is
+ * used as a backend.
+ *
+ * \todo Implement MKL PARDISO support.
  */
+
+// check that macros are set properly
+#if !defined(PARDISO) && !defined(MKL_PARDISO)
+  #error "PARDISO is not enabled, cannot use pardiso.hpp"
+#endif
+#if defined(PARDISO) && defined(MKL_PARDISO)
+  #error "Both macros for PARDISO are defined. Select a flavor, either PARDISO or MKL_PARDISO"
+#endif
+
+// TODO
+#if defined(MKL_PARDISO)
+  #error "MKL PARDISO is not yet supported"
+#endif
+
 
 #include <type_traits>
 #include <memory>

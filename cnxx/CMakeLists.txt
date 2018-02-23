@@ -60,6 +60,13 @@ if (NOT "${BLAZE_PARALLELISM}" STREQUAL "OMP")
   target_linker_flags(cnxx "${OMP_LINKER_FLAGS}")
 endif ()
 
+# PARDISO
+find_package(PARDISO)
+if (${PARDISO_FOUND})
+  target_compile_options(cnxx PUBLIC ${PARDISO_CXX_FLAGS})
+  target_link_libraries(cnxx ${PARDISO_LIBRARIES})
+endif ()
+
 # install library under ../modules
 if (CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT)
   set(CMAKE_INSTALL_PREFIX "${CMAKE_SOURCE_DIR}/../modules" CACHE PATH

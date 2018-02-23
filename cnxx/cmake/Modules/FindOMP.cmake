@@ -1,6 +1,6 @@
 # Find OpenMP. Wrapper around FindOpenMP that also picks a library to link against.
 #
-#  OMP_FOUND         - True if blaze was found
+#  OMP_FOUND         - True if OpenMP was found
 #  OMP_CXX_FLAGS     - Flags for CXX compiler
 #  OMP_LIBRARIES     - Libraries to link against
 #  OMP_LINKER_FLAGS  - Flags for linker
