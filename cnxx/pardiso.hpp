@@ -126,20 +126,169 @@ namespace Pardiso {
     }
 
 
+    /// Holds a sparse matrix in CRS format.
+    /**
+     * This class helps cosntruct matrices in the CRS (compressed row storage) format
+     * required by PARDISO. Indices are stored as 1-based internally (<TT>FORTRAN</TT>).
+     * However the interface requires 0-based indices suitable for <TT>C++</TT>.
+     * The only exception are `getia()` and `getja()` which give direct access to the
+     * internal memory.
+     *
+     * <B>Usage</B><BR>
+     * You need the specify elements in order of ascending row and column as shown in the
+     * following with an imaginary matrix class that iterates over rows is ascending order.
+     * \code
+     Pardiso::Matrix<T> pmat;
+     for (auto row : matrix.rows()) {
+         for (int column = 0; column < row.nonZeros(); ++column) {
+             pmat.add(column, row.at(column));
+         }
+         pmat.finishRow();
+     }
+     \endcode
+     * Note that you have to call Matrix::finishRow() when moving on the the next row
+     * as well as at the end after inserting all elements.
+     */
+    template <typename ET>
+    struct Matrix {
+        using elementType = ET;  ///< Type of matrix elements.
+
+        /// Construct without reserving memory.
+        Matrix() {
+            ia.push_back(1);
+        }
+
+        /// Reserve memory for known number of elements.
+        /**
+         * \param n (Expected) number of non-zeros of the matrix. Memory for `n`
+         *          elements is reserved.
+         */
+        explicit Matrix(const std::size_t n) {
+            reserve(n);
+            ia.push_back(1);
+        }
+
+        /// Reserve memory for known number of elements and rows.
+        /**
+         * \param n (Expected) number of non-zeros of the matrix. Memory for `n`
+         *          elements is reserved.
+         * \param nrow (Expected) number of rows. Memory for `nrow` rows is reseved.
+         */
+        Matrix(const std::size_t n, const std::size_t nrow) {
+            reserve(n, nrow);
+            ia.push_back(1);
+        }
+
+        Matrix(const Matrix &) = default;
+        Matrix(Matrix &&) = default;
+        Matrix &operator=(const Matrix &) = default;
+        Matrix &operator=(Matrix &&) = default;
+        ~Matrix() = default;
+
+        /// Reserve memory for known number of elements.
+        /**
+         * \param n (Expected) number of non-zeros of the matrix. Memory for `n`
+         *          elements is reserved.
+         */
+        void reserve(const std::size_t n) {
+            a.reserve(n);
+            ja.reserve(n);
+        }
+
+        /// Reserve memory for known number of elements and rows.
+        /**
+         * \param n (Expected) number of non-zeros of the matrix. Memory for `n`
+         *          elements is reserved.
+         * \param nrow (Expected) number of rows. Memory for `nrow` rows is reseved.
+         */
+        void reserve(const std::size_t n, const std::size_t nrow) {
+            a.reserve(n);
+            ja.reserve(n);
+            ia.reserve(nrow+1);
+        }
+
+        /// Remove all stored elements; start a new matrix.
+        void clear() {
+            a.clear();
+            ja.clear();
+            ia.clear();
+            ia.push_back(1);
+        }
+
+        /// Number of rows currently stored.
+        std::size_t rows() const noexcept {
+            return ia.size()-1;
+        }
+
+        /// Finalize the current row, prepare for input of next row.
+        void finishRow() {
+            ia.push_back(static_cast<int>(ja.size())+1);
+        }
+
+        /// Add an element to the current row.
+        /**
+         * \attention Must be called with `column` is ascending order.
+         * \param column Index of the column.
+         * \param value Element at given index.
+         */
+        void add(const int column, const elementType value) {
+            ja.push_back(column+1);
+            a.push_back(value);
+        }
+
+        /// Number of elements currently stored.
+        int nelem() const noexcept {
+            return static_cast<int>(a.size());
+        }
+
+        /// Get a pointer to the elements.
+        elementType *geta() noexcept {
+            return &a[0];
+        }
+        /// Get a pointer to the elements.
+        const elementType *geta() const noexcept {
+            return &a[0];
+        }
+
+        /// Get a pointer to the column indices (1-based).
+        int *getja() noexcept {
+            return &ja[0];
+        }
+        /// Get a pointer to the column indices (1-based).
+        const int *getja() const noexcept {
+            return &ja[0];
+        }
+
+        /// Get a pointer to the row indices (1-based).
+        int *getia() noexcept {
+            return &ia[0];
+        }
+        /// Get a pointer to the column indices (1-based).
+        const int *getia() const noexcept {
+            return &ia[0];
+        }
+
+    private:
+        std::vector<elementType> a;  ///< Array of elements.
+        std::vector<int> ja;  ///< Array of column indices (1-based).
+        std::vector<int> ia;  ///< Array of row indices (1-based).
+    };
+
+
     ///
     /**
      * No copying because it references PARDISO's internal state.
      *
-     * \tparam T Element type of matrices and vectors used by this solver.
-     *           Must be one either `double` or `std::complex<double>`.
+     * \tparam ET Element type of matrices and vectors used by this solver.
+     *            Must be one either `double` or `std::complex<double>`.
      */
-    template <typename T>
+    template <typename ET>
     struct State {
-        static_assert(std::is_same<T, double>::value
-                      || std::is_same<T, std::complex<double>>::value,
+        static_assert(std::is_same<ET, double>::value
+                      || std::is_same<ET, std::complex<double>>::value,
                       "PARDISO can only handle double and std::complex<double>.");
 
-        using elementType = T;  ///< Type of matrix elements.
+        using elementType = ET;  ///< Type of matrix elements.
 
         State(const Solver solver, const MType mtype = MType::NON_SYM,
               const int messageLevel=0)
@@ -234,9 +383,9 @@ namespace Pardiso {
         /// Perform sparse solve by calling `pardiso`.
         /**
          * Solves a*x = b for x.<BR>
-         * Low level interface to PARDISO. Matrix must be specified in CSR3 format
-         * (three array variation of CSR format). Memory for the output must be allocated
-         * by caller.
+         * Low level interface to PARDISO. Matrix must be specified in CRS
+         * (compressed row storage) format.
+         * Memory for the output must be allocated by caller.
          *
          * \param n Number of equations (size of x, b).
          * \param a Non zero elements of matrix. Size depends on matrix.
@@ -271,7 +420,7 @@ namespace Pardiso {
         /**
          * Solves a*x = b for x.<BR>
          * Thin wrapper for `std::vector` around overload for arrays.
-         * Matrix must be specified in CSR3 format (three array variation of CSR format).
+         * Matrix must be specified in CRS (compressed row storage) format.
          * Size n is derived from right hand side b.
          *
          * \param a Non zero elements of matrix. Size depends on matrix.
@@ -287,15 +436,47 @@ namespace Pardiso {
          */
         std::vector<elementType> operator()(std::vector<elementType> &a,
                                             std::vector<int> &ia,
-                                            std::vector<int> ja,
+                                            std::vector<int> &ja,
                                             std::vector<elementType> &b,
                                             const Phase startPhase,
                                             const Phase endPhase=Phase::SOLVE) {
+#ifndef NDEBUG
+            if (b.size() != ia.size()-1)
+                throw std::runtime_error("Numbers of rows of matrix and rright hand side do not match");
+#endif
             std::vector<elementType> x(b.size());
             (*this)(b.size(), &a[0], &ia[0], &ja[0], &b[0], &x[0], startPhase, endPhase);
             return x;
         }
-        
+
+        /// Perform sparse solve by calling `pardiso`.
+        /**
+         * Solves a*x = b for x.<BR>
+         * Thin wrapper for Pardiso::Matrix around overload for arrays.
+         *
+         * \param mat Sparse matrix `a`.
+         * \param b Right hand side vector. Size: `n`.
+         * \param startPhase Phase at which to start computation.
+         * \param endPhase Phase at which to end computation.
+         *
+         * \return Solution vector x.
+         *
+         * \throws std::runtime_error if PARDISO reports an error.
+         */
+        std::vector<elementType> operator()(Pardiso::Matrix<elementType> &mat,
+                                            std::vector<elementType> &b,
+                                            const Phase startPhase,
+                                            const Phase endPhase=Phase::SOLVE) {
+#ifndef NDEBUG
+            if (b.size() != mat.rows())
+                throw std::runtime_error("Numbers of rows of matrix and rright hand side do not match");
+#endif
+            std::vector<elementType> x(b.size());
+            (*this)(b.size(), mat.geta(), mat.getia(), mat.getja(),
+                    &b[0], &x[0], startPhase, endPhase);
+            return x;
+        }
+
     private:
         /// Pointer to the internal state of PARDISO.
         std::unique_ptr<void*[]> _statePtr = std::make_unique<void*[]>(64);
