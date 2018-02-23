@@ -154,6 +154,11 @@ namespace Pardiso {
     struct Matrix {
         using elementType = ET;  ///< Type of matrix elements.
 
+        std::vector<elementType> a;  ///< Array of matrix elements.
+        std::vector<int> ja;  ///< Array of column indices (1-based).
+        std::vector<int> ia;  ///< Array of row indices (1-based).
+
+
         /// Construct without reserving memory.
         Matrix() {
             ia.push_back(1);
@@ -180,9 +185,13 @@ namespace Pardiso {
             ia.push_back(1);
         }
 
+        /// Copy.
         Matrix(const Matrix &) = default;
+        /// Move.
         Matrix(Matrix &&) = default;
+        /// Copy assign.
         Matrix &operator=(const Matrix &) = default;
+        /// Move assign.
         Matrix &operator=(Matrix &&) = default;
         ~Matrix() = default;
 
@@ -268,17 +277,20 @@ namespace Pardiso {
         const int *getia() const noexcept {
             return &ia[0];
         }
-
-    private:
-        std::vector<elementType> a;  ///< Array of elements.
-        std::vector<int> ja;  ///< Array of column indices (1-based).
-        std::vector<int> ia;  ///< Array of row indices (1-based).
     };  // struct Matrix
 
 
-    ///
+    /// Handle to PARDISO's internal state.
     /**
-     * No copying because it references PARDISO's internal state.
+     * Initializes PARDISO on construction and cleans up PARDISO's internal memory
+     * when it is destroyed.
+     * Since the content of the internal state is unknown, it cannot be copied.
+     * In order to avoid shared references, %State can only be moved, not copied.
+     *
+     * You can set or retrieve all parameters from `iparm` or `dparm` via the
+     * overloaded `operator[]`.
+     * PARDISO can be executed by calling `operator()` which can handle various
+     * inout formats.
      *
      * \tparam ET Element type of matrices and vectors used by this solver.
      *            Must be one either `double` or `std::complex<double>`.
@@ -291,8 +303,9 @@ namespace Pardiso {
 
         using elementType = ET;  ///< Type of matrix elements.
 
+        /// Selecct a solver and optionally matrix type and message level; initialize PARDISO.
         State(const Solver solver, const MType mtype = MType::NON_SYM,
-              const int messageLevel=0)
+              const int messageLevel = 0)
             : _msglvl{messageLevel}, _mtype{matrixType(mtype)}, _ownsMemory{false} {
 
             int error;
@@ -303,10 +316,13 @@ namespace Pardiso {
                         _iparm.get(), _dparm.get(), &error);
             handleError(error);
         };
-        
+
+        /// Copying is not allowed.
         State(const State &other) = delete;
+        /// Copying is not allowed.
         State &operator=(const State &other) = delete;
 
+        /// Move, old instance releases control over PARDISO.
         State(State &&other) noexcept
             : _statePtr{std::move(other._statePtr)},
               _iparm{std::move(other._iparm)},
@@ -315,6 +331,7 @@ namespace Pardiso {
               _mtype{other._mtype},
               _ownsMemory{std::exchange(other._ownsMemory, false)} { }
 
+        /// Move assign, old instance releases control over PARDISO.
         State &operator=(State &&other) noexcept {
             _statePtr = std::move(other._statePtr);
             _iparm = std::move(other._iparm);
@@ -378,6 +395,15 @@ namespace Pardiso {
         /// Return pointer to array of double parameters.
         const int *dparm() const noexcept {
             return _dparm.get();
+        }
+
+        /// Access PARDISO message level (msglvl).
+        int &messageLevel() noexcept {
+            return _msglvl;
+        }
+        /// Access PARDISO message level (msglvl).
+        const int &messageLevel() const noexcept {
+            return _msglvl;
         }
 
 
@@ -572,6 +598,7 @@ namespace Pardiso {
                     return 6;
                 }                
             }
+            return 0;
         }
     };  // struct State
 }  // namespace Spardiso
