@@ -4,13 +4,11 @@ Basic helpers for test scripts.
 
 from pathlib import Path
 import numpy as np
-import operator 
+import operator
 
 #: Absolute path to test directory.
 TEST_PATH = Path(__file__).resolve().parent
 
-#: Precision for test of floating point numbers.
-PREC = 1e-14
 
 def prepare_module_import(path=Path("../modules")):
     """
@@ -53,7 +51,7 @@ def type_eq(typ0, typ1):
     return typ0 == typ1
 
 
-def isEqual(a, b, nOps=1):
+def isEqual(a, b, nOps=1, prec=1e-14):
     """
     Check whether two numbers or iterables are equal wiht precision core.PREC.
     For large scale operations, multiply scale by nOps for the check.
@@ -67,7 +65,7 @@ def isEqual(a, b, nOps=1):
             return False
 
         for aelem, belem in zip(a, b):
-            if not isEqual(aelem, belem, nOps=nOps):
+            if not isEqual(aelem, belem, nOps=nOps, prec=prec):
                 return False
         return True
 
@@ -75,7 +73,8 @@ def isEqual(a, b, nOps=1):
         # both are scalar
         scale = abs(a+b)/2
         comp = abs(a-b)/scale if scale > 1 else abs(a-b)
-        if comp < PREC*nOps:
+
+        if comp < prec*nOps:
             return True
         return False
 
