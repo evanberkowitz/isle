@@ -204,6 +204,8 @@ Matrix<std::complex<double>> HubbardFermiMatrix::LU::reconstruct() const {
     // zeroth row, all columns
     invert(aux=dinv[0], ipiv);
     spacemat(recon, 0, 0, nx) = aux;
+    if (nt == 1)
+        return recon;
     spacemat(recon, 0, 1, nx) = u[0];
     spacemat(recon, 0, nt-1, nx) = v[0];
 
