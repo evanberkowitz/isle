@@ -19,6 +19,7 @@ import rand                 # random initializer
 SEED = 8613
 RAND_MEAN = 0
 RAND_STD = 0.2
+N_REP = 1 # number of repetitions
 
 # lattices to test matrix with
 LATTICES = [core.TEST_PATH/"../lattices/c60_ipr.yml",
@@ -41,6 +42,7 @@ class TestHubbardFermiMatrix(unittest.TestCase):
         "Check if nt=1 HFM is constructed properly."
 
         nt = 1
+        nx = kappa.rows()
         hfm = cns.HubbardFermiMatrix(kappa, _randomPhi(nx*nt),
                                      mu, sigmaMu, sigmaKappa)
 
@@ -107,7 +109,8 @@ class TestHubbardFermiMatrix(unittest.TestCase):
     def _testConstruction(self, kappa):
         "Check if HFM is constructed correctly for several values of mu and nt."
 
-        for mu, sigmaMu, sigmaKappa in itertools.product(MU, (-1, 1), (-1, 1)):
+        for mu, sigmaMu, sigmaKappa, _ in itertools.product(MU, (-1, 1), (-1, 1),
+                                                            range(N_REP)):
             self._testConstructionNt1(kappa, mu, sigmaMu, sigmaKappa)
             self._testConstructionNt2(kappa, mu, sigmaMu, sigmaKappa)
             self._testConstructionNt3(kappa, mu, sigmaMu, sigmaKappa)
@@ -121,6 +124,34 @@ class TestHubbardFermiMatrix(unittest.TestCase):
             with open(latfile, "r") as f:
                 lat = yaml.safe_load(f)
                 self._testConstruction(lat.hopping())
+
+
+    def _testLUFact(self, kappa):
+        "Check whether a matrix reconstructed from an LU decomposition is equal to the original."
+        for nt, mu, sigmaMu, sigmaKappa, _ in itertools.product((1,), MU,
+                                                                (-1, 1), (-1, 1),
+                                                                range(N_REP)):
+            nx = kappa.rows()
+            hfm = cns.HubbardFermiMatrix(kappa, _randomPhi(nx*nt),
+                                         mu, sigmaMu, sigmaKappa)
+            mmdag = np.array(cns.Matrix(hfm.MMdag()), copy=False)
+            lu = cns.getLU(hfm)
+            recon = np.array(cns.Matrix(lu.reconstruct()))
+
+            self.assertTrue(core.isEqual(mmdag, recon, nOps=nx**2, prec=1e-13),
+                            msg="Failed equality check of reconstruction from LU decomposition of hubbardFermiMatrix "\
+                            + "for nt={}, mu={}, sigmaMu={}, sigmaKappa={}".format(nt, mu, sigmaMu, sigmaKappa)\
+                            + "\noriginal = {}".format(mmdag) \
+                            + "\nreconstructed {}".format(recon))
+
+    def test_2_lu_factorization(self):
+        "Test LU factorization."
+        logger = core.get_logger()
+        for latfile in LATTICES:
+            logger.info("Testing LU factorization of HubbardFermiMatrix for lattice %s", latfile)
+            with open(latfile, "r") as f:
+                lat = yaml.safe_load(f)
+                self._testLUFact(lat.hopping())
 
 
 def setUpModule():
