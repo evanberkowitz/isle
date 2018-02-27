@@ -163,14 +163,33 @@ std::complex<RT> toFirstLogBranch(const std::complex<RT> &x) {
 
 /// Return a view on a spatial vector for given timeslice of a spacetime vector.
 template <typename VT>
-decltype(auto) spacevec(VT &&vec, const std::size_t t, const std::size_t nx) {
+decltype(auto) spacevec(VT &&vec, const std::size_t t, const std::size_t nx)
+    noexcept(ndebug) {
+    // some rudimentary bounds check, no idea how to do this in general...
+#ifndef NDEBUG
+    if (t == static_cast<std::size_t>(-1))
+        throw std::runtime_error("t is -1");
+    if (t == static_cast<std::size_t>(-2))
+        throw std::runtime_error("t is -2");
+#endif
     return blaze::subvector(std::forward<VT>(vec), t*nx, nx);
 }
 
 /// Return a view on a spatial matrix for given timeslices of a spacetime matrix.
 template <typename MT>
 decltype(auto) spacemat(MT &&mat, const std::size_t tp, const std::size_t t,
-                        const std::size_t nx) {
+                        const std::size_t nx) noexcept(ndebug) {
+    // some rudimentary bounds check, no idea how to do this in general...
+#ifndef NDEBUG
+    if (tp == static_cast<std::size_t>(-1))
+        throw std::runtime_error("tp is -1");
+    if (tp == static_cast<std::size_t>(-2))
+        throw std::runtime_error("tp is -2");
+    if (t == static_cast<std::size_t>(-1))
+        throw std::runtime_error("t is -1");
+    if (t == static_cast<std::size_t>(-2))
+        throw std::runtime_error("t is -2");
+#endif
     return blaze::submatrix(std::forward<MT>(mat), tp*nx, t*nx, nx, nx);
 }
 
