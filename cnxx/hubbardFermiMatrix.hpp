@@ -108,9 +108,12 @@
  *
  *
  * ## Solver
- * A linear system of equations \f$(M M^\dagger) x = b\f$ can easily be solved via an
+ * A linear system of equations \f$(M M^\dagger) x = b\f$ can be solved via an
  * LU-Decomposition and forward-/back-substitution.
- * Start by solving \f$L y = b\f$:
+ *
+ * ### Matrix-Vector Equation
+ * Solve a system of equations for a single right hand side, i.e. \f$x\f$ and \f$b\f$
+ * are vetors. Start by solving \f$L y = b\f$:
  \f{align}{
  y_0 &= b_0\\
  y_i &= b_i - l_{i-1} y_{i-1}\quad \forall i \in [1, N_t-2]\\
@@ -123,7 +126,33 @@
  x_i &= d_i^{-1} (y_i - u_i x_{i+1} - v_i x_{N_t-1}) \quad \forall i \in [0, N_t-3]
  \f}
  * Since the inversed \f$d_i^{-1}\f$ have already been computed by the LU-factorization,
- * this algorithm requires only \f$\mathcal{O}(N_t N_x^2)\f$ steps.
+ * the solver alone requires only \f$\mathcal{O}(N_t N_x^2)\f$ steps.
+ *
+ * ### Matrix-Matrix Equation
+ * Invert the hubbard fermi matrix by solving \f$(M M^\dagger) X^{-1} = \mathbb{I}\f$,
+ * where \f$I\f$ is the \f$N_t N_x\f$ unit matrix.<BR>
+ * Start by solving \f$L Y^{-1} = I\f$ and denote the elements of \f$Y^{-1}\f$
+ * by \f$y_{ij}\f$; note that the \f$y_{ij}\f$ are spatial matrices.
+ \f{align}{
+ y_{0j} &= \delta_{0j}\\
+ y_{ij} &= \begin{cases}
+ \textstyle\prod_{k=j}^{i-1} (-l_{k}) & \mathrm{for}\quad i > j\\
+ \delta_{ij} & \mathrm{for}\quad i\leq j
+ \end{cases}, \quad\forall i \in [1, N_t-2]\\
+ y_{(N_t-1)j} &= \delta_{(N_t-1)j} - \textstyle\sum_{k=j}^{N_t-3} h_{k} y_{kj} - l_{N_t-2} y_{(N_t-2)j}
+ \f}
+ * Then solve \f$U X^{-1} = Y^{-1}\f$:
+ \f{align}{
+ x_{(N_t-1)j} &= d_{N_t-1}^{-1}y_{(N_t-1)j}\\
+ x_{(N_t-2)j} &= d_{N_t-2}^{-1}(y_{(N_t-2)j} - u_{N_t-2}x_{(N_t-1)j})\\
+ x_{ij} &= d_{i}^{-1}(y_{ij} - u_{i}x_{(i+1)j} - v_{i}x_{(N_t-1)j}) \quad\forall i \in [0, N_t-3]
+ \f}
+ *
+ * Most of those relations can be read off immediately, the others can be proven using
+ * simple induction.<BR>
+ * Apart from the last row, the \f$y\f$'s are independent from each other while the \f$x\f$'s
+ * have to be computed iterating over rows from \f$N_t-1\f$ though 0. However, different
+ * columns never mix.
  *
  *
  * ## Usage
