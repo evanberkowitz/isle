@@ -345,6 +345,9 @@ namespace {
                             &vec[0], sizeof(ET), py::format_descriptor<ET>::format(),
                             1, {vec.size()}, {sizeof(ET)}};
                     })
+                .def("__neg__", [](const VT &vec) {
+                        return blaze::evaluate(-vec);
+                    })
                 ;
 
             // bind operators for all right hand sides
@@ -478,6 +481,9 @@ namespace {
                             2, {mat.rows(), mat.columns()},
                             {sizeof(ET)*mat.columns(), sizeof(ET)}};
                     })
+                .def("__neg__", [](const MT &mat) {
+                        return blaze::evaluate(-mat);
+                    })
                 ;
 
             // bind operators for all right hand sides
@@ -588,6 +594,9 @@ namespace {
                         oss << "]\n";
                         return oss.str();
                     })
+                .def("__neg__", [](const MT &mat) {
+                        return blaze::evaluate(-mat);
+                    })
                 ;
 
             // bind operators for all right hand sides
@@ -602,7 +611,7 @@ namespace {
             // make a new Pybind11 class and add basic functions
             using MT = SymmetricSparseMatrix<ET>;
 
-            auto cls = py::class_<MT>(mod, symmetricSparseMatName<ET>().c_str())
+            auto cls = py::class_<MT>{mod, symmetricSparseMatName<ET>().c_str()}
                 .def(py::init([](const std::size_t nx, const std::size_t ny){
                             return MT(nx, ny);
                         }))
@@ -653,6 +662,9 @@ namespace {
                         }
                         oss << "]\n";
                         return oss.str();
+                    })
+                .def("__neg__", [](const MT &mat) {
+                        return blaze::evaluate(-mat);
                     })
                 ;
         }
