@@ -227,6 +227,12 @@ namespace Pardiso {
             ia.push_back(1);
         }
 
+        /// Construct from a blaze CompressedMatrix.
+        explicit Matrix(const SparseMatrix<elementType> &mat)
+            : Matrix{mat.nonZeros(), mat.rows()} {
+            assignFrom(mat);
+        }
+
         /// Copy.
         Matrix(const Matrix &) = default;
         /// Move.
@@ -235,6 +241,15 @@ namespace Pardiso {
         Matrix &operator=(const Matrix &) = default;
         /// Move assign.
         Matrix &operator=(Matrix &&) = default;
+
+        /// Assign from a blaze CompressedMatrix.
+        Matrix &operator=(const SparseMatrix<elementType> &mat) {
+            this->clear();
+            this->reserve(mat.nonZeros(), mat.rows());
+            assignFrom(mat);
+            return *this;
+        }
+
         ~Matrix() = default;
 
         /// Reserve memory for known number of elements.
@@ -318,6 +333,17 @@ namespace Pardiso {
         /// Get a pointer to the column indices (1-based).
         const int *getia() const noexcept {
             return &ia[0];
+        }
+
+    private:
+        /// Assign contents from a blaze CompressedMatrix.
+        /// Matrix must be clear when calling this function.
+        void assignFrom(const SparseMatrix<elementType> &mat) {
+            for (std::size_t row = 0; row < mat.rows(); ++row) {
+                for (auto it = mat.begin(row), end = mat.end(row); it != end; ++it)
+                    this->add(static_cast<int>(it->index()), it->value());
+                this->finishRow();
+            }
         }
     };  // struct Matrix
 
@@ -615,15 +641,8 @@ namespace Pardiso {
             if (b.size() != mat.rows())
                 throw std::runtime_error("Numbers of rows of matrix and rright hand side do not match");
 #endif
-
-            // construct matrix in CRS format
-            Pardiso::Matrix<elementType> pmat(mat.nonZeros(), mat.rows());
-            for (std::size_t row = 0; row < mat.rows(); ++row) {
-                for (auto it = mat.begin(row), end = mat.end(row); it != end; ++it)
-                    pmat.add(static_cast<int>(it->index()), it->value());
-                pmat.finishRow();
-            }
-
+            // convert to CRS matrix
+            Pardiso::Matrix<elementType> pmat{mat};
             // solve equation
             Vector<elementType> x(b.size());
             (*this)(mat.rows(), pmat.geta(), pmat.getia(), pmat.getja(),
