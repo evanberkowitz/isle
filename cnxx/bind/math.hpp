@@ -1,6 +1,5 @@
 /** \file
  * \brief Bindings for math routines and classes.
- * \ingroup bind
  */
 
 #ifndef BIND_MATH_HPP

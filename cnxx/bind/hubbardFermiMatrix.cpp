@@ -4,6 +4,7 @@
 
 namespace bind {
     void bindHubbardFermiMatrix(py::module &mod) {
+        using namespace cnxx;
         using HFM = HubbardFermiMatrix;
 
         py::class_<HFM> hfm{mod, "HubbardFermiMatrix"};

@@ -2,11 +2,6 @@
  * \brief Essential includes and definitions for bindings.
  */
 
-/**
- * \defgroup bind Bindings
- *   Python bindings for C++.
- */
-
 #ifndef BIND_CORE_HPP
 #define BIND_CORE_HPP
 
@@ -23,10 +18,7 @@
 
 namespace py = pybind11;
 
-/// Routines for bindings to Python.
-/**
- * \ingroup bind
- */
+/// Bindings between `cnxx` and Python.
 namespace bind {
     /// Represents the state of an iterator (adapted from pybind11 internals).
     template <typename Iterator, typename Sentinel,

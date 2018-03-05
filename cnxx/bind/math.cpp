@@ -8,6 +8,8 @@
 #include "../math.hpp"
 #include "../tmp.hpp"
 
+using namespace cnxx;
+
 /// Internals for binding math routines and classes.
 namespace {
     /// Prefix for names of linear algebra classes.
@@ -67,8 +69,8 @@ namespace {
     /// Bind operator add.
     template <typename LHS, typename RHS>
     struct bindOp<Op::add, LHS, RHS,
-                  void_t<decltype(std::declval<ElementType_t<LHS>&>()+std::declval<ElementType_t<RHS>&>()),
-                         decltype(std::declval<LHS&>()+std::declval<RHS&>())>>
+                  tmp::void_t<decltype(std::declval<ElementType_t<LHS>&>()+std::declval<ElementType_t<RHS>&>()),
+                              decltype(std::declval<LHS&>()+std::declval<RHS&>())>>
     {
         template <typename CT>
         static void f(CT &&cls, const char * const name) {
@@ -81,8 +83,8 @@ namespace {
     /// Bind operator sub.
     template <typename LHS, typename RHS>
     struct bindOp<Op::sub, LHS, RHS,
-                  void_t<decltype(std::declval<ElementType_t<LHS>&>()-std::declval<ElementType_t<RHS>&>()),
-                         decltype(std::declval<LHS&>()-std::declval<RHS&>())>>
+                  tmp::void_t<decltype(std::declval<ElementType_t<LHS>&>()-std::declval<ElementType_t<RHS>&>()),
+                              decltype(std::declval<LHS&>()-std::declval<RHS&>())>>
     {
         template <typename CT>
         static void f(CT &&cls, const char * const name) {
@@ -95,8 +97,8 @@ namespace {
     /// Bind operator mul.
     template <typename LHS, typename RHS>
     struct bindOp<Op::mul, LHS, RHS,
-                  void_t<decltype(std::declval<ElementType_t<LHS>&>()*std::declval<ElementType_t<RHS>&>()),
-                         decltype(std::declval<LHS&>()*std::declval<RHS&>())>>
+                  tmp::void_t<decltype(std::declval<ElementType_t<LHS>&>()*std::declval<ElementType_t<RHS>&>()),
+                              decltype(std::declval<LHS&>()*std::declval<RHS&>())>>
     {
         template <typename CT>
         static void f(CT &&cls, const char * const name) {
@@ -109,8 +111,8 @@ namespace {
     /// Bind reverse mul operator.
     template <typename RHS, typename LHS>
     struct bindOp<Op::rmul, RHS, LHS,
-                  void_t<decltype(std::declval<ElementType_t<LHS>&>()*std::declval<ElementType_t<RHS>&>()),
-                         decltype(std::declval<LHS&>()*std::declval<RHS&>())>>
+                  tmp::void_t<decltype(std::declval<ElementType_t<LHS>&>()*std::declval<ElementType_t<RHS>&>()),
+                              decltype(std::declval<LHS&>()*std::declval<RHS&>())>>
     {
         template <typename CT>
         static void f(CT &&cls, const char * const name) {
@@ -123,8 +125,8 @@ namespace {
     /// Bind operator truediv.
     template <typename LHS, typename RHS>
     struct bindOp<Op::truediv, LHS, RHS,
-                  void_t<decltype(std::declval<ElementType_t<LHS>&>()/std::declval<ElementType_t<RHS>&>()),
-                         decltype(std::declval<LHS&>()/std::declval<RHS&>())>>
+                  tmp::void_t<decltype(std::declval<ElementType_t<LHS>&>()/std::declval<ElementType_t<RHS>&>()),
+                              decltype(std::declval<LHS&>()/std::declval<RHS&>())>>
     {
         /// Indicate whether operands need to be converted to floating point numbers.
         static constexpr bool needConversion = std::is_same<ElementType_t<LHS>, int>::value
@@ -135,7 +137,7 @@ namespace {
                   typename std::enable_if<convert, int>::type = 0>
         static void f(CT &&cls, const char * const name) {
             cls.def(name, [](const LHS &lhs, const RHS &rhs) {
-                    return blaze::evaluate(lhs / Rebind_t<RHS, double>(rhs));
+                    return blaze::evaluate(lhs / tmp::Rebind_t<RHS, double>(rhs));
                 });
         }
 
@@ -152,23 +154,23 @@ namespace {
     /// Bind operator floordiv.
     template <typename LHS, typename RHS>
     struct bindOp<Op::floordiv, LHS, RHS,
-                  void_t<decltype(std::declval<ElementType_t<LHS>&>()/std::declval<ElementType_t<RHS>&>()),
-                         decltype(std::declval<LHS&>()/std::declval<RHS&>())>>
+                  tmp::void_t<decltype(std::declval<ElementType_t<LHS>&>()/std::declval<ElementType_t<RHS>&>()),
+                              decltype(std::declval<LHS&>()/std::declval<RHS&>())>>
     {
         /// Indicate whether vectors need to be converted.
         static constexpr bool needConversion = std::is_same<ElementType_t<LHS>, int>::value
             && std::is_same<ElementType_t<RHS>, int>::value;
         /// Indicate whether it is possible to take floor.
-        static constexpr bool floorAllowed = !IsSpecialization<std::complex,
-                                                              ElementType_t<LHS>>::value
-            && !IsSpecialization<std::complex, ElementType_t<RHS>>::value;
+        static constexpr bool floorAllowed = !tmp::IsSpecialization<std::complex,
+                                                                    ElementType_t<LHS>>::value
+            && !tmp::IsSpecialization<std::complex, ElementType_t<RHS>>::value;
 
         /// Bind with conversion.
         template <typename CT, bool convert = needConversion,
                   typename std::enable_if<convert, int>::type = 0>
         static void f(CT &&cls, const char * const name) {
             cls.def(name, [](const LHS &lhs, const RHS &rhs) {
-                    return LHS{blaze::floor(lhs / Rebind_t<RHS, double>(rhs))};
+                    return LHS{blaze::floor(lhs / tmp::Rebind_t<RHS, double>(rhs))};
                 });
         }
 
@@ -194,8 +196,8 @@ namespace {
     /// Bind inplace addition operator.
     template <typename LHS, typename RHS>
     struct bindOp<Op::iadd, LHS, RHS,
-                  void_t<decltype(std::declval<ElementType_t<LHS>&>()+=std::declval<ElementType_t<RHS>&>()),
-                         decltype(std::declval<LHS&>()+=std::declval<RHS&>())>>
+                  tmp::void_t<decltype(std::declval<ElementType_t<LHS>&>()+=std::declval<ElementType_t<RHS>&>()),
+                              decltype(std::declval<LHS&>()+=std::declval<RHS&>())>>
     {
         template <typename CT>
         static void f(CT &&cls, const char * const name) {
@@ -208,8 +210,8 @@ namespace {
     /// Bind inplace subtraction operator.
     template <typename LHS, typename RHS>
     struct bindOp<Op::isub, LHS, RHS,
-                  void_t<decltype(std::declval<ElementType_t<LHS>&>()-=std::declval<ElementType_t<RHS>&>()),
-                         decltype(std::declval<LHS&>()-=std::declval<RHS&>())>>
+                  tmp::void_t<decltype(std::declval<ElementType_t<LHS>&>()-=std::declval<ElementType_t<RHS>&>()),
+                              decltype(std::declval<LHS&>()-=std::declval<RHS&>())>>
     {
         template <typename CT>
         static void f(CT &&cls, const char * const name) {
@@ -225,9 +227,9 @@ namespace {
     // does not.
     template <typename LHS, typename RHS>
     struct bindOp<Op::imul, LHS, RHS,
-                  void_t<decltype(std::declval<ElementType_t<LHS>&>()*=std::declval<ElementType_t<RHS>&>()),
-                         decltype(std::declval<ElementType_t<LHS>&>()*std::declval<ElementType_t<RHS>&>()),
-                         decltype(std::declval<LHS&>()*=std::declval<RHS&>())>>
+                  tmp::void_t<decltype(std::declval<ElementType_t<LHS>&>()*=std::declval<ElementType_t<RHS>&>()),
+                              decltype(std::declval<ElementType_t<LHS>&>()*std::declval<ElementType_t<RHS>&>()),
+                              decltype(std::declval<LHS&>()*=std::declval<RHS&>())>>
     {
         template <typename CT>
         static void f(CT &&cls, const char * const name) {
@@ -240,9 +242,9 @@ namespace {
     /// Bind dot product ("operator").
     template <typename LHS, typename RHS>
     struct bindOp<Op::dot, LHS, RHS,
-                  void_t<decltype(std::declval<ElementType_t<LHS>&>()*std::declval<ElementType_t<RHS>&>()
-                                  + std::declval<ElementType_t<LHS>&>()*std::declval<ElementType_t<RHS>&>()),
-                         decltype(blaze::dot(std::declval<LHS&>(), std::declval<RHS&>()))>>
+                  tmp::void_t<decltype(std::declval<ElementType_t<LHS>&>()*std::declval<ElementType_t<RHS>&>()
+                                       + std::declval<ElementType_t<LHS>&>()*std::declval<ElementType_t<RHS>&>()),
+                              decltype(blaze::dot(std::declval<LHS&>(), std::declval<RHS&>()))>>
     {
         template <typename CT>
         static void f(CT &&cls, const char * const name) {
@@ -295,7 +297,7 @@ namespace {
             using VT = Vector<ET>;
 
             auto cls = py::class_<VT>{mod, vecName<ET>().c_str(), py::buffer_protocol{}}
-                 .def(py::init([](const std::size_t size){ return VT(size); }))
+            .def(py::init([](const std::size_t size){ return VT(size); }))
                  .def(py::init([](py::buffer &buf) {
                              const py::buffer_info binfo = buf.request();
                              if (binfo.format != py::format_descriptor<ET>::format())
@@ -320,38 +322,38 @@ namespace {
                          return vec[i];
                      })
 #endif
-                .def("__setitem__", [](VT &vec, const std::size_t i,
-                                       const typename VT::ElementType x) {
+                 .def("__setitem__", [](VT &vec, const std::size_t i,
+                                        const typename VT::ElementType x) {
 #ifndef NDEBUG
-                         if (!(i < vec.size()))
-                             throw std::out_of_range("Index out of range");
+                          if (!(i < vec.size()))
+                              throw std::out_of_range("Index out of range");
 #endif
-                         vec[i] = x;
+                          vec[i] = x;
+                      })
+                 .def("__iter__", [](VT &vec) {
+                         return py::make_iterator(vec.begin(), vec.end());
+                     }, py::keep_alive<0, 1>())
+                 .def("__len__", &VT::size)
+                 .def("__str__", [](const VT &vec) {
+                         std::ostringstream oss;
+                         oss << '[';
+                         std::copy(vec.begin(), vec.end()-1,
+                                   std::ostream_iterator<ET>(oss, ", "));
+                         oss << vec[vec.size()-1] << ']';
+                         return oss.str();
                      })
-                .def("__iter__", [](VT &vec) {
-                        return py::make_iterator(vec.begin(), vec.end());
-                    }, py::keep_alive<0, 1>())
-                .def("__len__", &VT::size)
-                .def("__str__", [](const VT &vec) {
-                        std::ostringstream oss;
-                        oss << '[';
-                        std::copy(vec.begin(), vec.end()-1,
-                                  std::ostream_iterator<ET>(oss, ", "));
-                        oss << vec[vec.size()-1] << ']';
-                        return oss.str();
-                    })
-                .def_buffer([](VT &vec) {
-                        return py::buffer_info{
-                            &vec[0], sizeof(ET), py::format_descriptor<ET>::format(),
-                            1, {vec.size()}, {sizeof(ET)}};
-                    })
-                .def("__neg__", [](const VT &vec) {
-                        return blaze::evaluate(-vec);
-                    })
-                ;
+                 .def_buffer([](VT &vec) {
+                         return py::buffer_info{
+                             &vec[0], sizeof(ET), py::format_descriptor<ET>::format(),
+                                 1, {vec.size()}, {sizeof(ET)}};
+                     })
+                 .def("__neg__", [](const VT &vec) {
+                         return blaze::evaluate(-vec);
+                     })
+                 ;
 
             // bind operators for all right hand sides
-            foreach<ElementalTypes, bindVectorOps, VT>::f(cls);
+            tmp::foreach<ElementalTypes, bindVectorOps, VT>::f(cls);
         }
     };
 
@@ -406,88 +408,88 @@ namespace {
                           "Need row major storage order to bind matrices using buffer protocol.");
 
             auto cls = py::class_<MT>{mod, matName<ET>().c_str(), py::buffer_protocol{}}
-                .def(py::init([](const std::size_t nx, const std::size_t ny){
-                            return MT(nx, ny);
-                        }))
-                .def(py::init([](const SparseMatrix<ET> &other){
-                            return MT(other);
-                        }))
-                .def(py::init([](py::buffer &buf) {
-                            const py::buffer_info binfo = buf.request();
-                            if (binfo.format != py::format_descriptor<ET>::format())
-                                throw std::runtime_error("Incompatible buffer format: mismatched elemental data type");
-                            if (binfo.ndim != 2)
-                                throw std::runtime_error("Wrong buffer dimention to construct matrix");
-                            return MT(binfo.shape.at(0), binfo.shape.at(1),
-                                      static_cast<const ET *>(binfo.ptr));
-                        }))
-                .def(py::init([](const py::list &list) {
-                            MT mat(list.size(), list[0].cast<py::list>().size());
-                            for (py::size_t i = 0; i < list.size(); ++i) {
-                                const py::list &inner = list[i].cast<py::list>();
-                                for (py::size_t j = 0; j < inner.size(); ++j)
-                                    mat(i, j) = inner[j].cast<ET>();
-                            }
-                            return mat;
-                        }))
-                .def("__getitem__", [](const MT &mat,
-                                       const std::tuple<std::size_t, std::size_t> &idxs) {
+            .def(py::init([](const std::size_t nx, const std::size_t ny){
+                        return MT(nx, ny);
+                    }))
+                 .def(py::init([](const SparseMatrix<ET> &other){
+                             return MT(other);
+                         }))
+                 .def(py::init([](py::buffer &buf) {
+                             const py::buffer_info binfo = buf.request();
+                             if (binfo.format != py::format_descriptor<ET>::format())
+                                 throw std::runtime_error("Incompatible buffer format: mismatched elemental data type");
+                             if (binfo.ndim != 2)
+                                 throw std::runtime_error("Wrong buffer dimention to construct matrix");
+                             return MT(binfo.shape.at(0), binfo.shape.at(1),
+                                       static_cast<const ET *>(binfo.ptr));
+                         }))
+                 .def(py::init([](const py::list &list) {
+                             MT mat(list.size(), list[0].cast<py::list>().size());
+                             for (py::size_t i = 0; i < list.size(); ++i) {
+                                 const py::list &inner = list[i].cast<py::list>();
+                                 for (py::size_t j = 0; j < inner.size(); ++j)
+                                     mat(i, j) = inner[j].cast<ET>();
+                             }
+                             return mat;
+                         }))
+                 .def("__getitem__", [](const MT &mat,
+                                        const std::tuple<std::size_t, std::size_t> &idxs) {
 #ifndef NDEBUG
-                         if (!(std::get<0>(idxs) < mat.rows()))
-                             throw std::out_of_range("Row index out of range");
-                         if (!(std::get<1>(idxs) < mat.columns()))
-                             throw std::out_of_range("Column index out of range");
+                          if (!(std::get<0>(idxs) < mat.rows()))
+                              throw std::out_of_range("Row index out of range");
+                          if (!(std::get<1>(idxs) < mat.columns()))
+                              throw std::out_of_range("Column index out of range");
 #endif
-                         return mat(std::get<0>(idxs), std::get<1>(idxs));
-                     })
-                .def("__setitem__", [](MT &mat,
-                                       const std::tuple<std::size_t, std::size_t> &idxs,
-                                       const typename MT::ElementType x) {
+                          return mat(std::get<0>(idxs), std::get<1>(idxs));
+                      })
+                 .def("__setitem__", [](MT &mat,
+                                        const std::tuple<std::size_t, std::size_t> &idxs,
+                                        const typename MT::ElementType x) {
 #ifndef NDEBUG
-                         if (!(std::get<0>(idxs) < mat.rows()))
-                             throw std::out_of_range("Row index out of range");
-                         if (!(std::get<1>(idxs) < mat.columns()))
-                             throw std::out_of_range("Column index out of range");
+                          if (!(std::get<0>(idxs) < mat.rows()))
+                              throw std::out_of_range("Row index out of range");
+                          if (!(std::get<1>(idxs) < mat.columns()))
+                              throw std::out_of_range("Column index out of range");
 #endif
-                         mat(std::get<0>(idxs), std::get<1>(idxs)) = x;
+                          mat(std::get<0>(idxs), std::get<1>(idxs)) = x;
+                      })
+                 .def("row", [](MT &mat, std::size_t i) {
+                         return py::make_iterator(mat.begin(i), mat.end(i));
+                     }, py::keep_alive<0, 1>())
+                 .def("rows", &MT::rows)
+                 .def("columns", &MT::columns)
+                 .def("__str__", [](const MT &mat) {
+                         std::ostringstream oss;
+                         oss << '[';
+                         // loop over rows
+                         for (std::size_t ind = 0; ind < mat.rows()-1; ++ind) {
+                             oss << '[';
+                             // write columns
+                             std::copy(mat.begin(ind), mat.end(ind)-1,
+                                       std::ostream_iterator<ET>(oss, ", "));
+                             oss << mat(ind, mat.columns()-1) << "],\n ";
+                         }
+                         // write last row
+                         const std::size_t ind = mat.rows()-1;
+                         oss << '[';
+                         std::copy(mat.begin(ind), mat.end(ind)-1,
+                                   std::ostream_iterator<ET>(oss, ", "));
+                         oss << mat(ind, mat.columns()-1) << "]]\n";
+                         return oss.str();
                      })
-                .def("row", [](MT &mat, std::size_t i) {
-                        return py::make_iterator(mat.begin(i), mat.end(i));
-                    }, py::keep_alive<0, 1>())
-                .def("rows", &MT::rows)
-                .def("columns", &MT::columns)
-                .def("__str__", [](const MT &mat) {
-                        std::ostringstream oss;
-                        oss << '[';
-                        // loop over rows
-                        for (std::size_t ind = 0; ind < mat.rows()-1; ++ind) {
-                            oss << '[';
-                            // write columns
-                            std::copy(mat.begin(ind), mat.end(ind)-1,
-                                      std::ostream_iterator<ET>(oss, ", "));
-                            oss << mat(ind, mat.columns()-1) << "],\n ";
-                        }
-                        // write last row
-                        const std::size_t ind = mat.rows()-1;
-                        oss << '[';
-                        std::copy(mat.begin(ind), mat.end(ind)-1,
-                                  std::ostream_iterator<ET>(oss, ", "));
-                        oss << mat(ind, mat.columns()-1) << "]]\n";
-                        return oss.str();
-                    })
-                .def_buffer([](MT &mat) {
-                        return py::buffer_info{
-                            &mat(0, 0), sizeof(ET), py::format_descriptor<ET>::format(),
-                            2, {mat.rows(), mat.columns()},
-                            {sizeof(ET)*mat.columns(), sizeof(ET)}};
-                    })
-                .def("__neg__", [](const MT &mat) {
-                        return blaze::evaluate(-mat);
-                    })
-                ;
+                 .def_buffer([](MT &mat) {
+                         return py::buffer_info{
+                             &mat(0, 0), sizeof(ET), py::format_descriptor<ET>::format(),
+                                 2, {mat.rows(), mat.columns()},
+                             {sizeof(ET)*mat.columns(), sizeof(ET)}};
+                     })
+                 .def("__neg__", [](const MT &mat) {
+                         return blaze::evaluate(-mat);
+                     })
+                 ;
 
             // bind operators for all right hand sides
-            foreach<ElementalTypes, bindMatrixOps, MT>::f(cls);
+            tmp::foreach<ElementalTypes, bindMatrixOps, MT>::f(cls);
         }
     };
 
@@ -537,70 +539,70 @@ namespace {
             using MT = SparseMatrix<ET>;
 
             auto cls = py::class_<MT>{mod, sparseMatName<ET>().c_str()}
-                .def(py::init([](const std::size_t nx, const std::size_t ny){
-                            return MT(nx, ny);
-                        }))
-                .def(py::init([](const Matrix<ET> &other){
-                            return MT(other);
-                        }))
-                .def(py::init([](const SymmetricSparseMatrix<ET> &other){
-                            return MT(other);
-                        }))
-                .def("__getitem__", [](const MT &mat,
-                                       const std::tuple<std::size_t, std::size_t> &idxs) {
-                         if (mat.find(std::get<0>(idxs), std::get<1>(idxs))
-                             != mat.end(std::get<0>(idxs)))
-                             return mat(std::get<0>(idxs), std::get<1>(idxs));
-                         else
-                             throw std::invalid_argument("No matrix element at given indices");
-                     })
-                .def("__setitem__", [](MT &mat,
-                                       const std::tuple<std::size_t, std::size_t> &idxs,
-                                       const typename MT::ElementType x) {
+            .def(py::init([](const std::size_t nx, const std::size_t ny){
+                        return MT(nx, ny);
+                    }))
+                 .def(py::init([](const Matrix<ET> &other){
+                             return MT(other);
+                         }))
+                 .def(py::init([](const SymmetricSparseMatrix<ET> &other){
+                             return MT(other);
+                         }))
+                 .def("__getitem__", [](const MT &mat,
+                                        const std::tuple<std::size_t, std::size_t> &idxs) {
+                          if (mat.find(std::get<0>(idxs), std::get<1>(idxs))
+                              != mat.end(std::get<0>(idxs)))
+                              return mat(std::get<0>(idxs), std::get<1>(idxs));
+                          else
+                              throw std::invalid_argument("No matrix element at given indices");
+                      })
+                 .def("__setitem__", [](MT &mat,
+                                        const std::tuple<std::size_t, std::size_t> &idxs,
+                                        const typename MT::ElementType x) {
 #ifndef NDEBUG
-                         if (!(std::get<0>(idxs) < mat.rows()))
-                             throw std::out_of_range("Row index out of range");
-                         if (!(std::get<1>(idxs) < mat.columns()))
-                             throw std::out_of_range("Column index out of range");
+                          if (!(std::get<0>(idxs) < mat.rows()))
+                              throw std::out_of_range("Row index out of range");
+                          if (!(std::get<1>(idxs) < mat.columns()))
+                              throw std::out_of_range("Column index out of range");
 #endif
-                         mat.set(std::get<0>(idxs), std::get<1>(idxs), x);
-                     })
-                .def("erase", [](MT &mat,
-                                 const std::size_t i, const std::size_t j) {
+                          mat.set(std::get<0>(idxs), std::get<1>(idxs), x);
+                      })
+                 .def("erase", [](MT &mat,
+                                  const std::size_t i, const std::size_t j) {
 #ifndef NDEBUG
-                         if (!(i < mat.rows()))
-                             throw std::out_of_range("Row index out of range");
-                         if (!(j < mat.columns()))
-                             throw std::out_of_range("Column index out of range");
+                          if (!(i < mat.rows()))
+                              throw std::out_of_range("Row index out of range");
+                          if (!(j < mat.columns()))
+                              throw std::out_of_range("Column index out of range");
 #endif
-                         mat.erase(i, j);
+                          mat.erase(i, j);
+                      })
+                 .def("row", [](MT &mat, std::size_t i) {
+                         return bind::makeIndexValueIterator(mat.begin(i), mat.end(i));
+                     }, py::keep_alive<0, 1>())
+                 .def("rows", &MT::rows)
+                 .def("columns", &MT::columns)
+                 .def("__str__", [](const MT &mat) {
+                         std::ostringstream oss;
+                         oss << '[';
+                         // loop over rows
+                         for (std::size_t ind = 0; ind < mat.rows(); ++ind) {
+                             // write columns
+                             for (auto it = mat.begin(ind); it != mat.end(ind); ++it){
+                                 oss << '(' << ind << ',' << it->index() << "): ";
+                                 oss << it->value() << ",\n ";
+                             }
+                         }
+                         oss << "]\n";
+                         return oss.str();
                      })
-                .def("row", [](MT &mat, std::size_t i) {
-                        return bind::makeIndexValueIterator(mat.begin(i), mat.end(i));
-                    }, py::keep_alive<0, 1>())
-                .def("rows", &MT::rows)
-                .def("columns", &MT::columns)
-                .def("__str__", [](const MT &mat) {
-                        std::ostringstream oss;
-                        oss << '[';
-                        // loop over rows
-                        for (std::size_t ind = 0; ind < mat.rows(); ++ind) {
-                          // write columns
-                          for (auto it = mat.begin(ind); it != mat.end(ind); ++it){
-                            oss << '(' << ind << ',' << it->index() << "): ";
-                            oss << it->value() << ",\n ";
-                          }
-                        }
-                        oss << "]\n";
-                        return oss.str();
-                    })
-                .def("__neg__", [](const MT &mat) {
-                        return blaze::evaluate(-mat);
-                    })
-                ;
+                 .def("__neg__", [](const MT &mat) {
+                         return blaze::evaluate(-mat);
+                     })
+                 ;
 
             // bind operators for all right hand sides
-            foreach<ElementalTypes, bindSparseMatrixOps, MT>::f(cls);
+            tmp::foreach<ElementalTypes, bindSparseMatrixOps, MT>::f(cls);
         }
     };
 
@@ -612,61 +614,61 @@ namespace {
             using MT = SymmetricSparseMatrix<ET>;
 
             auto cls = py::class_<MT>{mod, symmetricSparseMatName<ET>().c_str()}
-                .def(py::init([](const std::size_t nx, const std::size_t ny){
-                            return MT(nx, ny);
-                        }))
-                .def(py::init([](const SparseMatrix<ET> &other){
-                            return MT(other);
-                        }))
-                .def("__getitem__", [](const MT &mat,
-                                       const std::tuple<std::size_t, std::size_t> &idxs) {
-                         if (mat.find(std::get<0>(idxs), std::get<1>(idxs))
-                             != mat.end(std::get<0>(idxs)))
-                             return mat(std::get<0>(idxs), std::get<1>(idxs));
-                         else
-                             throw std::invalid_argument("No matrix element at given indices");
-                     })
-                .def("__setitem__", [](MT &mat,
-                                       const std::tuple<std::size_t, std::size_t> &idxs,
-                                       const typename MT::ElementType x) {
+            .def(py::init([](const std::size_t nx, const std::size_t ny){
+                        return MT(nx, ny);
+                    }))
+                 .def(py::init([](const SparseMatrix<ET> &other){
+                             return MT(other);
+                         }))
+                 .def("__getitem__", [](const MT &mat,
+                                        const std::tuple<std::size_t, std::size_t> &idxs) {
+                          if (mat.find(std::get<0>(idxs), std::get<1>(idxs))
+                              != mat.end(std::get<0>(idxs)))
+                              return mat(std::get<0>(idxs), std::get<1>(idxs));
+                          else
+                              throw std::invalid_argument("No matrix element at given indices");
+                      })
+                 .def("__setitem__", [](MT &mat,
+                                        const std::tuple<std::size_t, std::size_t> &idxs,
+                                        const typename MT::ElementType x) {
 #ifndef NDEBUG
-                         if (!(std::get<0>(idxs) < mat.rows()))
-                             throw std::out_of_range("Row index out of range");
-                         if (!(std::get<1>(idxs) < mat.columns()))
-                             throw std::out_of_range("Column index out of range");
+                          if (!(std::get<0>(idxs) < mat.rows()))
+                              throw std::out_of_range("Row index out of range");
+                          if (!(std::get<1>(idxs) < mat.columns()))
+                              throw std::out_of_range("Column index out of range");
 #endif
-                         mat.set(std::get<0>(idxs), std::get<1>(idxs), x);
-                     })
-                .def("erase", [](MT &mat,
-                                 const std::size_t i, const std::size_t j) {
+                          mat.set(std::get<0>(idxs), std::get<1>(idxs), x);
+                      })
+                 .def("erase", [](MT &mat,
+                                  const std::size_t i, const std::size_t j) {
 #ifndef NDEBUG
-                         if (!(i < mat.rows()))
-                             throw std::out_of_range("Row index out of range");
-                         if (!(j < mat.columns()))
-                             throw std::out_of_range("Column index out of range");
+                          if (!(i < mat.rows()))
+                              throw std::out_of_range("Row index out of range");
+                          if (!(j < mat.columns()))
+                              throw std::out_of_range("Column index out of range");
 #endif
-                         mat.erase(i, j);
+                          mat.erase(i, j);
+                      })
+                 .def("rows", &MT::rows)
+                 .def("columns", &MT::columns)
+                 .def("__str__", [](const MT &mat) {
+                         std::ostringstream oss;
+                         oss << '[';
+                         // loop over rows
+                         for (std::size_t ind = 0; ind < mat.rows(); ++ind) {
+                             // write columns
+                             for (auto it = mat.begin(ind); it != mat.end(ind); ++it){
+                                 oss << '(' << ind << ',' << it->index() << "): ";
+                                 oss << it->value() << ",\n ";
+                             }
+                         }
+                         oss << "]\n";
+                         return oss.str();
                      })
-                .def("rows", &MT::rows)
-                .def("columns", &MT::columns)
-                .def("__str__", [](const MT &mat) {
-                        std::ostringstream oss;
-                        oss << '[';
-                        // loop over rows
-                        for (std::size_t ind = 0; ind < mat.rows(); ++ind) {
-                            // write columns
-                            for (auto it = mat.begin(ind); it != mat.end(ind); ++it){
-                                oss << '(' << ind << ',' << it->index() << "): ";
-                                oss << it->value() << ",\n ";
-                            }
-                        }
-                        oss << "]\n";
-                        return oss.str();
-                    })
-                .def("__neg__", [](const MT &mat) {
-                        return blaze::evaluate(-mat);
-                    })
-                ;
+                 .def("__neg__", [](const MT &mat) {
+                         return blaze::evaluate(-mat);
+                     })
+                 ;
         }
     };        
 }
@@ -674,12 +676,12 @@ namespace {
 namespace bind {
     
     void bindTensors(py::module &mod) {
-        using ElementalTypes = Types<int, double, std::complex<double>>;
+        using ElementalTypes = tmp::Types<int, double, std::complex<double>>;
     
-        foreach<ElementalTypes, bindVector, ElementalTypes>::f(mod);
-        foreach<ElementalTypes, bindMatrix, ElementalTypes>::f(mod);
-        foreach<ElementalTypes, bindSparseMatrix, ElementalTypes>::f(mod);
-        foreach<ElementalTypes, bindSymmetricSparseMatrix>::f(mod);
+        tmp::foreach<ElementalTypes, bindVector, ElementalTypes>::f(mod);
+        tmp::foreach<ElementalTypes, bindMatrix, ElementalTypes>::f(mod);
+        tmp::foreach<ElementalTypes, bindSparseMatrix, ElementalTypes>::f(mod);
+        tmp::foreach<ElementalTypes, bindSymmetricSparseMatrix>::f(mod);
 
         mod.def("logdet", [](const Matrix<std::complex<double>> &mat) {
                 return logdet(mat);

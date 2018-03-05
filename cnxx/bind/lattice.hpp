@@ -1,6 +1,5 @@
 /** \file
  * \brief Bindings for lattice related routines.
- * \ingroup bind
  */
 
 #ifndef BIND_LATTICE_HPP

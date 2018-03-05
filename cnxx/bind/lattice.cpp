@@ -5,7 +5,8 @@
 namespace bind {
 
     void bindLattice(py::module &mod) {
-        
+        using namespace cnxx;
+
         py::class_<Lattice>{mod, "Lattice"}
             .def(py::init<std::size_t, std::size_t>())
             .def("hopping", py::overload_cast<>(&Lattice::hopping),

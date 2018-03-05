@@ -1,6 +1,5 @@
 /** \file
  * \brief Bindings for HubbardFermiMatrix.
- * \ingroup bind
  */
 
 #ifndef BIND_HUBBARD_FERMI_MATRIX_HPP
