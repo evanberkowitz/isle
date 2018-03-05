@@ -312,14 +312,15 @@ namespace {
         SparseMatrix<std::complex<double>> u; // previous u, updated along the way
         std::unique_ptr<int[]> ipiv = std::make_unique<int[]>(nx);// pivot indices for inversion
 
-        // starting components of d, u, l, v, h
+        // starting components of d, u, l
         lu.dinv.emplace_back(P);
         invert(lu.dinv.back(), ipiv);
         hfm.Qdag(u, 0);   // now u = lu.u[0]
         lu.u.emplace_back(u);
-
         hfm.Q(q, 1);
         lu.l.emplace_back(q*lu.dinv.back());
+
+        // v, h
         hfm.Q(q, 0);
         lu.v.emplace_back(q);
         hfm.Qdag(q, nt-1);
@@ -332,8 +333,8 @@ namespace {
             invert(lu.dinv.back(), ipiv);
 
             hfm.Q(q, i+1);
-            lu.l.emplace_back(q*lu.dinv.back());
-            lu.h.emplace_back(-lu.h[i-1]*u*lu.dinv.back());
+            lu.l.emplace_back(q*lu.dinv[i]);
+            lu.h.emplace_back(-lu.h[i-1]*u*lu.dinv[i]);
             lu.v.emplace_back(-lu.l[i-1]*lu.v[i-1]);
 
             hfm.Qdag(u, i);
@@ -355,7 +356,7 @@ namespace {
         lu.dinv.emplace_back(P - lu.l[nt-2]*lu.u[nt-2]);
         for (std::size_t i = 0; i < nt-2; ++i)
             lu.dinv[nt-1] -= lu.h[i]*lu.v[i];
-        invert(lu.dinv.back());
+        invert(lu.dinv.back(), ipiv);
 
         return lu;
     }

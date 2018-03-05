@@ -78,7 +78,7 @@
  \f[
  \begin{matrix}
  d_0 = P                  & u_0 = Q_0^\dagger & l_0 = Q_1 d_{0}^{-1} & \\
- d_i = P - l_{i-1}u_{i-1} & u_i = Q_i^\dagger & l_i = Q_{i+1} d_{1}^{-1} & \forall i \in [1, N_t-3] \\
+ d_i = P - l_{i-1}u_{i-1} & u_i = Q_i^\dagger & l_i = Q_{i+1} d_{i}^{-1} & \forall i \in [1, N_t-3] \\
  d_{N_t-2} = P - l_{N_t-3} u_{N_t-3} & & &
  \end{matrix}
  \f]
