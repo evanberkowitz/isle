@@ -10,10 +10,21 @@ set(PARDISO "NONE" CACHE STRING "Implementation of PARDISO")
 if ("${PARDISO}" STREQUAL "NONE")
   set(PARDISO_CXX_FLAGS "")
   set(PARDISO_LIBRARIES "")
-elseif ("${PARDISO}" STREQUAL "PARDISO")
-  set(PARDISO_CXX_FLAGS "-DPARDISO")
+
+elseif ("${PARDISO}" STREQUAL "STANDALONE")
+  set(PARDISO_CXX_FLAGS "-DPARDISO_STANDALONE")
   find_library(PARDISO_LIBRARIES pardiso)
-# TODO case for MKL pardiso, define MKL_PARDISO CPP macro
+
+elseif ("${PARDISO}" STREQUAL "MKL")
+  if (NOT "${BLAS_VENDOR}" MATCHES "^Intel.*")
+    message(FATAL_ERROR "Cannot use MKL PARDISO when linking against non MKL BLAS")
+  endif ()
+  set(PARDISO_CXX_FLAGS "-DPARDISO_MKL")
+
+  set(ENV{BLA_VENDOR} "${BLAS_VENDOR}")
+  find_package(BLAS REQUIRED)
+  set(PARDISO_LIBRARIES ${BLAS_LIBRARIES} -lmkl_avx2 -lmkl_def)
+
 else ()
   message(FATAL_ERROR "Unknown PARDISO implementation: ${PARDISO}")
 endif ()

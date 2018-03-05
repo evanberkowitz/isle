@@ -19,34 +19,37 @@
   #error "Both macros for PARDISO are defined. Select a flavor, either STANDALONE or MKL"
 #endif
 
-// TODO
-#if defined(PARDISO_MKL)
-  #error "MKL PARDISO is not yet supported"
-#endif
-
-
 #include <type_traits>
 #include <memory>
+#include <cstdlib>
 
 #include "math.hpp"
 #include "hubbardFermiMatrix.hpp"
 
-
-/// Prototype for init function in PARDISO library.
+// declarations for PARDISO backend
+#if defined(PARDISO_STANDALONE)
 extern "C" void pardisoinit(void *pt[64], const int *mtype, const int *solver,
                             int iparm[64], double dparm[64], int *error);
-
-/// Prototype for solver execution function in PARDISO library.
 extern "C" void pardiso(void *pt[64], const int *maxfct, const int *mnum, const int *mtype,
                         const int *phase, const int *n, const void *a,
                         const int ia[], const int ja[], const int perm[],
                         const int *nrhs, int iparm[64], const int *msglvl,
                         void *b, void *x, int *error, double dparm[64]);
+#else
+#include <mkl_pardiso.h>
+#endif
+
+/// Mark parameters as unused if they are used by standalone PARDISO only.
+#if defined(PARDISO_STANDALONE)
+  #define PARDISO_MKL_UNUSED(x) x
+#else
+  #define PARDISO_MKL_UNUSED(x) UNUSED(x)
+#endif
 
 
 /// Wrapper around PARDISO sparse solver.
 namespace Pardiso {
-    /// Solver kind used by PARDISO.
+    /// Solver kind used by PARDISO; only used by standalone PARDISO.
     enum class Solver {
         DIRECT = 0,    ///< Sparse direct solver.
         ITERATIVE = 1  ///< Multi-recursive iterative solver.
@@ -59,6 +62,8 @@ namespace Pardiso {
      *
      * Note that `SYM_HERM_INDEF`, `DIAGONAL`, and `BUNCH_KAUF` all represent the
      * same matrix type in PARDISO; they can be used interchangeably.
+     * The latter two are not actually supported by MKL PARDISO and silently
+     * treated as `SYM_HERM_INDEF`.
      */
     enum class MType {
         STRUCT_SYM,       ///< Structurally symmetric.
@@ -80,27 +85,31 @@ namespace Pardiso {
         ANALYSIS = 1,      ///< Analysis.
         FACTORIZATION = 2, ///< Numerical factorization.
         SOLVE = 3,         ///< Solve / iterative refinement.
-        SEL_INV = -22      ///< Selected inversion.
     };
 
     /// Construct phase parameter for calls to PARDISO from a start and end phase.
     inline int pardisoPhase(const Phase start, const Phase end) noexcept {
-        if (start == Phase::SEL_INV)
-            return static_cast<int>(start);
-
         return 10*static_cast<int>(start) + static_cast<int>(end);
     }
 
     /// Indices into integer parameters iparm of PARDISO.
     enum class IParm {
         USE_DEFAULT = 0,  ///< Fill iparm with default values (only for `pardisoinit`).
-        NUM_PROC = 2      ///< Number of OpenMP threads.
+#if defined(PARDISO_STANDALONE)
+        NUM_PROC = 2      ///< Number of OpenMP threads; (only standalone PARDISO).
+#endif
     };
 
+#if defined(PARDISO_STANDALONE)
     /// Indices into double parameters dparm of PARDISO.
+    /**
+     * \attention This enum is only defined for standalone PARDISO since MKL PARDISO
+     *            does not support the dparm parameter.
+     */
     enum class DParm {
         RESIDUAL = 33  ///< Relative residual after Krylov-Subspace convergence.
     };
+#endif
 
     /// Check PARDISO error flag and throw exception if an error occured.
     /**
@@ -128,6 +137,7 @@ namespace Pardiso {
             throw std::runtime_error("PARDISO Error -7: Diagonal matrix problem");
         case -8:
             throw std::runtime_error("PARDISO Error -8: 32-bit integer overflow problem");
+#if defined(PARDISO_STANDALONE)
         case -10:
             throw std::runtime_error("PARDISO Error -10: No license file pardiso.lic found");
         case -11:
@@ -142,6 +152,16 @@ namespace Pardiso {
             throw std::runtime_error("PARDISO Error -102: Error in Krylov-subspace iteration");
         case -103:
             throw std::runtime_error("PARDISO Error -103: Break-down in Krylov-subspace iteration");
+#else
+        case -9:
+            throw std::runtime_error("PARDISO Error -9: Not enough memory for OOC");
+        case -10:
+            throw std::runtime_error("PARDISO Error -10: Error opening OOC files");
+        case -11:
+            throw std::runtime_error("PARDISO Error -11: Read/write erro with OOC files");
+        case -12:
+            throw std::runtime_error("PARDISO Error -12: pardiso_64 called from 32-bit library");
+#endif
         default:
             throw std::runtime_error("Unknown PARDISO Error");
         }
@@ -313,6 +333,12 @@ namespace Pardiso {
      * PARDISO can be executed by calling `operator()` which can handle various
      * inout formats.
      *
+     * For standalone PARDISO, the number of threads is set according to the
+     * environment variable <TT>OMP_NUM_THREADS</TT>. It can be changed through
+     * the corresponing iparm. For MKL PARDISO,
+     * the number of threads is wholly determined by <TT>MKL_NUM_THREADS</TT>
+     * and cannot be changed from inside of the program.
+     *
      * \tparam ET Element type of matrices and vectors used by this solver.
      *            Must be one either `double` or `std::complex<double>`.
      */
@@ -324,18 +350,34 @@ namespace Pardiso {
 
         using elementType = ET;  ///< Type of matrix elements.
 
-        /// Selecct a solver and optionally matrix type and message level; initialize PARDISO.
-        State(const Solver solver, const MType mtype = MType::NON_SYM,
+        /// Initialize PARDISO.
+        /**
+         * PARDISO is set up for a fixed matrix type. `iparm` and `dparm` are filled
+         * with default values, they can be adjusted through `operator[]`.
+         * 
+         * \note Parameter solver is ignored when MKL PARDISO is used.
+         */
+        State(const MType mtype = MType::NON_SYM,
+              const Solver PARDISO_MKL_UNUSED(solver) = Solver::DIRECT,
               const int messageLevel = 0)
-            : _msglvl{messageLevel}, _mtype{matrixType(mtype)}, _ownsMemory{false} {
+            : _msglvl{messageLevel}, _mtype{matrixType(mtype)}, _nrows{0}, _nrhs{0} {
 
-            int error;
-            int slvr = static_cast<int>(solver);
             (*this)[IParm::USE_DEFAULT] = 0;  // fill in default values
-            (*this)[IParm::NUM_PROC] = 1;
+
+#if defined(PARDISO_STANDALONE)
+            int error;
+            const int slvr = static_cast<int>(solver);
             pardisoinit(_statePtr.get(), &_mtype, &slvr,
                         _iparm.get(), _dparm.get(), &error);
             handleError(error);
+
+            // set number of threads from environment variable
+            const char* numThreads = std::getenv("OMP_NUM_THREADS");
+            if (std::strlen(numThreads) > 0)
+                (*this)[IParm::NUM_PROC] = std::atoi(numThreads);
+#else
+            pardisoinit(_statePtr.get(), &_mtype, _iparm.get());
+#endif
         };
 
         /// Copying is not allowed.
@@ -350,7 +392,8 @@ namespace Pardiso {
               _dparm{std::move(other._dparm)},
               _msglvl{other._msglvl},
               _mtype{other._mtype},
-              _ownsMemory{std::exchange(other._ownsMemory, false)} { }
+              _nrows{std::exchange(other._nrows, 0)},
+              _nrhs{std::exchange(other._nrhs, 0)} { }
 
         /// Move assign, old instance releases control over PARDISO.
         State &operator=(State &&other) noexcept {
@@ -359,7 +402,8 @@ namespace Pardiso {
             _dparm = std::move(other._dparm);
             _msglvl = other._msglvl;
             _mtype = other._mtype;
-            _ownsMemory = std::exchange(other._ownsMemory, false);
+            _nrows = std::exchange(other._nrows, 0);
+            _nrhs = std::exchange(other._nrhs, 0);
             return *this;
         }
 
@@ -369,18 +413,24 @@ namespace Pardiso {
 
         /// Free all memory allocated by PARDISO; is called by destructor.
         void clear() {
-            if (_ownsMemory) {
+            if (_nrows > 0) {
                 int error;
                 int phase = -1;
-                pardiso(_statePtr.get(), nullptr, nullptr, nullptr,
-                        &phase, nullptr, nullptr, nullptr, nullptr,
-                        nullptr, nullptr, _iparm.get() , &_msglvl, nullptr,
-                        nullptr, &error, _dparm.get());
+#if defined (PARDISO_STANDALONE)
+                pardiso(_statePtr.get(), nullptr, nullptr, &_mtype, &phase, &_nrows,
+                        nullptr, nullptr, nullptr, nullptr, &_nrhs,
+                        _iparm.get(), &_msglvl, nullptr, nullptr, &error, _dparm.get());
+#else
+                pardiso(_statePtr.get(), nullptr, nullptr, &_mtype, &phase, &_nrows,
+                        nullptr, nullptr, nullptr, nullptr, &_nrhs,
+                        _iparm.get(), &_msglvl, nullptr, nullptr, &error);
+#endif
+                
                 handleError(error);
-                _ownsMemory = false;
+                _nrows = 0;
+                _nrhs = 0;
             }            
         }
-
 
         /// Access an integer parameter.
         int &operator[](const IParm ip) noexcept {
@@ -400,6 +450,7 @@ namespace Pardiso {
             return _iparm.get();
         }
 
+#if defined(PARDISO_STANDALONE)
         /// Access a double parameter.
         double &operator[](const DParm dp) noexcept {
             return _iparm[static_cast<std::size_t>(dp)];
@@ -417,6 +468,7 @@ namespace Pardiso {
         const int *dparm() const noexcept {
             return _dparm.get();
         }
+#endif
 
         /// Access PARDISO message level (msglvl).
         int &messageLevel() noexcept {
@@ -455,13 +507,23 @@ namespace Pardiso {
             const int phase = pardisoPhase(startPhase, endPhase);
             const int nrhs = 1;
             int error;
-            
+
+            if (n != _nrows)
+                clear();
+
+#if defined(PARDISO_STANDALONE)
             pardiso(_statePtr.get(), &maxfct, &mnum, &_mtype, &phase,
                     &n, a, ia, ja, nullptr, &nrhs, _iparm.get(),
                     &_msglvl, b, x, &error, _dparm.get());
+#else
+            pardiso(_statePtr.get(), &maxfct, &mnum, &_mtype, &phase,
+                    &n, a, ia, ja, nullptr, &nrhs, _iparm.get(),
+                    &_msglvl, b, x, &error);
+#endif
             handleError(error);
 
-            _ownsMemory = true;
+            _nrows = true;
+            _nrhs = nrhs;
         }
 
         /// Perform sparse solve by calling `pardiso`.
@@ -575,9 +637,10 @@ namespace Pardiso {
         /// Array of double parameters.
         std::unique_ptr<double[]> _dparm = std::make_unique<double[]>(64);
 
-        int _msglvl;      ///< Message level (0 or 1).
-        int _mtype;       ///< PARDISO matrix type.
-        bool _ownsMemory; ///< `true` if PARDISO allocated memory that needs to be freed.
+        int _msglvl;  ///< Message level (0 or 1).
+        int _mtype;   ///< PARDISO matrix type.
+        int _nrows;   ///< Number of rows of matrix currently stored by PARDISO.
+        int _nrhs;    ///< Number of right hand sides currently stored by PARDISO.
 
         /// Return the full matrix type based on a symmetry type and datatype of this class.
         /**
