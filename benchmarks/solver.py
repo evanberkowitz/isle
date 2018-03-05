@@ -6,6 +6,7 @@ Demonstrate and benchmark custom solver for HFM based systems of equations.
 
 import timeit
 import site
+import pickle
 from pathlib import Path
 
 import yaml
@@ -25,8 +26,10 @@ def main():
     nts = (4, 8, 16, 32)
     timeLU = []
     timeSolve = []
+    timePardiso = []
     solve = cns.solve
     getLU = cns.getLU
+    solvePardiso = cns.solvePardiso
     for nt in nts:
         # make random auxilliary field and HFM
         phi = cns.Vector(np.random.randn(lat.nx()*nt)
@@ -38,26 +41,22 @@ def main():
                          + 1j*np.random.randn(lat.nx()*nt), dtype=complex)
 
         # measure time for LU-decompositon
-        timeLU.append(timeit.timeit("getLU(hfm)", globals=locals(), number=20)/20)
+        timeLU.append(timeit.timeit("getLU(hfm)", globals=locals(), number=1)/1)
         # measure time for solver itself
         lu = getLU(hfm)
-        timeSolve.append(timeit.timeit("solve(lu, rhs)", globals=locals(), number=20)/20)
+        timeSolve.append(timeit.timeit("solve(lu, rhs)", globals=locals(), number=1)/1)
 
-    print("timeLU:    ", timeLU)
-    print("timeSolve: ", timeSolve)
+        timePardiso.append(timeit.timeit("solvePardiso(hfm, rhs)", globals=locals(), number=1)/1)
 
-    # plot result
-    fig = plt.figure()
-    ax = fig.add_subplot(111)
-    ax.set_title("Benchmark HFM solver")
-    ax.set_xlabel("Nt")
-    ax.set_ylabel("time / s")
-    ax.plot(nts, timeLU, label="LU-factorization")
-    ax.plot(nts, timeSolve, label="Solver")
-    ax.plot(nts, [tlu+ts for tlu, ts in zip(timeLU, timeSolve)], label="Total")
-    ax.legend()
-    fig.tight_layout()
-    plt.show()
+    # save benchmark to file
+    pickle.dump({"xlabel": "Nt",
+                 "ylabel": "time / s",
+                 "xvalues": nts,
+                 "results": {"custom lu": timeLU,
+                             "custom solve": timeSolve,
+                             "custom total": [tlu+ts for tlu, ts in zip(timeLU, timeSolve)],
+                             "PARDISO": timePardiso}},
+                open("solver.ben", "wb"))
 
 if __name__ == "__main__":
     main()
