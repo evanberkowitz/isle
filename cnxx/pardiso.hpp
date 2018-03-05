@@ -12,15 +12,15 @@
  */
 
 // check that macros are set properly
-#if !defined(PARDISO) && !defined(MKL_PARDISO)
+#if !defined(PARDISO_STANDALONE) && !defined(PARDISO_MKL)
   #error "PARDISO is not enabled, cannot use pardiso.hpp"
 #endif
-#if defined(PARDISO) && defined(MKL_PARDISO)
-  #error "Both macros for PARDISO are defined. Select a flavor, either PARDISO or MKL_PARDISO"
+#if defined(PARDISO_STANDALONE) && defined(PARDISO_MKL)
+  #error "Both macros for PARDISO are defined. Select a flavor, either STANDALONE or MKL"
 #endif
 
 // TODO
-#if defined(MKL_PARDISO)
+#if defined(PARDISO_MKL)
   #error "MKL PARDISO is not yet supported"
 #endif
 
@@ -33,13 +33,14 @@
 
 
 /// Prototype for init function in PARDISO library.
-extern "C" void pardisoinit(void *pt[64], int *mtype, int *solver, int iparm[64],
-                            double dparm[64], int *error);
+extern "C" void pardisoinit(void *pt[64], const int *mtype, const int *solver,
+                            int iparm[64], double dparm[64], int *error);
 
 /// Prototype for solver execution function in PARDISO library.
-extern "C" void pardiso(void *pt[64], int *maxfct, int *mnum, int *mtype,
-                        int *phase, int *n, void *a, int ia[], int ja[],
-                        int perm[], int *nrhs, int iparm[64], int *msglvl,
+extern "C" void pardiso(void *pt[64], const int *maxfct, const int *mnum, const int *mtype,
+                        const int *phase, const int *n, const void *a,
+                        const int ia[], const int ja[], const int perm[],
+                        const int *nrhs, int iparm[64], const int *msglvl,
                         void *b, void *x, int *error, double dparm[64]);
 
 
@@ -445,14 +446,14 @@ namespace Pardiso {
          *
          * \throws std::runtime_error if PARDISO reports an error.
          */
-        void operator()(int n,
-                        elementType * const a, int * const ia, int * const ja,
+        void operator()(const int n, const elementType * const a, const int * const ia,
+                        const int * const ja,
                         elementType * const b, elementType * const x,
                         const Phase startPhase, const Phase endPhase=Phase::SOLVE) {
 
-            int maxfct = 1, mnum = 1;
-            int phase = pardisoPhase(startPhase, endPhase);
-            int nrhs = 1;
+            const int maxfct = 1, mnum = 1;
+            const int phase = pardisoPhase(startPhase, endPhase);
+            const int nrhs = 1;
             int error;
             
             pardiso(_statePtr.get(), &maxfct, &mnum, &_mtype, &phase,
@@ -482,9 +483,9 @@ namespace Pardiso {
          * \throws std::runtime_error if PARDISO reports an error or vector sizes
          *                            do not match and in debug build.
          */
-        std::vector<elementType> operator()(std::vector<elementType> &a,
-                                            std::vector<int> &ia,
-                                            std::vector<int> &ja,
+        std::vector<elementType> operator()(const std::vector<elementType> &a,
+                                            const std::vector<int> &ia,
+                                            const std::vector<int> &ja,
                                             std::vector<elementType> &b,
                                             const Phase startPhase,
                                             const Phase endPhase=Phase::SOLVE) {
@@ -512,7 +513,7 @@ namespace Pardiso {
          * \throws std::runtime_error if PARDISO reports an error or matrix and vector
          *                            sizes do not match and in debug build.
          */
-        std::vector<elementType> operator()(Pardiso::Matrix<elementType> &mat,
+        std::vector<elementType> operator()(const Pardiso::Matrix<elementType> &mat,
                                             std::vector<elementType> &b,
                                             const Phase startPhase,
                                             const Phase endPhase=Phase::SOLVE) {
