@@ -22,6 +22,7 @@
 #include <type_traits>
 #include <memory>
 #include <cstdlib>
+#include <cstring>
 
 #include "math.hpp"
 #include "hubbardFermiMatrix.hpp"
