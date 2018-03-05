@@ -4,11 +4,9 @@
 /** \file
  * \brief Wrapper around PARDISO sparse solver.
  *
- * Including this file causes a compile time error unless either the macro `PARDISO`
- * or `MKL_PARDISO` is defined. Those macros toggle which version of PARDISO is
- * used as a backend.
- *
- * \todo Implement MKL PARDISO support.
+ * Including this file causes a compile time error unless either the macro
+ * `PARDISO_STANDALONE` or `PARDISO_MKL` is defined. Those macros toggle
+ * which version of PARDISO is used as a backend.
  */
 
 // check that macros are set properly
@@ -27,6 +25,7 @@
 #include "math.hpp"
 #include "hubbardFermiMatrix.hpp"
 
+/// \cond
 // declarations for PARDISO backend
 #if defined(PARDISO_STANDALONE)
 extern "C" void pardisoinit(void *pt[64], const int *mtype, const int *solver,
@@ -40,15 +39,44 @@ extern "C" void pardiso(void *pt[64], const int *maxfct, const int *mnum, const 
 #include <mkl_pardiso.h>
 #endif
 
-/// Mark parameters as unused if they are used by standalone PARDISO only.
+// Mark parameters as unused if they are used by standalone PARDISO only.
+// For internal use only, is undefined at end of file.
 #if defined(PARDISO_STANDALONE)
   #define PARDISO_MKL_UNUSED(x) x
 #else
   #define PARDISO_MKL_UNUSED(x) UNUSED(x)
 #endif
+/// \endcond
 
+/// Interface for PARDISO sparse solver.
+/**
+ * This interface can be used for both the standalone PARDISO backend (tested with
+ * version 5.0.0) or the MKL version. All differences are abstracted away. However, if
+ * need be, some version specific features can be used through a interfaces in line with
+ * the rest of the API (see e.g. Pardiso::DParm).
+ *
+ * The backend is selected via the preprocessor macros `PARDISO_STANDALONE` or
+ * `PARDISO_MKL`. Only one of them may be defined. If both or neither are defined,
+ * including pardiso.hpp causes a compile time error.
+ *
+ * The simplest way to solve an equation of the form `mat*x = rhs` for `x` is the following
+\code{.cpp}
+blaze::CompressedMatrix<double> mat{...};
+blaze::Vector<double> rhs{...};
+// initialize mat and rhs
 
-/// Wrapper around PARDISO sparse solver.
+Pardiso::State<double> pstate;
+blaze::Vector<double> x = pstate(mat, rhs);
+\endcode
+ * Pardiso::State represents the internal state of PARDISO and manages all memory.
+ * If the matrix has some symmetry, it can be specified in the constructor via a member
+ * of Pardiso::MType. The full matrix type is derived from the template parameter of
+ * %State which must be either `double` or `std::complex<double>`.
+ *
+ * Both the constructor and call operator support additional parameters for more fine
+ * grained control. See Pardiso::State for more information. Also, see Pardiso::Matrix
+ * which is a helper for constructing matrices in the CRS format required by PARDISO.
+ */
 namespace Pardiso {
     /// Solver kind used by PARDISO; only used by standalone PARDISO.
     enum class Solver {
@@ -115,7 +143,7 @@ namespace Pardiso {
     /// Check PARDISO error flag and throw exception if an error occured.
     /**
      * \param error PARDISO error code.
-     * \throws `std::runtime_error` if `error != 0`. The exception message contains a brief
+     * \throws std::runtime_error if `error != 0`. The exception message contains a brief
      *         description of the error.
      */
     inline void handleError(const int error) {
@@ -707,5 +735,8 @@ namespace Pardiso {
         }
     };  // struct State
 }  // namespace Spardiso
+
+// get rid of that macro again
+#undef PARDISO_MKL_UNUSED
 
 #endif  // ndef PARDISO_HPP
