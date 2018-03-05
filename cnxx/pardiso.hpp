@@ -374,7 +374,7 @@ namespace Pardiso {
 
             // set number of threads from environment variable
             const char* numThreads = std::getenv("OMP_NUM_THREADS");
-            if (std::strlen(numThreads) > 0)
+            if (numThreads)
                 (*this)[IParm::NUM_PROC] = std::atoi(numThreads);
 #else
             pardisoinit(_statePtr.get(), &_mtype, _iparm.get());
