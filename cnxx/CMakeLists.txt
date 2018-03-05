@@ -2,6 +2,12 @@ cmake_minimum_required(VERSION 3.9.4)
 
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/cmake/Modules/")
 
+# do not allow any compiler specific c++ extensions
+set(CMAKE_CXX_EXTENSIONS OFF)
+
+# save rpath in installed library
+SET(CMAKE_INSTALL_RPATH_USE_LINK_PATH TRUE)
+
 function (target_linker_flags target flags)
   if (flags)
     string(REPLACE ";" " " str_flags "${flags}")
@@ -22,16 +28,9 @@ add_subdirectory(bind)
 add_library(cnxx SHARED ${SOURCE})
 
 # set standard
-if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang"
-    OR "${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
-  # set it explicitly for GNU and Clang, gnu++14 does not work with complex literals...
-  target_compile_options(cnxx PUBLIC --std=c++14)
-else ()
-  set_target_properties(cnxx PROPERTIES CXX_STANDARD 14
-    CXX_STANDARD_REQUIRED ON)
-endif ()
+set_target_properties(cnxx PROPERTIES CXX_STANDARD 14
+  CXX_STANDARD_REQUIRED ON)
 
-# target_compile_options(cnxx PUBLIC -Wall -Wextra -pedantic -DBLAZE_USE_CPP_THREADS)
 target_compile_options(cnxx PUBLIC -Wall -Wextra -pedantic)
 if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
   target_compile_options(cnxx PUBLIC -Wno-c++98-compat)
