@@ -357,9 +357,9 @@ namespace Pardiso {
          * 
          * \note Parameter solver is ignored when MKL PARDISO is used.
          */
-        State(const MType mtype = MType::NON_SYM,
-              const Solver PARDISO_MKL_UNUSED(solver) = Solver::DIRECT,
-              const int messageLevel = 0)
+        State(const MType mtype=MType::NON_SYM,
+              const Solver PARDISO_MKL_UNUSED(solver)=Solver::DIRECT,
+              const int messageLevel=0)
             : _msglvl{messageLevel}, _mtype{matrixType(mtype)}, _nrows{0}, _nrhs{0} {
 
             (*this)[IParm::USE_DEFAULT] = 0;  // fill in default values
@@ -501,7 +501,8 @@ namespace Pardiso {
         void operator()(const int n, const elementType * const a, const int * const ia,
                         const int * const ja,
                         elementType * const b, elementType * const x,
-                        const Phase startPhase, const Phase endPhase=Phase::SOLVE) {
+                        const Phase startPhase=Phase::ANALYSIS,
+                        const Phase endPhase=Phase::SOLVE) {
 
             const int maxfct = 1, mnum = 1;
             const int phase = pardisoPhase(startPhase, endPhase);
@@ -549,7 +550,7 @@ namespace Pardiso {
                                             const std::vector<int> &ia,
                                             const std::vector<int> &ja,
                                             std::vector<elementType> &b,
-                                            const Phase startPhase,
+                                            const Phase startPhase=Phase::ANALYSIS,
                                             const Phase endPhase=Phase::SOLVE) {
 #ifndef NDEBUG
             if (b.size() != ia.size()-1)
@@ -577,7 +578,7 @@ namespace Pardiso {
          */
         std::vector<elementType> operator()(const Pardiso::Matrix<elementType> &mat,
                                             std::vector<elementType> &b,
-                                            const Phase startPhase,
+                                            const Phase startPhase=Phase::ANALYSIS,
                                             const Phase endPhase=Phase::SOLVE) {
 #ifndef NDEBUG
             if (b.size() != mat.rows())
@@ -607,7 +608,7 @@ namespace Pardiso {
          */        
         Vector<elementType> operator()(const SparseMatrix<elementType> &mat,
                                        Vector<elementType> &b,
-                                       const Phase startPhase,
+                                       const Phase startPhase=Phase::ANALYSIS,
                                        const Phase endPhase=Phase::SOLVE) {
 #ifndef NDEBUG
             if (b.size() != mat.rows())
