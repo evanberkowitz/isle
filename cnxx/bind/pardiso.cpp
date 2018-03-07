@@ -28,6 +28,15 @@ namespace {
                  },
                  "mat"_a, "b"_a,
                  "startPhase"_a=Phase::ANALYSIS, "endPhase"_a=Phase::SOLVE)
+            .def("__call__", [](ST &self,
+                                const cnxx::SparseMatrix<ET> &mat,
+                                cnxx::Matrix<ET> &b,
+                                const Phase startPhase=Phase::ANALYSIS,
+                                const Phase endPhase=Phase::SOLVE) {
+                     return self(mat, b, startPhase, endPhase);
+                 },
+                 "mat"_a, "b"_a,
+                 "startPhase"_a=Phase::ANALYSIS, "endPhase"_a=Phase::SOLVE)
             ;
     }
 }

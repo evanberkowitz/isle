@@ -545,6 +545,7 @@ namespace cnxx {
              * Memory for the output must be allocated by caller.
              *
              * \param n Number of equations (size of x, b).
+             * \param nrhs Number of right hand sides.
              * \param a Non zero elements of matrix. Size depends on matrix.
              * \param ia Index to beginning to each row (1 based). Size: `n+1`.
              * \param ja Column indices for each element in `a`. Size depends on matrix.
@@ -555,15 +556,14 @@ namespace cnxx {
              *
              * \throws std::runtime_error if PARDISO reports an error.
              */
-            void operator()(const int n, const elementType * const a, const int * const ia,
-                            const int * const ja,
+            void operator()(const int n, const int nrhs, const elementType * const a,
+                            const int * const ia, const int * const ja,
                             elementType * const b, elementType * const x,
                             const Phase startPhase=Phase::ANALYSIS,
                             const Phase endPhase=Phase::SOLVE) {
 
                 const int maxfct = 1, mnum = 1;
                 const int phase = pardisoPhase(startPhase, endPhase);
-                const int nrhs = 1;
                 int error;
 
                 if (n != _nrows)
@@ -591,6 +591,7 @@ namespace cnxx {
              * Matrix must be specified in CRS (compressed row storage) format.
              * Size n is derived from right hand side b.
              *
+             * \param nrhs Number of right hand sides.
              * \param a Non zero elements of matrix. Size depends on matrix.
              * \param ia Index to beginning to each row (1 based). Size: `n+1`.
              * \param ja Column indices for each element in `a`. Size depends on matrix.
@@ -603,18 +604,19 @@ namespace cnxx {
              * \throws std::runtime_error if PARDISO reports an error or vector sizes
              *                            do not match and in debug build.
              */
-            std::vector<elementType> operator()(const std::vector<elementType> &a,
+            std::vector<elementType> operator()(const int nrhs,
+                                                const std::vector<elementType> &a,
                                                 const std::vector<int> &ia,
                                                 const std::vector<int> &ja,
                                                 std::vector<elementType> &b,
                                                 const Phase startPhase=Phase::ANALYSIS,
                                                 const Phase endPhase=Phase::SOLVE) {
 #ifndef NDEBUG
-                if (b.size() != ia.size()-1)
-                    throw std::runtime_error("Numbers of rows of matrix and rright hand side do not match");
+                if (b.size() != (ia.size()-1)*nrhs)
+                    throw std::runtime_error("SIzes of matrix and right hand side do not match");
 #endif
                 std::vector<elementType> x(b.size());
-                (*this)(b.size(), &a[0], &ia[0], &ja[0], &b[0], &x[0], startPhase, endPhase);
+                (*this)(b.size(), nrhs, &a[0], &ia[0], &ja[0], &b[0], &x[0], startPhase, endPhase);
                 return x;
             }
 
@@ -623,6 +625,7 @@ namespace cnxx {
              * Solves a*x = b for x.<BR>
              * Thin wrapper for Pardiso::Matrix around overload for arrays.
              *
+             * \param nrhs Number of right hand sides.
              * \param mat Sparse matrix `a`.
              * \param b Right hand side vector.
              * \param startPhase Phase at which to start computation.
@@ -633,16 +636,17 @@ namespace cnxx {
              * \throws std::runtime_error if PARDISO reports an error or matrix and vector
              *                            sizes do not match and in debug build.
              */
-            std::vector<elementType> operator()(const Pardiso::Matrix<elementType> &mat,
+            std::vector<elementType> operator()(const int nrhs,
+                                                const Pardiso::Matrix<elementType> &mat,
                                                 std::vector<elementType> &b,
                                                 const Phase startPhase=Phase::ANALYSIS,
                                                 const Phase endPhase=Phase::SOLVE) {
 #ifndef NDEBUG
-                if (b.size() != mat.rows())
-                    throw std::runtime_error("Numbers of rows of matrix and rright hand side do not match");
+                if (mat.rows()*nrhs != b.size())
+                    throw std::runtime_error("SIzes of matrix and right hand side do not match");
 #endif
                 std::vector<elementType> x(b.size());
-                (*this)(b.size(), mat.geta(), mat.getia(), mat.getja(),
+                (*this)(mat.rows(), nrhs, mat.geta(), mat.getia(), mat.getja(),
                         &b[0], &x[0], startPhase, endPhase);
                 return x;
             }
@@ -669,15 +673,53 @@ namespace cnxx {
                                            const Phase endPhase=Phase::SOLVE) {
 #ifndef NDEBUG
                 if (b.size() != mat.rows())
-                    throw std::runtime_error("Numbers of rows of matrix and rright hand side do not match");
+                    throw std::runtime_error("Numbers of rows of matrix and right hand side do not match");
 #endif
                 // convert to CRS matrix
                 Pardiso::Matrix<elementType> pmat{mat};
                 // solve equation
                 Vector<elementType> x(b.size());
-                (*this)(mat.rows(), pmat.geta(), pmat.getia(), pmat.getja(),
+                (*this)(mat.rows(), 1, pmat.geta(), pmat.getia(), pmat.getja(),
                         &b[0], &x[0], startPhase, endPhase);
                 return x;
+            }
+
+            /// Perform sparse solve by calling `pardiso`.
+            /**
+             * Solves a*x = b for x, where a, b, and x are matrices.<BR>
+             * Copies the input matrix into CRS format via Pardiso::Matrix and
+             * thus has some overhead over a plain call to `pardiso`.
+             *
+             * \param mat Sparse matrix `a`.
+             * \param b Right hand side matrix.
+             * \param startPhase Phase at which to start computation.
+             * \param endPhase Phase at which to end computation.
+             *
+             * \return Solution vector x.
+             *
+             * \throws std::runtime_error if PARDISO reports an error or matrix and vector
+             *                            sizes do not match and in debug build.
+             *
+             * \todo Is there a way to do this without transposing
+             *       (i.e. copying the matrices)?
+             */        
+            cnxx::Matrix<elementType> operator()(const SparseMatrix<elementType> &mat,
+                                                 cnxx::Matrix<elementType> &b,
+                                                 const Phase startPhase=Phase::ANALYSIS,
+                                                 const Phase endPhase=Phase::SOLVE) {
+#ifndef NDEBUG
+                if (b.rows() != mat.rows())
+                    throw std::runtime_error("Numbers of rows of matrix and right hand side do not match");
+#endif
+                // convert to CRS matrix
+                Pardiso::Matrix<elementType> pmat{mat};
+                // transpose to get column major order
+                cnxx::Matrix<elementType> btrans = blaze::trans(b);
+                // solve equation
+                cnxx::Matrix<elementType> x{btrans.rows(), btrans.columns()};
+                (*this)(mat.rows(), btrans.rows(), pmat.geta(), pmat.getia(), pmat.getja(),
+                        &btrans(0,0), &x(0,0), startPhase, endPhase);
+                return blaze::trans(x);
             }
 
         private:
