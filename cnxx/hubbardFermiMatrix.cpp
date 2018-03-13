@@ -149,6 +149,10 @@ namespace cnxx {
         _phi = phi;
     }
 
+    void HubbardFermiMatrix::updateMu(const double mu) {
+        _mu = mu;
+    }
+
 
     std::size_t HubbardFermiMatrix::nx() const noexcept {
         return _kappa.rows();

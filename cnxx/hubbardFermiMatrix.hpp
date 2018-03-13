@@ -13,6 +13,9 @@ namespace cnxx {
 
     /// Represents a fermion matrix \f$M M^\dagger\f$ for the Hubbard model.
     /**
+     * \todo Define M, Mdag and show BCs explicitly
+     *
+     *
      * ## Definition
      * The fermion matrix is defined as
      \f[
@@ -187,7 +190,7 @@ namespace cnxx {
          */
         HubbardFermiMatrix(const SymmetricSparseMatrix<double> &kappa,
                            const Vector<std::complex<double>> &phi,
-                       double mu, std::int8_t sigmaMu, std::int8_t sigmaKappa);
+                           double mu, std::int8_t sigmaMu, std::int8_t sigmaKappa);
 
         /// Overload for plain SparseMatrix kappa.
         HubbardFermiMatrix(const SparseMatrix<double> &kappa,
@@ -248,6 +251,9 @@ namespace cnxx {
         /// Update the hopping matrix
         void updateKappa(const SparseMatrix<double> &kappa);
 
+        /// Update the chemical potential.
+        void updateMu(double mu);
+        
         /// Update auxilliary HS field.
         void updatePhi(const Vector<std::complex<double>> &phi);
 
