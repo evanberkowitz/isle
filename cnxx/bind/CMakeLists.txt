@@ -4,5 +4,6 @@ set(SOURCE
   bind/math.cpp
   bind/lattice.cpp
   bind/hubbardFermiMatrix.cpp
+  bind/action.cpp
   bind/pardiso.cpp
   PARENT_SCOPE)
