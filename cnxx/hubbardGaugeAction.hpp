@@ -1,3 +1,7 @@
+/** \file
+ * \brief Gauge part of Hubbard action.
+ */
+
 #ifndef HUBBARD_GAUGE_ACTION_HPP
 #define HUBBARD_GAUGE_ACTION_HPP
 
@@ -15,7 +19,7 @@ namespace cnxx {
         double utilde;  ///< Parameter \f$\tilde{U}\f$.
 
         /// Set \f$\tilde{U}\f$.
-        explicit HubbardGaugeAction(const double utilde_) : utilde(utilde_) { }
+        explicit HubbardGaugeAction(const double utilde_) : utilde{utilde_} { }
 
         HubbardGaugeAction(const HubbardGaugeAction &other) = default;
         HubbardGaugeAction &operator=(const HubbardGaugeAction &other) = default;

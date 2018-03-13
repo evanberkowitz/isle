@@ -1,3 +1,7 @@
+/** \file
+ * \brief Abstract base action.
+ */
+
 #ifndef ACTION_HPP
 #define ACTION_HPP
 

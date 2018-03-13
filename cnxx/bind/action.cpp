@@ -2,6 +2,7 @@
 
 #include "../action.hpp"
 #include "../hubbardGaugeAction.hpp"
+#include "../hubbardFermiAction.hpp"
 
 using namespace cnxx;
 
@@ -44,7 +45,7 @@ namespace bind {
     }
 
     void bindActions(py::module &mod) {
-        py::class_<Action, ActionTramp> action(mod, "Action");
+        py::class_<Action, ActionTramp> action{mod, "Action"};
         action
             .def(py::init<>())
             .def("eval", &Action::eval)
@@ -52,11 +53,19 @@ namespace bind {
             .def("valForce", &Action::valForce)
             ;
 
-        py::class_<HubbardGaugeAction>(mod, "HubbardGaugeAction", action)
+        py::class_<HubbardGaugeAction>{mod, "HubbardGaugeAction", action}
             .def(py::init<double>())
             .def("eval", &HubbardGaugeAction::eval)
             .def("force", &HubbardGaugeAction::force)
             .def("valForce", &HubbardGaugeAction::valForce)
+            ;
+
+        py::class_<HubbardFermiAction>{mod, "HubbardFermiAction", action}
+            .def(py::init<HubbardFermiMatrix>())
+            .def(py::init<SparseMatrix<double>, double, std::int8_t, std::int8_t>())
+            .def("eval", &HubbardFermiAction::eval)
+            .def("force", &HubbardFermiAction::force)
+            .def("valForce", &HubbardFermiAction::valForce)
             ;
     }
 }
