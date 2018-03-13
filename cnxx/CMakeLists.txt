@@ -22,7 +22,9 @@ endfunction ()
 
 project(cnxx CXX)
 
-set(SOURCE hubbardFermiMatrix.cpp)
+set(SOURCE
+  hubbardFermiMatrix.cpp
+  hubbardGaugeAction.cpp)
 add_subdirectory(bind)
 
 add_library(cnxx SHARED ${SOURCE})

@@ -1,6 +1,7 @@
 #include "action.hpp"
 
 #include "../action.hpp"
+#include "../hubbardGaugeAction.hpp"
 
 using namespace cnxx;
 
@@ -42,13 +43,20 @@ namespace bind {
         };
     }
 
-    void bindAction(py::module &mod) {
+    void bindActions(py::module &mod) {
         py::class_<Action, ActionTramp> action(mod, "Action");
         action
             .def(py::init<>())
             .def("eval", &Action::eval)
             .def("force", &Action::force)
             .def("valForce", &Action::valForce)
+            ;
+
+        py::class_<HubbardGaugeAction>(mod, "HubbardGaugeAction", action)
+            .def(py::init<double>())
+            .def("eval", &HubbardGaugeAction::eval)
+            .def("force", &HubbardGaugeAction::force)
+            .def("valForce", &HubbardGaugeAction::valForce)
             ;
     }
 }

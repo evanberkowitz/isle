@@ -8,8 +8,8 @@
 #include "core.hpp"
 
 namespace bind {
-    /// Bind class Action.
-    void bindAction(py::module &mod);
+    /// Bind action classes.
+    void bindActions(py::module &mod);
 }
 
 #endif  // ndef BIND_ACTION_HPP
