@@ -352,6 +352,9 @@ namespace {
                      })
                  ;
 
+            // allow implicit conversion from buffer to Vector
+            py::implicitly_convertible<py::buffer, VT>();
+
             // bind operators for all right hand sides
             tmp::foreach<ElementalTypes, bindVectorOps, VT>::f(cls);
         }
@@ -487,6 +490,9 @@ namespace {
                          return blaze::evaluate(-mat);
                      })
                  ;
+
+            // allow implicit conversion from buffer to Matrix
+            py::implicitly_convertible<py::buffer, MT>();
 
             // bind operators for all right hand sides
             tmp::foreach<ElementalTypes, bindMatrixOps, MT>::f(cls);
