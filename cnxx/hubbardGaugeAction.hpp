@@ -17,6 +17,10 @@ namespace cnxx {
         /// Set \f$\tilde{U}\f$.
         explicit HubbardGaugeAction(const double utilde_) : utilde(utilde_) { }
 
+        HubbardGaugeAction(const HubbardGaugeAction &other) = default;
+        HubbardGaugeAction &operator=(const HubbardGaugeAction &other) = default;
+        HubbardGaugeAction(HubbardGaugeAction &&other) = default;
+        HubbardGaugeAction &operator=(HubbardGaugeAction &&other) = default;
         ~HubbardGaugeAction() override = default;
 
         /// Evaluate the %Action for given auxilliary field phi.
