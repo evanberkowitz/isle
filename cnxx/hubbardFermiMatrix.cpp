@@ -195,6 +195,8 @@ namespace cnxx {
 
     Matrix<std::complex<double>> HubbardFermiMatrix::LU::reconstruct() const {
         const std::size_t nt = dinv.size();
+        if (nt < 2)
+            throw std::domain_error("Reconstruction of LU called with nt < 2");
 #ifndef NDEBUG
         if (!isConsistent())
             throw std::runtime_error("Components of LU not initialized properly");
@@ -209,8 +211,6 @@ namespace cnxx {
         // zeroth row, all columns
         invert(aux=dinv[0], ipiv);
         spacemat(recon, 0, 0, nx) = aux;
-        if (nt == 1)
-            return recon;
         spacemat(recon, 0, 1, nx) = u[0];
         spacemat(recon, 0, nt-1, nx) = v[0];
 
@@ -218,7 +218,7 @@ namespace cnxx {
         for (std::size_t i = 1; i < nt-2; ++i) {
             invert(aux=dinv[i], ipiv);
             spacemat(recon, i, i, nx) = aux + l[i-1]*u[i-1];
-            invert(aux=dinv[i-i], ipiv);
+            invert(aux=dinv[i-1], ipiv);
             spacemat(recon, i, i-1, nx) = l[i-1]*aux;
             spacemat(recon, i, i+1, nx) = u[i];
             spacemat(recon, i, nt-1, nx) = l[i-1]*v[i-1] + v[i];
