@@ -43,12 +43,6 @@ namespace {
         return std::string{prefixName<T>} + "SparseMatrix";
     }
 
-    /// Returns the name for sparce matrices in Python.
-    template <typename T>
-    std::string symmetricSparseMatName() {
-        return std::string{prefixName<T>} + "SymmetricSparseMatrix";
-    }
-
     /// Labels for all algebraic operators.
     enum class Op {
         add, sub, mul, rmul, truediv, floordiv, iadd, isub, imul, dot
@@ -551,9 +545,6 @@ namespace {
                  .def(py::init([](const Matrix<ET> &other){
                              return MT(other);
                          }))
-                 .def(py::init([](const SymmetricSparseMatrix<ET> &other){
-                             return MT(other);
-                         }))
                  .def("__getitem__", [](const MT &mat,
                                         const std::tuple<std::size_t, std::size_t> &idxs) {
                           if (mat.find(std::get<0>(idxs), std::get<1>(idxs))
@@ -611,72 +602,6 @@ namespace {
             tmp::foreach<ElementalTypes, bindSparseMatrixOps, MT>::f(cls);
         }
     };
-
-
-    template <typename ET>
-    struct bindSymmetricSparseMatrix {
-        static void f(py::module &mod) {
-            // make a new Pybind11 class and add basic functions
-            using MT = SymmetricSparseMatrix<ET>;
-
-            auto cls = py::class_<MT>{mod, symmetricSparseMatName<ET>().c_str()}
-            .def(py::init([](const std::size_t nx, const std::size_t ny){
-                        return MT(nx, ny);
-                    }))
-                 .def(py::init([](const SparseMatrix<ET> &other){
-                             return MT(other);
-                         }))
-                 .def("__getitem__", [](const MT &mat,
-                                        const std::tuple<std::size_t, std::size_t> &idxs) {
-                          if (mat.find(std::get<0>(idxs), std::get<1>(idxs))
-                              != mat.end(std::get<0>(idxs)))
-                              return mat(std::get<0>(idxs), std::get<1>(idxs));
-                          else
-                              throw std::invalid_argument("No matrix element at given indices");
-                      })
-                 .def("__setitem__", [](MT &mat,
-                                        const std::tuple<std::size_t, std::size_t> &idxs,
-                                        const typename MT::ElementType x) {
-#ifndef NDEBUG
-                          if (!(std::get<0>(idxs) < mat.rows()))
-                              throw std::out_of_range("Row index out of range");
-                          if (!(std::get<1>(idxs) < mat.columns()))
-                              throw std::out_of_range("Column index out of range");
-#endif
-                          mat.set(std::get<0>(idxs), std::get<1>(idxs), x);
-                      })
-                 .def("erase", [](MT &mat,
-                                  const std::size_t i, const std::size_t j) {
-#ifndef NDEBUG
-                          if (!(i < mat.rows()))
-                              throw std::out_of_range("Row index out of range");
-                          if (!(j < mat.columns()))
-                              throw std::out_of_range("Column index out of range");
-#endif
-                          mat.erase(i, j);
-                      })
-                 .def("rows", &MT::rows)
-                 .def("columns", &MT::columns)
-                 .def("__str__", [](const MT &mat) {
-                         std::ostringstream oss;
-                         oss << '[';
-                         // loop over rows
-                         for (std::size_t ind = 0; ind < mat.rows(); ++ind) {
-                             // write columns
-                             for (auto it = mat.begin(ind); it != mat.end(ind); ++it){
-                                 oss << '(' << ind << ',' << it->index() << "): ";
-                                 oss << it->value() << ",\n ";
-                             }
-                         }
-                         oss << "]\n";
-                         return oss.str();
-                     })
-                 .def("__neg__", [](const MT &mat) {
-                         return blaze::evaluate(-mat);
-                     })
-                 ;
-        }
-    };        
 }
 
 namespace bind {
@@ -687,7 +612,6 @@ namespace bind {
         tmp::foreach<ElementalTypes, bindVector, ElementalTypes>::f(mod);
         tmp::foreach<ElementalTypes, bindMatrix, ElementalTypes>::f(mod);
         tmp::foreach<ElementalTypes, bindSparseMatrix, ElementalTypes>::f(mod);
-        tmp::foreach<ElementalTypes, bindSymmetricSparseMatrix>::f(mod);
 
         mod.def("logdet", [](const Matrix<std::complex<double>> &mat) {
                 return logdet(mat);
