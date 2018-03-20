@@ -182,17 +182,15 @@ namespace cnxx {
     public:
         /// Store all necessary parameters to later construct the full fermion matrix.
         /**
+         * \attention Input parameters `kappa` and `mu` are versions with tilde, i.e.
+         *            scaled like \f$\tilde{\kappa} = \beta/N_t \kappa\f$.
+         *
          * \param kappa Hopping matrix \f$\tilde{\kappa}\f$.
          * \param phi Auxilliary field \f$\phi\f$ from HS transformation.
          * \param mu Chemical potential \f$\tilde{\mu}\f$.
          * \param sigmaMu Sign of chemical potential in adjoint matrix.
          * \param sigmaKappa Sign of hopping matrix in adjoint matrix.
          */
-        HubbardFermiMatrix(const SymmetricSparseMatrix<double> &kappa,
-                           const Vector<std::complex<double>> &phi,
-                           double mu, std::int8_t sigmaMu, std::int8_t sigmaKappa);
-
-        /// Overload for plain SparseMatrix kappa.
         HubbardFermiMatrix(const SparseMatrix<double> &kappa,
                            const Vector<std::complex<double>> &phi,
                            double mu, std::int8_t sigmaMu, std::int8_t sigmaKappa);
@@ -244,9 +242,6 @@ namespace cnxx {
 
         /// Return the full fermion matrix.
         SparseMatrix<std::complex<double>> MMdag() const;
-
-        /// Update the hopping matrix.
-        void updateKappa(const SymmetricSparseMatrix<double> &kappa);
 
         /// Update the hopping matrix
         void updateKappa(const SparseMatrix<double> &kappa);

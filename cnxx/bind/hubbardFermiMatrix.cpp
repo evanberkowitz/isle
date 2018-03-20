@@ -8,9 +8,7 @@ namespace bind {
         using HFM = HubbardFermiMatrix;
 
         py::class_<HFM> hfm{mod, "HubbardFermiMatrix"};
-        hfm.def(py::init<SymmetricSparseMatrix<double>, Vector<std::complex<double>>,
-                double, std::int8_t, std::int8_t>())
-            .def(py::init<SparseMatrix<double>, Vector<std::complex<double>>,
+        hfm.def(py::init<SparseMatrix<double>, Vector<std::complex<double>>,
                 double, std::int8_t, std::int8_t>())
             .def("P", py::overload_cast<>(&HFM::P, py::const_))
             .def("Q", py::overload_cast<std::size_t>(&HFM::Q, py::const_))
@@ -25,6 +23,11 @@ namespace bind {
         py::class_<HFM::LU>{hfm, "LU"}
             .def(py::init<std::size_t>())
             .def("reconstruct", &HFM::LU::reconstruct)
+                 .def_readonly("dinv", &HFM::LU::dinv)
+                 .def_readonly("l", &HFM::LU::l)
+                 .def_readonly("u", &HFM::LU::u)
+                 .def_readonly("v", &HFM::LU::v)
+                 .def_readonly("h", &HFM::LU::h)
             ;
 
         mod.def("getLU",

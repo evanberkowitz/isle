@@ -22,19 +22,6 @@ namespace cnxx {
  * -------------------------- HubbardFermiMatrix --------------------------
  */
 
-    HubbardFermiMatrix::HubbardFermiMatrix(const SymmetricSparseMatrix<double> &kappa,
-                                           const Vector<std::complex<double>> &phi,
-                                           const double mu,
-                                           const std::int8_t sigmaMu,
-                                           const std::int8_t sigmaKappa)
-        : _kappa{kappa}, _phi{phi}, _mu{mu}, _sigmaMu{sigmaMu}, _sigmaKappa{sigmaKappa}
-    {
-#ifndef NDEBUG
-        if (kappa.rows() != kappa.columns())
-            throw std::invalid_argument("Hopping matrix is not square.");
-#endif
-    }
-
     HubbardFermiMatrix::HubbardFermiMatrix(const SparseMatrix<double> &kappa,
                                            const Vector<std::complex<double>> &phi,
                                            const double mu,
@@ -136,10 +123,6 @@ namespace cnxx {
         return mmdag;
     }
 
-
-    void HubbardFermiMatrix::updateKappa(const SymmetricSparseMatrix<double> &kappa) {
-        _kappa = kappa;
-    }
 
     void HubbardFermiMatrix::updateKappa(const SparseMatrix<double> &kappa) {
         _kappa = kappa;
