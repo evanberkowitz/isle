@@ -24,8 +24,8 @@ namespace cnxx {
     public:
         /// Construct with given numbers of sites and neighbors per site.
         Lattice(std::size_t const nt, std::size_t const nx)
-            : nTslice{nt}, nSpatial{nx},
-              hoppingMat{nx, nx}, distMat{nx} { }
+            : _nTslice{nt}, _nSpatial{nx},
+              _hoppingMat(nx, nx), _distMat(nx) { }
 
         /// Get the hopping strengths from a given site to all others.
         /**
@@ -37,22 +37,22 @@ namespace cnxx {
             if (!(site < nx()))
                 throw std::out_of_range("Site index out of range");
 #endif
-            return blaze::row(hoppingMat, site);
+            return blaze::row(_hoppingMat, site);
         }
 
         /// Get the full hopping matrix.
-        SymmetricSparseMatrix<double> &hopping() noexcept {
-            return hoppingMat;
+        SparseMatrix<double> &hopping() noexcept {
+            return _hoppingMat;
         }
 
         /// Get the full hopping matrix.
-        const SymmetricSparseMatrix<double> &hopping() const noexcept {
-            return hoppingMat;
+        const SparseMatrix<double> &hopping() const noexcept {
+            return _hoppingMat;
         }
 
         /// Returns true if sites i and j are neighbors.
         bool areNeighbors(const std::size_t i, const std::size_t j) const {
-            return hoppingMat.find(i, j) != hoppingMat.end(i);
+            return _hoppingMat.find(i, j) != _hoppingMat.end(i);
         }
 
         /// Set the hopping strength for a pair of sites.
@@ -73,10 +73,14 @@ namespace cnxx {
             if (!(j < nx()))
                 throw std::out_of_range("Index j out of range");
 #endif
-            if (strength == 0)
-                hoppingMat.erase(i, j);
-            else
-                hoppingMat.set(i, j, strength);
+            if (strength == 0) {
+                _hoppingMat.erase(i, j);
+                _hoppingMat.erase(j, i);
+            }
+            else {
+                _hoppingMat.set(i, j, strength);
+                _hoppingMat.set(j, i, strength);
+            }
         }
 
         /// Get the physical distance between two spatial sites.
@@ -92,7 +96,7 @@ namespace cnxx {
             if (!(j < nx()))
                 throw std::out_of_range("Second index out of range");
 #endif
-            return distMat(i, j);
+            return _distMat(i, j);
         }
 
         /// Set the physical distance between two spatial sites.
@@ -109,34 +113,34 @@ namespace cnxx {
             if (!(j < nx()))
                 throw std::out_of_range("Second index out of range");
 #endif
-            distMat(i, j) = distance;
+            _distMat(i, j) = distance;
         }
 
         /// Returns the number of time slices.
         std::size_t nt() const noexcept {
-            return nTslice;
+            return _nTslice;
         }
 
         /// Returns the number of spatial sites.
         std::size_t nx() const noexcept {
-            return nSpatial;
+            return _nSpatial;
         }
 
         /// Returns the total lattice size.
         std::size_t lattSize() const noexcept {
-            return nSpatial*nTslice;
+            return _nSpatial*_nTslice;
         }
 
         /// Returns the matrix of physical distances between spatial sites.
         const SymmetricMatrix<double> &distances() const noexcept {
-            return distMat;
+            return _distMat;
         }
 
     private:
-        const std::size_t nTslice;  ///< Number of time slices.
-        const std::size_t nSpatial;  ///< Number of spatial lattice sites.
-        SymmetricSparseMatrix<double> hoppingMat;  ///< Matrix of hopping strengths (`nx() x nx()`).
-        SymmetricMatrix<double> distMat;  ///< matrix of physical distances (`nx() x nx()`).
+        const std::size_t _nTslice;  ///< Number of time slices.
+        const std::size_t _nSpatial;  ///< Number of spatial lattice sites.
+        SparseMatrix<double> _hoppingMat;  ///< Matrix of hopping strengths (`nx() x nx()`).
+        SymmetricMatrix<double> _distMat;  ///< matrix of physical distances (`nx() x nx()`).
     };
 
 }  // namespace cnxx
