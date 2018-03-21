@@ -38,82 +38,82 @@ def _randomPhi(n):
 
 
 class TestHubbardFermiMatrix(unittest.TestCase):
-    def _testConstructionNt1(self, kappa, mu, sigmaMu, sigmaKappa):
+    def _testConstructionNt1(self, kappa, mu, sigmaKappa):
         "Check if nt=1 HFM is constructed properly."
 
         nt = 1
         nx = kappa.rows()
         hfm = cns.HubbardFermiMatrix(kappa, _randomPhi(nx*nt),
-                                     mu, sigmaMu, sigmaKappa)
+                                     mu, sigmaKappa)
 
-        auto = np.array(cns.Matrix(hfm.MMdag()), copy=False)
-        manual = np.array(cns.Matrix(hfm.P()+hfm.Q(0)+hfm.Qdag(0)), copy=False)
+        auto = np.array(cns.Matrix(hfm.Q()), copy=False)
+        manual = np.array(cns.Matrix(hfm.P()+hfm.Tplus(0)+hfm.Tminus(0)), copy=False)
         self.assertTrue(core.isEqual(auto, manual),
                         msg="Failed equality check for construction of hubbardFermiMatrix "\
-                        + "for nt={}, mu={}, sigmaMu={}, sigmaKappa={}".format(nt, mu, sigmaMu, sigmaKappa)\
-                        + "\nhfm.MMdag() = {}".format(auto) \
-                        + "\nhfm.P() + hfm.Q(0) + hfm.Qdag(0) = {}".format(manual))
+                        + "for nt={}, mu={}, sigmaKappa={}".format(nt, mu, sigmaKappa)\
+                        + "\nhfm.Q() = {}".format(auto) \
+                        + "\nhfm.P() + hfm.Tplus(0) + hfm.Tminus(0) = {}".format(manual))
 
-    def _testConstructionNt2(self, kappa, mu, sigmaMu, sigmaKappa):
+    def _testConstructionNt2(self, kappa, mu, sigmaKappa):
         "Check if nt=2 HFM is constructed properly."
 
         nt = 2
         nx = kappa.rows()
         hfm = cns.HubbardFermiMatrix(kappa, _randomPhi(nx*nt),
-                                     mu, sigmaMu, sigmaKappa)
+                                     mu, sigmaKappa)
 
-        auto = np.array(cns.Matrix(hfm.MMdag()), copy=False) # full matrix
+        auto = np.array(cns.Matrix(hfm.Q()), copy=False) # full matrix
         manual = np.empty(auto.shape, auto.dtype)
         P = np.array(cns.Matrix(hfm.P())) # diagonal blocks
         manual[:nx, :nx] = P
         manual[nx:, nx:] = P
-        manual[:nx, nx:] = cns.Matrix(hfm.Qdag(0) + hfm.Q(0)) # upper off diagonal
-        manual[nx:, :nx] = cns.Matrix(hfm.Qdag(1) + hfm.Q(1)) # lower off diagonal
+        manual[:nx, nx:] = cns.Matrix(hfm.Tminus(0) + hfm.Tplus(0)) # upper off diagonal
+        manual[nx:, :nx] = cns.Matrix(hfm.Tminus(1) + hfm.Tplus(1)) # lower off diagonal
 
         self.assertTrue(core.isEqual(auto, manual),
                         msg="Failed equality check for construction of hubbardFermiMatrix "\
-                        + "for nt={}, mu={}, sigmaMu={}, sigmaKappa={}".format(nt, mu, sigmaMu, sigmaKappa)\
+                        + "for nt={}, mu={}, sigmaKappa={}".format(nt, mu, sigmaKappa)\
                         + "\nauto = {}".format(auto) \
                         + "\nmanual {}".format(manual))
 
-    def _testConstructionNt3(self, kappa, mu, sigmaMu, sigmaKappa):
+    def _testConstructionNt3(self, kappa, mu, sigmaKappa):
         "Check if nt=3 HFM is constructed properly."
 
         nt = 3
         nx = kappa.rows()
         hfm = cns.HubbardFermiMatrix(kappa, _randomPhi(nx*nt),
-                                     mu, sigmaMu, sigmaKappa)
+                                     mu, sigmaKappa)
 
-        auto = np.array(cns.Matrix(hfm.MMdag()), copy=False) # full matrix
+        auto = np.array(cns.Matrix(hfm.Q()), copy=False) # full matrix
         manual = np.empty(auto.shape, auto.dtype)
         P = np.array(cns.Matrix(hfm.P())) # diagonal blocks
 
         manual[:nx, :nx] = P
-        manual[:nx, nx:2*nx] = cns.Matrix(hfm.Qdag(0))
-        manual[:nx, 2*nx:] = cns.Matrix(hfm.Q(0))
+        manual[:nx, nx:2*nx] = cns.Matrix(hfm.Tminus(0))
+        manual[:nx, 2*nx:] = cns.Matrix(hfm.Tplus(0))
 
-        manual[nx:2*nx, :nx] = cns.Matrix(hfm.Q(1))
+        manual[nx:2*nx, :nx] = cns.Matrix(hfm.Tplus(1))
         manual[nx:2*nx, nx:2*nx] = P
-        manual[nx:2*nx, 2*nx:] = cns.Matrix(hfm.Qdag(1))
+        manual[nx:2*nx, 2*nx:] = cns.Matrix(hfm.Tminus(1))
 
-        manual[2*nx:, :nx] = cns.Matrix(hfm.Qdag(2))
-        manual[2*nx:, nx:2*nx] = cns.Matrix(hfm.Q(2))
+        manual[2*nx:, :nx] = cns.Matrix(hfm.Tminus(2))
+        manual[2*nx:, nx:2*nx] = cns.Matrix(hfm.Tplus(2))
         manual[2*nx:, 2*nx:] = P
 
         self.assertTrue(core.isEqual(auto, manual),
                         msg="Failed equality check for construction of hubbardFermiMatrix "\
-                        + "for nt={}, mu={}, sigmaMu={}, sigmaKappa={}".format(nt, mu, sigmaMu, sigmaKappa)\
+                        + "for nt={}, mu={}, sigmaKappa={}".format(nt, mu, sigmaKappa)\
                         + "\nauto = {}".format(auto) \
                         + "\nmanual {}".format(manual))
 
     def _testConstruction(self, kappa):
         "Check if HFM is constructed correctly for several values of mu and nt."
 
-        for mu, sigmaMu, sigmaKappa, _ in itertools.product(MU, (-1, 1), (-1, 1),
-                                                            range(N_REP)):
-            self._testConstructionNt1(kappa, mu, sigmaMu, sigmaKappa)
-            self._testConstructionNt2(kappa, mu, sigmaMu, sigmaKappa)
-            self._testConstructionNt3(kappa, mu, sigmaMu, sigmaKappa)
+        for mu, sigmaKappa, _ in itertools.product(MU, (-1, 1),
+                                                   range(N_REP)):
+            self._testConstructionNt1(kappa, mu, sigmaKappa)
+            self._testConstructionNt2(kappa/2, mu/2, sigmaKappa)
+            self._testConstructionNt3(kappa/3, mu/3, sigmaKappa)
 
     def test_1_construction(self):
         "Test construction of sparse matrix for different lattices and parameters."
@@ -128,20 +128,19 @@ class TestHubbardFermiMatrix(unittest.TestCase):
 
     def _testLUFact(self, kappa):
         "Check whether a matrix reconstructed from an LU decomposition is equal to the original."
-        for nt, mu, sigmaMu, sigmaKappa, _ in itertools.product((1,), MU,
-                                                                (-1, 1), (-1, 1),
-                                                                range(N_REP)):
+        for nt, mu, sigmaKappa, _ in itertools.product((4, 8, 32), MU, (-1, 1),
+                                                       range(N_REP)):
             nx = kappa.rows()
-            hfm = cns.HubbardFermiMatrix(kappa, _randomPhi(nx*nt),
-                                         mu, sigmaMu, sigmaKappa)
-            mmdag = np.array(cns.Matrix(hfm.MMdag()), copy=False)
+            hfm = cns.HubbardFermiMatrix(kappa/nt, _randomPhi(nx*nt),
+                                         mu/nt, sigmaKappa)
+            q = np.array(cns.Matrix(hfm.Q()), copy=False)
             lu = cns.getLU(hfm)
             recon = np.array(cns.Matrix(lu.reconstruct()))
 
-            self.assertTrue(core.isEqual(mmdag, recon, nOps=nx**2, prec=1e-13),
+            self.assertTrue(core.isEqual(q, recon, nOps=nx**2, prec=1e-13),
                             msg="Failed equality check of reconstruction from LU decomposition of hubbardFermiMatrix "\
-                            + "for nt={}, mu={}, sigmaMu={}, sigmaKappa={}".format(nt, mu, sigmaMu, sigmaKappa)\
-                            + "\noriginal = {}".format(mmdag) \
+                            + "for nt={}, mu={}, sigmaKappa={}".format(nt, mu, sigmaKappa)\
+                            + "\noriginal = {}".format(q) \
                             + "\nreconstructed {}".format(recon))
 
     def test_2_lu_factorization(self):
