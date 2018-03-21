@@ -25,8 +25,8 @@ namespace cnxx {
 
         /// Construct from individual parameters of HubbardFermiMatrix.
         HubbardFermiAction(const SparseMatrix<double> &kappa,
-                           double mu, std::int8_t sigmaMu, std::int8_t sigmaKappa)
-            : _hfm{kappa, Vector<std::complex<double>>{}, mu, sigmaMu, sigmaKappa} { }
+                           double mu, std::int8_t sigmaKappa)
+            : _hfm{kappa, Vector<std::complex<double>>{}, mu, sigmaKappa} { }
 
         HubbardFermiAction(const HubbardFermiAction &other) = default;
         HubbardFermiAction &operator=(const HubbardFermiAction &other) = default;

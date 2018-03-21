@@ -62,7 +62,7 @@ namespace bind {
 
         py::class_<HubbardFermiAction>{mod, "HubbardFermiAction", action}
             .def(py::init<HubbardFermiMatrix>())
-            .def(py::init<SparseMatrix<double>, double, std::int8_t, std::int8_t>())
+            .def(py::init<SparseMatrix<double>, double, std::int8_t>())
             .def("eval", &HubbardFermiAction::eval)
             .def("force", &HubbardFermiAction::force)
             .def("valForce", &HubbardFermiAction::valForce)

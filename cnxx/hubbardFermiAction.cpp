@@ -1,5 +1,6 @@
 #include "hubbardFermiAction.hpp"
 
+using namespace std::complex_literals;
 using HFA = cnxx::HubbardFermiAction;
 
 namespace cnxx {
@@ -13,31 +14,31 @@ namespace cnxx {
             return i;
         }
 
-        /// Evaluate action with given mmdag.
+        /// Evaluate action with given fermion matrix Q.
         template <typename MT>
-        std::complex<double> doEval(MT &&mmdag) {
-            return -logdet(Matrix<std::complex<double>>{std::forward<MT>(mmdag)});
+        std::complex<double> doEval(MT &&Q) {
+            return -logdet(Matrix<std::complex<double>>{std::forward<MT>(Q)});
         }
 
-        /// Calculate force with given HFM and mmdag.
+        /// Calculate force with given HFM and Q.
         template <typename MT>
-        Vector<std::complex<double>> doForce(const HubbardFermiMatrix &hfm, MT &&mmdag) {
+        Vector<std::complex<double>> doForce(const HubbardFermiMatrix &hfm, MT &&Q) {
             const auto nx = hfm.nx();
             const auto nt = hfm.nt();
 
-            // invert mmdag
-            Matrix<std::complex<double>> mmdagInv{std::forward<MT>(mmdag)};
-            auto ipiv = std::make_unique<int[]>(mmdag.rows());
-            invert(mmdagInv, ipiv);
+            // invert Q
+            Matrix<std::complex<double>> QInv{std::forward<MT>(Q)};
+            auto ipiv = std::make_unique<int[]>(Q.rows());
+            invert(QInv, ipiv);
 
-            // calcualte force
-            Vector<std::complex<double>> force(mmdag.rows());
-            SparseMatrix<std::complex<double>> q;
+            // calculate force
+            Vector<std::complex<double>> force(Q.rows());
+            SparseMatrix<std::complex<double>> T;
             for (std::size_t tau = 0; tau < nt; ++tau) {
-                hfm.Q(q, tau+1);
-                spacevec(force, tau, nx) = blaze::diagonal(q*spacemat(mmdagInv, tau, loopIdx(tau+1, nt), nx));
-                hfm.Qdag(q, tau);
-                spacevec(force, tau, nx) -= blaze::diagonal(spacemat(mmdagInv, loopIdx(tau+1, nt), tau, nx)*q);
+                hfm.Tplus(T, loopIdx(tau+1, nt));
+                spacevec(force, tau, nx) = 1.i*blaze::diagonal(T*spacemat(QInv, tau, loopIdx(tau+1, nt), nx));
+                hfm.Tminus(T, tau);
+                spacevec(force, tau, nx) -= 1.i*blaze::diagonal(spacemat(QInv, loopIdx(tau+1, nt), tau, nx)*T);
             }
 
             return force;
@@ -58,20 +59,19 @@ namespace cnxx {
 
     std::complex<double> HFA::eval(const Vector<std::complex<double>> &phi) {
         _hfm.updatePhi(phi);
-        return doEval(_hfm.MMdag());
+        return doEval(_hfm.Q());
     }
 
     Vector<std::complex<double>> HFA::force(const Vector<std::complex<double>> &phi) {
         _hfm.updatePhi(phi);
-        return doForce(_hfm, _hfm.MMdag());
+        return doForce(_hfm, _hfm.Q());
     }
 
     std::pair<std::complex<double>, Vector<std::complex<double>>> HFA::valForce(
         const Vector<std::complex<double>> &phi) {
 
         _hfm.updatePhi(phi);
-        const auto mmdag = _hfm.MMdag();
-        return {doEval(mmdag), doForce(_hfm, mmdag)};
+        const auto Q = _hfm.Q();
+        return {doEval(Q), doForce(_hfm, Q)};
     }
 }  // namespace cnxx
-

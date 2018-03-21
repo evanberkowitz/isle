@@ -11,94 +11,13 @@
 
 namespace cnxx {
 
-    /// Represents a fermion matrix \f$M M^\dagger\f$ for the Hubbard model.
+    /// Represents a fermion matrix \f$Q\f$ for the Hubbard model.
     /**
-     * \todo Define M, Mdag and show BCs explicitly
+     * \todo Move documentations to proper place.
      *
-     *
-     * ## Definition
-     * The fermion matrix is defined as
-     \f[
-     M[\phi,\tilde{\kappa}, \tilde{\mu}]M^\dagger[\phi,\sigma_{\tilde{\kappa}}\tilde{\kappa},\sigma_{\tilde{\mu}}\tilde{\mu}]
-     = P[\phi,\tilde{\kappa},\tilde{\mu}] + Q[\phi,\tilde{\kappa},\tilde{\mu}] + Q^\dagger[\phi,\tilde{\kappa},\tilde{\mu}],
-     \f]
-     * where \f$\tilde{\kappa}\f$ is the hopping matrix, \f$\tilde{\mu}\f$ the chemical
-     * potential. \f$\sigma_\tilde{\mu}\f$ should be -1 for real chemical potential and
-     * \f$\sigma_\tilde{\kappa}\f$ can be +1 for tubes and -1 for buckyballs.
-     *
-     * The individual terms on the right hand side are
-     \f{align}{
-     {P[\phi,\tilde{\kappa},\tilde{\mu}]}_{x't';xt} &= \delta_{t',t} \big[\delta_{x',x} (2 + \sigma_{\tilde{\mu}}\tilde{\mu}^2 + (1+\sigma_{\tilde{\mu}})\tilde{\mu})
-     - \tilde{\kappa}_{x',x} (\sigma_{\tilde{\kappa}}(1+\tilde{\mu}) + 1 + \sigma_{\tilde{\mu}}\tilde{\mu})
-     + \sigma_{\tilde{\kappa}} {[\tilde{\kappa}\tilde{\kappa}]}_{x',x}\big],\\
-     {Q[\phi,\tilde{\kappa},\tilde{\mu}]}_{x't';xt} &= \delta_{t',t+1} e^{i\phi_{x',t}}\left[\sigma_{\tilde{\kappa}}\tilde{\kappa}_{x',x} - \delta_{x',x}(1+\sigma_{\tilde{\mu}}\tilde{\mu})\right],\\
-     {Q^\dagger[\phi,\tilde{\kappa},\tilde{\mu}]}_{x't';xt} &= \delta_{t'+1,t} e^{-i\phi_{x,t'}} \left[\tilde{\kappa}_{x',x} - \delta_{x',x} (1+\tilde{\mu})\right].
-     \f}
-     * 
-     * The matrix can be expressed as a matrix in time where each element is a matrix in space.
-     * Doing this gives the cyclic block tridiagonal matrix
-     \f[
-     M[\phi,\tilde{\kappa}, \tilde{\mu}]M^\dagger[\phi,\sigma_{\tilde{\kappa}}\tilde{\kappa},\sigma_{\tilde{\mu}}\tilde{\mu}] =
-     \begin{pmatrix}
-     P            & Q^\dagger_0 &         &         &          &              & Q_0        \\
-     Q_1          & P       & Q^\dagger_1 &         &          &              &            \\
-     & Q_2     & P       & Q^\dagger_2 &          &              &            \\
-     &         & Q_3     & P       & \ddots   &              &            \\
-     &         &         & \ddots  & \ddots   & Q^\dagger_{N_t-3} &            \\
-     &         &         &         & Q_{N_t-2} & P            & Q^\dagger_{N_t-2}\\
-     Q^\dagger_{N_t-1} &         &         &         &          & Q_{N_t-1}      & P
-     \end{pmatrix},
-     \f]
-     * where the indices on \f$Q\f$ and \f$Q^\dagger\f$ are the row index \f$t'\f$.
-     *
+     * See notes ReWeighting in learning-physics.
      *
      * ## LU-decomposition
-     * Using its sparsity, a cyclic tridiagonal matrix can easily be LU-decomposed with a
-     * special purpose algorithm. Use the ansatz
-     \f[
-     L =
-     \begin{pmatrix}
-     1   &     &        &        &        &\\
-     l_0 & 1   &        &        &        &\\
-     & l_1 & \ddots &        &        &\\
-     &     & \ddots & 1      &        &\\
-     &     &        & l_{N_t-3} & 1      & \\
-     h_0 & h_1 & \cdots  & h_{N_t-3} & l_{N_t-2} & 1
-     \end{pmatrix}
-     \quad U =
-     \begin{pmatrix}
-     d_0 & u_0 &        &        &        & v_0    \\
-     & d_1 & u_1    &        &        & v_1    \\
-     &     & d_2    & \ddots &        & \vdots \\
-     &     &        & \ddots & u_{N_t-3} & v_{N_t-3} \\
-     &     &        &        & d_{N_t-2} & u_{N_t-2} \\
-     &     &        &        &        & d_{N_t-1}
-     \end{pmatrix}.
-     \f]
-     * The original matrix can be constructed from these via \f$M M^\dagger = LU\f$.
-     * Note that the algorithm used here does not using pivoting.
-     * The components of \f$L, U\f$ can be constructed using the following scheme.<BR>
-     * Compute all except last \f$d, u, l\f$
-     \f[
-     \begin{matrix}
-     d_0 = P                  & u_0 = Q_0^\dagger & l_0 = Q_1 d_{0}^{-1} & \\
-     d_i = P - l_{i-1}u_{i-1} & u_i = Q_i^\dagger & l_i = Q_{i+1} d_{i}^{-1} & \forall i \in [1, N_t-3] \\
-     d_{N_t-2} = P - l_{N_t-3} u_{N_t-3} & & &
-     \end{matrix}
-     \f]
-     * Compute all \f$v, h\f$
-     \f[
-     \begin{matrix}
-     v_0 = Q_0               & h_0 = Q_{N_t-1}^\dagger d_0^{-1} & \\
-     v_i = - l_{i-1} v_{i-1} & h_i = - h_{i-1} u_{i-1} d_{i}^{-1} & \forall i \in [1, N_t-3]
-     \end{matrix}
-     \f]
-     * Compute remaining \f$d, u, l\f$
-     \f[
-     u_{N_t-2} = Q_{N_t-2}^\dagger - l_{N_t-3} v_{N_t-3} \qquad l_{N_t-2} = (Q_{N_t-1} - h_{N_t-3} u_{N_t-3}) d_{N_t-2}^{-1}\\
-     d_{N_t-1} = P - l_{N_t-2}u_{N_t-2} - \textstyle\sum_{i=0}^{N_t-3}\, h_i v_i
-     \f]
-     *
      * In the case of the fermion matrix, each element of \f$L\f$ and \f$U\f$ is a spacial
      * \f$N_x \times N_x\f$ matrix. Hence each inverse of \f$d\f$ requires a full
      * matrix inversion. This means that the algorithm requires \f$\mathrm{O}(N_t N_x^3)\f$
@@ -160,12 +79,12 @@ namespace cnxx {
      *
      *
      * ## Usage
-     * `%HubbardFermiMatrix` needs \f$\tilde{\kappa}, \phi, \tilde{\mu}, \sigma_\tilde{\mu}, \mathrm{and} \sigma_\tilde{\kappa}\f$
-     * as inputs and can construct the individual blocks \f$P, Q, \mathrm{and} Q^\dagger\f$ or
-     * the full matrix \f$M M^\dagger\f$ from them.
+     * `%HubbardFermiMatrix` needs \f$\tilde{\kappa}, \phi, \tilde{\mu}, \mathrm{and} \sigma_\tilde{\kappa}\f$
+     * as inputs and can construct the individual blocks \f$P, T^{+}, \mathrm{and} T^{-}\f$ or
+     * the full matrix \f$Q\f$ from them.
      *
      * Neither the full matrix nor any of its blocks are stored explicitly. Instead,
-     * each block needs to be constructed using P(), Q(), and Qdag() or MMdag() for the
+     * each block needs to be constructed using P(), Tplus(), and Tminus() or Q() for the
      * full matrix. Note that these operations are fairly expensive.
      *
      * The result of an LU-decomposition is stored in HubbardFermiMatrix::LU to save memory
@@ -188,12 +107,11 @@ namespace cnxx {
          * \param kappa Hopping matrix \f$\tilde{\kappa}\f$.
          * \param phi Auxilliary field \f$\phi\f$ from HS transformation.
          * \param mu Chemical potential \f$\tilde{\mu}\f$.
-         * \param sigmaMu Sign of chemical potential in adjoint matrix.
          * \param sigmaKappa Sign of hopping matrix in adjoint matrix.
          */
         HubbardFermiMatrix(const SparseMatrix<double> &kappa,
                            const Vector<std::complex<double>> &phi,
-                           double mu, std::int8_t sigmaMu, std::int8_t sigmaKappa);
+                           double mu, std::int8_t sigmaKappa);
 
         /// Store the block on the diagonal \f$P\f$ in the parameter.
         /**
@@ -205,43 +123,45 @@ namespace cnxx {
         /// Return the block on the diagonal \f$P\f$.
         SparseMatrix<double> P() const;
 
-        /// Store the block on the lower subdiagonal \f$Q_{t'}\f$ in a parameter.
+        /// Store the block on the lower subdiagonal \f$T^{+}_{t'}\f$ in a parameter.
         /**
-         * \param q Block on the lower subdiagonal. Any old content is erased and the matrix is
+         * Applies anti periodic boundary conditions.
+         * \param T Block on the lower subdiagonal. Any old content is erased and the matrix is
          *          resized if need be.
          * \param tp Temporal row index \f$t'\f$.
          */
-        void Q(SparseMatrix<std::complex<double>> &q, std::size_t tp) const;
+        void Tplus(SparseMatrix<std::complex<double>> &T, std::size_t tp) const;
 
-        /// Return the block on the lower subdiagonal \f$Q_{t'}\f$.
+        /// Return the block on the lower subdiagonal \f$T^{+}_{t'}\f$.
         /**
          * \param tp Temporal row index \f$t'\f$.
          */
-        SparseMatrix<std::complex<double>> Q(std::size_t tp) const;
+        SparseMatrix<std::complex<double>> Tplus(std::size_t tp) const;
 
-        /// Store the block on the upper subdiagonal \f$Q^{\dagger}_{t'}\f$ in a parameter.
+        /// Store the block on the upper subdiagonal \f$T^{-}^{\dagger}_{t'}\f$ in a parameter.
         /**
-         * \param qdag Block on the upper subdiagonal.
-         *             Any old content is erased and the matrix is resized if need be.
+         * Applies anti periodic boundary conditions.
+         * \param T Block on the upper subdiagonal.
+         *          Any old content is erased and the matrix is resized if need be.
          * \param tp Temporal row index \f$t'\f$.
          */
-        void Qdag(SparseMatrix<std::complex<double>> &qdag, std::size_t tp) const;
+        void Tminus(SparseMatrix<std::complex<double>> &T, std::size_t tp) const;
 
-        /// Return the block on the upper subdiagonal \f$Q^{\dagger}_{t'}\f$.
+        /// Return the block on the upper subdiagonal \f$T^{-}^{\dagger}_{t'}\f$.
         /**
          * \param tp Temporal row index \f$t'\f$.
          */
-        SparseMatrix<std::complex<double>> Qdag(std::size_t tp) const;
+        SparseMatrix<std::complex<double>> Tminus(std::size_t tp) const;
 
-        /// Store the full fermion matrix \f$M M^{\dagger}\f$ in the parameter.
+        /// Store the full fermion matrix \f$Q\f$ in the parameter.
         /**
-         * \param mmdag Full fermion matrix. Any old content is erased and the matrix is
+         * \param q Full fermion matrix. Any old content is erased and the matrix is
          *          resized if need be.
          */
-        void MMdag(SparseMatrix<std::complex<double>> &mmdag) const;
+        void Q(SparseMatrix<std::complex<double>> &q) const;
 
         /// Return the full fermion matrix.
-        SparseMatrix<std::complex<double>> MMdag() const;
+        SparseMatrix<std::complex<double>> Q() const;
 
         /// Update the hopping matrix
         void updateKappa(const SparseMatrix<double> &kappa);
@@ -297,7 +217,6 @@ namespace cnxx {
         SparseMatrix<double> _kappa;  ///< Hopping matrix.
         Vector<std::complex<double>> _phi;  ///< Auxilliary HS field.
         double _mu;              ///< Chemical potential.
-        std::int8_t _sigmaMu;    ///< Sign of mu in M^dag.
         std::int8_t _sigmaKappa; ///< Sign of kappa in M^dag.
     };
 

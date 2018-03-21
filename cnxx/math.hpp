@@ -324,16 +324,6 @@ namespace cnxx {
         blaze::getri(mat, ipiv.get());
     }
 
-    template <typename MT, bool SO, typename VT, bool TF>
-    VT solve(const blaze::DenseMatrix<MT, SO> &matrix,
-             const blaze::DenseVector<VT, TF> &rhs) {
-        MT mat{matrix};
-        VT vec{rhs};
-        std::unique_ptr<int[]> ipiv = std::make_unique<int[]>(mat.rows());
-        blaze::gesv(mat, vec, ipiv.get());
-        return vec;
-    }
-
     /// Compute the logarithm of the determinant of a dense matrix.
     /**
      * Note that the matrix is copied in order to leave the original unchanged.

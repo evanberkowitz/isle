@@ -7,7 +7,7 @@ using namespace std::complex_literals;
 namespace {
     /// Resize a square matrix, throws away old elements.
     template <typename MT>
-    void resizeMatrix(MT &mat, std::size_t const target) {
+    void resizeMatrix(MT &mat, const std::size_t target) {
 #ifndef NDEBUG
         if (mat.rows() != mat.columns())
             throw std::invalid_argument("Matrix is not square.");
@@ -25,9 +25,8 @@ namespace cnxx {
     HubbardFermiMatrix::HubbardFermiMatrix(const SparseMatrix<double> &kappa,
                                            const Vector<std::complex<double>> &phi,
                                            const double mu,
-                                           const std::int8_t sigmaMu,
                                            const std::int8_t sigmaKappa)
-        : _kappa{kappa}, _phi{phi}, _mu{mu}, _sigmaMu{sigmaMu}, _sigmaKappa{sigmaKappa}
+        : _kappa{kappa}, _phi{phi}, _mu{mu}, _sigmaKappa{sigmaKappa}
     {
 #ifndef NDEBUG
         if (kappa.rows() != kappa.columns())
@@ -39,10 +38,9 @@ namespace cnxx {
     void HubbardFermiMatrix::P(SparseMatrix<double> &P) const {
         const std::size_t NX = nx();
         resizeMatrix(P, NX);
-
-        P = _sigmaKappa*_kappa*_kappa - _kappa*(_sigmaKappa*(1 + _mu) + 1 + _sigmaMu*_mu);
-        for (std::size_t i = 0; i < NX; ++i)
-            P(i, i) += 2 + _sigmaMu*_mu*_mu + (1+_sigmaMu)*_mu;
+        P = (2-_mu*_mu)*IdMatrix<double>(NX)
+            - (_sigmaKappa*(1+_mu) + 1 - _mu)*_kappa
+            + _sigmaKappa*_kappa*_kappa;
     }
 
     SparseMatrix<double> HubbardFermiMatrix::P() const {
@@ -51,76 +49,65 @@ namespace cnxx {
         return p;
     }
 
-
-    void HubbardFermiMatrix::Q(SparseMatrix<std::complex<double>> &q,
-                               const std::size_t tp) const {
+    void HubbardFermiMatrix::Tplus(SparseMatrix<std::complex<double>> &T,
+                                   const std::size_t tp) const {
         const std::size_t NX = nx();
         const std::size_t NT = nt();
-        const std::size_t t = tp==0 ? NT-1 : tp-1;
-        const std::int8_t antiPSign = tp==0 ? -1 : 1;  // encode anti-periodic BCs
-        resizeMatrix(q, NX);
+        const std::size_t tm1 = tp==0 ? NT-1 : tp-1;  // t' - 1
+        const double antiPSign = tp==0 ? -1 : 1;   // encode anti-periodic BCs
+        resizeMatrix(T, NX);
 
-        for (std::size_t xp = 0; xp < NX; ++xp) {
-            for (auto it = _kappa.begin(xp), end = _kappa.end(xp); it != end; ++it) {
-                q.set(xp, it->index(), antiPSign*it->value()*_sigmaKappa
-                      * std::exp(1.i*_phi[spacetimeCoord(xp, t, NX, NT)]));
-            }
-            q.set(xp, xp, -antiPSign*(1 + _sigmaMu*_mu)
-                  * std::exp(1.i*_phi[spacetimeCoord(xp, t, NX, NT)]));
-        }
+        T = _sigmaKappa*_kappa - (1-_mu)*IdMatrix<std::complex<double>>(NX);
+        for (std::size_t xp = 0; xp < NX; ++xp)
+            blaze::row(T, xp) *= antiPSign*std::exp(1.i*_phi[spacetimeCoord(xp, tm1, NX, NT)]);
     }
 
-    SparseMatrix<std::complex<double>> HubbardFermiMatrix::Q(const std::size_t tp) const {
-        SparseMatrix<std::complex<double>> q;
-        Q(q, tp);
-        return q;
+    SparseMatrix<std::complex<double>> HubbardFermiMatrix::Tplus(const std::size_t tp) const {
+        SparseMatrix<std::complex<double>> T;
+        Tplus(T, tp);
+        return T;
     }
 
-    void HubbardFermiMatrix::Qdag(SparseMatrix<std::complex<double>> &qdag,
-                                  const std::size_t tp) const {
+    void HubbardFermiMatrix::Tminus(SparseMatrix<std::complex<double>> &T,
+                                    const std::size_t tp) const {
         const std::size_t NX = nx();
         const std::size_t NT = nt();
-        const std::int8_t antiPSign = tp==NT-1 ? -1 : 1;  // encode anti-periodic BCs
-        resizeMatrix(qdag, NX);
+        const double antiPSign = tp==NT-1 ? -1 : 1;  // encode anti-periodic BCs
+        resizeMatrix(T, NX);
 
-        for (std::size_t xp = 0; xp < NX; ++xp) {
-            for (auto it = _kappa.begin(xp), end = _kappa.end(xp); it != end; ++it) {
-                qdag.set(xp, it->index(), antiPSign*it->value()
-                         * std::exp(-1.i*_phi[spacetimeCoord(it->index(), tp, NX, NT)]));
-            }
-            qdag.set(xp, xp, -antiPSign*(1 + _mu)
-                     * std::exp(-1.i*_phi[spacetimeCoord(xp, tp, NX, NT)]));
-        }
+        T = _kappa - (1+_mu)*IdMatrix<std::complex<double>>(NX);
+        for (std::size_t x = 0; x < NX; ++x)
+            blaze::column(T, x) *= antiPSign*std::exp(-1.i*_phi[spacetimeCoord(x, tp, NX, NT)]);
     }
 
-    SparseMatrix<std::complex<double>> HubbardFermiMatrix::Qdag(const std::size_t tp) const {
-        SparseMatrix<std::complex<double>> qdag;
-        Qdag(qdag, tp);
-        return qdag;
+    SparseMatrix<std::complex<double>> HubbardFermiMatrix::Tminus(const std::size_t tp) const {
+        SparseMatrix<std::complex<double>> T;
+        Tminus(T, tp);
+        return T;
     }
 
-    void HubbardFermiMatrix::MMdag(SparseMatrix<std::complex<double>> &mmdag) const {
+    void HubbardFermiMatrix::Q(SparseMatrix<std::complex<double>> &q) const {
         const std::size_t NX = nx();
         const std::size_t NT = nt();
-        resizeMatrix(mmdag, NX*NT);
+        resizeMatrix(q, NX*NT);
 
-        auto const p = P();
-        SparseMatrix<std::complex<double>> q; // for both Q and Qdag
+        const auto p = P();
+        SparseMatrix<std::complex<double>> aux; // for both T^+ and T^-
         for (std::size_t tp = 0; tp < NT; ++tp) {
-            blaze::submatrix(mmdag, tp*NX, tp*NX, NX, NX) = p;
+            spacemat(q, tp, tp, NX) = p;
 
-            Q(q, tp);
-            blaze::submatrix(mmdag, tp*NX, (tp + NT - 1) % NT * NX, NX, NX) += q;
+            Tplus(aux, tp);
+            spacemat(q, tp, (tp+NT-1)%NT, NX) += aux;
 
-            Qdag(q, tp);
-            blaze::submatrix(mmdag, tp*NX, (tp + 1) % NT * NX, NX, NX) += q;
+            Tminus(aux, tp);
+            spacemat(q, tp, (tp+1)%NT, NX) += aux;
         }
     }
 
-    SparseMatrix<std::complex<double>> HubbardFermiMatrix::MMdag() const {
-        SparseMatrix<std::complex<double>> mmdag;
-        MMdag(mmdag);
-        return mmdag;
+    SparseMatrix<std::complex<double>> HubbardFermiMatrix::Q() const {
+        SparseMatrix<std::complex<double>> q;
+        Q(q);
+        return q;
     }
 
 
@@ -243,11 +230,11 @@ namespace cnxx {
             HubbardFermiMatrix::LU lu{1};
 
             // construct d_0
-            SparseMatrix<std::complex<double>> q;
-            hfm.Q(q, 0);
-            lu.dinv.emplace_back(hfm.P() + q);
-            hfm.Qdag(q, 0);
-            lu.dinv[0] += q;
+            SparseMatrix<std::complex<double>> T;
+            hfm.Tplus(T, 0);
+            lu.dinv.emplace_back(hfm.P() + T);
+            hfm.Tminus(T, 0);
+            lu.dinv[0] += T;
 
             // invert d_0
             std::unique_ptr<int[]> ipiv = std::make_unique<int[]>(hfm.nx());
@@ -263,7 +250,7 @@ namespace cnxx {
             HubbardFermiMatrix::LU lu{nt};
 
             const auto P = hfm.P();  // diagonal block P
-            SparseMatrix<std::complex<double>> aux0, aux1; // Q, Qdag, and u
+            SparseMatrix<std::complex<double>> aux0, aux1; // T^+, T^-, and u
             std::unique_ptr<int[]> ipiv = std::make_unique<int[]>(nx);// pivot indices for inversion
 
             // d_0
@@ -271,16 +258,16 @@ namespace cnxx {
             invert(lu.dinv[0], ipiv);
 
             // l_0
-            hfm.Q(aux0, 1);
-            hfm.Qdag(aux1, 1);
+            hfm.Tplus(aux0, 1);
+            hfm.Tminus(aux1, 1);
             lu.l.emplace_back((aux0+aux1)*lu.dinv[0]);
 
             // u_0
-            hfm.Q(aux0, 0);
-            hfm.Qdag(aux1, 0);
+            hfm.Tplus(aux0, 0);
+            hfm.Tminus(aux1, 0);
             aux0 += aux1;  // now aux0 = u_0
             lu.u.emplace_back(aux0);
-        
+
             // d_1
             lu.dinv.emplace_back(P - lu.l[0]*aux0);
             invert(lu.dinv[1], ipiv);
@@ -295,24 +282,25 @@ namespace cnxx {
             HubbardFermiMatrix::LU lu{nt};
 
             const auto P = hfm.P();  // diagonal block P
-            SparseMatrix<std::complex<double>> q;  // subdiagonal blocks Q and Q^\dagger
+            SparseMatrix<std::complex<double>> T;  // subdiagonal blocks T^+ and T^-
 
             SparseMatrix<std::complex<double>> u; // previous u, updated along the way
-            std::unique_ptr<int[]> ipiv = std::make_unique<int[]>(nx);// pivot indices for inversion
+            // pivot indices for inversion
+            std::unique_ptr<int[]> ipiv = std::make_unique<int[]>(nx);
 
             // starting components of d, u, l
             lu.dinv.emplace_back(P);
             invert(lu.dinv.back(), ipiv);
-            hfm.Qdag(u, 0);   // now u = lu.u[0]
+            hfm.Tminus(u, 0);   // now u = lu.u[0]
             lu.u.emplace_back(u);
-            hfm.Q(q, 1);
-            lu.l.emplace_back(q*lu.dinv.back());
+            hfm.Tplus(T, 1);
+            lu.l.emplace_back(T*lu.dinv.back());
 
             // v, h
-            hfm.Q(q, 0);
-            lu.v.emplace_back(q);
-            hfm.Qdag(q, nt-1);
-            lu.h.emplace_back(q*lu.dinv.back());
+            hfm.Tplus(T, 0);
+            lu.v.emplace_back(T);
+            hfm.Tminus(T, nt-1);
+            lu.h.emplace_back(T*lu.dinv.back());
 
             // iterate for i in [1, nt-3], 'regular' part of d, u, l, v, h
             for (std::size_t i = 1; i < nt-2; ++i) {
@@ -320,12 +308,12 @@ namespace cnxx {
                 lu.dinv.emplace_back(P - lu.l[i-1]*u);
                 invert(lu.dinv.back(), ipiv);
 
-                hfm.Q(q, i+1);
-                lu.l.emplace_back(q*lu.dinv[i]);
+                hfm.Tplus(T, i+1);
+                lu.l.emplace_back(T*lu.dinv[i]);
                 lu.h.emplace_back(-lu.h[i-1]*u*lu.dinv[i]);
                 lu.v.emplace_back(-lu.l[i-1]*lu.v[i-1]);
 
-                hfm.Qdag(u, i);
+                hfm.Tminus(u, i);
                 lu.u.emplace_back(u);  // now u = lu.u[i]
             }
             // from now on u is lu.u[nt-3]
@@ -335,10 +323,10 @@ namespace cnxx {
             invert(lu.dinv.back(), ipiv);
 
             // final components of u, l
-            hfm.Qdag(q, nt-2);
-            lu.u.emplace_back(q - lu.l[nt-3]*lu.v[nt-3]);
-            hfm.Q(q, nt-1);
-            lu.l.emplace_back((q - lu.h[nt-3]*u)*lu.dinv[nt-2]);
+            hfm.Tminus(T, nt-2);
+            lu.u.emplace_back(T - lu.l[nt-3]*lu.v[nt-3]);
+            hfm.Tplus(T, nt-1);
+            lu.l.emplace_back((T - lu.h[nt-3]*u)*lu.dinv[nt-2]);
 
             // final component of d
             lu.dinv.emplace_back(P - lu.l[nt-2]*lu.u[nt-2]);
@@ -360,7 +348,7 @@ namespace cnxx {
             return generalLU(hfm);
         }
     }
-        
+
     Vector<std::complex<double>> solve(const HubbardFermiMatrix &hfm,
                                        const Vector<std::complex<double>> &rhs) {
         return solve(getLU(hfm), rhs);
