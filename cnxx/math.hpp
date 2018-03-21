@@ -149,9 +149,9 @@ namespace cnxx {
      */
     constexpr std::size_t spacetimeCoord(const std::size_t x,
                                          const std::size_t t,
-                                         const std::size_t UNUSED(nx),
-                                         const std::size_t nt) noexcept {
-        return x*nt + t;
+                                         const std::size_t nx,
+                                         const std::size_t UNUSED(nt)) noexcept {
+        return t*nx + x;
     }
 
 
@@ -195,123 +195,123 @@ namespace cnxx {
     }
 
 
-    /// Multiply a space matrix with a space time vector.
-    /**
-     * Let \f$v, u\f$ be vectors in spacetime and \f$M\f$ a matrix in space.
-     * Furthermore, let \f$(it)\f$ denote a spacetime index comprised of the spatial index
-     * \f$i\f$ and time index \f$t\f$.<BR>
-     * This function computes
-     * \f[
-     *   u_{(it)} = M_{i,j} v_{(jt)}
-     * \f]
-     *
-     * \tparam MT Arbitrary matrix type.
-     * \tparam VT Dense vector type.
-     * \param spaceMatrix \f$M\f$
-     * \param spacetimeVector \f$v\f$
-     * \returns \f$u\f$
-     *
-     * \throws std::runtime_error
-     *  - `spaceMatrix` is not a square matrix.
-     *  - Length of `spacetimeVector` is not a multiple of the dimension of `spaceMatrix`.
-     *
-     *  Does not throw if macro `NDEBUG` is defined.
-     */
-    /*
-     * Works by wrapping input and output vectors in a blaze::CustomMatrix
-     * to treat a spacetime vector v_{(it)} as a matrix vm_{i,t}.
-     * Then m*v can be performed as m*vm.
-     */
-    template <typename MT, typename VT,
-              typename = std::enable_if_t<blaze::IsDenseVector<VT>::value, VT>>
-    auto spaceMatSpacetimeVec(const MT &spaceMatrix,
-                              const VT &spacetimeVector) noexcept(ndebug) {
+//     /// Multiply a space matrix with a space time vector.
+//     /**
+//      * Let \f$v, u\f$ be vectors in spacetime and \f$M\f$ a matrix in space.
+//      * Furthermore, let \f$(it)\f$ denote a spacetime index comprised of the spatial index
+//      * \f$i\f$ and time index \f$t\f$.<BR>
+//      * This function computes
+//      * \f[
+//      *   u_{(it)} = M_{i,j} v_{(jt)}
+//      * \f]
+//      *
+//      * \tparam MT Arbitrary matrix type.
+//      * \tparam VT Dense vector type.
+//      * \param spaceMatrix \f$M\f$
+//      * \param spacetimeVector \f$v\f$
+//      * \returns \f$u\f$
+//      *
+//      * \throws std::runtime_error
+//      *  - `spaceMatrix` is not a square matrix.
+//      *  - Length of `spacetimeVector` is not a multiple of the dimension of `spaceMatrix`.
+//      *
+//      *  Does not throw if macro `NDEBUG` is defined.
+//      */
+//     /*
+//      * Works by wrapping input and output vectors in a blaze::CustomMatrix
+//      * to treat a spacetime vector v_{(it)} as a matrix vm_{i,t}.
+//      * Then m*v can be performed as m*vm.
+//      */
+//     template <typename MT, typename VT,
+//               typename = std::enable_if_t<blaze::IsDenseVector<VT>::value, VT>>
+//     auto spaceMatSpacetimeVec(const MT &spaceMatrix,
+//                               const VT &spacetimeVector) noexcept(ndebug) {
 
-        // get lattice size
-        const auto nx = spaceMatrix.rows();
-        const auto nt = spacetimeVector.size() / nx;
+//         // get lattice size
+//         const auto nx = spaceMatrix.rows();
+//         const auto nt = spacetimeVector.size() / nx;
 
-#ifndef NDEBUG
-        if (nx != spaceMatrix.columns())
-            throw std::runtime_error("Matrix is not square");
-        if (spacetimeVector.size() % nx != 0)
-            throw std::runtime_error("Matrix and vector size do not match");
-#endif
+// #ifndef NDEBUG
+//         if (nx != spaceMatrix.columns())
+//             throw std::runtime_error("Matrix is not square");
+//         if (spacetimeVector.size() % nx != 0)
+//             throw std::runtime_error("Matrix and vector size do not match");
+// #endif
 
-        // return type, same as VT with adjusted element type
-        using RT = typename VT::template Rebind<
-            decltype(std::declval<typename MT::ElementType>()
-                     * std::declval<typename VT::ElementType>())
-            >::Other;
+//         // return type, same as VT with adjusted element type
+//         using RT = typename VT::template Rebind<
+//             decltype(std::declval<typename MT::ElementType>()
+//                      * std::declval<typename VT::ElementType>())
+//             >::Other;
 
-        // space time matrix type for input vector
-        using STMV = blaze::CustomMatrix<std::add_const_t<typename VT::ElementType>,
-                                         blaze::unaligned, blaze::unpadded>;
-        // space time matrix type for returned vector
-        using STMR = blaze::CustomMatrix<typename RT::ElementType,
-                                         blaze::unaligned, blaze::unpadded>;
+//         // space time matrix type for input vector
+//         using STMV = blaze::CustomMatrix<std::add_const_t<typename VT::ElementType>,
+//                                          blaze::unaligned, blaze::unpadded>;
+//         // space time matrix type for returned vector
+//         using STMR = blaze::CustomMatrix<typename RT::ElementType,
+//                                          blaze::unaligned, blaze::unpadded>;
 
-        // do computation
-        RT result(spacetimeVector.size());
-        STMR{&result[0], nx, nt} = spaceMatrix * STMV{&spacetimeVector[0], nx, nt};
-        return result;
-    }
+//         // do computation
+//         RT result(spacetimeVector.size());
+//         STMR{&result[0], nx, nt} = spaceMatrix * STMV{&spacetimeVector[0], nx, nt};
+//         return result;
+//     }
 
-    /// Dot a space vector into a space time vector.
-    /**
-     * Let \f$v\f$ be a vector in spacetime, and \f$x\f$ a vector in space, and \f$u\f$ be a vector in time.
-     * Furthermore, let \f$(it)\f$ denote a spacetime index comprised of the spatial index
-     * \f$i\f$ and time index \f$t\f$.<BR>
-     * This function computes
-     * \f[
-     *   u_{t} = x_i v_{(it)}
-     * \f]
-     *
-     * \tparam XT Arbitrary vector type.
-     * \tparam VT Dense vector type.
-     * \param spaceVector \f$x\f$
-     * \param spacetimeVector \f$v\f$
-     * \returns \f$u\f$
-     *
-     * \throws std::runtime_error
-     *  - Length of `spacetimeVector` is not a multiple of the dimension of `spaceVector`.
-     *
-     *  Does not throw if macro `NDEBUG` is defined.
-     */
-    /*
-     * Works by wrapping the input vector in a blaze::CustomMatrix
-     * to treat a spacetime vector v_{(it)} as a matrix vm_{i,t}.
-     * Then x*v can be performed as x*vm.
-     */
-    template <typename XT, typename VT,
-              typename = std::enable_if_t<blaze::IsDenseVector<VT>::value, VT>>
-    auto spaceVecSpacetimeVec(const XT &spaceVector,
-                              const VT &spacetimeVector) noexcept(ndebug) {
+//     /// Dot a space vector into a space time vector.
+//     /**
+//      * Let \f$v\f$ be a vector in spacetime, and \f$x\f$ a vector in space, and \f$u\f$ be a vector in time.
+//      * Furthermore, let \f$(it)\f$ denote a spacetime index comprised of the spatial index
+//      * \f$i\f$ and time index \f$t\f$.<BR>
+//      * This function computes
+//      * \f[
+//      *   u_{t} = x_i v_{(it)}
+//      * \f]
+//      *
+//      * \tparam XT Arbitrary vector type.
+//      * \tparam VT Dense vector type.
+//      * \param spaceVector \f$x\f$
+//      * \param spacetimeVector \f$v\f$
+//      * \returns \f$u\f$
+//      *
+//      * \throws std::runtime_error
+//      *  - Length of `spacetimeVector` is not a multiple of the dimension of `spaceVector`.
+//      *
+//      *  Does not throw if macro `NDEBUG` is defined.
+//      */
+//     /*
+//      * Works by wrapping the input vector in a blaze::CustomMatrix
+//      * to treat a spacetime vector v_{(it)} as a matrix vm_{i,t}.
+//      * Then x*v can be performed as x*vm.
+//      */
+//     template <typename XT, typename VT,
+//               typename = std::enable_if_t<blaze::IsDenseVector<VT>::value, VT>>
+//     auto spaceVecSpacetimeVec(const XT &spaceVector,
+//                               const VT &spacetimeVector) noexcept(ndebug) {
 
-        // get lattice size
-        const auto nx = spaceVector.size();
-        const auto nt = spacetimeVector.size() / nx;
+//         // get lattice size
+//         const auto nx = spaceVector.size();
+//         const auto nt = spacetimeVector.size() / nx;
 
-#ifndef NDEBUG
-        if (spacetimeVector.size() % nx != 0)
-            throw std::runtime_error("Matrix and vector size do not match");
-#endif
+// #ifndef NDEBUG
+//         if (spacetimeVector.size() % nx != 0)
+//             throw std::runtime_error("Matrix and vector size do not match");
+// #endif
 
-        // return type, same as VT with adjusted element type
-        using RT = typename VT::template Rebind<
-            decltype(std::declval<typename XT::ElementType>()
-                     * std::declval<typename VT::ElementType>())
-            >::Other;
+//         // return type, same as VT with adjusted element type
+//         using RT = typename VT::template Rebind<
+//             decltype(std::declval<typename XT::ElementType>()
+//                      * std::declval<typename VT::ElementType>())
+//             >::Other;
 
-        // space time matrix type for input vector
-        using STMV = blaze::CustomMatrix<std::add_const_t<typename VT::ElementType>,
-                                         blaze::unaligned, blaze::unpadded>;
+//         // space time matrix type for input vector
+//         using STMV = blaze::CustomMatrix<std::add_const_t<typename VT::ElementType>,
+//                                          blaze::unaligned, blaze::unpadded>;
 
-        // do computation
-        blaze::DynamicVector<RT> result;
-        result = spaceVector * STMV{&spacetimeVector[0], nx, nt};
-        return result;
-    }
+//         // do computation
+//         blaze::DynamicVector<RT> result;
+//         result = spaceVector * STMV{&spacetimeVector[0], nx, nt};
+//         return result;
+//     }
 
     /// Invert a matrix in place.
     /**
@@ -322,6 +322,16 @@ namespace cnxx {
     inline void invert(Matrix<std::complex<double>> &mat, std::unique_ptr<int[]> &ipiv) {
         blaze::getrf(mat, ipiv.get());
         blaze::getri(mat, ipiv.get());
+    }
+
+    template <typename MT, bool SO, typename VT, bool TF>
+    VT solve(const blaze::DenseMatrix<MT, SO> &matrix,
+             const blaze::DenseVector<VT, TF> &rhs) {
+        MT mat{matrix};
+        VT vec{rhs};
+        std::unique_ptr<int[]> ipiv = std::make_unique<int[]>(mat.rows());
+        blaze::gesv(mat, vec, ipiv.get());
+        return vec;
     }
 
     /// Compute the logarithm of the determinant of a dense matrix.
