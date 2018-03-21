@@ -4,6 +4,7 @@
 #include "lattice.hpp"
 #include "hubbardFermiMatrix.hpp"
 #include "action.hpp"
+#include "hamiltonian.hpp"
 #include "pardiso.hpp"
 
 PYBIND11_MODULE(cnxx, mod) {
@@ -13,5 +14,6 @@ PYBIND11_MODULE(cnxx, mod) {
     bind::bindLattice(mod);
     bind::bindHubbardFermiMatrix(mod);
     bind::bindActions(mod);
+    bind::bindHamiltonian(mod);
     bind::bindPARDISO(mod);
 }

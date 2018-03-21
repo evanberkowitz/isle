@@ -25,7 +25,8 @@ project(cnxx CXX)
 set(SOURCE
   hubbardFermiMatrix.cpp
   hubbardGaugeAction.cpp
-  hubbardFermiAction.cpp)
+  hubbardFermiAction.cpp
+  hamiltonian.cpp)
 add_subdirectory(bind)
 
 add_library(cnxx SHARED ${SOURCE})
