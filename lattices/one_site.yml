@@ -1,0 +1,7 @@
+!lattice
+name: 'one site'
+comment: 'Single site at the origin'
+nt: 0
+adjacency: []
+hopping: []
+positions: [[0., 0., 0.]]
