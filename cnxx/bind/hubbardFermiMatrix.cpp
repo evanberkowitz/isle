@@ -10,6 +10,7 @@ namespace bind {
         py::class_<HFM> hfm{mod, "HubbardFermiMatrix"};
         hfm.def(py::init<SparseMatrix<double>, Vector<std::complex<double>>,
                 double, std::int8_t>())
+            .def("M", py::overload_cast<bool>(&HFM::M, py::const_))
             .def("P", py::overload_cast<>(&HFM::P, py::const_))
             .def("Tplus", py::overload_cast<std::size_t>(&HFM::Tplus, py::const_))
             .def("Tminus", py::overload_cast<std::size_t>(&HFM::Tminus, py::const_))

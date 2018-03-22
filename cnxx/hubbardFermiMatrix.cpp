@@ -34,6 +34,34 @@ namespace cnxx {
 #endif
     }
 
+    void HubbardFermiMatrix::M(SparseMatrix<std::complex<double>> &m, bool hole) const {
+        const std::size_t NX = nx();
+        const std::size_t NT = nt();
+        resizeMatrix(m, NX*NT);
+
+        const double kappaSign = hole ? _sigmaKappa : 1;  // multiplies kappa
+        const double phiSign = hole ? -1 : 1;  // multiplies phi
+        const IdMatrix<std::complex<double>> id(NX);
+
+        for (std::size_t tp = 0; tp < NT; ++tp) {
+            // diagonal part
+            spacemat(m, tp, tp, NX) = (1+_mu)*id - kappaSign*_kappa;
+
+            // off diagonal part
+            const std::size_t tm1 = tp==0 ? NT-1 : tp-1;  // t' - 1
+            const double antiPSign = tp==0 ? -1 : 1;   // encode anti-periodic BCs
+            for (std::size_t xp = 0; xp < NX; ++xp)
+                spacemat(m, tp, tm1, NX).set(xp, xp, -antiPSign*std::exp(phiSign*1.i*_phi[spacetimeCoord(xp, tm1, NX, NT)]));
+        }
+        if (hole)
+            blaze::transpose(m);
+    }
+
+    SparseMatrix<std::complex<double>> HubbardFermiMatrix::M(bool hole) const {
+        SparseMatrix<std::complex<double>> m;
+        M(m, hole);
+        return m;
+    }
 
     void HubbardFermiMatrix::P(SparseMatrix<double> &P) const {
         const std::size_t NX = nx();

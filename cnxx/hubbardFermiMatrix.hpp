@@ -113,6 +113,16 @@ namespace cnxx {
                            const Vector<std::complex<double>> &phi,
                            double mu, std::int8_t sigmaKappa);
 
+        /// Store the matrix \f$M\f$ in the parameter.
+        /**
+         * \param m Any old content is erased and the matrix is
+         *          resized if need be.
+         */
+        void M(SparseMatrix<std::complex<double>> &m, bool dagger) const;
+
+        /// Return the matrix \f$M\f$.
+        SparseMatrix<std::complex<double>> M(bool dagger) const;
+
         /// Store the block on the diagonal \f$P\f$ in the parameter.
         /**
          * \param p Block on the diagonal. Any old content is erased and the matrix is
