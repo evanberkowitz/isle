@@ -74,7 +74,7 @@ class AbstractMatrixTest(metaclass=abc.ABCMeta):
 
         # Check types
         self.assertIsInstance(
-            cMat[0,0], 
+            cMat[0,0],
             typ,
             msg="Failed type check for scalar type: {typ} and matrix type: {mtyp}".format(
               typ=typ, mtyp=mtyp
@@ -90,13 +90,23 @@ class AbstractMatrixTest(metaclass=abc.ABCMeta):
             )
         )
         return cMat, np.matrix(pyMat)
+
+    #----------------------------
+    def _test_op_construction(self, array, op):
+        a = op(array)
+        m = cns.Matrix(op(array))
+        self.assertTrue(core.isEqual(a, matIterator(m, dtype=a.dtype)),
+                        msg="Failed check for scalar type: {typ} and operation: {op}".format(
+                          typ=array.dtype, op=op))
+
     #----------------------------
     def _test_buffer_construction(self, mtyp, verbose=False):
         """
-        Test construction by numpy array, 
+        Test construction by numpy array,
         type checks matrix with given size and compares elements.
         Ignores integer types.
         """
+
         typ = self.matrixTypes[mtyp]
         if typ is int: return
 
@@ -104,10 +114,11 @@ class AbstractMatrixTest(metaclass=abc.ABCMeta):
             logger = core.get_logger()
             logger.info("Testing buffer construction of {mtyp}".format(mtyp=mtyp))
 
+        # basic construction
         pyMat = rand.randn(RAND_MIN, RAND_MAX, self.mShape, typ)
         cMat = mtyp(pyMat)
         self.assertIsInstance(
-            cMat[0,0], 
+            cMat[0,0],
             typ,
             msg="Failed type check for scalar type: {typ} and matrix type: {mtyp}".format(
               typ=typ, mtyp=mtyp
@@ -121,11 +132,33 @@ class AbstractMatrixTest(metaclass=abc.ABCMeta):
                 pyMat=str(pyMat), cMat=str(cMat)
             )
         )
-        return cMat, np.matrix(pyMat)
+
+        # construction after a numpy operation
+        # from np operator
+        aux = rand.randn(RAND_MIN, RAND_MAX, self.mShape, typ)
+        self._test_op_construction(pyMat, lambda a: a+aux)
+        self._test_op_construction(pyMat, lambda a: a*aux)
+        self._test_op_construction(pyMat, lambda a: a//aux)
+
+        # from rank 2 array
+        self._test_op_construction(pyMat, np.real)
+        self._test_op_construction(pyMat, np.imag)
+        self._test_op_construction(pyMat, np.abs)
+        self._test_op_construction(pyMat, np.exp)
+        self._test_op_construction(pyMat, np.sin)
+        self._test_op_construction(pyMat, np.cosh)
+        self._test_op_construction(pyMat, lambda a: np.roll(a, 5))
+        self._test_op_construction(pyMat, np.transpose)
+        self._test_op_construction(pyMat, lambda a: np.moveaxis(a, 0, -1))
+
+        # from rank 1 array
+        vec = rand.randn(RAND_MIN, RAND_MAX, self.mShape[0]*self.mShape[1], typ)
+        self._test_op_construction(vec, lambda a: np.reshape(a, self.mShape))
+
     #----------------------------
     def _test_list_construction(self, mtyp, verbose=False, transpose=False):
         """
-        Test construction by list, 
+        Test construction by list,
         type checks matrix with given size and compares elements
         """
         logger = core.get_logger()
@@ -139,7 +172,7 @@ class AbstractMatrixTest(metaclass=abc.ABCMeta):
         cMat = mtyp(pyMat)
 
         self.assertIsInstance(
-            cMat[0,0], 
+            cMat[0,0],
             typ,
             msg="Failed type check for scalar type: {typ} and matrix type: {mtyp}".format(
               typ=typ, mtyp=mtyp
@@ -216,7 +249,7 @@ class AbstractMatrixTest(metaclass=abc.ABCMeta):
 
                 # Type check matrixTypes
                 self.assertIsInstance(
-                    cOut, 
+                    cOut,
                     outInstance,
                     msg= "Type check failed for {cIn1} {op} {cIn2} = {cOut}".format(
                       cIn1=inTypes[0], op=opType, cIn2=inTypes[1], cOut=outInstance
@@ -233,7 +266,7 @@ class AbstractMatrixTest(metaclass=abc.ABCMeta):
                 ## Check value
                 self.assertTrue(
                     core.isEqual(
-                      cOut, 
+                      cOut,
                       pyOut,
                       nOps=self.mShape[0] if "*" in opType else 1
                     ),
