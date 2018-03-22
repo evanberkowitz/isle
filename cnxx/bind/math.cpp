@@ -298,8 +298,19 @@ namespace {
                                 throw std::runtime_error("Incompatible buffer format: mismatched elemental data type");
                             if (binfo.ndim != 1)
                                 throw std::runtime_error("Wrong buffer dimention to construct vector");
-                            return VT(binfo.shape[0],
-                                      static_cast<const ET *>(binfo.ptr));
+
+                            if (binfo.strides[0] == sizeof(ET))
+                                // copy as is (w/o stride)
+                                return VT(binfo.shape[0],
+                                          static_cast<const ET *>(binfo.ptr));
+                            else {
+                                // copy with specific stride
+                                VT vec(binfo.shape[0]);
+                                const py::ssize_t stride = binfo.strides[0]/sizeof(ET);
+                                for (py::ssize_t i = 0; i < binfo.shape[0]; ++i)
+                                    vec[i] = static_cast<const ET*>(binfo.ptr)[i*stride];
+                                return vec;
+                            }
                         }))
                 .def(py::init([](const py::list &list) {
                             VT v(list.size());
@@ -422,8 +433,24 @@ namespace {
                                 throw std::runtime_error("Incompatible buffer format: mismatched elemental data type");
                             if (binfo.ndim != 2)
                                 throw std::runtime_error("Wrong buffer dimention to construct matrix");
-                            return MT(binfo.shape.at(0), binfo.shape.at(1),
-                                      static_cast<const ET *>(binfo.ptr));
+
+                            if (binfo.strides[0] == static_cast<py::ssize_t>(sizeof(ET))*binfo.shape[1]
+                                && binfo.strides[1] == sizeof(ET))
+                                // buffer in row-major format => copy as is
+                                return MT(binfo.shape[0], binfo.shape[1],
+                                          static_cast<const ET *>(binfo.ptr));
+                            else {
+                                // copy taking strides into account
+                                MT mat(binfo.shape[0], binfo.shape[1]);
+                                const py::ssize_t stride0 = binfo.strides[0]/sizeof(ET);
+                                const py::ssize_t stride1 = binfo.strides[1]/sizeof(ET);
+                                for (py::ssize_t i = 0; i < binfo.shape[0]; ++i) {
+                                    for (py::ssize_t j = 0; j < binfo.shape[1]; ++j) {
+                                        mat(i, j) = static_cast<const ET*>(binfo.ptr)[i*stride0 + j*stride1];
+                                    }
+                                }
+                                return mat;
+                            }
                         }))
                 .def(py::init([](const py::list &list) {
                             MT mat(list.size(), list[0].cast<py::list>().size());
@@ -630,6 +657,13 @@ namespace bind {
         tmp::foreach<ElementalTypes, bindVector, ElementalTypes>::f(mod);
         tmp::foreach<ElementalTypes, bindMatrix, ElementalTypes>::f(mod);
         tmp::foreach<ElementalTypes, bindSparseMatrix, ElementalTypes>::f(mod);
+
+        mod.def("real", [](const int x) { return x; });
+        mod.def("real", [](const double x) { return x; });
+        mod.def("real", [](const std::complex<double> x) { return std::real(x); });
+        mod.def("imag", [](const int UNUSED(x)) { return 0; });
+        mod.def("imag", [](const double UNUSED(x)) { return 0; });
+        mod.def("imag", [](const std::complex<double> x) { return std::imag(x); });
 
         mod.def("logdet", [](const Matrix<std::complex<double>> &mat) {
                 return logdet(mat);
