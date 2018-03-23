@@ -34,7 +34,7 @@ def main():
         # make random auxilliary field and HFM
         phi = cns.Vector(np.random.randn(lat.nx()*nt)
                          + 1j*np.random.randn(lat.nx()*nt), dtype=complex)
-        hfm = cns.HubbardFermiMatrix(lat.hopping(), phi, 0, 1, -1)
+        hfm = cns.HubbardFermiMatrix(lat.hopping(), phi, 0, -1)
 
         # make random right hand side
         rhs = cns.Vector(np.random.randn(lat.nx()*nt)

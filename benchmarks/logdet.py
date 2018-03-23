@@ -31,8 +31,8 @@ def main():
                          + 1j*np.random.randn(lat.nx()*nt), dtype=complex)
 
         # make a fermion matrix
-        hfm = cns.HubbardFermiMatrix(lat.hopping(), phi, 0, 1, -1)
-        mmdag = cns.Matrix(hfm.MMdag(), dtype=complex)
+        hfm = cns.HubbardFermiMatrix(lat.hopping(), phi, 0, -1)
+        mmdag = cns.Matrix(hfm.Q(), dtype=complex)
 
         # do the benchmark
         custom.append(timeit.timeit("logdet(hfm)", globals=locals(), number=10)/10)
