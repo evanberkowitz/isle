@@ -4,21 +4,23 @@ import contextlib
 import yaml
 import numpy as np
 import matplotlib.pyplot as plt
+from matplotlib.colors import LogNorm
+
 
 import core
 core.prepare_module_import()
 import cns
 
-LATFILE = "one_site.yml"
+LATFILE = "two_sites.yml"
 
-NT = 64   # number of time slices
-NTR = 512  # number of trajectories
-NMD = 4  # number of MD steps per trajectory
+NT = 32   # number of time slices
+NTR = 1000  # number of trajectories
+NMD = 3  # number of MD steps per trajectory
 MDSTEP = 1/NMD  # size of MD steps
 
 U = 2
 BETA = 3
-SIGMA_KAPPA = -1
+SIGMA_KAPPA = 1
 
 UTILDE = U*BETA/NT
 
@@ -88,12 +90,12 @@ def main():
 
         # if np.min((1, np.exp(cns.real(-newS+oldS)))) > np.random.uniform(0, 1):
         if np.exp(cns.real(oldS-newS)) > np.random.uniform(0, 1):
-            print("accept: ", newS-oldS)
+#            print("accept: ", newS-oldS)
             oldS = newS
             phi = newPhi
             nacc += 1
-        else:
-            print("reject: ", newS-oldS)
+#        else:
+#            print("reject: ", newS-oldS)
 
         cfgs.append(phi)
         phases.append(cns.imag(newS))
@@ -103,15 +105,18 @@ def main():
 
     print("acceptance rate: ", nacc/NTR)
 
-    dets = list(map(
+    dets= list(map(
         lambda cfg:
-        np.exp(cns.real(cns.logdet(cns.Matrix(
-            cns.HubbardFermiMatrix(kappa, cfg, 0, SIGMA_KAPPA).Q())
-        ))), cfgs))
-
+        np.exp(cns.logdet(cns.Matrix(
+            cns.HubbardFermiMatrix(kappa, cfg, 0, SIGMA_KAPPA).M(False))
+        )), cfgs))
+    detsReal, detsImag = np.array(dets).real,np.array(dets).imag
+    
     plt.figure()
     plt.title(r"$\mathrm{det}(M)$")
-    plt.hist(dets, bins=32)
+#    plt.hist(detsReal, bins=32)
+#    plt.hist2d(detsReal, detsImag, [-20.+ i*40./40 for i in range(40)], norm=LogNorm())
+    plt.hist2d(detsReal, detsImag, bins=40, norm=LogNorm())
     plt.show()
 
 if __name__ == "__main__":
