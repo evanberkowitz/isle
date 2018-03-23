@@ -11,8 +11,8 @@ import cns
 
 LATFILE = "one_site.yml"
 
-NT = 16   # number of time slices
-NTR = 64  # number of trajectories
+NT = 64   # number of time slices
+NTR = 512  # number of trajectories
 NMD = 4  # number of MD steps per trajectory
 MDSTEP = 1/NMD  # size of MD steps
 
@@ -22,19 +22,6 @@ SIGMA_KAPPA = -1
 
 UTILDE = U*BETA/NT
 
-
-class Hamiltonian:
-    def __init__(self, kappa):
-        self.gaugeAct = cns.HubbardGaugeAction(UTILDE)
-        self.fermiAct = cns.HubbardFermiAction(kappa, 0, 0, SIGMA_KAPPA)
-
-    def eval(self, phi, pi):
-        return np.linalg.norm(pi)**2/2 + self.gaugeAct.eval(phi)+self.fermiAct.eval(phi)
-
-    def force(self, phi):
-        return self.gaugeAct.force(phi)+self.gaugeAct.force(phi)
-
-
 # uses leapfrog
 def moledyn(ham, phi, pi, direction=+1):
     eps = direction*MDSTEP
@@ -43,14 +30,14 @@ def moledyn(ham, phi, pi, direction=+1):
     phi = cns.Vector(phi, dtype=complex)
 
     # initial half step
-    pi = pi + ham.force(phi)*eps/2
+    pi = pi + cns.real(ham.force(phi))*eps/2
 
-    for _ in range(NMD-2):
+    for _ in range(NMD-1):
         phi += pi*eps
-        pi += ham.force(phi)*eps
+        pi += cns.real(ham.force(phi))*eps
 
     phi += pi*eps # final step (left out above)
-    pi += ham.force(phi)*eps/2  # final half step
+    pi += cns.real(ham.force(phi))*eps/2  # final half step
 
     return phi, pi
 
@@ -60,56 +47,70 @@ def main():
 
     with open(str(core.SCRIPT_PATH/"../lattices"/LATFILE), "r") as yamlf:
         lat = yaml.safe_load(yamlf)
-    kappa = cns.SparseMatrix(lat.hopping(), dtype=float)
+    kappa = lat.hopping() * (BETA / NT)
 
-    ham = Hamiltonian(kappa)
+    ham = cns.Hamiltonian(cns.HubbardGaugeAction(UTILDE),
+                          cns.HubbardFermiAction(kappa, 0, SIGMA_KAPPA))
 
     # initial state
-    phi = cns.Vector(np.random.randn(lat.nx()*NT)+0j)
-    pi = cns.Vector(np.random.normal(0, 1, len(phi)))
-    oldS = ham.eval(phi, pi)
+    phi = cns.Vector(np.random.normal(0, np.sqrt(UTILDE), lat.nx()*NT)+0j)
 
-    cfgs = [phi]
-    phases = [np.imag(oldS)]
+    # TODO store intitial traj?
+    cfgs = []
+    phases = []
 
-    for i in range(NTR-1):  # -1 because we already have the initial 'trajectory'
+    nacc = 0
+    for i in range(NTR):
+        pi = cns.Vector(np.random.normal(0, np.sqrt(UTILDE), len(phi))+0j)
+        oldS = ham.eval(phi, pi)
+
         newPhi, newPi = moledyn(ham, phi, pi, +1)
 
-        repPhi, repPi = moledyn(ham, newPhi, newPi, -1)
-        if np.linalg.norm(repPhi-phi) > 1e-14:
-            print("Repro check failed in traj {} with error in phi: {}".format(i, np.linalg.norm(repPhi-phi)))
+        # # reproducibility check
+        # repPhi, repPi = moledyn(ham, newPhi, newPi, -1)
+        # if np.linalg.norm(repPhi-phi) > 1e-10:
+        #     print("Repro check failed in traj {} with error in phi: {}".format(i, np.linalg.norm(repPhi-phi)))
+        #     return
+        # if np.linalg.norm(repPi-pi) > 1e-10:
+        #     print("Repro check failed in traj {} with error in pi: {}".format(i, np.linalg.norm(repPi-pi)))
+        #     return
+
+        # check for imaginary parts
+        if np.max(cns.imag(newPhi)) > 1e-14:
+            print("phi has acquired an imaginary part: {}".format(newPhi))
             return
-        if np.linalg.norm(repPi-pi) > 1e-14:
-            print("Repro check failed in traj {} with error in pi: {}".format(i, np.linalg.norm(repPi-pi)))
+        if np.max(cns.imag(newPi)) > 1e-14:
+            print("pi has acquired an imaginary part: {}".format(newPhi))
             return
 
-        if np.max(np.imag(newPhi)) > 1e-14:
-            print("phi has acquired an imaginary part")
-            return
+        # new energy
+        newS = ham.eval(newPhi, newPi)
 
-        newS = ham.eval(newPhi, pi)
-
-        if np.min((1, np.exp(np.real(-newS+oldS)))) > np.random.uniform(0, 1):
+        # if np.min((1, np.exp(cns.real(-newS+oldS)))) > np.random.uniform(0, 1):
+        if np.exp(cns.real(oldS-newS)) > np.random.uniform(0, 1):
             print("accept: ", newS-oldS)
             oldS = newS
             phi = newPhi
+            nacc += 1
         else:
             print("reject: ", newS-oldS)
 
-
         cfgs.append(phi)
-        phases.append(np.imag(newS))
+        phases.append(cns.imag(newS))
 
-        pi = cns.Vector(np.random.normal(0, 1, len(phi)))
 
-    print("phases: ", phases)
+    print("max phases: ", np.max(phases))
+
+    print("acceptance rate: ", nacc/NTR)
 
     dets = list(map(
         lambda cfg:
-        np.exp(np.real(cns.logdet(cns.Matrix(cns.HubbardFermiMatrix(lat.hopping(), cfg, 0, 1, SIGMA_KAPPA).MMdag())))),
-        cfgs))
+        np.exp(cns.real(cns.logdet(cns.Matrix(
+            cns.HubbardFermiMatrix(kappa, cfg, 0, SIGMA_KAPPA).Q())
+        ))), cfgs))
 
     plt.figure()
+    plt.title(r"$\mathrm{det}(M)$")
     plt.hist(dets, bins=32)
     plt.show()
 
