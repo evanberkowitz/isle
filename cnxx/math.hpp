@@ -68,6 +68,19 @@ namespace cnxx {
     template <typename ET>
     using SymmetricSparseMatrix = blaze::SymmetricMatrix<blaze::CompressedMatrix<ET>>;
 
+    // Convenience aliases.
+    using IVector = Vector<int>;
+    using DVector = Vector<double>;
+    using CDVector = Vector<std::complex<double>>;
+
+    using IMatrix = Matrix<int>;
+    using DMatrix = Matrix<double>;
+    using CDMatrix = Matrix<std::complex<double>>;
+
+    using ISparseMatrix = SparseMatrix<int>;
+    using DSparseMatrix = SparseMatrix<double>;
+    using CDSparseMatrix = SparseMatrix<std::complex<double>>;
+
 
     /// Get the value type from a given compound type.
     /**
