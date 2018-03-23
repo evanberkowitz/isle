@@ -6,7 +6,6 @@ import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.colors import LogNorm
 
-
 import core
 core.prepare_module_import()
 import cns
@@ -14,7 +13,7 @@ import cns
 LATFILE = "two_sites.yml"
 
 NT = 32   # number of time slices
-NTR = 1000  # number of trajectories
+NTR = 100  # number of trajectories
 NMD = 3  # number of MD steps per trajectory
 MDSTEP = 1/NMD  # size of MD steps
 
@@ -23,26 +22,6 @@ BETA = 3
 SIGMA_KAPPA = 1
 
 UTILDE = U*BETA/NT
-
-# uses leapfrog
-def moledyn(ham, phi, pi, direction=+1):
-    eps = direction*MDSTEP
-
-    # copy input to not overwrite it
-    phi = cns.Vector(phi, dtype=complex)
-
-    # initial half step
-    pi = pi + cns.real(ham.force(phi))*eps/2
-
-    for _ in range(NMD-1):
-        phi += pi*eps
-        pi += cns.real(ham.force(phi))*eps
-
-    phi += pi*eps # final step (left out above)
-    pi += cns.real(ham.force(phi))*eps/2  # final half step
-
-    return phi, pi
-
 
 def main():
     np.random.seed(1)
@@ -62,14 +41,17 @@ def main():
     phases = []
 
     nacc = 0
+    oldS = None
     for i in range(NTR):
         pi = cns.Vector(np.random.normal(0, np.sqrt(UTILDE), len(phi))+0j)
-        oldS = ham.eval(phi, pi)
+        if oldS is None:  # have never evaluated an action before, do it now
+            oldS = ham.eval(phi, pi)
 
-        newPhi, newPi = moledyn(ham, phi, pi, +1)
+        # do MD
+        newPhi, newPi, newS = cns.leapfrog(phi, pi, ham, 1, NMD)
 
-        # # reproducibility check
-        # repPhi, repPi = moledyn(ham, newPhi, newPi, -1)
+        # reproducibility check
+        # repPhi, repPi, _ = cns.leapfrog(newPhi, newPi, ham, 1, NMD, -1)
         # if np.linalg.norm(repPhi-phi) > 1e-10:
         #     print("Repro check failed in traj {} with error in phi: {}".format(i, np.linalg.norm(repPhi-phi)))
         #     return
@@ -85,23 +67,19 @@ def main():
             print("pi has acquired an imaginary part: {}".format(newPhi))
             return
 
-        # new energy
-        newS = ham.eval(newPhi, newPi)
-
-        # if np.min((1, np.exp(cns.real(-newS+oldS)))) > np.random.uniform(0, 1):
         if np.exp(cns.real(oldS-newS)) > np.random.uniform(0, 1):
-#            print("accept: ", newS-oldS)
+            print("accept: ", newS-oldS)
             oldS = newS
             phi = newPhi
             nacc += 1
-#        else:
-#            print("reject: ", newS-oldS)
+        else:
+            print("reject: ", newS-oldS)
 
         cfgs.append(phi)
         phases.append(cns.imag(newS))
 
 
-    print("max phases: ", np.max(phases))
+    print("max phase: ", np.max(np.abs(phases)))
 
     print("acceptance rate: ", nacc/NTR)
 
@@ -110,8 +88,8 @@ def main():
         np.exp(cns.logdet(cns.Matrix(
             cns.HubbardFermiMatrix(kappa, cfg, 0, SIGMA_KAPPA).M(False))
         )), cfgs))
-    detsReal, detsImag = np.array(dets).real,np.array(dets).imag
-    
+    detsReal, detsImag = np.array(dets).real, np.array(dets).imag
+
     plt.figure()
     plt.title(r"$\mathrm{det}(M)$")
 #    plt.hist(detsReal, bins=32)
