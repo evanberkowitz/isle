@@ -26,7 +26,8 @@ set(SOURCE
   hubbardFermiMatrix.cpp
   hubbardGaugeAction.cpp
   hubbardFermiAction.cpp
-  hamiltonian.cpp)
+  hamiltonian.cpp
+  integrator.cpp)
 add_subdirectory(bind)
 
 add_library(cnxx SHARED ${SOURCE})

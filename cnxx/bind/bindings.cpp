@@ -5,6 +5,7 @@
 #include "hubbardFermiMatrix.hpp"
 #include "action.hpp"
 #include "hamiltonian.hpp"
+#include "integrator.hpp"
 #include "pardiso.hpp"
 
 PYBIND11_MODULE(cnxx, mod) {
@@ -15,5 +16,6 @@ PYBIND11_MODULE(cnxx, mod) {
     bind::bindHubbardFermiMatrix(mod);
     bind::bindActions(mod);
     bind::bindHamiltonian(mod);
+    bind::bindIntegrators(mod);
     bind::bindPARDISO(mod);
 }
