@@ -332,7 +332,8 @@ namespace cnxx {
      * \param ipiv Pivot indices. Must have at least `mat.rows()` elements
      *             but can be uninitialized.
      */
-    inline void invert(Matrix<std::complex<double>> &mat, std::unique_ptr<int[]> &ipiv) {
+    template <typename ET>
+    void invert(Matrix<ET> &mat, std::unique_ptr<int[]> &ipiv) {
         blaze::getrf(mat, ipiv.get());
         blaze::getri(mat, ipiv.get());
     }
