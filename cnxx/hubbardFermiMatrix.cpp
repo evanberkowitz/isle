@@ -194,10 +194,10 @@ namespace cnxx {
     }
 
 /*
- * -------------------------- LU --------------------------
+ * -------------------------- QLU --------------------------
  */
 
-    HubbardFermiMatrix::LU::LU(const std::size_t nt) {
+    HubbardFermiMatrix::QLU::QLU(const std::size_t nt) {
         dinv.reserve(nt);
         if (nt > 1) {
             u.reserve(nt-1);
@@ -209,7 +209,7 @@ namespace cnxx {
         }
     }
 
-    bool HubbardFermiMatrix::LU::isConsistent() const {
+    bool HubbardFermiMatrix::QLU::isConsistent() const {
         const std::size_t nt = dinv.size();
         if (nt == 0)
             return false;
@@ -224,7 +224,7 @@ namespace cnxx {
         return true;
     }
 
-    Matrix<std::complex<double>> HubbardFermiMatrix::LU::reconstruct() const {
+    Matrix<std::complex<double>> HubbardFermiMatrix::QLU::reconstruct() const {
         const std::size_t nt = dinv.size();
         if (nt < 2)
             throw std::domain_error("Reconstruction of LU called with nt < 2");
@@ -286,9 +286,9 @@ namespace cnxx {
  */
 
     namespace {
-        /// Special case LU decomposition for nt == 1.
-        HubbardFermiMatrix::LU nt1LU(const HubbardFermiMatrix &hfm) {
-            HubbardFermiMatrix::LU lu{1};
+        /// Special case LU decomposition of Q for nt == 1.
+        HubbardFermiMatrix::QLU nt1QLU(const HubbardFermiMatrix &hfm) {
+            HubbardFermiMatrix::QLU lu{1};
 
             // construct d_0
             SparseMatrix<std::complex<double>> T;
@@ -304,11 +304,11 @@ namespace cnxx {
             return lu;
         }
 
-        /// Special case LU decomposition for nt == 2.
-        HubbardFermiMatrix::LU nt2LU(const HubbardFermiMatrix &hfm) {
+        /// Special case LU decomposition of Q for nt == 2.
+        HubbardFermiMatrix::QLU nt2QLU(const HubbardFermiMatrix &hfm) {
             const std::size_t nx = hfm.nx();
             constexpr std::size_t nt = 2;
-            HubbardFermiMatrix::LU lu{nt};
+            HubbardFermiMatrix::QLU lu{nt};
 
             const auto P = hfm.P();  // diagonal block P
             SparseMatrix<std::complex<double>> aux0, aux1; // T^+, T^-, and u
@@ -336,11 +336,11 @@ namespace cnxx {
             return lu;
         }
 
-        /// General case LU decomposition for nt > 2.
-        HubbardFermiMatrix::LU generalLU(const HubbardFermiMatrix &hfm) {
+        /// General case LU decomposition of Q for nt > 2.
+        HubbardFermiMatrix::QLU generalQLU(const HubbardFermiMatrix &hfm) {
             const std::size_t nx = hfm.nx();
             const std::size_t nt = hfm.nt();
-            HubbardFermiMatrix::LU lu{nt};
+            HubbardFermiMatrix::QLU lu{nt};
 
             const auto P = hfm.P();  // diagonal block P
             SparseMatrix<std::complex<double>> T;  // subdiagonal blocks T^+ and T^-
@@ -399,24 +399,24 @@ namespace cnxx {
         }
     }
 
-    HubbardFermiMatrix::LU getLU(const HubbardFermiMatrix &hfm) {
+    HubbardFermiMatrix::QLU getQLU(const HubbardFermiMatrix &hfm) {
         switch (hfm.nt()) {
         case 1:
-            return nt1LU(hfm);
+            return nt1QLU(hfm);
         case 2:
-            return nt2LU(hfm);
+            return nt2QLU(hfm);
         default:
-            return generalLU(hfm);
+            return generalQLU(hfm);
         }
     }
 
-    Vector<std::complex<double>> solve(const HubbardFermiMatrix &hfm,
-                                       const Vector<std::complex<double>> &rhs) {
-        return solve(getLU(hfm), rhs);
+    Vector<std::complex<double>> solveQ(const HubbardFermiMatrix &hfm,
+                                        const Vector<std::complex<double>> &rhs) {
+        return solveQ(getQLU(hfm), rhs);
     }
 
-    Vector<std::complex<double>> solve(const HubbardFermiMatrix::LU &lu,
-                                       const Vector<std::complex<double>> &rhs) {
+    Vector<std::complex<double>> solveQ(const HubbardFermiMatrix::QLU &lu,
+                                        const Vector<std::complex<double>> &rhs) {
         const std::size_t nt = lu.dinv.size();
 #ifndef NDEBUG
         if (!lu.isConsistent())
@@ -455,12 +455,12 @@ namespace cnxx {
         return x;
     }
 
-    std::complex<double> logdet(const HubbardFermiMatrix &hfm) {
-        auto lu = getLU(hfm);
-        return ilogdet(lu);
+    std::complex<double> logdetQ(const HubbardFermiMatrix &hfm) {
+        auto lu = getQLU(hfm);
+        return ilogdetQ(lu);
     }
 
-    std::complex<double> logdet(const HubbardFermiMatrix::LU &lu) {
+    std::complex<double> logdetQ(const HubbardFermiMatrix::QLU &lu) {
 #ifndef NDEBUG
         if (!lu.isConsistent())
             throw std::runtime_error("Components of LU not initialized properly");
@@ -473,7 +473,7 @@ namespace cnxx {
         return toFirstLogBranch(ldet);
     }
 
-    std::complex<double> ilogdet(HubbardFermiMatrix::LU &lu) {
+    std::complex<double> ilogdetQ(HubbardFermiMatrix::QLU &lu) {
 #ifndef NDEBUG
         if (!lu.isConsistent())
             throw std::runtime_error("Components of LU not initialized properly");

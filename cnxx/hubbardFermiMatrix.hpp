@@ -35,7 +35,28 @@ namespace cnxx {
      *
      * See notes ReWeighting in learning-physics.
      *
-     * ## LU-decomposition
+     * ## LU-decomposition of Q
+     \f[
+     L =
+     \begin{pmatrix}
+     1   &     &        &        &        &\\
+     l_0 & 1   &        &        &        &\\
+     & l_1 & \ddots &        &        &\\
+     &     & \ddots & 1      &        &\\
+     &     &        & l_{n-3} & 1      & \\
+     h_0 & h_1 & \cdots  & h_{n-3} & l_{n-2} & 1
+     \end{pmatrix},
+     \f]
+     \f[ U =
+     \begin{pmatrix}
+     d_0 & u_0 &        &        &        & v_0    \\
+     & d_1 & u_1    &        &        & v_1    \\
+     &     & d_2    & \ddots &        & \vdots \\
+     &     &        & \ddots & u_{n-3} & v_{n-3} \\
+     &     &        &        & d_{n-2} & u_{n-2} \\
+     &     &        &        &        & d_{n-1}
+     \end{pmatrix}
+     \f]
      * In the case of the fermion matrix, each element of \f$L\f$ and \f$U\f$ is a spacial
      * \f$N_x \times N_x\f$ matrix. Hence each inverse of \f$d\f$ requires a full
      * matrix inversion. This means that the algorithm requires \f$\mathrm{O}(N_t N_x^3)\f$
@@ -109,11 +130,11 @@ namespace cnxx {
      * and give easier access to the components compared to a `blaze::Matrix`.
      *
      * \sa
-     *  - HubbardFermiMatrix::LU getLU(const HubbardFermiMatrix &hfm)
-     *  - std::complex<double> logdet(const HubbardFermiMatrix &hfm)
-     *  - std::complex<double> logdet(const HubbardFermiMatrix::LU &lu)
-     *  - Vector<std::complex<double>> solve(const HubbardFermiMatrix &hfm, const Vector<std::complex<double>> &rhs);
-     *  - Vector<std::complex<double>> solve(const HubbardFermiMatrix::LU &lu, const Vector<std::complex<double>> &rhs);
+     *  - HubbardFermiMatrix::LU getQLU(const HubbardFermiMatrix &hfm)
+     *  - std::complex<double> logdetQ(const HubbardFermiMatrix &hfm)
+     *  - std::complex<double> logdetQ(const HubbardFermiMatrix::QLU &lu)
+     *  - Vector<std::complex<double>> solveQ(const HubbardFermiMatrix &hfm, const Vector<std::complex<double>> &rhs);
+     *  - Vector<std::complex<double>> solveQ(const HubbardFermiMatrix::QLU &lu, const Vector<std::complex<double>> &rhs);
      */
     class HubbardFermiMatrix {
     public:
@@ -242,7 +263,7 @@ namespace cnxx {
         std::size_t nt() const noexcept;
 
 
-        /// Result of an LU-decomposition.
+        /// Result of an LU-decomposition of Q.
         /**
          * See documentation of HubbardFermiMatrix for the definition of
          * all member variables.
@@ -256,10 +277,10 @@ namespace cnxx {
          * v    | 0  | 0  | nt-2
          * h    | 0  | 0  | nt-2
          *
-         * Use HubbardFermiMatrix::LU::isConsistent() to check whether those conditions
+         * Use HubbardFermiMatrix::QLU::isConsistent() to check whether those conditions
          * are satisfied.
          */
-        struct LU {
+        struct QLU {
             std::vector<Matrix<std::complex<double>>> dinv; ///< \f$d^{-1}\f$, see definition of U.
             std::vector<Matrix<std::complex<double>>> u; ///< See definition of U.
             std::vector<Matrix<std::complex<double>>> v; ///< See definition of U.
@@ -267,7 +288,7 @@ namespace cnxx {
             std::vector<Matrix<std::complex<double>>> h; ///< See definition of L.
 
             /// Reserves space for std::vectors but does not construct matrices.
-            explicit LU(std::size_t nt);
+            explicit QLU(std::size_t nt);
 
             /// Check whether an instance is set up properly, i.e. all vectors have consistent sizes.
             bool isConsistent() const;
@@ -284,63 +305,61 @@ namespace cnxx {
     };
 
 
-    /// Perform an LU-decomposition on a HubbardFermiMatrix.
-    HubbardFermiMatrix::LU getLU(const HubbardFermiMatrix &hfm);
+    /// Perform an LU-decomposition of Q.
+    HubbardFermiMatrix::QLU getQLU(const HubbardFermiMatrix &hfm);
 
-    /// Solve a system of equations \f$(M M^\dagger) x = b\f$.
+    /// Solve a system of equations \f$Q x = b\f$.
     /**
-     * See documentation of HubbardFermiMatrix for a description of the algorithm.
-     * \param hfm Matrix \f$M M^\dagger\f$.
+     * \param hfm Encodes matrix \f$Q\f$.
      * \param rhs Right hand side \f$b\f$.
      * \return Solution \f$x\f$.
-     * \see `std::complex<double> logdet(const HubbardFermiMatrix::LU &lu)` in case you
-     *      already have the LU-decomposition.
+     * \see `std::complex<double> solveQ(const HubbardFermiMatrix::QLU &lu)` in case you
+     *      already have the LU-decomposition of Q.
      */
-    Vector<std::complex<double>> solve(const HubbardFermiMatrix &hfm,
-                                       const Vector<std::complex<double>> &rhs);
+    Vector<std::complex<double>> solveQ(const HubbardFermiMatrix &hfm,
+                                        const Vector<std::complex<double>> &rhs);
 
-    /// Solve a system of equations \f$(M M^\dagger) x = b\f$; use LU-decomposition directly.
+    /// Solve a system of equations \f$Q x = b\f$; use LU-decomposition directly.
     /**
-     * See documentation of HubbardFermiMatrix for a description of the algorithm.
-     * \param lu LU-Decomposition of matrix \f$M M^\dagger\f$.
+     * \param lu LU-Decomposition of matrix \f$Q\f$.
      * \param rhs Right hand side \f$b\f$.
      * \return Solution \f$x\f$.
      */
-    Vector<std::complex<double>> solve(const HubbardFermiMatrix::LU &lu,
-                                       const Vector<std::complex<double>> &rhs);
+    Vector<std::complex<double>> solveQ(const HubbardFermiMatrix::QLU &lu,
+                                        const Vector<std::complex<double>> &rhs);
 
-    /// Compute \f$\log(\det(M M^\dagger))\f$ by means of an LU-decomposition.
+    /// Compute \f$\log(\det(Q))\f$ by means of an LU-decomposition.
     /**
      * \param hfm %HubbardFermiMatrix to compute the determinant of.
-     * \return Value equivalent to `log(det(hfm.MMdag()))` and projected onto the
+     * \return Value equivalent to `log(det(hfm.Q()))` and projected onto the
      *         first branch of the logarithm.
-     * \see `std::complex<double> logdet(const HubbardFermiMatrix::LU &lu)` in case you
-     *      already have the LU-decomposition.
+     * \see `std::complex<double> logdet(const HubbardFermiMatrix::QLU &lu)` in case you
+     *      already have the LU-decomposition of Q.
      */
-    std::complex<double> logdet(const HubbardFermiMatrix &hfm);
+    std::complex<double> logdetQ(const HubbardFermiMatrix &hfm);
 
-    /// Compute \f$\log(\det(M M^\dagger))\f$ given an LU-decomposition.
+    /// Compute \f$\log(\det(Q))\f$ given an LU-decomposition.
     /**
-     * \param lu LU-decomposed HubbardFermiMatrix.
-     * \return Value equivalent to `log(det(hfm.reconstruct()))` and projected onto the
+     * \param lu LU-decomposed Q.
+     * \return Value equivalent to `log(det(hfm.Q))` and projected onto the
      *         first branch of the logarithm.
      * \see
-     *      - `std::complex<double> logdet(const HubbardFermiMatrix &hfm)`
-     *      - `std::complex<double> ilogdet(HubbardFermiMatrix::LU &lu)`
+     *      - `std::complex<double> logdetQ(const HubbardFermiMatrix &hfm)`
+     *      - `std::complex<double> ilogdetQ(HubbardFermiMatrix::QLU &lu)`
      */
-    std::complex<double> logdet(const HubbardFermiMatrix::LU &lu);
+    std::complex<double> logdetQ(const HubbardFermiMatrix::QLU &lu);
 
-    /// Compute \f$\log(\det(M M^\dagger))\f$ given an LU-decomposition, overwrites input.
+    /// Compute \f$\log(\det(Q))\f$ given an LU-decomposition, overwrites input.
     /**
      * \warning This version operates in-place and overwrites the input parameter `lu`.
-     *          See `std::complex<double> logdet(const HubbardFermiMatrix::LU &lu)` for
+     *          See `std::complex<double> logdetQ(const HubbardFermiMatrix::QLU &lu)` for
      *          a version that preserves `lu`.
-     * \param lu LU-decomposed HubbardFermiMatrix.
-     * \return Value equivalent to `log(det(hfm.reconstruct()))` and projected onto the
+     * \param lu LU-decomposed Q.
+     * \return Value equivalent to `log(det(hfm.Q))` and projected onto the
      *         first branch of the logarithm.
-     * \see `std::complex<double> logdet(const HubbardFermiMatrix &hfm)`
+     * \see `std::complex<double> logdetQ(const HubbardFermiMatrix &hfm)`
      */
-    std::complex<double> ilogdet(HubbardFermiMatrix::LU &lu);
+    std::complex<double> ilogdetQ(HubbardFermiMatrix::QLU &lu);
 
 }  // namespace cnxx
 

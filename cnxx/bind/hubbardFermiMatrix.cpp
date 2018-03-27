@@ -23,27 +23,27 @@ namespace bind {
             .def("nt", &HFM::nt)
             ;
 
-        py::class_<HFM::LU>{hfm, "LU"}
+        py::class_<HFM::QLU>{hfm, "QLU"}
             .def(py::init<std::size_t>())
-            .def("reconstruct", &HFM::LU::reconstruct)
-            .def_readonly("dinv", &HFM::LU::dinv)
-            .def_readonly("l", &HFM::LU::l)
-            .def_readonly("u", &HFM::LU::u)
-            .def_readonly("v", &HFM::LU::v)
-            .def_readonly("h", &HFM::LU::h)
+            .def("reconstruct", &HFM::QLU::reconstruct)
+            .def_readonly("dinv", &HFM::QLU::dinv)
+            .def_readonly("l", &HFM::QLU::l)
+            .def_readonly("u", &HFM::QLU::u)
+            .def_readonly("v", &HFM::QLU::v)
+            .def_readonly("h", &HFM::QLU::h)
             ;
 
-        mod.def("getLU",
-                static_cast<HubbardFermiMatrix::LU(*)(const HubbardFermiMatrix&)>(getLU));
-        mod.def("solve", static_cast<Vector<std::complex<double>>(*)(
-                    const HubbardFermiMatrix::LU &,
-                    const Vector<std::complex<double>> &rhs)>(solve));
-        mod.def("solve", static_cast<Vector<std::complex<double>>(*)(
+        mod.def("getQLU",
+                static_cast<HubbardFermiMatrix::QLU(*)(const HubbardFermiMatrix&)>(getQLU));
+        mod.def("solveQ", static_cast<Vector<std::complex<double>>(*)(
+                    const HubbardFermiMatrix::QLU &,
+                    const Vector<std::complex<double>> &rhs)>(solveQ));
+        mod.def("solveQ", static_cast<Vector<std::complex<double>>(*)(
                     const HubbardFermiMatrix &,
-                    const Vector<std::complex<double>> &rhs)>(solve));
-        mod.def("logdet",
-                static_cast<std::complex<double>(*)(const HubbardFermiMatrix&)>(logdet));
-        mod.def("logdet",
-                static_cast<std::complex<double>(*)(const HubbardFermiMatrix::LU&)>(logdet));
+                    const Vector<std::complex<double>> &rhs)>(solveQ));
+        mod.def("logdetQ",
+                static_cast<std::complex<double>(*)(const HubbardFermiMatrix&)>(logdetQ));
+        mod.def("logdetQ",
+                static_cast<std::complex<double>(*)(const HubbardFermiMatrix::QLU&)>(logdetQ));
     }
 }
