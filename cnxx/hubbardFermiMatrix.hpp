@@ -152,6 +152,12 @@ namespace cnxx {
                            const Vector<std::complex<double>> &phi,
                            double mu, std::int8_t sigmaKappa);
 
+        HubbardFermiMatrix(const HubbardFermiMatrix &) = default;
+        HubbardFermiMatrix &operator=(const HubbardFermiMatrix &) = default;
+        HubbardFermiMatrix(HubbardFermiMatrix &&) = default;
+        HubbardFermiMatrix &operator=(HubbardFermiMatrix &&) = default;
+        ~HubbardFermiMatrix() = default;
+
 
         /// Store the diagonal block K of matrix M in the parameter.
         /**
