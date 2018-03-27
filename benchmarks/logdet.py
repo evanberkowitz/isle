@@ -21,28 +21,34 @@ def main():
         lat = yaml.safe_load(yamlf)
 
     nts = (4, 8, 12, 16, 20, 24, 28, 32)
-    custom = []
+    cbtdlu = []
+    analytical = []
     lapack = []
 
+    logdetQ = cns.logdetQ
+    logdetM = cns.logdetM
     logdet = cns.logdet
     for nt in nts:
+        print("doing nt = {}".format(nt))
         # create a normal distributed phi
         phi = cns.Vector(np.random.randn(lat.nx()*nt)
                          + 1j*np.random.randn(lat.nx()*nt), dtype=complex)
 
         # make a fermion matrix
-        hfm = cns.HubbardFermiMatrix(lat.hopping(), phi, 0, -1)
-        mmdag = cns.Matrix(hfm.Q(), dtype=complex)
+        hfm = cns.HubbardFermiMatrix(lat.hopping()/nt, phi, 0, -1)
+        Q = cns.Matrix(hfm.Q())
 
         # do the benchmark
-        custom.append(timeit.timeit("logdet(hfm)", globals=locals(), number=10)/10)
-        lapack.append(timeit.timeit("logdet(mmdag)", globals=locals(), number=10)/10)
+        cbtdlu.append(timeit.timeit("logdetQ(hfm)", globals=locals(), number=10)/10)
+        analytical.append(timeit.timeit("logdetM(hfm, False)+logdetM(hfm, True)", globals=locals(), number=10)/10)
+        lapack.append(timeit.timeit("logdet(Q)", globals=locals(), number=10)/10)
 
     # save benchmark to file
     pickle.dump({"xlabel": "Nt",
                  "ylabel": "time / s",
                  "xvalues": nts,
-                 "results": {"custom": custom,
+                 "results": {"CBTDLU": cbtdlu,
+                             "analytical": analytical,
                              "LAPACK": lapack}}, open("logdet.ben", "wb"))
 
 if __name__ == "__main__":
