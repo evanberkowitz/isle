@@ -34,27 +34,60 @@ namespace cnxx {
 #endif
     }
 
+
+    void HubbardFermiMatrix::K(SparseMatrix<double> &k, const bool hole) const {
+        const std::size_t NX = nx();
+        resizeMatrix(k, NX);
+
+        if (hole)
+            k = (1-_mu)*IdMatrix<double>(NX) - _sigmaKappa*_kappa;
+        else
+            k = (1+_mu)*IdMatrix<double>(NX) - _kappa;
+    }
+    SparseMatrix<double> HubbardFermiMatrix::K(const bool hole) const {
+        SparseMatrix<double> k;
+        K(k, hole);
+        return k;
+    }
+
+    void HubbardFermiMatrix::F(SparseMatrix<std::complex<double>> &f,
+                               const std::size_t tp, const bool hole) const {
+        const std::size_t NX = nx();
+        const std::size_t NT = nt();
+        const std::size_t tm1 = tp==0 ? NT-1 : tp-1;  // t' - 1
+        resizeMatrix(f, NX);
+
+        if (hole)
+            blaze::diagonal(f) = blaze::exp(-1.i*spacevec(_phi, tm1, NX));
+        else
+            blaze::diagonal(f) = blaze::exp(1.i*spacevec(_phi, tm1, NX));
+    }
+
+    SparseMatrix<std::complex<double>> HubbardFermiMatrix::F(const std::size_t tp,
+                                                             const bool hole) const {
+        SparseMatrix<std::complex<double>> f;
+        F(f, tp, hole);
+        return f;
+    }
+
     void HubbardFermiMatrix::M(SparseMatrix<std::complex<double>> &m, bool hole) const {
         const std::size_t NX = nx();
         const std::size_t NT = nt();
         resizeMatrix(m, NX*NT);
 
-        const double kappaSign = hole ? _sigmaKappa : 1;  // multiplies kappa
-        const double phiSign = hole ? -1 : 1;  // multiplies phi
-        const IdMatrix<std::complex<double>> id(NX);
+        // zeroth row
+        const auto k = K(hole);
+        spacemat(m, 0, 0, NX) = k;
+        // explicit boundary condition
+        auto f = F(0, hole);
+        spacemat(m, 0, NT-1, NX) = f;
 
-        for (std::size_t tp = 0; tp < NT; ++tp) {
-            // diagonal part
-            spacemat(m, tp, tp, NX) = (1+_mu)*id - kappaSign*_kappa;
-
-            // off diagonal part
-            const std::size_t tm1 = tp==0 ? NT-1 : tp-1;  // t' - 1
-            const double antiPSign = tp==0 ? -1 : 1;   // encode anti-periodic BCs
-            for (std::size_t xp = 0; xp < NX; ++xp)
-                spacemat(m, tp, tm1, NX).set(xp, xp, -antiPSign*std::exp(phiSign*1.i*_phi[spacetimeCoord(xp, tm1, NX, NT)]));
+        // other rows
+        for (std::size_t tp = 1; tp < NT; ++tp) {
+            F(f, tp, hole);
+            spacemat(m, tp, tp-1, NX) = -f;
+            spacemat(m, tp, tp, NX) = k;
         }
-        if (hole)
-            blaze::transpose(m);
     }
 
     SparseMatrix<std::complex<double>> HubbardFermiMatrix::M(bool hole) const {

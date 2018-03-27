@@ -15,6 +15,24 @@ namespace cnxx {
     /**
      * \todo Move documentations to proper place.
      *
+     * ## Definitions
+     \f{align}{
+     {M(\phi, \tilde{\kappa}, \tilde{\mu})}_{x't';xt}
+     &\equiv K_{x'x}\delta_{t't} - \mathcal{B}_{t'}{(F_{t'})}_{x'x}\delta_{t'(t+1)}.
+     \f}
+     \f{align}{
+     K_{x'x} &= (1+\tilde{\mu})\delta_{x'x} - \kappa_{x'x}\\
+     {(F_{t'})}_{x'x} &= e^{i\phi_{xt}}\delta_{x'x}
+     \f}
+     \f{align}{
+     \mathcal{B}_t =
+     \begin{cases}
+     +1,\quad 0 < t < N_t\\
+     -1,\quad t = 0
+     \end{cases}
+     \f}
+     * For holes, replace \f$\phi \rightarrow -\phi,\, \tilde{\kappa} \rightarrow \sigma_{\tilde{\kappa}}\tilde{\kappa},\, \tilde{\mu}\rightarrow -\tilde{\mu}\f$.
+     *
      * See notes ReWeighting in learning-physics.
      *
      * ## LU-decomposition
@@ -113,15 +131,50 @@ namespace cnxx {
                            const Vector<std::complex<double>> &phi,
                            double mu, std::int8_t sigmaKappa);
 
+        
+        /// Store the diagonal block K of matrix M in the parameter.
+        /**
+         * \param k Any old content is erased and the matrix is
+         *          resized if need be.
+         * \param hole `false` if matrix for particles, `true` if matrix for holes.
+         */        
+        void K(SparseMatrix<double> &k, bool hole) const;
+
+        /// Return the diagonal block matrix K of matrix M.
+        /**
+         * \param hole `false` if matrix for particles, `true` if matrix for holes.
+         */
+        SparseMatrix<double> K(bool hole) const;
+
+        /// Store an off-diagonal block F of matrix M in the parameter.
+        /**
+         * \param f Any old content is erased and the matrix is
+         *          resized if need be.
+         * \param tp Temporal row index t'.
+         * \param hole `false` if matrix for particles, `true` if matrix for holes.
+         */        
+        void F(SparseMatrix<std::complex<double>> &f, std::size_t tp, bool hole) const;
+
+        /// Return an off-diagonal block matrix F of matrix M.
+        /**
+         * \param tp Temporal row index t'.
+         * \param hole `false` if matrix for particles, `true` if matrix for holes.
+         */
+        SparseMatrix<std::complex<double>> F(std::size_t tp, bool hole) const;
+
         /// Store the matrix \f$M\f$ in the parameter.
         /**
          * \param m Any old content is erased and the matrix is
          *          resized if need be.
+         * \param hole `false` if matrix for particles, `true` if matrix for holes.
          */
-        void M(SparseMatrix<std::complex<double>> &m, bool dagger) const;
+        void M(SparseMatrix<std::complex<double>> &m, bool hole) const;
 
         /// Return the matrix \f$M\f$.
-        SparseMatrix<std::complex<double>> M(bool dagger) const;
+        /**
+         * \param hole `false` if matrix for particles, `true` if matrix for holes.
+         */
+        SparseMatrix<std::complex<double>> M(bool hole) const;
 
         /// Store the block on the diagonal \f$P\f$ in the parameter.
         /**
@@ -148,7 +201,7 @@ namespace cnxx {
          */
         SparseMatrix<std::complex<double>> Tplus(std::size_t tp) const;
 
-        /// Store the block on the upper subdiagonal \f$T^{-}^{\dagger}_{t'}\f$ in a parameter.
+        /// Store the block on the upper subdiagonal \f$T^{-}_{t'}\f$ in a parameter.
         /**
          * Applies anti periodic boundary conditions.
          * \param T Block on the upper subdiagonal.
@@ -157,7 +210,7 @@ namespace cnxx {
          */
         void Tminus(SparseMatrix<std::complex<double>> &T, std::size_t tp) const;
 
-        /// Return the block on the upper subdiagonal \f$T^{-}^{\dagger}_{t'}\f$.
+        /// Return the block on the upper subdiagonal \f$T^{-}_{t'}\f$.
         /**
          * \param tp Temporal row index \f$t'\f$.
          */
