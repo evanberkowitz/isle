@@ -32,6 +32,7 @@ namespace cnxx {
         if (kappa.rows() != kappa.columns())
             throw std::invalid_argument("Hopping matrix is not square.");
 #endif
+        _calcKinv();
     }
 
 
@@ -49,6 +50,10 @@ namespace cnxx {
         SparseMatrix<double> k;
         K(k, hole);
         return k;
+    }
+
+    const Matrix<double> &HubbardFermiMatrix::Kinv(bool hole) const {
+        return hole ? _kinvHole : _kinvPart;
     }
 
     void HubbardFermiMatrix::F(SparseMatrix<std::complex<double>> &f,
@@ -179,6 +184,7 @@ namespace cnxx {
 
     void HubbardFermiMatrix::updateKappa(const SparseMatrix<double> &kappa) {
         _kappa = kappa;
+        _calcKinv();
     }
 
     void HubbardFermiMatrix::updatePhi(const Vector<std::complex<double>> &phi) {
@@ -187,21 +193,22 @@ namespace cnxx {
 
     void HubbardFermiMatrix::updateMu(const double mu) {
         _mu = mu;
+        _calcKinv();
     }
 
-    const SparseMatrix<double> &HubbardFermiMatrix::kappa() const {
+    const SparseMatrix<double> &HubbardFermiMatrix::kappa() const noexcept {
         return _kappa;
     }
 
-    const Vector<std::complex<double>> &HubbardFermiMatrix::phi() const {
+    const Vector<std::complex<double>> &HubbardFermiMatrix::phi() const noexcept {
         return _phi;
     }
 
-    double HubbardFermiMatrix::mu() const {
+    double HubbardFermiMatrix::mu() const noexcept {
         return _mu;
     }
 
-    std::int8_t HubbardFermiMatrix::sigmaKappa() const {
+    std::int8_t HubbardFermiMatrix::sigmaKappa() const noexcept {
         return _sigmaKappa;
     }
 
@@ -213,6 +220,15 @@ namespace cnxx {
         return _phi.size() / _kappa.rows();
     }
 
+    void HubbardFermiMatrix::_calcKinv() {
+        auto ipiv = std::make_unique<int[]>(nx());
+
+        _kinvPart = K(false);
+        invert(_kinvPart, ipiv);
+        _kinvHole = K(true);
+        invert(_kinvHole, ipiv);
+    }
+    
 /*
  * -------------------------- QLU --------------------------
  */
@@ -506,17 +522,15 @@ namespace cnxx {
         return toFirstLogBranch(ldet);
     }
 
-    std::complex<double> logdetM(const HubbardFermiMatrix &hfm, bool hole) {
+
+    std::complex<double> logdetM(const HubbardFermiMatrix &hfm, const bool hole) {
         if (hfm.mu() != 0)
             throw std::runtime_error("Called logdetM with mu != 0. This is not supported yet because the algorithm is unstable.");
 
         const auto NX = hfm.nx();
         const auto NT = hfm.nt();
 
-        // compute K^-1
-        Matrix<double> kinv = hfm.K(hole);
-        auto ipiv = std::make_unique<int[]>(NX);
-        invert(kinv, ipiv);
+        const auto &kinv = hfm.Kinv(hole);
 
         // first K*F pair
         auto f = hfm.F(0, hole, false);

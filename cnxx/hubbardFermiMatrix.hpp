@@ -152,7 +152,7 @@ namespace cnxx {
                            const Vector<std::complex<double>> &phi,
                            double mu, std::int8_t sigmaKappa);
 
-        
+
         /// Store the diagonal block K of matrix M in the parameter.
         /**
          * \param k Any old content is erased and the matrix is
@@ -167,6 +167,12 @@ namespace cnxx {
          */
         SparseMatrix<double> K(bool hole) const;
 
+        /// Return the inverse of the diagonal block matrix K of matrix M.
+        /**
+         * \param hole `false` if matrix for particles, `true` if matrix for holes.
+         */
+        const Matrix<double> &Kinv(bool hole) const;
+        
         /// Store an off-diagonal block F of matrix M in the parameter.
         /**
          * \param f Any old content is erased and the matrix is
@@ -261,16 +267,16 @@ namespace cnxx {
         void updatePhi(const Vector<std::complex<double>> &phi);
 
         /// Return hopping matrix.
-        const SparseMatrix<double> &kappa() const;
+        const SparseMatrix<double> &kappa() const noexcept;
 
         /// Return auxilliary field.
-        const Vector<std::complex<double>> &phi() const;
+        const Vector<std::complex<double>> &phi() const noexcept;
 
         /// Return chemical potential.
-        double mu() const;
+        double mu() const noexcept;
 
         /// Return sign of kappa in hole matrix.
-        std::int8_t sigmaKappa() const;
+        std::int8_t sigmaKappa() const noexcept;
 
         /// Return number of spacial lattice sites; deduced from kappa.
         std::size_t nx() const noexcept;
@@ -318,6 +324,12 @@ namespace cnxx {
         Vector<std::complex<double>> _phi;  ///< Auxilliary HS field.
         double _mu;              ///< Chemical potential.
         std::int8_t _sigmaKappa; ///< Sign of kappa in M^dag.
+
+        Matrix<double> _kinvPart; ///< Inverse of K for particles.
+        Matrix<double> _kinvHole; ///< Inverse of K for particles.
+
+        /// Calculate _kinvPart and _kinfHole.
+        void _calcKinv();
     };
 
 
