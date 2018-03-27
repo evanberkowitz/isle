@@ -11,7 +11,7 @@ namespace bind {
         hfm.def(py::init<SparseMatrix<double>, Vector<std::complex<double>>,
                 double, std::int8_t>())
             .def("K", py::overload_cast<bool>(&HFM::K, py::const_))
-            .def("F", py::overload_cast<std::size_t, bool>(&HFM::F, py::const_))
+            .def("F", py::overload_cast<std::size_t, bool, bool>(&HFM::F, py::const_))
             .def("M", py::overload_cast<bool>(&HFM::M, py::const_))
             .def("P", py::overload_cast<>(&HFM::P, py::const_))
             .def("Tplus", py::overload_cast<std::size_t>(&HFM::Tplus, py::const_))
@@ -45,5 +45,7 @@ namespace bind {
                 static_cast<std::complex<double>(*)(const HubbardFermiMatrix&)>(logdetQ));
         mod.def("logdetQ",
                 static_cast<std::complex<double>(*)(const HubbardFermiMatrix::QLU&)>(logdetQ));
+        mod.def("logdetM",
+                static_cast<std::complex<double>(*)(const HubbardFermiMatrix&, bool)>(logdetM));
     }
 }

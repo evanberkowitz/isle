@@ -146,7 +146,7 @@ namespace cnxx {
          * \param kappa Hopping matrix \f$\tilde{\kappa}\f$.
          * \param phi Auxilliary field \f$\phi\f$ from HS transformation.
          * \param mu Chemical potential \f$\tilde{\mu}\f$.
-         * \param sigmaKappa Sign of hopping matrix in adjoint matrix.
+         * \param sigmaKappa Sign of hopping matrix in hole matrix.
          */
         HubbardFermiMatrix(const SparseMatrix<double> &kappa,
                            const Vector<std::complex<double>> &phi,
@@ -173,15 +173,19 @@ namespace cnxx {
          *          resized if need be.
          * \param tp Temporal row index t'.
          * \param hole `false` if matrix for particles, `true` if matrix for holes.
+         * \param inv If `true` consttructs the inverse of F.
          */        
-        void F(SparseMatrix<std::complex<double>> &f, std::size_t tp, bool hole) const;
+        void F(SparseMatrix<std::complex<double>> &f, std::size_t tp,
+               bool hole, bool inv=false) const;
 
         /// Return an off-diagonal block matrix F of matrix M.
         /**
          * \param tp Temporal row index t'.
          * \param hole `false` if matrix for particles, `true` if matrix for holes.
+         * \param inv If `true` consttructs the inverse of F.
          */
-        SparseMatrix<std::complex<double>> F(std::size_t tp, bool hole) const;
+        SparseMatrix<std::complex<double>> F(std::size_t tp, bool hole,
+                                             bool inv=false) const;
 
         /// Store the matrix \f$M\f$ in the parameter.
         /**
@@ -255,6 +259,18 @@ namespace cnxx {
         
         /// Update auxilliary HS field.
         void updatePhi(const Vector<std::complex<double>> &phi);
+
+        /// Return hopping matrix.
+        const SparseMatrix<double> &kappa() const;
+
+        /// Return auxilliary field.
+        const Vector<std::complex<double>> &phi() const;
+
+        /// Return chemical potential.
+        double mu() const;
+
+        /// Return sign of kappa in hole matrix.
+        std::int8_t sigmaKappa() const;
 
         /// Return number of spacial lattice sites; deduced from kappa.
         std::size_t nx() const noexcept;
@@ -360,6 +376,18 @@ namespace cnxx {
      * \see `std::complex<double> logdetQ(const HubbardFermiMatrix &hfm)`
      */
     std::complex<double> ilogdetQ(HubbardFermiMatrix::QLU &lu);
+
+    /// Compute \f$\log(\det(M))\f$ by means of an LU-decomposition.
+    /**
+     * \todo Cache inverse of K in HFM. Maybe use sparse inverse.
+     * \todo Try doing product with F manually (using views) or using blaze::diagonal.
+     *
+     * \param hfm %HubbardFermiMatrix to compute the determinant of.
+     * \param hole `false` if matrix for particles, `true` if matrix for holes.
+     * \return Value equivalent to `log(det(hfm.M()))` and projected onto the
+     *         first branch of the logarithm.
+     */
+    std::complex<double> logdetM(const HubbardFermiMatrix &hfm, bool hole);
 
 }  // namespace cnxx
 

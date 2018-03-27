@@ -340,6 +340,9 @@ namespace cnxx {
 
     /// Compute the logarithm of the determinant of a dense matrix.
     /**
+     * \todo Don't copy when passing Rvalue refs. Don't use DenseMatrix but
+     *     general template and check for denseness.
+     *
      * Note that the matrix is copied in order to leave the original unchanged.
      * See ilogdet() for an in-place version.
      * \tparam MT Specific matrix type.

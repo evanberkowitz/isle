@@ -44,6 +44,7 @@ namespace cnxx {
         else
             k = (1+_mu)*IdMatrix<double>(NX) - _kappa;
     }
+
     SparseMatrix<double> HubbardFermiMatrix::K(const bool hole) const {
         SparseMatrix<double> k;
         K(k, hole);
@@ -51,26 +52,29 @@ namespace cnxx {
     }
 
     void HubbardFermiMatrix::F(SparseMatrix<std::complex<double>> &f,
-                               const std::size_t tp, const bool hole) const {
+                               const std::size_t tp, const bool hole,
+                               const bool inv) const {
         const std::size_t NX = nx();
         const std::size_t NT = nt();
         const std::size_t tm1 = tp==0 ? NT-1 : tp-1;  // t' - 1
         resizeMatrix(f, NX);
 
-        if (hole)
+        if ((inv && !hole) || (hole && !inv))
             blaze::diagonal(f) = blaze::exp(-1.i*spacevec(_phi, tm1, NX));
         else
             blaze::diagonal(f) = blaze::exp(1.i*spacevec(_phi, tm1, NX));
     }
 
     SparseMatrix<std::complex<double>> HubbardFermiMatrix::F(const std::size_t tp,
-                                                             const bool hole) const {
+                                                             const bool hole,
+                                                             const bool inv) const {
         SparseMatrix<std::complex<double>> f;
-        F(f, tp, hole);
+        F(f, tp, hole, inv);
         return f;
     }
 
-    void HubbardFermiMatrix::M(SparseMatrix<std::complex<double>> &m, bool hole) const {
+    void HubbardFermiMatrix::M(SparseMatrix<std::complex<double>> &m,
+                               const bool hole) const {
         const std::size_t NX = nx();
         const std::size_t NT = nt();
         resizeMatrix(m, NX*NT);
@@ -90,11 +94,12 @@ namespace cnxx {
         }
     }
 
-    SparseMatrix<std::complex<double>> HubbardFermiMatrix::M(bool hole) const {
+    SparseMatrix<std::complex<double>> HubbardFermiMatrix::M(const bool hole) const {
         SparseMatrix<std::complex<double>> m;
         M(m, hole);
         return m;
     }
+
 
     void HubbardFermiMatrix::P(SparseMatrix<double> &P) const {
         const std::size_t NX = nx();
@@ -184,6 +189,21 @@ namespace cnxx {
         _mu = mu;
     }
 
+    const SparseMatrix<double> &HubbardFermiMatrix::kappa() const {
+        return _kappa;
+    }
+
+    const Vector<std::complex<double>> &HubbardFermiMatrix::phi() const {
+        return _phi;
+    }
+
+    double HubbardFermiMatrix::mu() const {
+        return _mu;
+    }
+
+    std::int8_t HubbardFermiMatrix::sigmaKappa() const {
+        return _sigmaKappa;
+    }
 
     std::size_t HubbardFermiMatrix::nx() const noexcept {
         return _kappa.rows();
@@ -484,6 +504,35 @@ namespace cnxx {
         for (auto &dinv : lu.dinv)
             ldet -= ilogdet(dinv);
         return toFirstLogBranch(ldet);
+    }
+
+    std::complex<double> logdetM(const HubbardFermiMatrix &hfm, bool hole) {
+        if (hfm.mu() != 0)
+            throw std::runtime_error("Called logdetM with mu != 0. This is not supported yet because the algorithm is unstable.");
+
+        const auto NX = hfm.nx();
+        const auto NT = hfm.nt();
+
+        // compute K^-1
+        Matrix<double> kinv = hfm.K(hole);
+        auto ipiv = std::make_unique<int[]>(NX);
+        invert(kinv, ipiv);
+
+        // first K*F pair
+        auto f = hfm.F(0, hole, false);
+        Matrix<std::complex<double>> aux = kinv*f;
+        // other pairs
+        for (std::size_t t = 1; t < NT; ++t) {
+            hfm.F(f, t, hole, false);
+            aux = aux*kinv*f;
+        }        
+
+        // use kinv for first term because we already have it, otherwise would need dense K
+        // gives extra minus sign
+        return toFirstLogBranch(
+            -static_cast<double>(NT)*logdet(kinv)
+            + logdet(blaze::evaluate(IdMatrix<std::complex<double>>(NX) + aux))
+            );
     }
 
 }  // namespace cnxx
