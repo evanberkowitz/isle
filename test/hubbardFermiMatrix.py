@@ -22,13 +22,14 @@ RAND_STD = 0.2
 N_REP = 1 # number of repetitions
 
 # lattices to test matrix with
-LATTICES = [core.TEST_PATH/"../lattices/c60_ipr.yml",
-            core.TEST_PATH/"../lattices/tube_3-3_1.yml",
-            core.TEST_PATH/"../lattices/tube_3-3_5.yml",
-            core.TEST_PATH/"../lattices/tube_4-2_2.yml"]
+LATTICES = [core.TEST_PATH/"../lattices/c60_ipr.yml",]
+            # core.TEST_PATH/"../lattices/tube_3-3_1.yml",
+            # core.TEST_PATH/"../lattices/tube_3-3_5.yml",
+            # core.TEST_PATH/"../lattices/tube_4-2_2.yml"]
 
 # test with these values of chemical potential
-MU = [0, 1, 1.5]
+# MU = [0, 1, 1.5]
+MU = [1]
 
 def _randomPhi(n):
     "Return a normally distributed random complex vector of n elements."
@@ -126,15 +127,15 @@ class TestHubbardFermiMatrix(unittest.TestCase):
                 self._testConstruction(lat.hopping())
 
 
-    def _testLUFact(self, kappa):
-        "Check whether a matrix reconstructed from an LU decomposition is equal to the original."
+    def _testQLUFact(self, kappa):
+        "Check whether a matrix reconstructed from an LU decomposition of Q is equal to the original."
         for nt, mu, sigmaKappa, _ in itertools.product((4, 8, 32), MU, (-1, 1),
                                                        range(N_REP)):
             nx = kappa.rows()
             hfm = cns.HubbardFermiMatrix(kappa/nt, _randomPhi(nx*nt),
                                          mu/nt, sigmaKappa)
             q = np.array(cns.Matrix(hfm.Q()), copy=False)
-            lu = cns.getLU(hfm)
+            lu = cns.getQLU(hfm)
             recon = np.array(cns.Matrix(lu.reconstruct()))
 
             self.assertTrue(core.isEqual(q, recon, nOps=nx**2, prec=1e-13),
@@ -150,7 +151,42 @@ class TestHubbardFermiMatrix(unittest.TestCase):
             logger.info("Testing LU factorization of HubbardFermiMatrix for lattice %s", latfile)
             with open(latfile, "r") as f:
                 lat = yaml.safe_load(f)
-                self._testLUFact(lat.hopping())
+                self._testQLUFact(lat.hopping())
+
+
+    def _test_logdetM(self, kappa):
+        "Test log(det(M))."
+
+        nx = kappa.rows()
+        self.assertRaises(RuntimeError,
+                          lambda msg:
+                          cns.logdetM(cns.HubbardFermiMatrix(kappa, cns.CDVector(nx), 1, 1), True),
+                          msg="logdetM must throw a RuntimeError when called with mu != 0. If this bug has been fixed, update the unit test!")
+
+        for nt, mu, sigmaKappa, hole, rep in itertools.product((4, 8, 32), [0], (-1, 1),
+                                                               (False, True), range(N_REP)):
+            hfm = cns.HubbardFermiMatrix(kappa/nt, _randomPhi(nx*nt),
+                                         mu/nt, sigmaKappa)
+
+            plain = cns.logdet(cns.Matrix(hfm.M(hole)))
+            viaLU = cns.logdetM(hfm, hole)
+
+            self.assertAlmostEqual(plain, viaLU, places=10,
+                                   msg="Failed check log(det(M)) in repetition {}".format(rep)\
+                                   + "for nt={}, mu={}, sigmaKappa={}, hole={}:".format(nt, mu, sigmaKappa, hole)\
+                                   + "\nplain = {}".format(plain) \
+                                   + "\nviaLU = {}".format(viaLU))
+
+
+    def test_3_logdet(self):
+        "Test log(det(M)) and log(deg(Q))."
+        logger = core.get_logger()
+        for latfile in LATTICES:
+            logger.info("Testing log(det(M)) and log(det(Q)) %s", latfile)
+            with open(latfile, "r") as f:
+                lat = yaml.safe_load(f)
+                self._test_logdetM(lat.hopping())
+
 
 
 def setUpModule():
