@@ -3,6 +3,9 @@
 using namespace std::complex_literals;
 using HFA = cnxx::HubbardFermiAction;
 
+#include <iostream>
+
+
 namespace cnxx {
     namespace {
         /// Loop index around boundary; only works if i is at most one step across boundary.
@@ -14,12 +17,11 @@ namespace cnxx {
             return i;
         }
 
-        /// Evaluate action with given fermion matrix Q.
-        template <typename MT>
-        std::complex<double> doEval(MT &&Q) {
-            return -logdet(Matrix<std::complex<double>>{std::forward<MT>(Q)});
+        /// Evaluate action with given fermion matrix.
+        std::complex<double> doEval(const HubbardFermiMatrix &hfm) {
+            return -toFirstLogBranch(logdetM(hfm, false) - logdetM(hfm, true));
         }
-
+        
         /// Calculate force with given HFM and Q.
         template <typename MT>
         Vector<std::complex<double>> doForce(const HubbardFermiMatrix &hfm, MT &&Q) {
@@ -59,7 +61,7 @@ namespace cnxx {
 
     std::complex<double> HFA::eval(const Vector<std::complex<double>> &phi) {
         _hfm.updatePhi(phi);
-        return doEval(_hfm.Q());
+        return doEval(_hfm);
     }
 
     Vector<std::complex<double>> HFA::force(const Vector<std::complex<double>> &phi) {
@@ -72,6 +74,6 @@ namespace cnxx {
 
         _hfm.updatePhi(phi);
         const auto Q = _hfm.Q();
-        return {doEval(Q), doForce(_hfm, Q)};
+        return {doEval(_hfm), doForce(_hfm, Q)};
     }
 }  // namespace cnxx
