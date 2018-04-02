@@ -46,7 +46,7 @@ namespace {
     /// Labels for all algebraic operators.
     enum class Op {
         add, sub, mul, rmul, truediv, floordiv, iadd, isub, imul, dot
-    };
+    };    
 
 
     /// Bind an operator for given left- and righ-hand-sides.
@@ -57,20 +57,25 @@ namespace {
               typename = void>  // dummy for SFINAE
     struct bindOp {
         template <typename CT>
-        static void f(CT &&UNUSED(cls), const char * const UNUSED(name)) { }
+        static void f(CT &&UNUSED(cls), const char * const UNUSED(name)) noexcept { }
     };
 
+    
     /// Bind operator add.
     template <typename LHS, typename RHS>
     struct bindOp<Op::add, LHS, RHS,
                   tmp::void_t<decltype(std::declval<ElementType_t<LHS>&>()+std::declval<ElementType_t<RHS>&>()),
                               decltype(std::declval<LHS&>()+std::declval<RHS&>())>>
     {
+        /// Bind a Python function.
         template <typename CT>
         static void f(CT &&cls, const char * const name) {
-            cls.def(name, [](const LHS &lhs, const RHS &rhs) {
-                    return blaze::evaluate(lhs + rhs);
-                });
+            cls.def(name, exec);
+        }
+
+        /// Perform the addition.
+        static auto exec(const LHS &lhs, const RHS &rhs) {
+            return blaze::evaluate(lhs + rhs);
         }
     };
 
@@ -80,11 +85,15 @@ namespace {
                   tmp::void_t<decltype(std::declval<ElementType_t<LHS>&>()-std::declval<ElementType_t<RHS>&>()),
                               decltype(std::declval<LHS&>()-std::declval<RHS&>())>>
     {
+        /// Bind a Python function.
         template <typename CT>
         static void f(CT &&cls, const char * const name) {
-            cls.def(name, [](const LHS &lhs, const RHS &rhs) {
-                    return blaze::evaluate(lhs - rhs);
-                });
+            cls.def(name, exec);
+        }
+
+        /// Perform the subtraction.
+        static auto exec(const LHS &lhs, const RHS &rhs) {
+            return blaze::evaluate(lhs - rhs);
         }
     };
 
@@ -94,11 +103,15 @@ namespace {
                   tmp::void_t<decltype(std::declval<ElementType_t<LHS>&>()*std::declval<ElementType_t<RHS>&>()),
                               decltype(std::declval<LHS&>()*std::declval<RHS&>())>>
     {
+        /// Bind a Python function.
         template <typename CT>
         static void f(CT &&cls, const char * const name) {
-            cls.def(name, [](const LHS &lhs, const RHS &rhs) {
-                    return blaze::evaluate(lhs * rhs);
-                });
+            cls.def(name, exec);
+        }
+
+        /// Perform the multiplication.
+        static auto exec(const LHS &lhs, const RHS &rhs) {
+            return blaze::evaluate(lhs * rhs);
         }
     };
 
@@ -108,11 +121,15 @@ namespace {
                   tmp::void_t<decltype(std::declval<ElementType_t<LHS>&>()*std::declval<ElementType_t<RHS>&>()),
                               decltype(std::declval<LHS&>()*std::declval<RHS&>())>>
     {
+        /// Bind a Python function.
         template <typename CT>
         static void f(CT &&cls, const char * const name) {
-            cls.def(name, [](const RHS &rhs, const LHS &lhs) {
-                    return blaze::evaluate(lhs * rhs);
-                });
+            cls.def(name, exec);
+        }
+
+        /// Perform the multiplication.
+        static auto exec(const RHS &rhs, const LHS &lhs) {
+            return blaze::evaluate(lhs * rhs);
         }
     };
 
@@ -126,23 +143,29 @@ namespace {
         static constexpr bool needConversion = std::is_same<ElementType_t<LHS>, int>::value
             && std::is_same<ElementType_t<RHS>, int>::value;
 
-        /// Bind with convertion.
+        /// Bind with conversion.
         template <typename CT, bool convert = needConversion,
                   typename std::enable_if<convert, int>::type = 0>
         static void f(CT &&cls, const char * const name) {
-            cls.def(name, [](const LHS &lhs, const RHS &rhs) {
-                    return blaze::evaluate(lhs / tmp::Rebind_t<RHS, double>(rhs));
-                });
+            cls.def(name, execWithConversion);
+        }
+
+        /// Perform division with conversion of rhs.
+        static auto execWithConversion(const LHS &lhs, const RHS &rhs) {
+            return blaze::evaluate(lhs / tmp::Rebind_t<RHS, double>(rhs));
         }
 
         /// Bind without conversion.
         template <typename CT, bool convert = needConversion,
                   typename std::enable_if<!convert, int>::type = 0>
         static void f(CT &&cls, const char * const name) {
-            cls.def(name, [](const LHS &lhs, const RHS &rhs) {
-                    return blaze::evaluate(lhs / rhs);
-                });
+            cls.def(name, execWithoutConversion);
         }
+
+        /// Perform division without conversion of rhs.
+        static auto execWithoutConversion(const LHS &lhs, const RHS &rhs) {
+            return blaze::evaluate(lhs / rhs);
+        }        
     };
 
     /// Bind operator floordiv.
@@ -163,27 +186,37 @@ namespace {
         template <typename CT, bool convert = needConversion,
                   typename std::enable_if<convert, int>::type = 0>
         static void f(CT &&cls, const char * const name) {
-            cls.def(name, [](const LHS &lhs, const RHS &rhs) {
-                    return LHS{blaze::floor(lhs / tmp::Rebind_t<RHS, double>(rhs))};
-                });
+            cls.def(name, execWithConversion);
+        }
+
+        /// Perform division with conversion of rhs.
+        static auto execWithConversion(const LHS &lhs, const RHS &rhs) {
+            // convert to LHS to make sure to return with int as elementary type
+            return LHS{blaze::floor(lhs / tmp::Rebind_t<RHS, double>(rhs))};
         }
 
         /// Bind without conversion.
         template <typename CT, bool convert = needConversion,
                   typename std::enable_if<!convert && floorAllowed, int>::type = 0>
         static void f(CT &&cls, const char * const name) {
-            cls.def(name, [](const LHS &lhs, const RHS &rhs) {
-                    return blaze::evaluate(blaze::floor(lhs / rhs));
-                });
+            cls.def(name, execWithoutConversion);
+        }
+
+        /// Perform division without conversion of rhs.
+        static auto execWithoutConversion(const LHS &lhs, const RHS &rhs) {
+            return blaze::evaluate(blaze::floor(lhs / rhs));
         }
 
         /// Bind function that throws a std::invalid_argument because operands cannot be floored.
         template <typename CT, bool convert = needConversion,
                   std::enable_if_t<!convert && !floorAllowed, int> = 0>
         static void f(CT &&cls, const char * const name) {
-            cls.def(name, [](const LHS &UNUSED(lhs), const RHS &UNUSED(rhs)) {
-                    throw std::invalid_argument("can't take floor of complex number.");
-                });
+            cls.def(name, throwInvalidArgument);
+        }
+
+        /// Throw an exception.
+        static auto throwInvalidArgument(const LHS &UNUSED(lhs), const RHS &UNUSED(rhs)) {
+            throw std::invalid_argument("can't take floor of complex number.");
         }
     };
 
@@ -193,11 +226,15 @@ namespace {
                   tmp::void_t<decltype(std::declval<ElementType_t<LHS>&>()+=std::declval<ElementType_t<RHS>&>()),
                               decltype(std::declval<LHS&>()+=std::declval<RHS&>())>>
     {
+        /// Bind a Python function.
         template <typename CT>
         static void f(CT &&cls, const char * const name) {
-            cls.def(name, [](LHS &lhs, const RHS &rhs) {
-                    return lhs += rhs;
-                });
+            cls.def(name, exec);
+        }
+
+        /// Perform inplace addition.
+        static auto exec(LHS &lhs, const RHS &rhs) {
+            return blaze::evaluate(lhs += rhs);
         }
     };
 
@@ -207,11 +244,15 @@ namespace {
                   tmp::void_t<decltype(std::declval<ElementType_t<LHS>&>()-=std::declval<ElementType_t<RHS>&>()),
                               decltype(std::declval<LHS&>()-=std::declval<RHS&>())>>
     {
+        /// Bind a Python function.
         template <typename CT>
         static void f(CT &&cls, const char * const name) {
-            cls.def(name, [](LHS &lhs, const RHS &rhs) {
-                    return blaze::evaluate(lhs -= rhs);
-                });
+            cls.def(name, exec);
+        }
+
+        /// Perform inplace subtraction.
+        static auto exec(LHS &lhs, const RHS &rhs) {
+            return blaze::evaluate(lhs -= rhs);
         }
     };
 
@@ -225,11 +266,15 @@ namespace {
                               decltype(std::declval<ElementType_t<LHS>&>()*std::declval<ElementType_t<RHS>&>()),
                               decltype(std::declval<LHS&>()*=std::declval<RHS&>())>>
     {
+        /// Bind a Python function.
         template <typename CT>
         static void f(CT &&cls, const char * const name) {
-            cls.def(name, [](LHS &lhs, const RHS &rhs) {
-                    return blaze::evaluate(lhs *= rhs);
-                });
+            cls.def(name, exec);
+        }
+
+        /// Perform inplace multiplication.
+        static auto exec(LHS &lhs, const RHS &rhs) {
+            return blaze::evaluate(lhs *= rhs);
         }
     };
 
@@ -240,11 +285,15 @@ namespace {
                                        + std::declval<ElementType_t<LHS>&>()*std::declval<ElementType_t<RHS>&>()),
                               decltype(blaze::dot(std::declval<LHS&>(), std::declval<RHS&>()))>>
     {
+        /// Bind a Python function.
         template <typename CT>
         static void f(CT &&cls, const char * const name) {
-            cls.def(name, [](const LHS &lhs, const RHS &rhs) {
-                    return blaze::dot(lhs, rhs);
-                });
+            cls.def(name, exec);
+        }
+
+        /// Perform dot product.
+        static auto exec(const LHS &lhs, const RHS &rhs) {
+            return blaze::dot(lhs, rhs);
         }
     };
 
@@ -656,7 +705,6 @@ namespace {
 }
 
 namespace bind {
-    
     void bindTensors(py::module &mod) {
         using ElementalTypes = tmp::Types<int, double, std::complex<double>>;
     
