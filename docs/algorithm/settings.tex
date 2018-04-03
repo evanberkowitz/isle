@@ -1,0 +1,119 @@
+\KOMAoptions{captions=tableheading,
+             toc=bibliography
+           }
+
+\usepackage[a4paper,
+            vdivide={3.3cm,,3.3cm},
+            hdivide={2cm,,2cm}
+            ]{geometry}
+
+\usepackage{ucs}                % more unicode
+\usepackage[utf8x]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage[english]{babel}
+
+\usepackage{amsmath}
+\usepackage{amsfonts}
+\usepackage{amssymb}
+\usepackage{amsthm}
+\usepackage{mathtools}
+\usepackage{commath}            % for nicer differentials
+\usepackage{bm}                 % bold math
+\usepackage{dsfont}
+
+\usepackage{datetime}
+\usepackage{authblk}
+\usepackage{picinpar}           % picture in paragraph
+\usepackage{graphics}           % addition to above
+\usepackage{float}              % place graphics with "H"
+\usepackage{caption}
+\usepackage{subcaption}
+\usepackage{cite}
+\usepackage{placeins}           % FloatBarrier
+\usepackage[dvipsnames,hyperref]{xcolor}
+\usepackage[colorinlistoftodos]{todonotes}
+\usepackage[pdftex, ocgcolorlinks]{hyperref}
+\usepackage{cleveref}
+
+%----------------------------------------------------------
+% general info
+\newdateformat{isodate}{\THEYEAR-\twodigit{\THEMONTH}-\twodigit{\THEDAY}}
+
+\newcommand{\theauthor}{Jan-Lukas Wynen}
+\newcommand{\theinstitute}{IAS-4}
+\newcommand{\thetitle}{Algorithms for Fermion action in Hubbard model}
+\newcommand{\thedate}{\isodate\today}
+
+
+\author[1]{\theauthor}
+\affil[1]{Institute for Advanced Simulation 4\\
+Forschungszentrum J\"ulich, Germany}
+
+\title{\thetitle}
+\date{\thedate|\currenttime}
+% \institute{\theinstitute}
+
+%----------------------------------------------------------
+% colours
+\definecolor{rwthblau}     {RGB}{0,84,159}
+\definecolor{rwthbordeaux} {RGB}{161,16,53}
+\definecolor{rwthgelb}     {RGB}{255,237,0}
+\definecolor{rwthgrun}     {RGB}{87,171,39}
+\definecolor{rwthlila}     {RGB}{122,111,172}
+\definecolor{rwthmaigrun}  {RGB}{189,205,0}
+\definecolor{rwthmagenta}  {RGB}{227,0,102}
+\definecolor{rwthorange}   {RGB}{246,168,0}
+\definecolor{rwthpetrol}   {RGB}{0,97,101}
+\definecolor{rwthrot}      {RGB}{204,7,30}
+\definecolor{rwthschwarz}  {RGB}{0,0,0}
+\definecolor{rwthturkis}   {RGB}{0,152,161}
+\definecolor{rwthviolett}  {RGB}{97,33,88}
+
+\hypersetup{
+  colorlinks=true,
+  pdftitle={\thetitle},
+  pdfauthor={\theauthor},
+  linkcolor=rwthblau,
+  citecolor=rwthrot,
+  urlcolor=rwthturkis,
+  linktoc=all   % put links on chapter names and page numbers in toc
+}
+
+%----------------------------------------------------------
+% abbreviations
+\newcommand{\unit}[1]{\,\text{#1}}
+\newcommand{\ev}{\,\text{eV}}
+\newcommand{\kev}{\,\text{keV}}
+\newcommand{\mev}{\,\text{MeV}}
+\newcommand{\gev}{\,\text{GeV}}
+
+\let\nodoti\i
+\renewcommand{\i}{\mathrm{i}}
+\renewcommand{\epsilon}{\varepsilon}
+
+\renewcommand{\Re}{\text{Re}\,}
+\renewcommand{\Im}{\text{Im}\,}
+
+%----------------------------------------------------------
+% miscellaneous
+% remove trailing dot from number
+\renewcommand*{\figureformat}{%
+  \figurename~\thefigure%
+}
+\renewcommand*{\tableformat}{%
+  \tablename~\thetable%
+}
+
+% text to be displayed at end of proof
+\renewcommand{\qedsymbol}{q.e.d.}
+
+% fallback if hyperref is not included
+\providecommand{\url}[1]{\texttt{#1}}
+
+% make "Table" and "Figure" in captions bold
+\captionsetup{labelfont=bf}
+
+%%% Local Variables:
+%%% mode: latex
+%%% TeX-master: "hubardFermiAction"
+%%% End:

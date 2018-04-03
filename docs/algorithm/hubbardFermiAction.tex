@@ -1,0 +1,104 @@
+\documentclass[a4paper, fleqn, twoside, notitlepage]{scrartcl}
+\input{settings}
+
+
+\begin{document}
+
+\maketitle
+\tableofcontents
+\clearpage
+
+\section{Definitions}
+
+The Fermionic action is
+\begin{align}
+  S_\text{ferm} = - \log \det M(\phi, \tilde{\kappa}, \tilde{\mu}) M(-\phi, \sigma_{\tilde{\kappa}}\tilde{\kappa}, -\tilde{\mu}).\label{eq:ferm_action}
+\end{align}
+where $\phi$ is the auxiliary field that is integrated over. In general $\sigma_{\tilde{\kappa}} = -1$ but for bipartite lattices, a particle-hole transformation can be used to get $\sigma_{\tilde{\kappa}} = +1$. The fermion matrix is
+\begin{align}
+  {M(\phi, \tilde{\kappa}, \tilde{\mu})}_{x't';xt}
+  &= (1+\tilde{\mu})\delta_{x'x}\delta_{t't} - \kappa_{x'x}\delta_{t't} - \mathcal{B}_{t'} e^{\i\phi_{xt}}\delta_{x'x}\delta_{t'(t+1)}\\
+  &\equiv K_{x'x}\delta_{t't} - \mathcal{B}_{t'}{(F_{t'})}_{x'x}\delta_{t'(t+1)}.
+\end{align}
+where
+\begin{align}
+  K_{x'x} &= (1+\tilde{\mu})\delta_{x'x} - \kappa_{x'x},\\
+  {(F_{t'})}_{x'x} &= e^{\i\phi_{x(t'-1)}}\delta_{x'x}.
+\end{align}
+Note that the second $M$ in~\eqref{eq:ferm_action} can not be expressed as $M^*(\phi)$ even for bipartite lattices and $\mu=0$ because $\phi$ is potentially complex valued.
+Anti-periodic boundary conditions are encoded by
+\begin{align}
+  \mathcal{B}_t =
+  \begin{cases}
+    +1,\quad 0 < t < N_t\\
+    -1,\quad t = 0
+  \end{cases}
+\end{align}
+and periodicity in Kronecker deltas.
+In block matrix form, $M$ is a cyclic lower block bidiagonal matrix:
+\begin{align}
+  M(\phi, \tilde{\kappa}, \tilde{\mu}) =
+  \begin{pmatrix}
+    K    &      &        &        & F_0 \\
+    -F_1 & K    &        &        &     \\
+         & -F_2 & K      &        &     \\
+         &      & \ddots & \ddots &     \\
+         &      &        &-F_{N_t-1}&K   \\
+  \end{pmatrix}.\label{eq:ferm_mat_block}
+\end{align}
+The parameters are
+\begin{itemize}
+\item $\delta = \beta / N_t$ and $\beta$ the inverse temperature
+\item $\tilde{\kappa} = \delta\kappa$ and $\kappa$ the hopping matrix
+\item $\tilde{\mu} = \delta\mu$ and $\mu$ the chemical potential
+\end{itemize}
+
+
+\section{Determinant of $M$}
+
+The determinant of $M$ is computed using an LU-decomposition. The decomposition can be calculated analytically in terms of spacial matrices given the specific structure in equation~\eqref{eq:ferm_mat_block}.
+Use the following ansatz\footnote{This is an adaptation of the algorithm presented in \url{https://hrcak.srce.hr/100527}}:
+\begin{align}
+  L =
+  \begin{pmatrix}
+    1   &     &    &        &        &\\
+    l_0 & 1   &    &        &        &\\
+        & l_1 & \ddots &        &        &\\
+        &     & \ddots & 1      &        &\\
+        &     &   & l_{n-3} & 1      &\\
+        &     &   &        & l_{n-2} & 1
+  \end{pmatrix},
+  \; U =
+  \begin{pmatrix}
+    d_0 &     &      &   &        & v_0\\
+        & d_1 &     &    &        & v_1\\
+        &     & d_2 &    &        & \vdots \\
+        &     &     & \ddots &        & v_{n-3} \\
+        &     &     &    & d_{n-2} & v_{n-2} \\
+        &     &     &    &        & d_{n-1}
+  \end{pmatrix}
+\end{align}
+Multiplying this out and comparing sides of the equation $M = LU$ leads to a set of recursive equations:
+\begin{itemize}
+\item $d_i = K$ for $0 \le i \le N_t-2$;\hspace{2em} $d_{N_t-1} = K - l_{N_t-2}v_{N_t-2}$
+\item $l_i d_i = -F_{i+1}$ for $0 \le i \le N_t-2$
+\item $v_0 = F_0$;\hspace{2em} $l_{i-1} v_{i-1} + v_i = 0$ for $1 \le i \le N_t-2$
+\end{itemize}
+Since we only care about the determinant and
+\begin{align}
+  \det M = \det L \det U = 1 \prod_{i=0}^{N_t-1}\,d_i
+\end{align}
+we only need the $d$'s.
+Resumming ('remultiplying'?) the equations for the non-trivial $d$ gives
+\begin{align}
+  d_{N_t-1} = K + F_{N_t-1}K^{-1} F_{N_t-2}K^{-1} \cdots F_{1}K^{-1} F_{0}.
+\end{align}
+Hence the (log) determinant is
+\begin{align}
+  \log \det M &= \log \big({(\det(K))}^{N_t-1} \det (K + F_{N_t-1}K^{-1} F_{N_t-2}K^{-1} \cdots F_{1}K^{-1} F_{0})\big)\\
+              &= N_t \log \det(K)  + \log \det (1 + K^{-1}F_{N_t-1}K^{-1} F_{N_t-2}K^{-1} \cdots F_{1}K^{-1} F_{0})\\
+              &\equiv N_t \log \det(K)  + \log \det (1 + A)\label{eq:def_A}
+\end{align}
+
+
+\end{document}
