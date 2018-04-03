@@ -1,12 +1,12 @@
 #include "integrator.hpp"
 
 namespace cnxx {
-    std::tuple<CDVector, CDVector, std::complex<double>> leapfrog(const CDVector &phi,
-                                                                  const CDVector &pi,
-                                                                  Hamiltonian &ham,
-                                                                  const double length,
-                                                                  const std::size_t nsteps,
-                                                                  const double direction) {
+    std::tuple<CDVector, CDVector> leapfrog(const CDVector &phi,
+                                            const CDVector &pi,
+                                            Hamiltonian &ham,
+                                            const double length,
+                                            const std::size_t nsteps,
+                                            const double direction) {
 
         const double eps = direction*length/nsteps;
 
@@ -25,6 +25,6 @@ namespace cnxx {
         // last half step
         piOut += blaze::real(ham.force(phiOut))*(eps/2);
 
-        return {std::move(phiOut), std::move(piOut), ham.eval(phiOut, piOut)};
+        return {std::move(phiOut), std::move(piOut)};
     }
 }
