@@ -48,10 +48,6 @@ namespace cnxx {
         /// Calculate force for given auxilliary field phi.
         Vector<std::complex<double>> force(const Vector<std::complex<double>> &phi) override;
 
-        /// Evaluate %Action and compute force for given auxilliary field phi.
-        std::pair<std::complex<double>, Vector<std::complex<double>>> valForce(
-            const Vector<std::complex<double>> &phi) override;
-
     private:
         HubbardFermiMatrix _hfm;  ///< Stores all necessary parameters.
     };

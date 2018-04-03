@@ -69,11 +69,4 @@ namespace cnxx {
         return doForce(_hfm, _hfm.Q());
     }
 
-    std::pair<std::complex<double>, Vector<std::complex<double>>> HFA::valForce(
-        const Vector<std::complex<double>> &phi) {
-
-        _hfm.updatePhi(phi);
-        const auto Q = _hfm.Q();
-        return {doEval(_hfm), doForce(_hfm, Q)};
-    }
 }  // namespace cnxx

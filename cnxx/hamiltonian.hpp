@@ -74,11 +74,6 @@ namespace cnxx {
         /// Calculate force for given auxilliary field phi and momentum pi.
         Vector<std::complex<double>> force(const Vector<std::complex<double>> &phi);
 
-        /// Evaluate %Hamiltonian and compute force for given auxilliary field phi and momentum pi.
-        std::pair<std::complex<double>, Vector<std::complex<double>>> valForce(
-            const Vector<std::complex<double>> &phi,
-            const Vector<std::complex<double>> &pi);
-
     private:
         std::vector<std::unique_ptr<Action>> _actions;  ///< Stores actions to evaluate.
     };

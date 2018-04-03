@@ -11,11 +11,5 @@ namespace cnxx {
     Vector<std::complex<double>> HGA::force(const Vector<std::complex<double>> &phi) {
         return -phi/utilde;
     }
-
-    std::pair<std::complex<double>, Vector<std::complex<double>>> HGA::valForce(
-        const Vector<std::complex<double>> &phi) {
-
-        return {eval(phi), force(phi)};
-    }
 }  // namespace cnxx
 

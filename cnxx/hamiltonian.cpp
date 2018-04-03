@@ -46,20 +46,4 @@ namespace cnxx {
             res += act->force(phi);
         return res;
     }
-
-    std::pair<std::complex<double>, Vector<std::complex<double>>> Hamiltonian::valForce(
-        const Vector<std::complex<double>> &phi,
-        const Vector<std::complex<double>> &pi) {
-
-        std::complex<double> val = blaze::sqrNorm(pi)/2.;
-        Vector<std::complex<double>> forc(phi.size(), 0);
-
-        for (auto &act : _actions) {
-            const auto vf = act->valForce(phi);
-            val += std::get<0>(vf);
-            forc += std::get<1>(vf);
-        }
-
-        return {val, forc};
-    }
 }

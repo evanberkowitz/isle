@@ -8,8 +8,6 @@ using namespace cnxx;
 
 namespace bind {
     namespace {
-        using ScalVecPair = std::pair<std::complex<double>, Vector<std::complex<double>>>;
-        
         /// Trampoline class for cnxx::Action to allow Python classes to
         /// override its virtual members.
         struct ActionTramp : Action {
@@ -32,15 +30,6 @@ namespace bind {
                     phi
                 );
             }
-
-            ScalVecPair valForce(const Vector<std::complex<double>> &phi) override {
-                PYBIND11_OVERLOAD_PURE(
-                    ScalVecPair,
-                    Action,
-                    valForce,
-                    phi
-                );                
-            }
         };
     }
 
@@ -50,14 +39,12 @@ namespace bind {
             .def(py::init<>())
             .def("eval", &Action::eval)
             .def("force", &Action::force)
-            .def("valForce", &Action::valForce)
             ;
 
         py::class_<HubbardGaugeAction>{mod, "HubbardGaugeAction", action}
             .def(py::init<double>())
             .def("eval", &HubbardGaugeAction::eval)
             .def("force", &HubbardGaugeAction::force)
-            .def("valForce", &HubbardGaugeAction::valForce)
             ;
 
         py::class_<HubbardFermiAction>{mod, "HubbardFermiAction", action}
@@ -65,7 +52,6 @@ namespace bind {
             .def(py::init<SparseMatrix<double>, double, std::int8_t>())
             .def("eval", &HubbardFermiAction::eval)
             .def("force", &HubbardFermiAction::force)
-            .def("valForce", &HubbardFermiAction::valForce)
             ;
     }
 }

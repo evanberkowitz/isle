@@ -17,10 +17,6 @@ namespace cnxx {
 
         /// Calculate force for given auxilliary field phi.
         virtual Vector<std::complex<double>> force(const Vector<std::complex<double>> &phi) = 0;
-
-        /// Evaluate %Action and compute force for given auxilliary field phi.
-        virtual std::pair<std::complex<double>, Vector<std::complex<double>>> valForce(
-            const Vector<std::complex<double>> &phi) = 0;
     };
 }  // namespace cnxx
 

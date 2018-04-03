@@ -23,7 +23,6 @@ namespace bind {
             .def("clear", &Hamiltonian::clear)
             .def("eval", &Hamiltonian::eval)
             .def("force", &Hamiltonian::force)
-            .def("valForce", &Hamiltonian::valForce)
             ;
     }
 }
