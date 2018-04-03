@@ -7,3 +7,4 @@ Requires that the cnxx module is installed in the parent directory.
 
 from cns.cnxx_wrappers import *
 import cns.yaml_io as yaml
+import cns.hmc
