@@ -74,6 +74,14 @@ namespace cnxx {
         /// Calculate force for given auxilliary field phi and momentum pi.
         Vector<std::complex<double>> force(const Vector<std::complex<double>> &phi);
 
+        /// Add the momentum term to an action.
+        std::complex<double> addMomentum(const Vector<std::complex<double>> &pi,
+                                         std::complex<double> action) const;
+
+        /// Strip the momentum term for given pi from an action.
+        std::complex<double> stripMomentum(const Vector<std::complex<double>> &pi,
+                                           std::complex<double> action) const;
+        
     private:
         std::vector<std::unique_ptr<Action>> _actions;  ///< Stores actions to evaluate.
     };

@@ -34,10 +34,10 @@ namespace cnxx {
 
     std::complex<double> Hamiltonian::eval(const Vector<std::complex<double>> &phi,
                                            const Vector<std::complex<double>> &pi) {
-        std::complex<double> res = blaze::sqrNorm(pi)/2.;
+        std::complex<double> res = 0;
         for (auto &act : _actions)
             res += act->eval(phi);
-        return res;
+        return addMomentum(pi, res);
     }
 
     Vector<std::complex<double>> Hamiltonian::force(const Vector<std::complex<double>> &phi) {
@@ -45,5 +45,15 @@ namespace cnxx {
         for (auto &act : _actions)
             res += act->force(phi);
         return res;
+    }
+
+    std::complex<double> Hamiltonian::addMomentum(const Vector<std::complex<double>> &pi,
+                                                  const std::complex<double> action) const {
+        return action + blaze::sqrNorm(pi)/2.;
+    }
+
+    std::complex<double> Hamiltonian::stripMomentum(const Vector<std::complex<double>> &pi,
+                                                    const std::complex<double> action) const {
+        return action - blaze::sqrNorm(pi)/2.;
     }
 }
