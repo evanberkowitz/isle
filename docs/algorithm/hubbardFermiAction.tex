@@ -8,6 +8,8 @@
 \tableofcontents
 \clearpage
 
+\todo[inline]{Refer to code and say what this documents}
+
 \section{Definitions}
 
 The Fermionic action is
@@ -17,13 +19,13 @@ The Fermionic action is
 where $\phi$ is the auxiliary field that is integrated over. In general $\sigma_{\tilde{\kappa}} = -1$ but for bipartite lattices, a particle-hole transformation can be used to get $\sigma_{\tilde{\kappa}} = +1$. The fermion matrix is
 \begin{align}
   {M(\phi, \tilde{\kappa}, \tilde{\mu})}_{x't';xt}
-  &= (1+\tilde{\mu})\delta_{x'x}\delta_{t't} - \kappa_{x'x}\delta_{t't} - \mathcal{B}_{t'} e^{\i\phi_{xt}}\delta_{x'x}\delta_{t'(t+1)}\\
-  &\equiv K_{x'x}\delta_{t't} - \mathcal{B}_{t'}{(F_{t'})}_{x'x}\delta_{t'(t+1)}.
+  &= (1+\tilde{\mu})\delta_{x'x}\delta_{t't} - \tilde{\kappa}_{x'x}\delta_{t't} - \mathcal{B}_{t'} e^{\i\phi_{xt}}\delta_{x'x}\delta_{t'(t+1)}\\
+  &\equiv {K(\tilde{\kappa}, \tilde{\mu})}_{x'x}\delta_{t't} - \mathcal{B}_{t'}{F_{t'}(\phi)}_{x'x}\delta_{t'(t+1)}.
 \end{align}
 where
 \begin{align}
-  K_{x'x} &= (1+\tilde{\mu})\delta_{x'x} - \kappa_{x'x},\\
-  {(F_{t'})}_{x'x} &= e^{\i\phi_{x(t'-1)}}\delta_{x'x}.
+  {K(\tilde{\kappa}, \tilde{\mu})}_{x'x} &= (1+\tilde{\mu})\delta_{x'x} - \tilde{\kappa}_{x'x},\\
+  {F_{t'}(\phi)}_{x'x} &= e^{\i\phi_{x(t'-1)}}\delta_{x'x}.
 \end{align}
 Note that the second $M$ in~\eqref{eq:ferm_action} can not be expressed as $M^*(\phi)$ even for bipartite lattices and $\mu=0$ because $\phi$ is potentially complex valued.
 Anti-periodic boundary conditions are encoded by
@@ -37,7 +39,7 @@ Anti-periodic boundary conditions are encoded by
 and periodicity in Kronecker deltas.
 In block matrix form, $M$ is a cyclic lower block bidiagonal matrix:
 \begin{align}
-  M(\phi, \tilde{\kappa}, \tilde{\mu}) =
+  M =
   \begin{pmatrix}
     K    &      &        &        & F_0 \\
     -F_1 & K    &        &        &     \\
@@ -86,19 +88,100 @@ Multiplying this out and comparing sides of the equation $M = LU$ leads to a set
 \end{itemize}
 Since we only care about the determinant and
 \begin{align}
-  \det M = \det L \det U = 1 \prod_{i=0}^{N_t-1}\,d_i
+  \det M = \det L \det U = (\prod_{i=0}^{N_t-1}\,1) (\prod_{i=0}^{N_t-1}\,d_i)
 \end{align}
 we only need the $d$'s.
 Resumming ('remultiplying'?) the equations for the non-trivial $d$ gives
 \begin{align}
   d_{N_t-1} = K + F_{N_t-1}K^{-1} F_{N_t-2}K^{-1} \cdots F_{1}K^{-1} F_{0}.
 \end{align}
-Hence the (log) determinant is
+Hence the determinant is
 \begin{align}
-  \log \det M &= \log \big({(\det(K))}^{N_t-1} \det (K + F_{N_t-1}K^{-1} F_{N_t-2}K^{-1} \cdots F_{1}K^{-1} F_{0})\big)\\
-              &= N_t \log \det(K)  + \log \det (1 + K^{-1}F_{N_t-1}K^{-1} F_{N_t-2}K^{-1} \cdots F_{1}K^{-1} F_{0})\\
-              &\equiv N_t \log \det(K)  + \log \det (1 + A)\label{eq:def_A}
+  \det M &= \big({(\det(K))}^{N_t-1} \det (K + F_{N_t-1}K^{-1} F_{N_t-2} \cdots K^{-1}F_{1}K^{-1} F_{0})\big)\\
+         &= {(\det\,K)}^{N_t} \det(1 + K^{-1}F_{N_t-1}K^{-1} F_{N_t-2} \cdots K^{-1}F_{1}K^{-1} F_{0})
 \end{align}
+Apply the logarithm to get the final result:
+\begin{resultbox}
+  \vspace{-\baselineskip}
+  \begin{align}
+    \log \det M &= N_t \log \det(K)  + \log \det (1 + A),\label{eq:det_M}\\
+    A &\equiv K^{-1}F_{N_t-1}K^{-1} F_{N_t-2} \cdots K^{-1}F_{1}K^{-1} F_{0}.\label{eq:def_A}
+  \end{align}
+\end{resultbox}
+\noindent Note that the action~\eqref{eq:ferm_action} is the sum of contributions from particles and holes. In general those contributions are not related by a simple equation meaning that both need to be computed using the full expression~\eqref{eq:det_M}.
+  
+\section{Force}
 
+The fermionic force at spacetime point $\mu\tau$ is given by
+\begin{align}
+  {(\dot{\pi}_{\text{ferm}})}_{\mu\tau} = -\dpd{H_{\text{ferm}}}{\phi_{\mu\tau}} = -\dpd{S_\text{ferm}}{\phi_{\mu\tau}} =  \dpd{}{\phi_{\mu\tau}} \Big[\log \det M(\phi, \tilde{\kappa}, \tilde{\mu}) + \log \det M(-\phi, \sigma_{\tilde{\kappa}}\tilde{\kappa}, -\tilde{\mu})\Big].
+\end{align}
+$\dot{\pi}$ is complex valued in general. For now we will ignore this fact and compute the force from the above equation.
+Using~\eqref{eq:det_M} and Jacobi's formula, the derivative can be expressed as
+\begin{align}
+  {(\dot{\pi}_{\text{ferm}})}_{\mu\tau} = \Tr \Big[{(1+A_p)}^{-1}\dpd{}{\phi_{\mu\tau}}A_p + {(1+A_h)}^{-1}\dpd{}{\phi_{\mu\tau}}A_h\Big],
+\end{align}
+where
+\begin{align}
+  A_p = A(\phi, \tilde{\kappa}, \tilde{\mu}), \quad  A_h = A(-\phi, \sigma_{\tilde{\kappa}}\tilde{\kappa}, -\tilde{\mu}).
+\end{align}
+From now on, $A$ without explicit arguments refers to $A(\sigma_\phi\phi, \sigma_{\tilde{\kappa}}\tilde{\kappa}, \sigma_{\tilde{\mu}}\tilde{\mu})$ standing for either particle or hole and similarly for $K$ and $F$.\\
+
+\noindent
+Using~\cite{henderson:1980} ${(B+C)}^{-1} = C^{-1} - C^{-1}B{(1+C^{-1}B)}^{-1}C^{-1}$ with $B = 1$ and $C = A$, we write
+\begin{align}
+  \Tr {(1+A)}^{-1}\dpd{}{\phi_{\mu\tau}}A \;=\; \underbrace{\Tr A^{-1}\dpd{}{\phi_{\mu\tau}}A}_{(\text{I})} - \underbrace{\Tr A^{-1}{(1+A^{-1})}^{-1}A^{-1}\dpd{}{\phi_{\mu\tau}}A}_{(\text{II})}.
+\end{align}
+Calculate the first term. (The expression for $A^{-1}$ is given below in equation~\eqref{eq:def_Ainv})
+\begin{align}
+  (\text{I}) &= \underbrace{\color{highl1}{(F_0^{-1}K \cdots F_\tau^{-1}K)}_{xa'}}_{(\text{i})} {(F_{\tau+1}^{-1}K)}_{a'a} \underbrace{\color{highl2}{(F_{\tau+2}^{-1}K \cdots F_{N_t-1}^{-1}K)}_{ax'}}_{(\text{ii})}\nonumber\\
+             &\quad\times \underbrace{\color{highl2}{(K^{-1}F_{N_t-1} \cdots K^{-1}F_{\tau+2})}_{x'b}}_{(\text{ii})} \Big[\dpd{}{\phi_{\mu\tau}}{(K^{-1}F_{\tau+1})}_{bb'}\Big] \underbrace{\color{highl1}{(K^{-1}F_\tau \cdots K^{-1}F_0)}_{b'x}}_{(\text{i})}\\
+             &= {\color{highl1}\delta_{a'b'}^{(\text{i})}}{\color{highl2}\delta_{ab}^{(\text{ii})}} {(F_{\tau+1}^{-1}K)}_{a'a} \i \sigma_{\phi} \delta_{b'\mu} {(K^{-1}F_{\tau+1})}_{bb'}\\
+             &= \i\sigma_\phi
+\end{align}
+Thus the sum of (I) for particles and holes vanishes because ${(\i\sigma_\phi)}_p + {(\i\sigma_\phi)}_h = \i - \i = 0$.
+Treat the second term in a similar way:
+\begin{align}
+  (\text{II}) &= {(1+A^{-1})}^{-1}_{x'y}\; {(F_0^{-1}K \cdots F_\tau^{-1}K)}_{ya'} {(F_{\tau+1}^{-1}K)}_{a'a} \underbrace{\color{highl1}{(F_{\tau+2}^{-1}K \cdots F_{N_t-1}^{-1}K)}_{ay'}}_{(\text{i})}\nonumber\\
+              &\quad\times \underbrace{\color{highl1}{(K^{-1}F_{N_t-1} \cdots K^{-1}F_{\tau+2})}_{y'b}}_{(\text{i})} \Big[\dpd{}{\phi_{\mu\tau}}{(K^{-1}F_{\tau+1})}_{bb'}\Big] \underbrace{\color{highl2}{(K^{-1}F_\tau \cdots K^{-1}F_0)}_{b'x}}_{(\text{ii})}\\
+              &\quad\times \underbrace{\color{highl2}{(F_0^{-1}K \cdots F_\tau^{-1}K)}_{xc'}}_{(\text{ii})} {(F_{\tau+1}^{-1}K)}_{c'c} {(F_{\tau+2}^{-1}K \cdots F_{N_t-1}^{-1}K)}_{cx'}\nonumber\\
+              &= {(1+A^{-1})}^{-1}_{x'y}\; {(F_0^{-1}K \cdots F_\tau^{-1}K)}_{ya'} \underbrace{{(F_{\tau+1}^{-1}K)}_{a'a} {\color{highl1}\delta_{ab}^{(\text{i})}} \i \sigma_\phi \delta_{b'\mu} {(K^{-1}F_{\tau+1})}_{bb'}}_{\i\sigma_\phi\delta_{a'b'}\delta_{b'\mu}}\nonumber\\[-\baselineskip]
+              &\quad\times {\color{highl2}\delta_{b'c'}^{(\text{ii})}} {(F_{\tau+1}^{-1}K)}_{c'c} {(F_{\tau+2}^{-1}K \cdots F_{N_t-1}^{-1}K)}_{cx'}\\[1ex]
+              &= {(1+A^{-1})}^{-1}_{x'y}\; {(F_0^{-1}K \cdots F_\tau^{-1}K)}_{ya'} \Big[- \dpd{}{\phi_{\mu\tau}}{(F_{\tau+1}^{-1}K)}_{a'c}\Big] {(F_{\tau+2}^{-1}K \cdots F_{N_t-1}^{-1}K)}_{cx'}\\
+              &= - \Tr {(1+A^{-1})}^{-1} \dpd{}{\phi_{\mu\tau}}A^{-1}
+\end{align}
+The minus sign comes from the minus in $F^{-1}_{t'x} = e^{-\i\phi_{x(t'-1)}}\delta_{x'x}$ and cancels the minus in front of the whole term.\\
+Combining those results gives the momentum as
+\begin{resultbox}
+  \vspace{-\baselineskip}
+  \begin{align}
+    {(\dot{\pi}_{\text{ferm}})}_{\mu\tau} &= \Tr \Big[{(1+A_p^{-1})}^{-1}\dpd{}{\phi_{\mu\tau}}A_p^{-1} + {(1+A_h^{-1})}^{-1}\dpd{}{\phi_{\mu\tau}}A_h^{-1}\Big],\\
+    A^{-1} &\equiv F_0^{-1}K F_1^{-1}K \cdots F_{N_t-1}^{-1}K\label{eq:def_Ainv}
+  \end{align}
+\end{resultbox}
+\noindent Hence it is possible to swap out $A$ for $A^{-1}$ in $\dot{\pi}_{\text{ferm}}$. This improves performance and possibly stability because all constituents ($F^{-1}$ and $K$) are sparse and only inverses of diagonal matrices need to be taken. $A$ on the other side contains $K^{-1}$ which is not trivial to compute and in general dense.\\
+
+\noindent
+For reference, write out $\dot{\pi}_{\text{ferm}}$ explicitly. First, in order to improve readability denote partial products of $A^{-1}$ as
+\begin{align}
+  A^{-1}_{tt'} \equiv F_t^{-1}K \cdots F_{t'}^{-1}K, \qquad A^{-1}_{tt} \equiv F_t^{-1}K.
+\end{align}
+The general case:
+\begin{align}
+  {(\dot{\pi}_{\text{ferm}})}_{\mu\tau} = -\i {\big(A^{-1}_{p,(\tau+1)(N_t-1)} {(1+A_p^{-1})}^{-1} A^{-1}_{p,0\tau}\big)}_{\mu\mu} + \i {\big(A^{-1}_{h,(\tau+1)(N_t-1)} {(1+A_h^{-1})}^{-1} A^{-1}_{h,0\tau}\big)}_{\mu\mu}
+\end{align}
+Cases new the boundary:
+\begin{align}
+  {(\dot{\pi}_{\text{ferm}})}_{\mu0} &= -\i {\big(A^{-1}_{p,1(N_t-1)} {(1+A_p^{-1})}^{-1} A^{-1}_{p,00}\big)}_{\mu\mu} + \i {\big(A^{-1}_{h,1(N_t-1)} {(1+A_h^{-1})}^{-1} A^{-1}_{h,00}\big)}_{\mu\mu}\\
+  {(\dot{\pi}_{\text{ferm}})}_{\mu(N_t-1)} &= -\i {\big(A^{-1}_{p} {(1+A_p^{-1})}^{-1}\big)}_{\mu\mu} + \i {\big(A^{-1}_{h} {(1+A_h^{-1})}^{-1}\big)}_{\mu\mu}\\
+  {(\dot{\pi}_{\text{ferm}})}_{\mu(N_t-2)} &= -\i {\big(A^{-1}_{p,(N_t-1)(N_t-1)} {(1+A_p^{-1})}^{-1} A^{-1}_{p,0(N_t-2)}\big)}_{\mu\mu} \nonumber\\
+                                 &\quad + \i {\big(A^{-1}_{h,(N_t-1)(N_t-1)} {(1+A_h^{-1})}^{-1} A^{-1}_{h,0(N_t-2)}\big)}_{\mu\mu}
+\end{align}
+Keep in mind that $\mu$ is \emph{not} summed over, even when it appears twice in one term.
+
+
+\clearpage
+\bibliographystyle{abbrv}
+\bibliography{references}
 
 \end{document}

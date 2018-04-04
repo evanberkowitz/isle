@@ -31,6 +31,7 @@
 \usepackage{cite}
 \usepackage{placeins}           % FloatBarrier
 \usepackage[dvipsnames,hyperref]{xcolor}
+\usepackage{tcolorbox}
 \usepackage[colorinlistoftodos]{todonotes}
 \usepackage[pdftex, ocgcolorlinks]{hyperref}
 \usepackage{cleveref}
@@ -65,7 +66,6 @@ Forschungszentrum J\"ulich, Germany}
 \definecolor{rwthorange}   {RGB}{246,168,0}
 \definecolor{rwthpetrol}   {RGB}{0,97,101}
 \definecolor{rwthrot}      {RGB}{204,7,30}
-\definecolor{rwthschwarz}  {RGB}{0,0,0}
 \definecolor{rwthturkis}   {RGB}{0,152,161}
 \definecolor{rwthviolett}  {RGB}{97,33,88}
 
@@ -78,6 +78,13 @@ Forschungszentrum J\"ulich, Germany}
   urlcolor=rwthturkis,
   linktoc=all   % put links on chapter names and page numbers in toc
 }
+
+\colorlet{highl1}{rwthblau}
+\colorlet{highl2}{rwthbordeaux}
+
+%----------------------------------------------------------
+% colour boxes
+\newtcolorbox{resultbox}{colback=white, sharp corners, colframe=rwthpetrol}
 
 %----------------------------------------------------------
 % abbreviations
@@ -93,6 +100,7 @@ Forschungszentrum J\"ulich, Germany}
 
 \renewcommand{\Re}{\text{Re}\,}
 \renewcommand{\Im}{\text{Im}\,}
+\newcommand{\Tr}{\text{Tr}\,}
 
 %----------------------------------------------------------
 % miscellaneous
@@ -113,7 +121,11 @@ Forschungszentrum J\"ulich, Germany}
 % make "Table" and "Figure" in captions bold
 \captionsetup{labelfont=bf}
 
+% bold is more of an eye catcher
+% This no longer handles nested emph statements correctly.
+\renewcommand{\emph}{\textbf}
+
 %%% Local Variables:
 %%% mode: latex
-%%% TeX-master: "hubardFermiAction"
+%%% TeX-master: "hubbardFermiAction"
 %%% End:
