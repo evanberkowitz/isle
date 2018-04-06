@@ -11,19 +11,36 @@
 
 namespace cnxx {
 
-    /// Represents a fermion matrix \f$Q\f$ for the Hubbard model.
+    /// Represents a fermion matrix for the Hubbard model.
     /**
-     * \todo Move documentations to proper place.
-     *
      * ## Definitions
+     * The fermion matrix is defined as
      \f{align}{
      {M(\phi, \tilde{\kappa}, \tilde{\mu})}_{x't';xt}
      &\equiv K_{x'x}\delta_{t't} - \mathcal{B}_{t'}{(F_{t'})}_{x'x}\delta_{t'(t+1)}.
      \f}
+     * with
      \f{align}{
      K_{x'x} &= (1+\tilde{\mu})\delta_{x'x} - \kappa_{x'x}\\
      {(F_{t'})}_{x'x} &= e^{i\phi_{xt}}\delta_{x'x}
      \f}
+     * These relations hold for particles, for holes, replace
+     *  \f$\phi \rightarrow -\phi,\, \tilde{\kappa} \rightarrow \sigma_{\tilde{\kappa}}\tilde{\kappa},\, \tilde{\mu}\rightarrow -\tilde{\mu}\f$.
+     *
+     * The combined matrix is
+     \f{align}{
+     {Q(\phi, \tilde{\kappa}, \tilde{\mu}, \sigma_{\tilde{\kappa}})}_{x't',xt}
+     &= {M(\phi, \tilde{\kappa}, \tilde{\mu})}_{x't',x''t''} {M^T(-\phi, \sigma_{\tilde{\kappa}}\tilde{\kappa}, -\tilde{\mu})}_{x''t'',xt}\\
+     &= \delta_{t't}{(P)}_{x'x} + \delta_{t'(t+1)}{(T^+_{t'})}_{x'x} + \delta_{t(t'+1)}{(T^-_{t'})}_{x'x}
+     \f}
+     * with
+     \f{align}{
+     {P(\phi, \tilde{\kappa}, \tilde{\mu}, \sigma_{\tilde{\kappa}})}_{x'x} &\equiv (2-\tilde{\mu}^2)\delta_{x'x} - (\sigma_{\tilde{\kappa}}(1+\tilde{\mu}) + (1-\tilde{\mu}))\tilde{\kappa}_{x'x} + \sigma_{\tilde{\kappa}}{(\tilde{\kappa}^2)}_{x'x}\\
+     {T^+_{t'}(\phi, \tilde{\kappa}, \tilde{\mu}, \sigma_{\tilde{\kappa}})}_{x'x} &\equiv \mathcal{B}_{t'}e^{i\phi_{x'(t'-1)}}[\sigma_{\tilde{\kappa}}\tilde{\kappa}_{x'x} - (1-\tilde{\mu})\delta_{x'x}]\\
+     {T^-_{t'}(\phi, \tilde{\kappa}, \tilde{\mu}, \sigma_{\tilde{\kappa}})}_{x'x} &\equiv \mathcal{B}_{t'+1}e^{-i\phi_{xt'}}[\tilde{\kappa}_{x'x} - (1+\tilde{\mu})\delta_{x'x}]
+     \f}
+     *
+     * Anti-periodic boundary conditions are encoded by
      \f{align}{
      \mathcal{B}_t =
      \begin{cases}
@@ -31,105 +48,26 @@ namespace cnxx {
      -1,\quad t = 0
      \end{cases}
      \f}
-     * For holes, replace \f$\phi \rightarrow -\phi,\, \tilde{\kappa} \rightarrow \sigma_{\tilde{\kappa}}\tilde{\kappa},\, \tilde{\mu}\rightarrow -\tilde{\mu}\f$.
      *
-     * See notes ReWeighting in learning-physics.
-     *
-     * ## LU-decomposition of Q
-     \f[
-     L =
-     \begin{pmatrix}
-     1   &     &        &        &        &\\
-     l_0 & 1   &        &        &        &\\
-     & l_1 & \ddots &        &        &\\
-     &     & \ddots & 1      &        &\\
-     &     &        & l_{n-3} & 1      & \\
-     h_0 & h_1 & \cdots  & h_{n-3} & l_{n-2} & 1
-     \end{pmatrix},
-     \f]
-     \f[ U =
-     \begin{pmatrix}
-     d_0 & u_0 &        &        &        & v_0    \\
-     & d_1 & u_1    &        &        & v_1    \\
-     &     & d_2    & \ddots &        & \vdots \\
-     &     &        & \ddots & u_{n-3} & v_{n-3} \\
-     &     &        &        & d_{n-2} & u_{n-2} \\
-     &     &        &        &        & d_{n-1}
-     \end{pmatrix}
-     \f]
-     * In the case of the fermion matrix, each element of \f$L\f$ and \f$U\f$ is a spacial
-     * \f$N_x \times N_x\f$ matrix. Hence each inverse of \f$d\f$ requires a full
-     * matrix inversion. This means that the algorithm requires \f$\mathrm{O}(N_t N_x^3)\f$
-     * steps.
-     * After the initial steps, all matrices except for most \f$u\f$'s are dense. For simplicity, all inversions
-     * are performed using <TT>LAPACK</TT>.
-     *
-     * The algorithm for \f$N_t \in \{1,2\}\f$ is slightly different from the one shown
-     * here but handled correctly by the implementation. See notes in HubbardFermiMatrix::LU
-     * on the sizes of its members.
-     *
-     *
-     * ## Solver
-     * A linear system of equations \f$(M M^\dagger) x = b\f$ can be solved via an
-     * LU-Decomposition and forward-/back-substitution.
-     *
-     * ### Matrix-Vector Equation
-     * Solve a system of equations for a single right hand side, i.e. \f$x\f$ and \f$b\f$
-     * are vetors. Start by solving \f$L y = b\f$:
-     \f{align}{
-     y_0 &= b_0\\
-     y_i &= b_i - l_{i-1} y_{i-1}\quad \forall i \in [1, N_t-2]\\
-     y_{N_t-1} &= b_{N_t-1} - l_{N_t-2} y_{N_t-2} - \textstyle\sum_{j=0}^{N_t-3}\, h_j y_j
-     \f}
-     * Then solve \f$Ux = y\f$:
-     \f{align}{
-     x_{N_t-1} &= d_{N_t-1}^{-1} y_{N_t-1}\\
-     x_{N_t-2} &= d_{N_t-2}^{-1} (y_{N_t-2} - u_{N_t-2} x_{N_t-1})\\
-     x_i &= d_i^{-1} (y_i - u_i x_{i+1} - v_i x_{N_t-1}) \quad \forall i \in [0, N_t-3]
-     \f}
-     * Since the inversed \f$d_i^{-1}\f$ have already been computed by the LU-factorization,
-     * the solver alone requires only \f$\mathcal{O}(N_t N_x^2)\f$ steps.
-     *
-     * ### Matrix-Matrix Equation
-     * Invert the hubbard fermi matrix by solving \f$(M M^\dagger) X^{-1} = \mathbb{I}\f$,
-     * where \f$I\f$ is the \f$N_t N_x\f$ unit matrix.<BR>
-     * Start by solving \f$L Y^{-1} = I\f$ and denote the elements of \f$Y^{-1}\f$
-     * by \f$y_{ij}\f$; note that the \f$y_{ij}\f$ are spatial matrices.
-     \f{align}{
-     y_{0j} &= \delta_{0j}\\
-     y_{ij} &= \begin{cases}
-     \textstyle\prod_{k=j}^{i-1} (-l_{k}) & \mathrm{for}\quad i > j\\
-     \delta_{ij} & \mathrm{for}\quad i\leq j
-     \end{cases}, \quad\forall i \in [1, N_t-2]\\
-     y_{(N_t-1)j} &= \delta_{(N_t-1)j} - \textstyle\sum_{k=j}^{N_t-3} h_{k} y_{kj} - l_{N_t-2} y_{(N_t-2)j}
-     \f}
-     * Then solve \f$U X^{-1} = Y^{-1}\f$:
-     \f{align}{
-     x_{(N_t-1)j} &= d_{N_t-1}^{-1}y_{(N_t-1)j}\\
-     x_{(N_t-2)j} &= d_{N_t-2}^{-1}(y_{(N_t-2)j} - u_{N_t-2}x_{(N_t-1)j})\\
-     x_{ij} &= d_{i}^{-1}(y_{ij} - u_{i}x_{(i+1)j} - v_{i}x_{(N_t-1)j}) \quad\forall i \in [0, N_t-3]
-     \f}
-     *
-     * Most of those relations can be read off immediately, the others can be proven using
-     * simple induction.<BR>
-     * Apart from the last row, the \f$y\f$'s are independent from each other while the \f$x\f$'s
-     * have to be computed iterating over rows from \f$N_t-1\f$ though 0. However, different
-     * columns never mix.
-     *
+     * Derivations and descriptions of algorithms can be found
+     * in `docs/algorithms/hubbardFermiAction.pdf`.
      *
      * ## Usage
-     * `%HubbardFermiMatrix` needs \f$\tilde{\kappa}, \phi, \tilde{\mu}, \mathrm{and} \sigma_\tilde{\kappa}\f$
-     * as inputs and can construct the individual blocks \f$P, T^{+}, \mathrm{and} T^{-}\f$ or
-     * the full matrix \f$Q\f$ from them.
+     * `%HubbardFermiMatrix` needs \f$\tilde{\kappa}, \phi, \tilde{\mu}, \mathrm{and}\, \sigma_\tilde{\kappa}\f$
+     * as inputs and can construct the individual blocks \f$K, F, P, T^{+}, \mathrm{and}\, T^{-}\f$
+     * or the full matrices \f$M, Q\f$ from them.
      *
      * Neither the full matrix nor any of its blocks are stored explicitly. Instead,
-     * each block needs to be constructed using P(), Tplus(), and Tminus() or Q() for the
-     * full matrix. Note that these operations are fairly expensive.
+     * each block needs to be constructed when needed. For this, `%HubbardFermiMatrix`
+     * provides member functions with the same names as the matrices.
+     * The only exception is the inverse of \f$K\f$ which is cached once computed.
      *
      * The result of an LU-decomposition is stored in HubbardFermiMatrix::LU to save memory
      * and give easier access to the components compared to a `blaze::Matrix`.
      *
      * \sa
+     * Free functions operating on `%HubbardFermimatrix`:
+     *  - std::complex<double> logdetM(const HubbardFermiMatrix &hfm)
      *  - HubbardFermiMatrix::LU getQLU(const HubbardFermiMatrix &hfm)
      *  - std::complex<double> logdetQ(const HubbardFermiMatrix &hfm)
      *  - std::complex<double> logdetQ(const HubbardFermiMatrix::QLU &lu)
@@ -141,7 +79,7 @@ namespace cnxx {
         /// Store all necessary parameters to later construct the full fermion matrix.
         /**
          * \attention Input parameters `kappa` and `mu` are versions with tilde, i.e.
-         *            scaled like \f$\tilde{\kappa} = \beta/N_t \kappa\f$.
+         *            scaled as \f$\tilde{\kappa} = \beta/N_t \kappa\f$.
          *
          * \param kappa Hopping matrix \f$\tilde{\kappa}\f$.
          * \param phi Auxilliary field \f$\phi\f$ from HS transformation.
@@ -397,9 +335,6 @@ namespace cnxx {
 
     /// Compute \f$\log(\det(M))\f$ by means of an LU-decomposition.
     /**
-     * \todo Cache inverse of K in HFM. Maybe use sparse inverse.
-     * \todo Try doing product with F manually (using views) or using blaze::diagonal.
-     *
      * \param hfm %HubbardFermiMatrix to compute the determinant of.
      * \param hole `false` if matrix for particles, `true` if matrix for holes.
      * \return Value equivalent to `log(det(hfm.M()))` and projected onto the
