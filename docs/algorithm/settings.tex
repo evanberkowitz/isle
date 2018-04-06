@@ -41,7 +41,6 @@
 \newdateformat{isodate}{\THEYEAR-\twodigit{\THEMONTH}-\twodigit{\THEDAY}}
 
 \newcommand{\theauthor}{Jan-Lukas Wynen}
-\newcommand{\theinstitute}{IAS-4}
 \newcommand{\thetitle}{Algorithms for Fermion action in Hubbard model}
 \newcommand{\thedate}{\isodate\today}
 
@@ -52,10 +51,9 @@ Forschungszentrum J\"ulich, Germany}
 
 \title{\thetitle}
 \date{\thedate|\currenttime}
-% \institute{\theinstitute}
 
 %----------------------------------------------------------
-% colours
+% colors
 \definecolor{rwthblau}     {RGB}{0,84,159}
 \definecolor{rwthbordeaux} {RGB}{161,16,53}
 \definecolor{rwthgelb}     {RGB}{255,237,0}
@@ -79,11 +77,12 @@ Forschungszentrum J\"ulich, Germany}
   linktoc=all   % put links on chapter names and page numbers in toc
 }
 
+% colors for highlighting
 \colorlet{highl1}{rwthblau}
 \colorlet{highl2}{rwthbordeaux}
 
 %----------------------------------------------------------
-% colour boxes
+% color boxes
 \newtcolorbox{resultbox}{colback=white, sharp corners, colframe=rwthpetrol}
 
 %----------------------------------------------------------
@@ -124,6 +123,9 @@ Forschungszentrum J\"ulich, Germany}
 % bold is more of an eye catcher
 % This no longer handles nested emph statements correctly.
 \renewcommand{\emph}{\textbf}
+
+% label equations based on section number
+\numberwithin{equation}{section}
 
 %%% Local Variables:
 %%% mode: latex

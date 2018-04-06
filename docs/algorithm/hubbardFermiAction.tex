@@ -8,6 +8,7 @@
 \tableofcontents
 
 \vfill
+\vspace{1em}
 \noindent
 This document describes the algorithms used for the fermionic action in the Hubbard model.
 They are implemented by these classes:
@@ -20,16 +21,29 @@ and can be found int the following files:
 \item \texttt{cnxx/hubbardFermiMatrix.[hpp/cpp]}
 \item \texttt{cnxx/hubbardFermiAction.[hpp/cpp]}
 \end{itemize}
-For usage information, see the source documentation of the classes.
+For usage information, see the source documentation of the classes.\\
+
+\noindent
+There are two variants of the algorithms:
+\begin{enumerate}
+\item Treat particle $M_p$ and hole $M_h$ matrices separately.
+\item Use $Q = M_p M_h^T$.
+\end{enumerate}
+Only Variant 1 is fully implemented.
 
 \clearpage
-\section{Definitions}
+\section{Variant 1}
 
-The Fermionic action is
+This version treats the fermion matrices for particles and holes separately.
+\texttt{HubbardFermiAction} is implemented this way.
+
+\subsection{Definitions}
+
+The fermionic action is
 \begin{align}
-  S_\text{ferm} = - \log \det M(\phi, \tilde{\kappa}, \tilde{\mu}) M(-\phi, \sigma_{\tilde{\kappa}}\tilde{\kappa}, -\tilde{\mu}).\label{eq:ferm_action}
+  S_\text{ferm} = - \log \det M(\phi, \tilde{\kappa}, \tilde{\mu}) M(-\phi, \sigma_{\tilde{\kappa}}\tilde{\kappa}, -\tilde{\mu}) \equiv - \log \det M_p M_h.\label{eq:ferm_action_v1}
 \end{align}
-where $\phi$ is the auxiliary field that is integrated over. In general $\sigma_{\tilde{\kappa}} = -1$ but for bipartite lattices, a particle-hole transformation can be used to get $\sigma_{\tilde{\kappa}} = +1$. The fermion matrix is
+where $\phi$ is the auxiliary field that is integrated over. In general $\sigma_{\tilde{\kappa}} = -1$ but for bipartite lattices, a particle-hole transformation can be used to get $\sigma_{\tilde{\kappa}} = +1$. Subscripts $p$ and $h$ indicate matrices for particles and holes, respectively. The fermion matrix is
 \begin{align}
   {M(\phi, \tilde{\kappa}, \tilde{\mu})}_{x't';xt}
   &= (1+\tilde{\mu})\delta_{x'x}\delta_{t't} - \tilde{\kappa}_{x'x}\delta_{t't} - \mathcal{B}_{t'} e^{\i\phi_{xt}}\delta_{x'x}\delta_{t'(t+1)}\\
@@ -40,7 +54,7 @@ where
   {K(\tilde{\kappa}, \tilde{\mu})}_{x'x} &= (1+\tilde{\mu})\delta_{x'x} - \tilde{\kappa}_{x'x},\\
   {F_{t'}(\phi)}_{x'x} &= e^{\i\phi_{x(t'-1)}}\delta_{x'x}.
 \end{align}
-Note that the second $M$ in~\eqref{eq:ferm_action} can not be expressed as $M^*(\phi)$ even for bipartite lattices and $\mu=0$ because $\phi$ is potentially complex valued.
+Note that the second $M$ in~\eqref{eq:ferm_action_v1} can not be expressed as $M^*(\phi)$ even for bipartite lattices and $\mu=0$ because $\phi$ is potentially complex valued.
 Anti-periodic boundary conditions are encoded by
 \begin{align}
   \mathcal{B}_t =
@@ -50,7 +64,7 @@ Anti-periodic boundary conditions are encoded by
   \end{cases}
 \end{align}
 and periodicity in Kronecker deltas.
-In block matrix form, $M$ is a cyclic lower block bidiagonal matrix:
+In time-major layout (time index is slowest) $M$ is a cyclic lower block bidiagonal matrix:
 \begin{align}
   M =
   \begin{pmatrix}
@@ -59,7 +73,7 @@ In block matrix form, $M$ is a cyclic lower block bidiagonal matrix:
          & -F_2 & K      &        &     \\
          &      & \ddots & \ddots &     \\
          &      &        &-F_{N_t-1}&K   \\
-  \end{pmatrix}.\label{eq:ferm_mat_block}
+  \end{pmatrix}.\label{eq:ferm_mat_block_v1}
 \end{align}
 The parameters are
 \begin{itemize}
@@ -69,10 +83,10 @@ The parameters are
 \end{itemize}
 
 
-\section{Determinant of $M$}
+\subsection{Action}
 
-The determinant of $M$ is computed using an LU-decomposition. The decomposition can be calculated analytically in terms of spacial matrices given the specific structure in equation~\eqref{eq:ferm_mat_block}.
-Use the following ansatz\footnote{This is an adaptation of the algorithm presented in \url{https://hrcak.srce.hr/100527}}:
+The determinant of $M$ is computed using an LU-decomposition. The decomposition can be calculated analytically in terms of spacial matrices given the specific structure in equation~\eqref{eq:ferm_mat_block_v1}.
+Use the following ansatz\footnote{This is an adaptation of the algorithm presented in \url{https://hrcak.srce.hr/100527} and is a simplified version of the algorithm presented in~\cref{sec:lu_decomposition_v2}}:
 \begin{align}
   L =
   \begin{pmatrix}
@@ -93,7 +107,7 @@ Use the following ansatz\footnote{This is an adaptation of the algorithm present
         &     &     &    &        & d_{n-1}
   \end{pmatrix}
 \end{align}
-Multiplying this out and comparing sides of the equation $M = LU$ leads to a set of recursive equations:
+Note that each $l$, $d$, and $v$ is an $N_x \times N_x$ matrix. Multiplying this out and comparing sides of the equation $M = LU$ leads to a set of recursive equations:
 \begin{itemize}
 \item $d_i = K$ for $0 \le i \le N_t-2$;\hspace{2em} $d_{N_t-1} = K - l_{N_t-2}v_{N_t-2}$
 \item $l_i d_i = -F_{i+1}$ for $0 \le i \le N_t-2$
@@ -110,7 +124,7 @@ Resumming ('remultiplying'?) the equations for the non-trivial $d$ gives
 \end{align}
 Hence the determinant is
 \begin{align}
-  \det M &= \big({(\det(K))}^{N_t-1} \det (K + F_{N_t-1}K^{-1} F_{N_t-2} \cdots K^{-1}F_{1}K^{-1} F_{0})\big)\\
+  \det M &= {(\det\,K)}^{N_t-1} \det (K + F_{N_t-1}K^{-1} F_{N_t-2} \cdots K^{-1}F_{1}K^{-1} F_{0})\\
          &= {(\det\,K)}^{N_t} \det(1 + K^{-1}F_{N_t-1}K^{-1} F_{N_t-2} \cdots K^{-1}F_{1}K^{-1} F_{0})
 \end{align}
 Apply the logarithm to get the final result:
@@ -121,9 +135,14 @@ Apply the logarithm to get the final result:
     A &\equiv K^{-1}F_{N_t-1}K^{-1} F_{N_t-2} \cdots K^{-1}F_{1}K^{-1} F_{0}.\label{eq:def_A}
   \end{align}
 \end{resultbox}
-\noindent Note that the action~\eqref{eq:ferm_action} is the sum of contributions from particles and holes. In general those contributions are not related by a simple equation meaning that both need to be computed using the full expression~\eqref{eq:det_M}.
+\noindent
+The action~\eqref{eq:ferm_action_v1} is the sum of contributions from particles and holes, i.e.
+\begin{align}
+  S_\text{ferm} = N_t \log \det(K_p)  + \log \det (1 + A_p) + N_t \log \det(K_h)  + \log \det (1 + A_h).
+\end{align}
+In general those contributions are not related by a simple equation meaning that both need to be computed from scratch.
   
-\section{Force}
+\subsection{Force}
 
 The fermionic force at spacetime point $\mu\tau$ is given by
 \begin{align}
@@ -132,13 +151,9 @@ The fermionic force at spacetime point $\mu\tau$ is given by
 $\dot{\pi}$ is complex valued in general. For now we will ignore this fact and compute the force from the above equation.
 Using~\eqref{eq:det_M} and Jacobi's formula, the derivative can be expressed as
 \begin{align}
-  {(\dot{\pi}_{\text{ferm}})}_{\mu\tau} = \Tr \Big[{(1+A_p)}^{-1}\dpd{}{\phi_{\mu\tau}}A_p + {(1+A_h)}^{-1}\dpd{}{\phi_{\mu\tau}}A_h\Big],
+  {(\dot{\pi}_{\text{ferm}})}_{\mu\tau} = \Tr \Big[{(1+A_p)}^{-1}\dpd{}{\phi_{\mu\tau}}A_p + {(1+A_h)}^{-1}\dpd{}{\phi_{\mu\tau}}A_h\Big].
 \end{align}
-where
-\begin{align}
-  A_p = A(\phi, \tilde{\kappa}, \tilde{\mu}), \quad  A_h = A(-\phi, \sigma_{\tilde{\kappa}}\tilde{\kappa}, -\tilde{\mu}).
-\end{align}
-From now on, $A$ without explicit arguments refers to $A(\sigma_\phi\phi, \sigma_{\tilde{\kappa}}\tilde{\kappa}, \sigma_{\tilde{\mu}}\tilde{\mu})$ standing for either particle or hole and similarly for $K$ and $F$.\\
+From now on, $A$ without explicit arguments or subscript refers to $A(\sigma_\phi\phi, \sigma_{\tilde{\kappa}}\tilde{\kappa}, \sigma_{\tilde{\mu}}\tilde{\mu})$ standing for either particle or hole and similarly for $K$ and $F$.\\
 
 \noindent
 Using~\cite{henderson:1980} ${(B+C)}^{-1} = C^{-1} - C^{-1}B{(1+C^{-1}B)}^{-1}C^{-1}$ with $B = 1$ and $C = A$, we write
@@ -191,6 +206,193 @@ Cases new the boundary:
                                  &\quad + \i {\big(A^{-1}_{h,(N_t-1)(N_t-1)} {(1+A_h^{-1})}^{-1} A^{-1}_{h,0(N_t-2)}\big)}_{\mu\mu}
 \end{align}
 Keep in mind that $\mu$ is \emph{not} summed over, even when it appears twice in one term.
+
+
+\clearpage
+\section{Variant 2}
+
+This version uses the combined matrix $Q = M(\phi, \tilde{\kappa}, \tilde{\mu}) {M(-\phi, \sigma_{\tilde{\kappa}}\tilde{\kappa}, -\tilde{\mu})}^T$ to treat particles and holes together.
+Part of this variant is implemented by \texttt{HubbardFermiMatrix} and associated free functions. But a full implementation is not available.
+
+\subsection{Definitions}
+
+The fermionic action can be written as
+\begin{align}
+  S_\text{ferm} = - \log \det(M(\phi, \tilde{\kappa}, \tilde{\mu})) \det ({M(-\phi, \sigma_{\tilde{\kappa}}\tilde{\kappa}, -\tilde{\mu})}^T) \equiv - \log \det Q(\phi, \tilde{\kappa}, \tilde{\mu}, \sigma_{\tilde{\kappa}}).\label{eq:ferm_action_v2}
+\end{align}
+Note that the second $M$ can not be expressed as $M^\dagger(\phi)$ even for bipartite lattices and $\mu=0$ because $\phi$ is potentially complex valued. We apply the transpose only to cast $Q$ into a structurally symmetric tridiagonal form. Otherwise it would contain terms $~\delta_{t'(t+2)}$.
+Now calculate $Q$ and express it in terms of blocks on the diagonal and off diagonals:
+\begin{align}
+  {Q(\phi, \tilde{\kappa}, \tilde{\mu}, \sigma_{\tilde{\kappa}})}_{x't',xt}
+  &= {M(\phi, \tilde{\kappa}, \tilde{\mu})}_{x't',x''t''} {M^T(-\phi, \sigma_{\tilde{\kappa}}\tilde{\kappa}, -\tilde{\mu})}_{x''t'',xt}\\
+  &= \big[(1+\tilde{\mu})\delta_{x'x''}\delta_{t't''} - \tilde{\kappa}_{x'x''}\delta_{t't''} - \mathcal{B}_{t'}e^{\i\phi_{x''t''}}\delta_{x'x''}\delta_{t'(t''+1)}\big] \nonumber\\
+  &\quad\times \big[(1-\tilde{\mu})\delta_{x'' x}\delta_{t'' t} - \sigma_{\tilde{\kappa}}\tilde{\kappa}_{x'' x'}\delta_{t'' t} - \mathcal{B}_{t}e^{-\i\phi_{x''t''}}\delta_{x'' x}\delta_{t(t''+1)}\big]\\
+  &= \delta_{t't}{(P)}_{x'x} + \delta_{t'(t+1)}{(T^+_{t'})}_{x'x} + \delta_{t(t'+1)}{(T^-_{t'})}_{x'x}
+\end{align}
+with
+\begin{align}
+  {P(\phi, \tilde{\kappa}, \tilde{\mu}, \sigma_{\tilde{\kappa}})}_{x'x} &\equiv (2-\tilde{\mu}^2)\delta_{x'x} - (\sigma_{\tilde{\kappa}}(1+\tilde{\mu}) + (1-\tilde{\mu}))\tilde{\kappa}_{x'x} + \sigma_{\tilde{\kappa}}{(\tilde{\kappa}^2)}_{x'x}\\
+  {T^+_{t'}(\phi, \tilde{\kappa}, \tilde{\mu}, \sigma_{\tilde{\kappa}})}_{x'x} &\equiv \mathcal{B}_{t'}e^{\i\phi_{x'(t'-1)}}[\sigma_{\tilde{\kappa}}\tilde{\kappa}_{x'x} - (1-\tilde{\mu})\delta_{x'x}]\\
+  {T^-_{t'}(\phi, \tilde{\kappa}, \tilde{\mu}, \sigma_{\tilde{\kappa}})}_{x'x} &\equiv \mathcal{B}_{t'+1}e^{-\i\phi_{xt'}}[\tilde{\kappa}_{x'x} - (1+\tilde{\mu})\delta_{x'x}]
+\end{align}
+and
+\begin{align}
+  \mathcal{B}_t =
+  \begin{cases}
+    +1,\quad 0 < t < N_t\\
+    -1,\quad t = 0
+  \end{cases}
+\end{align}
+together with periodicity in the Kronecker deltas handles anti-periodic temporal boundary conditions.\\
+In time major layout (time is slowest running index) $Q$ assumes a cyclic block tridiagonal form:
+\begin{align}
+  Q(\phi, \tilde{\kappa}, \tilde{\mu}, \sigma_{\tilde{\kappa}}) =
+  \begin{pmatrix}
+    P         & T^-_0 &       &         &           &              & T^+_0    \\
+    T^+_1     & P     & T^-_1 &         &           &              &          \\
+              & T^+_2 & P     & T^-_2   &           &              &          \\
+              &       & T^+_3 & P      & \ddots         &              &          \\
+              &       &       & \ddots     & \ddots         & T^-_{N_t-3}    &          \\
+              &       &       &        & T^+_{N_t-2} & P            & T^-_{N_t-2}\\
+    T^-_{N_t-1} &       &       &        &           & T^+_{N_t-1}    & P
+  \end{pmatrix}
+\end{align}
+The parameters are
+\begin{itemize}
+\item $\delta = \beta / N_t$ and $\beta$ the inverse temperature
+\item $\tilde{\kappa} = \delta\kappa$ and $\kappa$ the hopping matrix
+\item $\tilde{\mu} = \delta\mu$ and $\mu$ the chemical potential
+\end{itemize}
+
+\subsection{LU-Decomposition}\label{sec:lu_decomposition_v2}
+
+The determinant of $Q$ can be computed via an LU-decomposition using the ansatz\footnote{This is an adaptation of the algorithm presented in \url{https://hrcak.srce.hr/100527}}
+\begin{align}
+  L =
+  \begin{pmatrix}
+    1   &     &        &        &        &\\
+    l_0 & 1   &        &        &        &\\
+        & l_1 & \ddots &        &        &\\
+        &     & \ddots & 1      &        &\\
+        &     &        & l_{n-3} & 1      & \\
+    h_0 & h_1 & \cdots  & h_{n-3} & l_{n-2} & 1
+  \end{pmatrix},
+  \; U =
+  \begin{pmatrix}
+    d_0 & u_0 &        &        &        & v_0    \\
+        & d_1 & u_1    &        &        & v_1    \\
+        &     & d_2    & \ddots &        & \vdots \\
+        &     &        & \ddots & u_{n-3} & v_{n-3} \\
+        &     &        &        & d_{n-2} & u_{n-2} \\
+        &     &        &        &        & d_{n-1}
+  \end{pmatrix}
+\end{align}
+Note that written like this, each component of $L$ and $U$ is an $N_x \times N_x$ matrix, meaning they do not commute.
+It is straight forward to derive an iteration procedure to calculate all elements of $L$ and $U$. Most of those relations can be read off immediately, the others can be proven using
+simple induction.\\
+
+\noindent
+Compute all except last $d, u, l$:
+\begin{align}
+  \begin{matrix}
+    d_0 = P                & u_0 = T^-_0 & l_0 = T^+_1 d_{0}^{-1} & \\
+    d_i = P - l_{i-1}u_{i-1} & u_i = T^-_i & l_i = T^+_{i+1} d_{i}^{-1} & \forall i \in [1, N_t-3] \\
+    d_{N_t-2} = P - l_{N_t-3} u_{N_t-3} & & &
+  \end{matrix}
+\end{align}
+And all $v, h$:
+\begin{align}
+  \begin{matrix}
+    v_0 = T^+_0           & h_0 = T^-_{N_t-1} d_0^{-1} & \\
+    v_i = - l_{i-1} v_{i-1} & h_i = - h_{i-1} u_{i-1} d_{i}^{-1} & \forall i \in [1, N_t-3]
+  \end{matrix}
+\end{align}
+Finally, compute the remaining blocks:
+\begin{align}
+  u_{N_t-2} &= T^-_{N_t-2} - l_{N_t-3} v_{N_t-3}\\
+  l_{N_t-2} &= (T^+_{N_t-1} - h_{N_t-3} u_{N_t-3}) d_{N_t-2}^{-1}\\
+  d_{N_t-1} &= P - l_{N_t-2}u_{N_t-2} - \sum_{i=0}^{N_t-3}\, h_i v_i
+\end{align}
+
+\noindent
+Even though all $P$, $T^+$, and $T^-$ are sparse, the inversions of $d_i$ produce dense matrices in general meaning that this algorithm uses mostly dense algebra.
+
+\subsection{Action}
+
+The action is easy to evaluate once the LU-decomposition of $Q$ is known. It is (see~\eqref{eq:ferm_action_v2})
+\begin{resultbox}
+  \vspace{-\baselineskip}
+  \begin{align}
+    S_\text{ferm} = - \log \det Q = \log \prod_{i=0}^{N_t-1} \det (d_i) = \sum_{i=0}^{N_t-1}\, \log \det (d_i)
+  \end{align}
+\end{resultbox}
+\noindent
+Since the $d$'s are dense, a standard algorithm for computing $\log\det d_i$ can be used.
+
+\subsection{Force}
+
+The fermionic force at spacetime point $\mu\tau$ is given by
+\begin{align}
+  {(\dot{\pi}_{\text{ferm}})}_{\mu\tau} = -\dpd{H_{\text{ferm}}}{\phi_{\mu\tau}} = -\dpd{S_\text{ferm}}{\phi_{\mu\tau}} =  \dpd{}{\phi_{\mu\tau}} \log \det Q(\phi, \tilde{\kappa}, \tilde{\mu}, \sigma_{\tilde{\kappa}}).
+\end{align}
+$\dot{\pi}$ is complex valued in general. For now we will ignore this fact and compute the force from the above equation.
+Since we have no closed form solution for $\det Q$, we use Jacobi's formula to compute the derivative of $Q$:
+\begin{align}
+  {(\dot{\pi}_{\text{ferm}})}_{\mu\tau} = \Tr Q^{-1} \dpd{}{\phi_{\mu\tau}} Q
+\end{align}
+The derivative acts only on $T^\pm$, thus
+\begin{align}
+  {(\dot{\pi}_{\text{ferm}})}_{\mu\tau}
+  &= Q^{-1}_{xt,x't'} \dpd{}{\phi_{\mu\tau}} Q_{x't',xt}\\
+  &= \i \big[\delta_{t'(t+1)}\delta_{\tau(t'-1)}\delta_{x'\mu} Q^{-1}_{xt,x't'} {(T^+_{t'})}_{x'x} - \delta_{t(t'+1)}\delta_{\tau t}\delta_{x\mu} Q^{-1}_{xt,x't'} {(T^-_{t'})}_{x'x}\big]
+\end{align}
+and finally
+\begin{resultbox}
+  \vspace{-\baselineskip}
+  \begin{align}
+    {(\dot{\pi}_{\text{ferm}})}_{\mu\tau} = \i \left[{(T^+_{\tau+1})}_{\mu x}Q^{-1}_{x\tau,\mu(\tau+1)} - Q^{-1}_{\mu(\tau+1),x\tau}{(T^-_\tau)}_{x\mu}\right].
+  \end{align}
+\end{resultbox}
+\noindent
+Note that $\mu$ and $\tau$ are \emph{not} summed over even though they are repeated on the right hand sides.
+
+\subsection{Solver}
+
+A linear system of equations $Q x = b$ can be solved via an LU-decomposition and forward-/back-substitution.
+
+\paragraph{Matrix-Vector Equation}
+Solve a system of equations for a single right hand side, i.e. $x$ and $b$ are vectors. Start by solving the auxiliary system $L y = b$:
+\begin{align}
+  y_0 &= b_0\\
+  y_i &= b_i - l_{i-1} y_{i-1}\quad \text{for}\quad i = 1, \ldots,  N_t-2\\
+  y_{N_t-1} &= b_{N_t-1} - l_{N_t-2} y_{N_t-2} - \textstyle\sum_{j=0}^{N_t-3}\, h_j y_j
+\end{align}
+Then solve $Ux = y$:
+\begin{align}
+  x_{N_t-1} &= d_{N_t-1}^{-1} y_{N_t-1}\\
+  x_{N_t-2} &= d_{N_t-2}^{-1} (y_{N_t-2} - u_{N_t-2} x_{N_t-1})\\
+  x_i &= d_i^{-1} (y_i - u_i x_{i+1} - v_i x_{N_t-1}) \quad \text{for} \quad i = 0, \ldots, N_t-3
+\end{align}
+
+\paragraph{Inversion}
+Invert $Q$ by solving $Q X = \mathds{1}$ for $X \equiv Q^{-1}$, where $\mathds{1}$ is the $N_t N_x \times N_t N_x$ unit matrix.
+Start by solving the auxiliary equation $L Y = \mathds{1}$:
+\begin{align}
+  y_{0j} &= \delta_{0j}\\
+  y_{ij} &= \begin{cases}
+    \textstyle\prod_{k=j}^{i-1} (-l_{k}) & \mathrm{for}\quad i > j\\
+    \delta_{ij} & \mathrm{for}\quad i\leq j
+  \end{cases}, \quad\text{for}\quad i = 1, \ldots, N_t-2\\
+  y_{(N_t-1)j} &= \delta_{(N_t-1)j} - \textstyle\sum_{k=j}^{N_t-3} h_{k} y_{kj} - l_{N_t-2} y_{(N_t-2)j}
+\end{align}
+Then solve $U X = Y$:
+\begin{align}
+  x_{(N_t-1)j} &= d_{N_t-1}^{-1}y_{(N_t-1)j}\\
+  x_{(N_t-2)j} &= d_{N_t-2}^{-1}(y_{(N_t-2)j} - u_{N_t-2}x_{(N_t-1)j})\\
+  x_{ij} &= d_{i}^{-1}(y_{ij} - u_{i}x_{(i+1)j} - v_{i}x_{(N_t-1)j}) \quad\text{for}\quad i = 0, \ldots, N_t-3
+\end{align}
+Like in the LU-decomposition itself, those relations can be read off, or proven using simple induction.
+Apart from the last row, the $y$'s are independent from each other while the $x$'s have to be computed iterating over rows from $N_t-1$ though 0. However, different columns never mix.
 
 
 \clearpage
