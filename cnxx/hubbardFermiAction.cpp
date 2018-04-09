@@ -16,6 +16,46 @@ namespace cnxx {
                 return n-1;
             return i;
         }
+
+        /// Calculate force for either particles or holes.
+        CDVector forcePart(const HubbardFermiMatrix &hfm, const CDVector &phi, bool hole) {
+            const auto nx = hfm.nx();
+            const auto nt = phi.size()/nx;
+
+            auto const k = hfm.K(hole);
+
+            // A^-1
+            CDMatrix Ainv = IdMatrix<std::complex<double>>(nx);
+            for (std::size_t t = 0; t < nt; ++t)
+                Ainv = Ainv * hfm.F(t, phi, hole, true)*k;
+
+            // (1+A^-1)^-1
+            CDMatrix invmat = IdMatrix<std::complex<double>>(nx) + Ainv;
+            auto ipiv = std::make_unique<int[]>(invmat.rows());
+            invert(invmat, ipiv);
+
+            CDVector force(nx*nt);
+            // all sites except tau = nt-1
+            for (std::size_t tau = 0; tau < nt-1; ++tau) {
+                CDMatrix left = IdMatrix<std::complex<double>>(nx);
+                CDMatrix right = IdMatrix<std::complex<double>>(nx);
+
+                for (std::size_t t = tau+1; t < nt; ++t)
+                    left = left * hfm.F(t, phi, hole, true) * k;
+                for (std::size_t t = 0; t < tau+1; ++t)
+                    right = right * hfm.F(t, phi, hole, true) * k;
+
+                spacevec(force, tau, nx) = -1.i*blaze::diagonal(left*invmat*right);
+            }
+
+            // tau = nt-1
+            spacevec(force, nt-1, nx) = -1.i*blaze::diagonal(Ainv*invmat);
+
+            if (hole)
+                force *= -1;
+            
+            return force;
+        }
     }
 
 
@@ -31,86 +71,7 @@ namespace cnxx {
     }
 
     CDVector HFA::force(const CDVector &phi) {
-        const auto nx = _hfm.nx();
-        const auto nt = phi.size()/nx;
-
-        // invert Q
-        CDMatrix Qinv{_hfm.Q(phi)};
-        auto ipiv = std::make_unique<int[]>(Qinv.rows());
-        invert(Qinv, ipiv);
-
-        // calculate force
-        CDVector force(Qinv.rows());
-        CDSparseMatrix T;
-        for (std::size_t tau = 0; tau < nt; ++tau) {
-            _hfm.Tplus(T, loopIdx(tau+1, nt), phi);
-            spacevec(force, tau, nx) = 1.i*blaze::diagonal(T*spacemat(Qinv, tau, loopIdx(tau+1, nt), nx));
-            _hfm.Tminus(T, tau, phi);
-            spacevec(force, tau, nx) -= 1.i*blaze::diagonal(spacemat(Qinv, loopIdx(tau+1, nt), tau, nx)*T);
-        }
-
-        return force;
+        return force_part(_hfm, phi, true) + force_part(_hfm, phi, false);
     }
 
-    // namespace {
-
-    //     CDMatrix invMat(HubbardFermiMatrix &hfm, bool hole) {
-    //         const auto nx = hfm.nx();
-    //         const auto nt = hfm.nt();
-
-    //         auto const k = hfm.K(hole);
-
-    //         CDMatrix mat = IdMatrix<std::complex<double>>(nx);
-
-    //         for (std::size_t t = 0; t < nt; ++t)
-    //             mat = mat * hfm.F(t, hole, true)*k;
-            
-    //         mat += IdMatrix<std::complex<double>>(nx);
-
-    //         auto ipiv = std::make_unique<int[]>(mat.rows());
-    //         invert(mat, ipiv);
-
-    //         return mat;
-    //     }
-
-    //     CDVector force2_part(HubbardFermiMatrix &hfm, bool hole) {
-    //         const auto nx = hfm.nx();
-    //         const auto nt = hfm.nt();
-
-    //         auto const k = hfm.K(hole);
-    //         auto const invmat = invMat(hfm, hole);
-            
-    //         CDVector force(nx*nt);
-    //         for (std::size_t tau = 0; tau < nt-1; ++tau) {
-    //             CDMatrix left = IdMatrix<std::complex<double>>(nx);
-    //             CDMatrix right = IdMatrix<std::complex<double>>(nx);
-
-    //             for (std::size_t t = tau+1; t < nt; ++t)
-    //                 left = left * hfm.F(t, hole, true) * k;
-    //             for (std::size_t t = 0; t < tau+1; ++t)
-    //                 right = right * hfm.F(t, hole, true) * k;
-
-    //             spacevec(force, tau, nx) = -1.i*blaze::diagonal(left*invmat*right);
-    //         }
-
-    //         CDMatrix Ainv = IdMatrix<std::complex<double>>(nx);
-    //         for (std::size_t t = 0; t < nt; ++t)
-    //             Ainv = Ainv * hfm.F(t, hole, true)*k;
-    //         spacevec(force, nt-1, nx) = -1.i*blaze::diagonal(Ainv*invmat);
-
-    //         if (hole)
-    //             force *= -1;
-            
-    //         return force;
-    //     }
-        
-    // }
-
-    
-    // Vector<std::complex<double>> HFA::force2(const Vector<std::complex<double>> &phi) {
-    //     _hfm.updatePhi(phi);
-
-    //     return force2_part(_hfm, true) + force2_part(_hfm, false);
-    // }
-    
 }  // namespace cnxx
