@@ -22,21 +22,19 @@ namespace cnxx {
  * -------------------------- HubbardFermiMatrix --------------------------
  */
 
-    HubbardFermiMatrix::HubbardFermiMatrix(const SparseMatrix<double> &kappa,
-                                           const Vector<std::complex<double>> &phi,
+    HubbardFermiMatrix::HubbardFermiMatrix(const DSparseMatrix &kappa,
                                            const double mu,
                                            const std::int8_t sigmaKappa)
-        : _kappa{kappa}, _phi{phi}, _mu{mu}, _sigmaKappa{sigmaKappa}
+        : _kappa{kappa}, _mu{mu}, _sigmaKappa{sigmaKappa}
     {
 #ifndef NDEBUG
         if (kappa.rows() != kappa.columns())
             throw std::invalid_argument("Hopping matrix is not square.");
 #endif
-        _calcKinv();
     }
 
 
-    void HubbardFermiMatrix::K(SparseMatrix<double> &k, const bool hole) const {
+    void HubbardFermiMatrix::K(DSparseMatrix &k, const bool hole) const {
         const std::size_t NX = nx();
         resizeMatrix(k, NX);
 
@@ -46,67 +44,64 @@ namespace cnxx {
             k = (1+_mu)*IdMatrix<double>(NX) - _kappa;
     }
 
-    SparseMatrix<double> HubbardFermiMatrix::K(const bool hole) const {
-        SparseMatrix<double> k;
+    DSparseMatrix HubbardFermiMatrix::K(const bool hole) const {
+        DSparseMatrix k;
         K(k, hole);
         return k;
     }
 
-    const Matrix<double> &HubbardFermiMatrix::Kinv(bool hole) const {
-        return hole ? _kinvHole : _kinvPart;
-    }
-
-    void HubbardFermiMatrix::F(SparseMatrix<std::complex<double>> &f,
-                               const std::size_t tp, const bool hole,
-                               const bool inv) const {
+    void HubbardFermiMatrix::F(CDSparseMatrix &f,
+                               const std::size_t tp, const CDVector &phi,
+                               const bool hole, const bool inv) const {
         const std::size_t NX = nx();
-        const std::size_t NT = nt();
+        const std::size_t NT = phi.size()/NX;
         const std::size_t tm1 = tp==0 ? NT-1 : tp-1;  // t' - 1
         resizeMatrix(f, NX);
 
         if ((inv && !hole) || (hole && !inv))
-            blaze::diagonal(f) = blaze::exp(-1.i*spacevec(_phi, tm1, NX));
+            blaze::diagonal(f) = blaze::exp(-1.i*spacevec(phi, tm1, NX));
         else
-            blaze::diagonal(f) = blaze::exp(1.i*spacevec(_phi, tm1, NX));
+            blaze::diagonal(f) = blaze::exp(1.i*spacevec(phi, tm1, NX));
     }
 
-    SparseMatrix<std::complex<double>> HubbardFermiMatrix::F(const std::size_t tp,
-                                                             const bool hole,
-                                                             const bool inv) const {
-        SparseMatrix<std::complex<double>> f;
-        F(f, tp, hole, inv);
+    CDSparseMatrix HubbardFermiMatrix::F(const std::size_t tp, const CDVector &phi,
+                                         const bool hole, const bool inv) const {
+        CDSparseMatrix f;
+        F(f, tp, phi, hole, inv);
         return f;
     }
 
-    void HubbardFermiMatrix::M(SparseMatrix<std::complex<double>> &m,
+    void HubbardFermiMatrix::M(CDSparseMatrix &m,
+                               const CDVector &phi,
                                const bool hole) const {
         const std::size_t NX = nx();
-        const std::size_t NT = nt();
+        const std::size_t NT = phi.size()/NX;
         resizeMatrix(m, NX*NT);
 
         // zeroth row
         const auto k = K(hole);
         spacemat(m, 0, 0, NX) = k;
         // explicit boundary condition
-        auto f = F(0, hole);
+        auto f = F(0, phi, hole);
         spacemat(m, 0, NT-1, NX) = f;
 
         // other rows
         for (std::size_t tp = 1; tp < NT; ++tp) {
-            F(f, tp, hole);
+            F(f, tp, phi, hole);
             spacemat(m, tp, tp-1, NX) = -f;
             spacemat(m, tp, tp, NX) = k;
         }
     }
 
-    SparseMatrix<std::complex<double>> HubbardFermiMatrix::M(const bool hole) const {
-        SparseMatrix<std::complex<double>> m;
-        M(m, hole);
+    CDSparseMatrix HubbardFermiMatrix::M(const CDVector &phi,
+                                         const bool hole) const {
+        CDSparseMatrix m;
+        M(m, phi, hole);
         return m;
     }
 
 
-    void HubbardFermiMatrix::P(SparseMatrix<double> &P) const {
+    void HubbardFermiMatrix::P(DSparseMatrix &P) const {
         const std::size_t NX = nx();
         resizeMatrix(P, NX);
         P = (2-_mu*_mu)*IdMatrix<double>(NX)
@@ -114,52 +109,56 @@ namespace cnxx {
             + _sigmaKappa*_kappa*_kappa;
     }
 
-    SparseMatrix<double> HubbardFermiMatrix::P() const {
-        SparseMatrix<double> p;
+    DSparseMatrix HubbardFermiMatrix::P() const {
+        DSparseMatrix p;
         P(p);
         return p;
     }
 
-    void HubbardFermiMatrix::Tplus(SparseMatrix<std::complex<double>> &T,
-                                   const std::size_t tp) const {
+    void HubbardFermiMatrix::Tplus(CDSparseMatrix &T,
+                                   const std::size_t tp,
+                                   const CDVector &phi) const {
         const std::size_t NX = nx();
-        const std::size_t NT = nt();
+        const std::size_t NT = phi.size()/NX;
         const std::size_t tm1 = tp==0 ? NT-1 : tp-1;  // t' - 1
         const double antiPSign = tp==0 ? -1 : 1;   // encode anti-periodic BCs
         resizeMatrix(T, NX);
 
         T = _sigmaKappa*_kappa - (1-_mu)*IdMatrix<std::complex<double>>(NX);
         for (std::size_t xp = 0; xp < NX; ++xp)
-            blaze::row(T, xp) *= antiPSign*std::exp(1.i*_phi[spacetimeCoord(xp, tm1, NX, NT)]);
+            blaze::row(T, xp) *= antiPSign*std::exp(1.i*phi[spacetimeCoord(xp, tm1, NX, NT)]);
     }
 
-    SparseMatrix<std::complex<double>> HubbardFermiMatrix::Tplus(const std::size_t tp) const {
-        SparseMatrix<std::complex<double>> T;
-        Tplus(T, tp);
+    CDSparseMatrix HubbardFermiMatrix::Tplus(const std::size_t tp,
+                                             const CDVector &phi) const {
+        CDSparseMatrix T;
+        Tplus(T, tp, phi);
         return T;
     }
 
-    void HubbardFermiMatrix::Tminus(SparseMatrix<std::complex<double>> &T,
-                                    const std::size_t tp) const {
+    void HubbardFermiMatrix::Tminus(CDSparseMatrix &T,
+                                    const std::size_t tp,
+                                    const CDVector &phi) const {
         const std::size_t NX = nx();
-        const std::size_t NT = nt();
+        const std::size_t NT = phi.size()/NX;
         const double antiPSign = tp==NT-1 ? -1 : 1;  // encode anti-periodic BCs
         resizeMatrix(T, NX);
 
         T = _kappa - (1+_mu)*IdMatrix<std::complex<double>>(NX);
         for (std::size_t x = 0; x < NX; ++x)
-            blaze::column(T, x) *= antiPSign*std::exp(-1.i*_phi[spacetimeCoord(x, tp, NX, NT)]);
+            blaze::column(T, x) *= antiPSign*std::exp(-1.i*phi[spacetimeCoord(x, tp, NX, NT)]);
     }
 
-    SparseMatrix<std::complex<double>> HubbardFermiMatrix::Tminus(const std::size_t tp) const {
-        SparseMatrix<std::complex<double>> T;
-        Tminus(T, tp);
+    CDSparseMatrix HubbardFermiMatrix::Tminus(const std::size_t tp,
+                                              const CDVector &phi) const {
+        CDSparseMatrix T;
+        Tminus(T, tp, phi);
         return T;
     }
 
-    void HubbardFermiMatrix::Q(SparseMatrix<std::complex<double>> &q) const {
+    void HubbardFermiMatrix::Q(CDSparseMatrix &q, const CDVector &phi) const {
         const std::size_t NX = nx();
-        const std::size_t NT = nt();
+        const std::size_t NT = phi.size()/NX;
         resizeMatrix(q, NX*NT);
 
         const auto p = P();
@@ -167,41 +166,31 @@ namespace cnxx {
         for (std::size_t tp = 0; tp < NT; ++tp) {
             spacemat(q, tp, tp, NX) = p;
 
-            Tplus(aux, tp);
+            Tplus(aux, tp, phi);
             spacemat(q, tp, (tp+NT-1)%NT, NX) += aux;
 
-            Tminus(aux, tp);
+            Tminus(aux, tp, phi);
             spacemat(q, tp, (tp+1)%NT, NX) += aux;
         }
     }
 
-    SparseMatrix<std::complex<double>> HubbardFermiMatrix::Q() const {
-        SparseMatrix<std::complex<double>> q;
-        Q(q);
+    CDSparseMatrix HubbardFermiMatrix::Q(const CDVector &phi) const {
+        CDSparseMatrix q;
+        Q(q, phi);
         return q;
     }
 
 
     void HubbardFermiMatrix::updateKappa(const SparseMatrix<double> &kappa) {
         _kappa = kappa;
-        _calcKinv();
-    }
-
-    void HubbardFermiMatrix::updatePhi(const Vector<std::complex<double>> &phi) {
-        _phi = phi;
     }
 
     void HubbardFermiMatrix::updateMu(const double mu) {
         _mu = mu;
-        _calcKinv();
     }
 
     const SparseMatrix<double> &HubbardFermiMatrix::kappa() const noexcept {
         return _kappa;
-    }
-
-    const Vector<std::complex<double>> &HubbardFermiMatrix::phi() const noexcept {
-        return _phi;
     }
 
     double HubbardFermiMatrix::mu() const noexcept {
@@ -216,19 +205,6 @@ namespace cnxx {
         return _kappa.rows();
     }
 
-    std::size_t HubbardFermiMatrix::nt() const noexcept {
-        return _phi.size() / _kappa.rows();
-    }
-
-    void HubbardFermiMatrix::_calcKinv() {
-        auto ipiv = std::make_unique<int[]>(nx());
-
-        _kinvPart = K(false);
-        invert(_kinvPart, ipiv);
-        _kinvHole = K(true);
-        invert(_kinvHole, ipiv);
-    }
-    
 /*
  * -------------------------- QLU --------------------------
  */
@@ -260,7 +236,7 @@ namespace cnxx {
         return true;
     }
 
-    Matrix<std::complex<double>> HubbardFermiMatrix::QLU::reconstruct() const {
+    CDMatrix HubbardFermiMatrix::QLU::reconstruct() const {
         const std::size_t nt = dinv.size();
         if (nt < 2)
             throw std::domain_error("Reconstruction of LU called with nt < 2");
@@ -271,9 +247,9 @@ namespace cnxx {
 
         const std::size_t nx = dinv[0].rows();
         std::unique_ptr<int[]> ipiv = std::make_unique<int[]>(nx);// pivot indices for inversion
-        Matrix<std::complex<double>> aux;
+        CDMatrix aux;
 
-        Matrix<std::complex<double>> recon(nx*nt, nx*nt, 0);
+        CDMatrix recon(nx*nt, nx*nt, 0);
 
         // zeroth row, all columns
         invert(aux=dinv[0], ipiv);
@@ -323,25 +299,26 @@ namespace cnxx {
 
     namespace {
         /// Special case LU decomposition of Q for nt == 1.
-        HubbardFermiMatrix::QLU nt1QLU(const HubbardFermiMatrix &hfm) {
+        HubbardFermiMatrix::QLU nt1QLU(const HubbardFermiMatrix &hfm,
+                                       const CDVector &phi) {
             HubbardFermiMatrix::QLU lu{1};
 
             // construct d_0
-            SparseMatrix<std::complex<double>> T;
-            hfm.Tplus(T, 0);
+            CDSparseMatrix T = hfm.Tplus(0, phi);
             lu.dinv.emplace_back(hfm.P() + T);
-            hfm.Tminus(T, 0);
+            hfm.Tminus(T, 0, phi);
             lu.dinv[0] += T;
 
             // invert d_0
-            std::unique_ptr<int[]> ipiv = std::make_unique<int[]>(hfm.nx());
-            invert(lu.dinv[0]);
+            std::unique_ptr<int[]> ipiv = std::make_unique<int[]>(phi.size());
+            invert(lu.dinv[0], ipiv);
 
             return lu;
         }
 
         /// Special case LU decomposition of Q for nt == 2.
-        HubbardFermiMatrix::QLU nt2QLU(const HubbardFermiMatrix &hfm) {
+        HubbardFermiMatrix::QLU nt2QLU(const HubbardFermiMatrix &hfm,
+                                       const CDVector &phi) {
             const std::size_t nx = hfm.nx();
             constexpr std::size_t nt = 2;
             HubbardFermiMatrix::QLU lu{nt};
@@ -355,13 +332,13 @@ namespace cnxx {
             invert(lu.dinv[0], ipiv);
 
             // l_0
-            hfm.Tplus(aux0, 1);
-            hfm.Tminus(aux1, 1);
+            hfm.Tplus(aux0, 1, phi);
+            hfm.Tminus(aux1, 1, phi);
             lu.l.emplace_back((aux0+aux1)*lu.dinv[0]);
 
             // u_0
-            hfm.Tplus(aux0, 0);
-            hfm.Tminus(aux1, 0);
+            hfm.Tplus(aux0, 0, phi);
+            hfm.Tminus(aux1, 0, phi);
             aux0 += aux1;  // now aux0 = u_0
             lu.u.emplace_back(aux0);
 
@@ -373,9 +350,10 @@ namespace cnxx {
         }
 
         /// General case LU decomposition of Q for nt > 2.
-        HubbardFermiMatrix::QLU generalQLU(const HubbardFermiMatrix &hfm) {
+        HubbardFermiMatrix::QLU generalQLU(const HubbardFermiMatrix &hfm,
+                                           const CDVector &phi) {
             const std::size_t nx = hfm.nx();
-            const std::size_t nt = hfm.nt();
+            const std::size_t nt = phi.size()/nx;
             HubbardFermiMatrix::QLU lu{nt};
 
             const auto P = hfm.P();  // diagonal block P
@@ -388,15 +366,15 @@ namespace cnxx {
             // starting components of d, u, l
             lu.dinv.emplace_back(P);
             invert(lu.dinv.back(), ipiv);
-            hfm.Tminus(u, 0);   // now u = lu.u[0]
+            hfm.Tminus(u, 0, phi);   // now u = lu.u[0]
             lu.u.emplace_back(u);
-            hfm.Tplus(T, 1);
+            hfm.Tplus(T, 1, phi);
             lu.l.emplace_back(T*lu.dinv.back());
 
             // v, h
-            hfm.Tplus(T, 0);
+            hfm.Tplus(T, 0, phi);
             lu.v.emplace_back(T);
-            hfm.Tminus(T, nt-1);
+            hfm.Tminus(T, nt-1, phi);
             lu.h.emplace_back(T*lu.dinv.back());
 
             // iterate for i in [1, nt-3], 'regular' part of d, u, l, v, h
@@ -405,12 +383,12 @@ namespace cnxx {
                 lu.dinv.emplace_back(P - lu.l[i-1]*u);
                 invert(lu.dinv.back(), ipiv);
 
-                hfm.Tplus(T, i+1);
+                hfm.Tplus(T, i+1, phi);
                 lu.l.emplace_back(T*lu.dinv[i]);
                 lu.h.emplace_back(-lu.h[i-1]*u*lu.dinv[i]);
                 lu.v.emplace_back(-lu.l[i-1]*lu.v[i-1]);
 
-                hfm.Tminus(u, i);
+                hfm.Tminus(u, i, phi);
                 lu.u.emplace_back(u);  // now u = lu.u[i]
             }
             // from now on u is lu.u[nt-3]
@@ -420,9 +398,9 @@ namespace cnxx {
             invert(lu.dinv.back(), ipiv);
 
             // final components of u, l
-            hfm.Tminus(T, nt-2);
+            hfm.Tminus(T, nt-2, phi);
             lu.u.emplace_back(T - lu.l[nt-3]*lu.v[nt-3]);
-            hfm.Tplus(T, nt-1);
+            hfm.Tplus(T, nt-1, phi);
             lu.l.emplace_back((T - lu.h[nt-3]*u)*lu.dinv[nt-2]);
 
             // final component of d
@@ -435,20 +413,22 @@ namespace cnxx {
         }
     }
 
-    HubbardFermiMatrix::QLU getQLU(const HubbardFermiMatrix &hfm) {
-        switch (hfm.nt()) {
+    HubbardFermiMatrix::QLU getQLU(const HubbardFermiMatrix &hfm,
+                                   const CDVector &phi) {
+        switch (phi.size()/hfm.nx()) {
         case 1:
-            return nt1QLU(hfm);
+            return nt1QLU(hfm, phi);
         case 2:
-            return nt2QLU(hfm);
+            return nt2QLU(hfm, phi);
         default:
-            return generalQLU(hfm);
+            return generalQLU(hfm, phi);
         }
     }
 
     Vector<std::complex<double>> solveQ(const HubbardFermiMatrix &hfm,
+                                        const CDVector &phi,
                                         const Vector<std::complex<double>> &rhs) {
-        return solveQ(getQLU(hfm), rhs);
+        return solveQ(getQLU(hfm, phi), rhs);
     }
 
     Vector<std::complex<double>> solveQ(const HubbardFermiMatrix::QLU &lu,
@@ -491,8 +471,9 @@ namespace cnxx {
         return x;
     }
 
-    std::complex<double> logdetQ(const HubbardFermiMatrix &hfm) {
-        auto lu = getQLU(hfm);
+    std::complex<double> logdetQ(const HubbardFermiMatrix &hfm,
+                                 const CDVector &phi) {
+        auto lu = getQLU(hfm, phi);
         return ilogdetQ(lu);
     }
 
@@ -523,21 +504,24 @@ namespace cnxx {
     }
 
 
-    std::complex<double> logdetM(const HubbardFermiMatrix &hfm, const bool hole) {
+    std::complex<double> logdetM(const HubbardFermiMatrix &hfm,
+                                 const CDVector &phi, const bool hole) {
         if (hfm.mu() != 0)
             throw std::runtime_error("Called logdetM with mu != 0. This is not supported yet because the algorithm is unstable.");
 
         const auto NX = hfm.nx();
-        const auto NT = hfm.nt();
+        const auto NT = phi.size()/NX;
 
-        const auto &kinv = hfm.Kinv(hole);
+        DMatrix kinv = hfm.K(hole);
+        auto ipiv = std::make_unique<int[]>(kinv.rows());
+        invert(kinv, ipiv);
 
         // first K*F pair
-        auto f = hfm.F(0, hole, false);
+        auto f = hfm.F(0, phi, hole, false);
         Matrix<std::complex<double>> aux = kinv*f;
         // other pairs
         for (std::size_t t = 1; t < NT; ++t) {
-            hfm.F(f, t, hole, false);
+            hfm.F(f, t, phi, hole, false);
             aux = aux*kinv*f;
         }        
 

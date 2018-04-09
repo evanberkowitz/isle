@@ -11,12 +11,11 @@
 namespace cnxx {
     /// Fermion action for Hubbard model.
     /**
-     * \todo Use PARDISO or custom solver instead of LAPACK for inversions.
-     *
      * The action is
      \f[
-     S_{\mathrm{HFA}} = - \log \det M[\phi,\tilde{\kappa}, \tilde{\mu}]M^\dagger[\phi,\sigma_{\tilde{\kappa}}\tilde{\kappa},\sigma_{\tilde{\mu}}\tilde{\mu}]
+     S_{\mathrm{HFA}} = - \log \det M(\phi, \tilde{\kappa}, \tilde{\mu}) M(-\phi, \sigma_{\tilde{\kappa}}\tilde{\kappa}, -\tilde{\mu}),
      \f]
+     * see HubbardFermiMatrix for the definition of M.
      */
     class HubbardFermiAction : Action {
     public:
@@ -26,7 +25,7 @@ namespace cnxx {
         /// Construct from individual parameters of HubbardFermiMatrix.
         HubbardFermiAction(const SparseMatrix<double> &kappa,
                            double mu, std::int8_t sigmaKappa)
-            : _hfm{kappa, Vector<std::complex<double>>{}, mu, sigmaKappa} { }
+            : _hfm{kappa, mu, sigmaKappa} { }
 
         HubbardFermiAction(const HubbardFermiAction &other) = default;
         HubbardFermiAction &operator=(const HubbardFermiAction &other) = default;
@@ -39,14 +38,11 @@ namespace cnxx {
         /// Use a new HubbardFermiMatrix from now on.
         void updateHFM(HubbardFermiMatrix &&hfm);
 
-        /// Update auxilliary HS field.
-        void updatePhi(const Vector<std::complex<double>> &phi);
-
         /// Evaluate the %Action for given auxilliary field phi.
-        std::complex<double> eval(const Vector<std::complex<double>> &phi) override;
+        std::complex<double> eval(const CDVector &phi) override;
 
         /// Calculate force for given auxilliary field phi.
-        Vector<std::complex<double>> force(const Vector<std::complex<double>> &phi) override;
+        CDVector force(const CDVector &phi) override;
 
     private:
         HubbardFermiMatrix _hfm;  ///< Stores all necessary parameters.

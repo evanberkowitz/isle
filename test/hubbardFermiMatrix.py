@@ -22,14 +22,13 @@ RAND_STD = 0.2
 N_REP = 1 # number of repetitions
 
 # lattices to test matrix with
-LATTICES = [core.TEST_PATH/"../lattices/c60_ipr.yml",]
-            # core.TEST_PATH/"../lattices/tube_3-3_1.yml",
-            # core.TEST_PATH/"../lattices/tube_3-3_5.yml",
-            # core.TEST_PATH/"../lattices/tube_4-2_2.yml"]
+LATTICES = [core.TEST_PATH/"../lattices/c60_ipr.yml",
+            core.TEST_PATH/"../lattices/tube_3-3_1.yml",
+            core.TEST_PATH/"../lattices/tube_3-3_5.yml",
+            core.TEST_PATH/"../lattices/tube_4-2_2.yml"]
 
 # test with these values of chemical potential
-# MU = [0, 1, 1.5]
-MU = [1]
+MU = [0, 1, 1.5]
 
 def _randomPhi(n):
     "Return a normally distributed random complex vector of n elements."
@@ -44,11 +43,11 @@ class TestHubbardFermiMatrix(unittest.TestCase):
 
         nt = 1
         nx = kappa.rows()
-        hfm = cns.HubbardFermiMatrix(kappa, _randomPhi(nx*nt),
-                                     mu, sigmaKappa)
+        hfm = cns.HubbardFermiMatrix(kappa, mu, sigmaKappa)
+        phi = _randomPhi(nx*nt)
 
-        auto = np.array(cns.Matrix(hfm.Q()), copy=False)
-        manual = np.array(cns.Matrix(hfm.P()+hfm.Tplus(0)+hfm.Tminus(0)), copy=False)
+        auto = np.array(cns.Matrix(hfm.Q(phi)), copy=False)
+        manual = np.array(cns.Matrix(hfm.P()+hfm.Tplus(0, phi)+hfm.Tminus(0, phi)), copy=False)
         self.assertTrue(core.isEqual(auto, manual),
                         msg="Failed equality check for construction of hubbardFermiMatrix "\
                         + "for nt={}, mu={}, sigmaKappa={}".format(nt, mu, sigmaKappa)\
@@ -60,16 +59,18 @@ class TestHubbardFermiMatrix(unittest.TestCase):
 
         nt = 2
         nx = kappa.rows()
-        hfm = cns.HubbardFermiMatrix(kappa, _randomPhi(nx*nt),
-                                     mu, sigmaKappa)
+        hfm = cns.HubbardFermiMatrix(kappa, mu, sigmaKappa)
+        phi = _randomPhi(nx*nt)
 
-        auto = np.array(cns.Matrix(hfm.Q()), copy=False) # full matrix
+        auto = np.array(cns.Matrix(hfm.Q(phi)), copy=False) # full matrix
         manual = np.empty(auto.shape, auto.dtype)
         P = np.array(cns.Matrix(hfm.P())) # diagonal blocks
         manual[:nx, :nx] = P
         manual[nx:, nx:] = P
-        manual[:nx, nx:] = cns.Matrix(hfm.Tminus(0) + hfm.Tplus(0)) # upper off diagonal
-        manual[nx:, :nx] = cns.Matrix(hfm.Tminus(1) + hfm.Tplus(1)) # lower off diagonal
+        # upper off-diagonal
+        manual[:nx, nx:] = cns.Matrix(hfm.Tminus(0, phi) + hfm.Tplus(0, phi))
+        # lower off-diagonal
+        manual[nx:, :nx] = cns.Matrix(hfm.Tminus(1, phi) + hfm.Tplus(1, phi))
 
         self.assertTrue(core.isEqual(auto, manual),
                         msg="Failed equality check for construction of hubbardFermiMatrix "\
@@ -82,23 +83,23 @@ class TestHubbardFermiMatrix(unittest.TestCase):
 
         nt = 3
         nx = kappa.rows()
-        hfm = cns.HubbardFermiMatrix(kappa, _randomPhi(nx*nt),
-                                     mu, sigmaKappa)
+        hfm = cns.HubbardFermiMatrix(kappa, mu, sigmaKappa)
+        phi = _randomPhi(nx*nt)
 
-        auto = np.array(cns.Matrix(hfm.Q()), copy=False) # full matrix
+        auto = np.array(cns.Matrix(hfm.Q(phi)), copy=False) # full matrix
         manual = np.empty(auto.shape, auto.dtype)
         P = np.array(cns.Matrix(hfm.P())) # diagonal blocks
 
         manual[:nx, :nx] = P
-        manual[:nx, nx:2*nx] = cns.Matrix(hfm.Tminus(0))
-        manual[:nx, 2*nx:] = cns.Matrix(hfm.Tplus(0))
+        manual[:nx, nx:2*nx] = cns.Matrix(hfm.Tminus(0, phi))
+        manual[:nx, 2*nx:] = cns.Matrix(hfm.Tplus(0, phi))
 
-        manual[nx:2*nx, :nx] = cns.Matrix(hfm.Tplus(1))
+        manual[nx:2*nx, :nx] = cns.Matrix(hfm.Tplus(1, phi))
         manual[nx:2*nx, nx:2*nx] = P
-        manual[nx:2*nx, 2*nx:] = cns.Matrix(hfm.Tminus(1))
+        manual[nx:2*nx, 2*nx:] = cns.Matrix(hfm.Tminus(1, phi))
 
-        manual[2*nx:, :nx] = cns.Matrix(hfm.Tminus(2))
-        manual[2*nx:, nx:2*nx] = cns.Matrix(hfm.Tplus(2))
+        manual[2*nx:, :nx] = cns.Matrix(hfm.Tminus(2, phi))
+        manual[2*nx:, nx:2*nx] = cns.Matrix(hfm.Tplus(2, phi))
         manual[2*nx:, 2*nx:] = P
 
         self.assertTrue(core.isEqual(auto, manual),
@@ -132,10 +133,11 @@ class TestHubbardFermiMatrix(unittest.TestCase):
         for nt, mu, sigmaKappa, _ in itertools.product((4, 8, 32), MU, (-1, 1),
                                                        range(N_REP)):
             nx = kappa.rows()
-            hfm = cns.HubbardFermiMatrix(kappa/nt, _randomPhi(nx*nt),
-                                         mu/nt, sigmaKappa)
-            q = np.array(cns.Matrix(hfm.Q()), copy=False)
-            lu = cns.getQLU(hfm)
+            hfm = cns.HubbardFermiMatrix(kappa/nt, mu/nt, sigmaKappa)
+            phi = _randomPhi(nx*nt)
+
+            q = np.array(cns.Matrix(hfm.Q(phi)), copy=False)
+            lu = cns.getQLU(hfm, phi)
             recon = np.array(cns.Matrix(lu.reconstruct()))
 
             self.assertTrue(core.isEqual(q, recon, nOps=nx**2, prec=1e-13),
@@ -160,16 +162,16 @@ class TestHubbardFermiMatrix(unittest.TestCase):
         nx = kappa.rows()
         self.assertRaises(RuntimeError,
                           lambda msg:
-                          cns.logdetM(cns.HubbardFermiMatrix(kappa, cns.CDVector(nx), 1, 1), True),
+                          cns.logdetM(cns.HubbardFermiMatrix(kappa, 1, 1), cns.CDVector(nx), True),
                           msg="logdetM must throw a RuntimeError when called with mu != 0. If this bug has been fixed, update the unit test!")
 
         for nt, mu, sigmaKappa, hole, rep in itertools.product((4, 8, 32), [0], (-1, 1),
                                                                (False, True), range(N_REP)):
-            hfm = cns.HubbardFermiMatrix(kappa/nt, _randomPhi(nx*nt),
-                                         mu/nt, sigmaKappa)
+            hfm = cns.HubbardFermiMatrix(kappa/nt, mu/nt, sigmaKappa)
+            phi = _randomPhi(nx*nt)
 
-            plain = cns.logdet(cns.Matrix(hfm.M(hole)))
-            viaLU = cns.logdetM(hfm, hole)
+            plain = cns.logdet(cns.Matrix(hfm.M(phi, hole)))
+            viaLU = cns.logdetM(hfm, phi, hole)
 
             self.assertAlmostEqual(plain, viaLU, places=10,
                                    msg="Failed check log(det(M)) in repetition {}".format(rep)\
