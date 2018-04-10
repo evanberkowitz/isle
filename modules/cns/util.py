@@ -2,6 +2,8 @@
 Some general utilities.
 """
 
+import numpy as np
+
 def hingeRange(start, end, stepSize):
     r"""!
     A generator that behaves similarly to the builtin range with two differences:
@@ -23,3 +25,16 @@ def hingeRange(start, end, stepSize):
     # stay at end value forever
     while True:
         yield end
+
+def binnedArray(data, binsize):
+    r"""!
+    Return a binned array by averaging over subarrays of the input.
+
+    \param data Input iterable. Needs to be convertible to a 1D numpy array.
+    \param binsize Width of the bins. The length of `data` must be divisible by binsize
+                   without remainder.
+    """
+    nbins = len(data) // binsize
+    if len(data) % binsize != 0:
+        raise RuntimeError("Size of data is not a multiple of the bin size")
+    return np.reshape(data, (nbins, binsize)).mean(1)
