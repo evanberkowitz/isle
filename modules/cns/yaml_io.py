@@ -1,4 +1,4 @@
-"""
+"""!
 Routines for YAML IO.
 
 Registers cns.Lattice with YAML allowing automatic loading and dumping.
@@ -10,7 +10,9 @@ import numpy as np
 from . import Lattice
 
 def _parse_lattice(nt, adjacency, hopping, positions, name="", comment=""):
-    "Parse a !lattice YAML node."
+    """!
+    Parse a `!lattice` YAML node.
+    """
 
     # turn hopping into a list if it isn't already
     if not isinstance(hopping, list):
@@ -41,7 +43,9 @@ yaml.add_constructor("!lattice",
 
 
 def _represent_lattice(dumper, lat):
-    "Create a YAML representation of a Lattice using a !lattice node."
+    """!
+    Create a YAML representation of a Lattice using a `!lattice` node.
+    """
 
     adj, hopping = zip(*[([i, neigh[0]], neigh[1]) for i in range(lat.nx())
                          for neigh in lat.getNeighbors(i)

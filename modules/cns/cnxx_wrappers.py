@@ -1,4 +1,4 @@
-"""
+"""!
 Imports everything from cnxx into this modules namespace and defines wrappers
 around linear algebra types.
 """
@@ -11,7 +11,7 @@ from cnxx import *
 
 
 class Vector:
-    """
+    """!
     Wrapper around datatype specific vectors in cnxx.
 
     The constructor returns an instance of cnxx.XVector where X is chosen based
@@ -19,7 +19,7 @@ class Vector:
     """
 
     def __new__(cls, *args, dtype=None, **kwargs):
-        """
+        """!
         Create and return a Vector for given datatype.
         `dtype` is deduced from other arguments if possible.
         """
@@ -38,7 +38,7 @@ class Vector:
         raise ValueError("Datatype not supported: {}".format(dtype))
 
 class Matrix:
-    """
+    """!
     Wrapper around datatype specific matrices in cnxx.
 
     The constructor returns an instance of cnxx.XMatrix where X is chosen based
@@ -46,7 +46,7 @@ class Matrix:
     """
 
     def __new__(cls, *args, dtype=None, **kwargs):
-        """
+        """!
         Create and return a Matrix for given datatype.
         `dtype` is deduced from other arguments if possible.
         """
@@ -73,7 +73,7 @@ class Matrix:
         raise ValueError("Datatype not supported: {}".format(dtype))
 
 class SparseMatrix:
-    """
+    """!
     Wrapper around datatype specific sparse matrices in cnxx.
 
     The constructor returns an instance of cnxx.XSparseMatrix where X is chosen based
@@ -81,7 +81,7 @@ class SparseMatrix:
     """
 
     def __new__(cls, *args, dtype=None, **kwargs):
-        """
+        """!
         Create and return a SparseMatrix for given datatype.
         `dtype` is deduced from other arguments if possible.
         """

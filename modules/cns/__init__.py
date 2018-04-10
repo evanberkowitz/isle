@@ -1,4 +1,4 @@
-"""
+"""!
 Import base functions and classes.
 
 Imports everything from cnxx into namespace cns.
