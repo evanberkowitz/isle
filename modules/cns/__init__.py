@@ -9,4 +9,5 @@ from cns.cnxx_wrappers import *
 import cns.yaml_io as yaml
 import cns.hmc
 import cns.meas
+import cns.checks
 import cns.util
