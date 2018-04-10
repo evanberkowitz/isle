@@ -9,7 +9,7 @@ import numpy as np
 
 from . import Lattice
 
-def _parse_lattice(nt, adjacency, hopping, positions, name="", comment=""):
+def _parse_lattice(adjacency, hopping, positions, nt=0, name="", comment=""):
     """!
     Parse a `!lattice` YAML node.
     """
