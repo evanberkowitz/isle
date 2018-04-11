@@ -54,6 +54,7 @@ class AcceptanceRate:
         # plot acceptance rate
         ax.plot(np.arange(0, len(self.accRate), binsize), binned,
                 fmt, label="Acceptance Rate")
+        ax.set_ylim((-0.05, 1.05))
         if doTightLayout:
             fig.tight_layout()
 
@@ -91,8 +92,9 @@ class Action:
             doTightLayout = True
 
         binned = binnedArray(self.act, binsize)
-        ax.plot(np.arange(0, len(self.act), binsize), np.real(binned), fmtre, label="Re($S$)")
-        ax.plot(np.arange(0, len(self.act), binsize), np.imag(binned), fmtim, label="Im($S$)")
+        mcTime = np.arange(0, len(self.act), binsize)
+        ax.plot(mcTime, np.real(binned), fmtre, label="Re($S$)")
+        ax.plot(mcTime, np.imag(binned), fmtim, label="Im($S$)")
         ax.legend()
         if doTightLayout:
             fig.tight_layout()

@@ -71,7 +71,7 @@ namespace cnxx {
     }
 
     CDVector HFA::force(const CDVector &phi) {
-        return force_part(_hfm, phi, true) + force_part(_hfm, phi, false);
+        return forcePart(_hfm, phi, true) + forcePart(_hfm, phi, false);
     }
 
 }  // namespace cnxx

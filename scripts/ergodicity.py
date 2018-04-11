@@ -10,11 +10,11 @@ import core
 core.prepare_module_import()
 import cns
 
-LATFILE = "one_site.yml"  # input lattice
+LATFILE = "two_sites.yml"  # input lattice
 
-NT = 16  # number of time slices
-NTHERM = 1000  # number of thermalization trajectories
-NPROD = 1000  # number of production trajectories
+NT = 8  # number of time slices
+NTHERM = 3000  # number of thermalization trajectories
+NPROD = 10000  # number of production trajectories
 
 # model parameters
 U = 2
@@ -23,7 +23,10 @@ SIGMA_KAPPA = 1
 
 UTILDE = U*BETA/NT
 
+
 def main():
+    """!Run HMC and analyze results."""
+
     np.random.seed(1075)
 
     # load lattice
@@ -38,18 +41,22 @@ def main():
     # initial state
     phi = cns.Vector(np.random.normal(0, np.sqrt(UTILDE), lat.nx()*NT)+0j)
 
-    # thermalize
     accMeas = cns.meas.AcceptanceRate()
     actMeas = cns.meas.Action()
+
+    print("thermalizing")
     phi = cns.hmc.hmc(phi, ham,
-                      cns.hmc.LinearStepLeapfrog(ham, (1.5, 1), (30, 4), NTHERM-1), NTHERM,
-                      [(1, accMeas), (1, actMeas)], [(20, cns.checks.realityCheck)])
+                      cns.hmc.LinearStepLeapfrog(ham, (1, 1), (20, 4), NTHERM-1), NTHERM,
+                      [(1, accMeas), (1, actMeas)],
+                      [(20, cns.checks.realityCheck)])
 
-    # production
-    phi = cns.hmc.hmc(phi, ham, cns.hmc.ConstStepLeapfrog(ham, 1, 4), NPROD,
-                      [(1, accMeas), (1, actMeas)])
+    # print("running production")
+    # detMeas = DetMeas(cns.HubbardFermiMatrix(kappa, 0, SIGMA_KAPPA))
+    # print("running production")
+    # phi = cns.hmc.hmc(phi, ham, cns.hmc.ConstStepLeapfrog(ham, 1, 4), NPROD,
+    #                   [(1, accMeas), (1, detMeas)])
 
-    # show results
+    print("processing results")
     ax = accMeas.report(20)
     ax.axvline(NTHERM, c="k")  # mark thermalization - production border
 
