@@ -1,2 +1,3 @@
 *.dSYM
 benchmarks/*.ben
+.DS_Store
