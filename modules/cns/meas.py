@@ -62,7 +62,7 @@ class Phi:
 
         return ax
 
-    def reportPhi(self, ax=None, fmt=""):
+    def reportPhiHistogram(self, ax=None, fmt=""):
         r"""!
         Plot histogram of summed Phi.
         \param ax Matplotlib Axes to plot in. If `None`, a new one is created in a new figure.
@@ -78,6 +78,27 @@ class Phi:
         
         # the histogram of the data
         n, bins, patches = ax.hist(np.real(self.Phi), 50, normed=1, facecolor='green', alpha=0.75)
+
+        ax.grid(True)
+
+        return ax
+
+    def reportPhi(self, ax=None, fmt=""):
+        r"""!
+        Plot monte carlo history of summed Phi.
+        \param ax Matplotlib Axes to plot in. If `None`, a new one is created in a new figure.
+        \param fmt Plot format passed to matplotlib. Can encode color, marker and line styles.
+        \returns The Axes with the plot.
+        """
+
+        # make a new axes is needed
+        doTightLayout = False
+        if ax is None:
+            fig, ax = _newAxes("",r"$N_{\mathrm{tr}}$", r"$\Phi$")
+            doTightLayout = True
+        
+        # the histogram of the data
+        ax.plot(np.real(self.Phi),fmt, label=r"\Phi($N_{\mathrm{tr}})$")
 
         ax.grid(True)
 
