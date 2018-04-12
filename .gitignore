@@ -1,3 +1,3 @@
 *.dSYM
-benchmarks/*.ben
+*.ben
 .DS_Store
