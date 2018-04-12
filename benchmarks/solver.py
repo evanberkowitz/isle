@@ -27,26 +27,26 @@ def main():
     timeLU = []
     timeSolve = []
     timePardiso = []
-    solve = cns.solve
-    getLU = cns.getLU
-    solvePardiso = cns.solvePardiso
+    solveQ = cns.solveQ
+    getQLU = cns.getQLU
+    # solvePardiso = cns.solvePardiso
     for nt in nts:
         # make random auxilliary field and HFM
         phi = cns.Vector(np.random.randn(lat.nx()*nt)
                          + 1j*np.random.randn(lat.nx()*nt), dtype=complex)
-        hfm = cns.HubbardFermiMatrix(lat.hopping(), phi, 0, -1)
+        hfm = cns.HubbardFermiMatrix(lat.hopping(), 0, -1)
 
         # make random right hand side
         rhs = cns.Vector(np.random.randn(lat.nx()*nt)
                          + 1j*np.random.randn(lat.nx()*nt), dtype=complex)
 
         # measure time for LU-decompositon
-        timeLU.append(timeit.timeit("getLU(hfm)", globals=locals(), number=1)/1)
+        timeLU.append(timeit.timeit("getQLU(hfm, phi)", globals=locals(), number=1)/1)
         # measure time for solver itself
-        lu = getLU(hfm)
-        timeSolve.append(timeit.timeit("solve(lu, rhs)", globals=locals(), number=1)/1)
+        lu = getQLU(hfm,phi)
+        timeSolve.append(timeit.timeit("solveQ(lu, rhs)", globals=locals(), number=1)/1)
 
-        timePardiso.append(timeit.timeit("solvePardiso(hfm, rhs)", globals=locals(), number=1)/1)
+        # timePardiso.append(timeit.timeit("solvePardiso(hfm, rhs)", globals=locals(), number=1)/1)
 
     # save benchmark to file
     pickle.dump({"xlabel": "Nt",
@@ -55,7 +55,7 @@ def main():
                  "results": {"custom lu": timeLU,
                              "custom solve": timeSolve,
                              "custom total": [tlu+ts for tlu, ts in zip(timeLU, timeSolve)],
-                             "PARDISO": timePardiso}},
+                             }}, # "PARDISO": timePardiso}},
                 open("solver.ben", "wb"))
 
 if __name__ == "__main__":

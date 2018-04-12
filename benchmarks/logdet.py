@@ -35,12 +35,12 @@ def main():
                          + 1j*np.random.randn(lat.nx()*nt), dtype=complex)
 
         # make a fermion matrix
-        hfm = cns.HubbardFermiMatrix(lat.hopping()/nt, phi, 0, -1)
-        Q = cns.Matrix(hfm.Q())
+        hfm = cns.HubbardFermiMatrix(lat.hopping()/nt, 0, -1)
+        Q = cns.Matrix(hfm.Q(phi))
 
         # do the benchmark
-        cbtdlu.append(timeit.timeit("logdetQ(hfm)", globals=locals(), number=10)/10)
-        analytical.append(timeit.timeit("logdetM(hfm, False)+logdetM(hfm, True)", globals=locals(), number=10)/10)
+        cbtdlu.append(timeit.timeit("logdetQ(hfm,phi)", globals=locals(), number=10)/10)
+        analytical.append(timeit.timeit("logdetM(hfm, phi , False)+logdetM(hfm, phi, True)", globals=locals(), number=10)/10)
         lapack.append(timeit.timeit("logdet(Q)", globals=locals(), number=10)/10)
 
     # save benchmark to file
