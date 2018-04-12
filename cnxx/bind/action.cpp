@@ -4,6 +4,7 @@
 #include "../hubbardGaugeAction.hpp"
 #include "../hubbardFermiAction.hpp"
 
+using namespace pybind11::literals;
 using namespace cnxx;
 
 namespace bind {
@@ -48,8 +49,9 @@ namespace bind {
             ;
 
         py::class_<HubbardFermiAction>{mod, "HubbardFermiAction", action}
-            .def(py::init<HubbardFermiMatrix>())
-            .def(py::init<SparseMatrix<double>, double, std::int8_t>())
+            .def(py::init<HubbardFermiMatrix, bool>(), "hfm"_a, "variant2"_a=false)
+            .def(py::init<SparseMatrix<double>, double, std::int8_t, bool>(),
+                      "kappa"_a, "mu"_a, "sigmaKappa"_a, "variant2"_a=false)
             .def("eval", &HubbardFermiAction::eval)
             .def("force", &HubbardFermiAction::force)
             ;
