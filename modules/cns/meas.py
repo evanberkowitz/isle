@@ -161,7 +161,7 @@ class LogDet:
     def __init__(self, kappaTilde, SIGMA_KAPPA=-1):
         self.logdet_p = []
         self.logdet_h = []
-        hfm = cns.HubbardFermiMatrix(kappa, 0, SIGMA_KAPPA)
+        hfm = cns.HubbardFermiMatrix(kappaTilde, 0, SIGMA_KAPPA)
     
     def __call__(self, itr, phi, act, acc):
         """!Record the particle and hole deterimants."""
