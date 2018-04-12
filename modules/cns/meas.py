@@ -27,12 +27,12 @@ class Phi:
     """
 
     def __init__(self):
-        self.phi = []
+        self.Phi = []
         self.phiSq = []
 
     def __call__(self, itr, phi, act, acc):
         """!Record the total phi and mean value of phi^2."""
-        self.phi.append(np.sum(phi))
+        self.Phi.append(np.sum(phi))
         self.phiSq.append(np.linalg.norm(phi)**2 / len(phi))
 
     def reportPhiSq(self, binsize, ax=None, fmt=""):
@@ -64,13 +64,24 @@ class Phi:
 
     def reportPhi(self, ax=None, fmt=""):
         r"""!
-        Plot histogram of summed phi.
+        Plot histogram of summed Phi.
         \param ax Matplotlib Axes to plot in. If `None`, a new one is created in a new figure.
         \param fmt Plot format passed to matplotlib. Can encode color, marker and line styles.
         \returns The Axes with the plot.
         """
-        # here I want to plot a histogram of Phi
 
+        # make a new axes is needed
+        doTightLayout = False
+        if ax is None:
+            fig, ax = _newAxes("", r"$\Phi$",r"PDF")
+            doTightLayout = True
+        
+        # the histogram of the data
+        n, bins, patches = ax.hist(np.real(self.Phi), 50, normed=1, facecolor='green', alpha=0.75)
+
+        ax.grid(True)
+
+        return ax
 
 class AcceptanceRate:
     r"""!
