@@ -67,7 +67,7 @@ namespace cnxx {
     }
 
     std::complex<double> HFA::eval(const CDVector &phi) {
-        return -toFirstLogBranch(logdetM(_hfm, phi, false) - logdetM(_hfm, phi, true));
+        return -toFirstLogBranch(logdetM(_hfm, phi, false) + logdetM(_hfm, phi, true));
     }
 
     CDVector HFA::force(const CDVector &phi) {

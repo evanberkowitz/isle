@@ -138,7 +138,7 @@ Apply the logarithm to get the final result:
 \noindent
 The action~\eqref{eq:ferm_action_v1} is the sum of contributions from particles and holes, i.e.
 \begin{align}
-  S_\text{ferm} = N_t \log \det(K_p)  + \log \det (1 + A_p) + N_t \log \det(K_h)  + \log \det (1 + A_h).
+  S_\text{ferm} = -N_t \log \det(K_p)  - \log \det (1 + A_p) - N_t \log \det(K_h) - \log \det (1 + A_h).
 \end{align}
 In general those contributions are not related by a simple equation meaning that both need to be computed from scratch.
   
@@ -323,7 +323,7 @@ The action is easy to evaluate once the LU-decomposition of $Q$ is known. It is 
 \begin{resultbox}
   \vspace{-\baselineskip}
   \begin{align}
-    S_\text{ferm} = - \log \det Q = \log \prod_{i=0}^{N_t-1} \det (d_i) = \sum_{i=0}^{N_t-1}\, \log \det (d_i)
+    S_\text{ferm} = - \log \det Q = -\log \prod_{i=0}^{N_t-1} \det (d_i) = -\sum_{i=0}^{N_t-1}\, \log \det (d_i)
   \end{align}
 \end{resultbox}
 \noindent
