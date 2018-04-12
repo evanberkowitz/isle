@@ -12,7 +12,7 @@ import cns
 
 LATFILE = "two_sites.yml"
 
-NT = 26   # number of time slices
+NT = 12   # number of time slices
 NTR = 400000  # number of trajectories
 NMD = 3  # number of MD steps per trajectory
 MDSTEP = 1/NMD  # size of MD steps
@@ -98,11 +98,10 @@ def main():
 
     print("acceptance rate: ", nacc/NTR)
 
-    dets= list(map(
-        lambda cfg:
-        np.exp(cns.logdet(cns.Matrix(
-            cns.HubbardFermiMatrix(kappa, cfg, 0, SIGMA_KAPPA).M(False))
-        )), cfgs))
+    M = cns.HubbardFermiMatrix(kappa, 0, SIGMA_KAPPA)
+
+    dets = [ np.exp( cns.logdetM( M, cfg, False  ) ) for cfg in cfgs ]
+
     detsReal, detsImag = np.array(dets).real,np.array(dets).imag
     
     out_name = (LATFILE.split("."))[0]+f".nt{NT}nmd{NMD}"+".hdf5"
