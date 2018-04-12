@@ -11,6 +11,9 @@
 
 namespace cnxx {
 
+    /// Mark particles and holes.
+    enum class PH {PARTICLE, HOLE};
+
     /// Represents a fermion matrix for the Hubbard model.
     /**
      * ## Definitions
@@ -98,15 +101,15 @@ namespace cnxx {
         /**
          * \param k Any old content is erased and the matrix is
          *          resized if need be.
-         * \param hole `false` if matrix for particles, `true` if matrix for holes.
+         * \param ph Select whether to construct for particles or holes.
          */        
-        void K(DSparseMatrix &k, bool hole) const;
+        void K(DSparseMatrix &k, PH ph) const;
 
         /// Return the diagonal block matrix K of matrix M.
         /**
-         * \param hole `false` if matrix for particles, `true` if matrix for holes.
+         * \param ph Select whether to construct for particles or holes.
          */
-        DSparseMatrix K(bool hole) const;
+        DSparseMatrix K(PH ph) const;
         
         /// Store an off-diagonal block F of matrix M in the parameter.
         /**
@@ -114,37 +117,37 @@ namespace cnxx {
          *          resized if need be.
          * \param tp Temporal row index t'.
          * \param phi Auxilliary field.
-         * \param hole `false` if matrix for particles, `true` if matrix for holes.
+         * \param ph Select whether to construct for particles or holes.
          * \param inv If `true` consttructs the inverse of F.
          */        
         void F(CDSparseMatrix &f, std::size_t tp, const CDVector &phi,
-               bool hole, bool inv=false) const;
+               PH ph, bool inv=false) const;
 
         /// Return an off-diagonal block matrix F of matrix M.
         /**
          * \param tp Temporal row index t'.
          * \param phi Auxilliary field.
-         * \param hole `false` if matrix for particles, `true` if matrix for holes.
+         * \param ph Select whether to construct for particles or holes.
          * \param inv If `true` consttructs the inverse of F.
          */
         CDSparseMatrix F(std::size_t tp, const CDVector &phi,
-                         bool hole, bool inv=false) const;
+                         PH ph, bool inv=false) const;
 
         /// Store the matrix \f$M\f$ in the parameter.
         /**
          * \param m Any old content is erased and the matrix is
          *          resized if need be.
          * \param phi Auxilliary field.
-         * \param hole `false` if matrix for particles, `true` if matrix for holes.
+         * \param ph Select whether to construct for particles or holes.
          */
-        void M(CDSparseMatrix &m, const CDVector &phi, bool hole) const;
+        void M(CDSparseMatrix &m, const CDVector &phi, PH ph) const;
 
         /// Return the matrix \f$M\f$.
         /**
          * \param phi Auxilliary field.
-         * \param hole `false` if matrix for particles, `true` if matrix for holes.
+         * \param ph Select whether to construct for particles or holes.
          */
-        CDSparseMatrix M(const CDVector &phi, bool hole) const;
+        CDSparseMatrix M(const CDVector &phi, PH ph) const;
 
         /// Store the block on the diagonal \f$P\f$ in the parameter.
         /**
@@ -329,12 +332,12 @@ namespace cnxx {
     /**
      * \param hfm %HubbardFermiMatrix to compute the determinant of.
      * \param phi Auxilliary field.
-     * \param hole `false` if matrix for particles, `true` if matrix for holes.
+     * \param ph Select whether to use particles or holes.
      * \return Value equivalent to `log(det(hfm.M()))` and projected onto the
      *         first branch of the logarithm.
      */
     std::complex<double> logdetM(const HubbardFermiMatrix &hfm, const CDVector &phi,
-                                 bool hole);
+                                 PH ph);
 
 }  // namespace cnxx
 

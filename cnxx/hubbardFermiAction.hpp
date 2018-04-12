@@ -28,13 +28,14 @@ namespace cnxx {
     public:
         /// Copy in a HubbardFermiMatrix.
         explicit HubbardFermiAction(const HubbardFermiMatrix &hfm, const bool variant2=false)
-            : _hfm{hfm}, _kp{hfm.K(false)}, _kh{hfm.K(true)}, _variant2{variant2} { }
+            : _hfm{hfm}, _kp{hfm.K(PH::PARTICLE)},
+              _kh{hfm.K(PH::HOLE)}, _variant2{variant2} { }
 
         /// Construct from individual parameters of HubbardFermiMatrix.
         HubbardFermiAction(const SparseMatrix<double> &kappa,
                            double mu, std::int8_t sigmaKappa, const bool variant2=false)
-            : _hfm{kappa, mu, sigmaKappa}, _kp{_hfm.K(false)}, _kh{_hfm.K(true)},
-              _variant2{variant2} { }
+            : _hfm{kappa, mu, sigmaKappa}, _kp{_hfm.K(PH::PARTICLE)},
+              _kh{_hfm.K(PH::HOLE)}, _variant2{variant2} { }
 
         HubbardFermiAction(const HubbardFermiAction &other) = default;
         HubbardFermiAction &operator=(const HubbardFermiAction &other) = default;

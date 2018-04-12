@@ -28,6 +28,7 @@ def main():
     logdetQ = cns.logdetQ
     logdetM = cns.logdetM
     logdet = cns.logdet
+    PH = cns.PH
     for nt in nts:
         print("doing nt = {}".format(nt))
         # create a normal distributed phi
@@ -40,7 +41,9 @@ def main():
 
         # do the benchmark
         cbtdlu.append(timeit.timeit("logdetQ(hfm,phi)", globals=locals(), number=10)/10)
-        analytical.append(timeit.timeit("logdetM(hfm, phi , False)+logdetM(hfm, phi, True)", globals=locals(), number=10)/10)
+        analytical.append(
+            timeit.timeit("logdetM(hfm, phi, PH.PARTICLE) + logdetM(hfm, phi, PH.HOLE)",
+                          globals=locals(), number=10)/10)
         lapack.append(timeit.timeit("logdet(Q)", globals=locals(), number=10)/10)
 
     # save benchmark to file
