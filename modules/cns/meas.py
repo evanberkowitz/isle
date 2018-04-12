@@ -156,3 +156,22 @@ class Action:
         if doTightLayout:
             fig.tight_layout()
         return ax
+
+class LogDet:
+    r"""!
+    \ingroup meas
+    Measure the log of the particle or hole determinant.
+    """
+    
+    def __init__(self, kappaTilde, SIGMA_KAPPA=-1):
+        self.logdet_p = []
+        self.logdet_h = []
+        hfm = cns.HubbardFermiMatrix(kappa, 0, SIGMA_KAPPA)
+    
+    def __call__(self, itr, phi, act, acc):
+        """!Record the particle and hole deterimants."""
+        self.logdet_p.append( cns.logdetM( hfm, phi, False ) )
+        self.logdet_h.append( cns.logdetM( hfm, phi, True  ) )
+        
+    def report(self):
+        """! make a plot here or something. """
