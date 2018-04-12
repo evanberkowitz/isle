@@ -31,14 +31,9 @@ class Phi:
         self.phiSq = []
 
     def __call__(self, itr, phi, act, acc):
-        """!Record phi and mean value of phi^2 rate."""
-        phi1 = 0.
-        phiSq = 0.
-        for i in range(len(phi)):
-            phi1 += phi[i]
-            phiSq += np.real(phi[i]*np.conj(phi[i]))
-        self.phi.append(np.real(phi1))
-        self.phiSq.append(phiSq/len(phi))
+        """!Record the total phi and mean value of phi^2."""
+        self.phi.append(np.sum(phi))
+        self.phiSq.append(np.linalg.norm(phi)**2 / len(phi))
 
     def reportPhiSq(self, binsize, ax=None, fmt=""):
         r"""!
