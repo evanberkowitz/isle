@@ -44,18 +44,21 @@ def main():
 
     accMeas = cns.meas.AcceptanceRate()
     actMeas = cns.meas.Action()
+    thermalizationProgress = cns.meas.Progress("Thermalization", NTHERM)
+    productionProgress = cns.meas.Progress("Production", NPROD)
 
     print("thermalizing")
     phi = cns.hmc.hmc(phi, ham,
                       cns.hmc.LinearStepLeapfrog(ham, (1, 1), (20, 4), NTHERM-1), NTHERM,
-                      [(1, accMeas), (1, actMeas)],
+                      [(1, accMeas), (1, actMeas), (NTHERM/10, thermalizationProgress)],
                       [(20, cns.checks.realityCheck)])
+    print("thermalized!")
 
     # print("running production")
     # detMeas = DetMeas(cns.HubbardFermiMatrix(kappa, 0, SIGMA_KAPPA))
-    # print("running production")
-    # phi = cns.hmc.hmc(phi, ham, cns.hmc.ConstStepLeapfrog(ham, 1, 4), NPROD,
-    #                   [(1, accMeas), (1, detMeas)])
+    print("running production")
+    phi = cns.hmc.hmc(phi, ham, cns.hmc.ConstStepLeapfrog(ham, 1, 4), NPROD,
+                      [(1, accMeas), (1, actMeas), (500, productionProgress)])
 
     print("processing results")
     ax = accMeas.report(20)
