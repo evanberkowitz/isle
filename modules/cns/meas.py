@@ -73,9 +73,9 @@ class Phi:
         # make a new axes is needed
         doTightLayout = False
         if ax is None:
-            fig, ax = _newAxes("", r"$\Phi$",r"PDF")
+            fig, ax = _newAxes("", r"$\Phi$", r"PDF")
             doTightLayout = True
-        
+
         # the histogram of the data
         n, bins, patches = ax.hist(np.real(self.Phi), 50, normed=1, facecolor='green', alpha=0.75)
 
@@ -94,11 +94,11 @@ class Phi:
         # make a new axes is needed
         doTightLayout = False
         if ax is None:
-            fig, ax = _newAxes("",r"$N_{\mathrm{tr}}$", r"$\Phi$")
+            fig, ax = _newAxes("", r"$N_{\mathrm{tr}}$", r"$\Phi$")
             doTightLayout = True
-        
+
         # the histogram of the data
-        ax.plot(np.real(self.Phi),fmt, label=r"\Phi($N_{\mathrm{tr}})$")
+        ax.plot(np.real(self.Phi), fmt, label=r"\Phi($N_{\mathrm{tr}})$")
 
         ax.grid(True)
 
@@ -189,16 +189,16 @@ class LogDet:
     \ingroup meas
     Measure the log of the particle or hole determinant.
     """
-    
+
     def __init__(self, kappaTilde, SIGMA_KAPPA=-1):
         self.logdet_p = []
         self.logdet_h = []
         hfm = cns.HubbardFermiMatrix(kappaTilde, 0, SIGMA_KAPPA)
-    
+
     def __call__(self, itr, phi, act, acc):
         """!Record the particle and hole deterimants."""
-        self.logdet_p.append( cns.logdetM( hfm, phi, False ) )
-        self.logdet_h.append( cns.logdetM( hfm, phi, True  ) )
-        
+        self.logdet_p.append(cns.logdetM(hfm, phi, cns.PH.PARTICLE))
+        self.logdet_h.append(cns.logdetM(hfm, phi, cns.PH.HOLE))
+
     def report(self):
         """! make a plot here or something. """
