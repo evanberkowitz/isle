@@ -5,6 +5,8 @@ Canonically, a measurement is a class witha name in UpperCamelCase in a module
 of the same name but in lowerCamelCase. Such a class is imported into the <TT>cns.meas</TT>
 namespace. In other cases, the measurements have to be addressed by using the module name
 in addition to the class or function name.
+
+More details can be found under \ref measdoc "Measurements".
 """
 
 ## \defgroup meas Measurements
