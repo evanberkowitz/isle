@@ -20,7 +20,7 @@ def main():
     with open(str(BENCH_PATH/"../lattices/c60_ipr.yml"), "r") as yamlf:
         lat = yaml.safe_load(yamlf)
 
-    nts = (4, 8, 12, 16, 20, 24, 28, 32)
+    nts = (4, 8, 12, 16, 20, 24, 28, 32, 64, 128)
     cbtdlu = []
     analytical = []
     lapack = []
