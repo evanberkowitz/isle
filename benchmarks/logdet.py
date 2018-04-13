@@ -1,5 +1,3 @@
-#!/usr/bin/env python3
-
 """
 Showcase and benchmark logdet.
 """
@@ -16,43 +14,47 @@ BENCH_PATH = Path(__file__).resolve().parent
 site.addsitedir(str(BENCH_PATH/"../modules"))
 import cns
 
+NTS = (4, 8, 12, 16, 24, 32, 64, 96)
+NREP = 5
+
+
 def main():
     with open(str(BENCH_PATH/"../lattices/c60_ipr.yml"), "r") as yamlf:
         lat = yaml.safe_load(yamlf)
+    nx = lat.nx()
 
-    nts = (4, 8, 12, 16, 20, 24, 28, 32, 64, 128)
-    cbtdlu = []
-    analytical = []
-    lapack = []
+    functions = {
+        "dense": (cns.logdet, "fn(Q)", "Q = cns.Matrix(hfm.Q(phi))"),
+        "logdetQ": (cns.logdetQ, "fn(hfm, phi)", ""),
+        "logdetM": (cns.logdetM, "fn(hfm, phi, cns.PH.PARTICLE)+fn(hfm, phi, cns.PH.HOLE)", "")
+    }
+    times = {key: [] for key in functions}
 
-    logdetQ = cns.logdetQ
-    logdetM = cns.logdetM
-    logdet = cns.logdet
-    PH = cns.PH
-    for nt in nts:
-        print("doing nt = {}".format(nt))
-        # create a normal distributed phi
-        phi = cns.Vector(np.random.randn(lat.nx()*nt)
-                         + 1j*np.random.randn(lat.nx()*nt), dtype=complex)
+    for nt in NTS:
+        print("nt = {}".format(nt))
 
-        # make a fermion matrix
+        # make random auxilliary field and HFM
+        phi = cns.Vector(np.random.randn(nx*nt)
+                         + 1j*np.random.randn(nx*nt))
         hfm = cns.HubbardFermiMatrix(lat.hopping()/nt, 0, -1)
-        Q = cns.Matrix(hfm.Q(phi))
 
-        # do the benchmark
-        cbtdlu.append(timeit.timeit("logdetQ(hfm,phi)", globals=locals(), number=10)/10)
-        analytical.append(
-            timeit.timeit("logdetM(hfm, phi, PH.PARTICLE) + logdetM(hfm, phi, PH.HOLE)",
-                          globals=locals(), number=10)/10)
-        lapack.append(timeit.timeit("logdet(Q)", globals=locals(), number=10)/10)
+        # do the benchmarks
+        for name, (function, execStr, setupStr) in functions.items():
+            if nt > 12 and name == "dense":   # this is just too slow
+                continue
+
+            times[name].append(timeit.timeit(execStr,
+                                             setup=setupStr,
+                                             globals={"fn": function, "hfm": hfm,
+                                                      "phi": phi, "cns": cns},
+                                             number=NREP) / NREP)
 
     # save benchmark to file
     pickle.dump({"xlabel": "Nt",
                  "ylabel": "time / s",
-                 "xvalues": nts,
-                 "results": {"CBTDLU": cbtdlu,
-                             "analytical": analytical,
-                             "LAPACK": lapack}}, open("logdet.ben", "wb"))
+                 "xvalues": NTS,
+                 "results": times},
+                open("logdet.ben", "wb"))
 
 if __name__ == "__main__":
     main()
