@@ -16,9 +16,9 @@ class Action:
     def __init__(self):
         self.act = []
 
-    def __call__(self, itr, phi, act, acc):
+    def __call__(self, phi, inline=False, **kwargs):
         """!Record action."""
-        self.act.append(act)
+        self.act.append(kwargs["act"])
 
     def report(self, binsize, ax=None, fmtre="", fmtim=""):
         r"""!

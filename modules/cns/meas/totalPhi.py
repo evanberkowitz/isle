@@ -17,7 +17,7 @@ class TotalPhi:
         self.Phi = []
         self.phiSq = []
 
-    def __call__(self, itr, phi, act, acc):
+    def __call__(self, phi, inline=False, **kwargs):
         """!Record the total phi and mean value of phi^2."""
         self.Phi.append(np.sum(phi))
         self.phiSq.append(np.linalg.norm(phi)**2 / len(phi))

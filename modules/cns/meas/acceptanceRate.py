@@ -16,9 +16,11 @@ class AcceptanceRate:
     def __init__(self):
         self.accRate = []
 
-    def __call__(self, itr, phi, act, acc):
+    def __call__(self, phi, inline=False, **kwargs):
         """!Record acceptance rate."""
-        self.accRate.append(acc)
+        if not inline:
+            raise RuntimeError("Cannot call AcceptanceRate measurement out of line")
+        self.accRate.append(kwargs["acc"])
 
     def report(self, binsize, ax=None, fmt=""):
         r"""!

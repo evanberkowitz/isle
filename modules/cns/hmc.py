@@ -56,12 +56,8 @@ def hmc(phi, ham, proposer, ntr, measurements=[], checks=[]):
 
     \param measurements List of tuples `(freq, meas)`, where `freq` is the measurement
                         frequency: 1 means measure every trajectory, 2 means
-                        measure every second trajectory, etc.<BR>
-                        `meas` is a callable with arguments `phi`, `act`, `acc`.
-                          - `itr`: Index of the trajectory.
-                          - `phi`: Configuration.
-                          - `act`: Action (without momentum pi).
-                          - `acc`: `True` if trajectory was accepted, `False` otherwise.
+                        measure every second trajectory, etc. The requirements on meas
+                        are listed under \ref measdoc.
 
      \param checks List of tuples `(freq, check)`, where `freq` is the check
                    frequency: 1 means check every trajectory, 2 means check every
@@ -108,7 +104,7 @@ def hmc(phi, ham, proposer, ntr, measurements=[], checks=[]):
         # perform measurements
         for (freq, meas) in measurements:
             if freq > 0 and itr % freq == 0:
-                meas(itr, phi, act, acc)
+                meas(phi, True, itr=itr, act=act, acc=acc)
 
     return phi
 
