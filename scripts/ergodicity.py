@@ -9,6 +9,7 @@ import matplotlib.pyplot as plt
 import core
 core.prepare_module_import()
 import cns
+import cns.meas
 
 LATFILE = "two_sites.yml"  # input lattice
 

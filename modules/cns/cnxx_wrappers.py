@@ -1,4 +1,6 @@
 """!
+Import cnxx.
+
 Imports everything from cnxx into this modules namespace and defines wrappers
 around linear algebra types.
 """

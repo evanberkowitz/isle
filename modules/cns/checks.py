@@ -1,5 +1,5 @@
 """!
-Various basic measurements.
+Various basic checks.
 """
 
 ## \defgroup check Consistency checks
