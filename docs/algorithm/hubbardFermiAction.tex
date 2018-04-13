@@ -83,9 +83,9 @@ The parameters are
 \end{itemize}
 
 
-\subsection{Action}
+\subsection{LU-Decomposition}
 
-The determinant of $M$ is computed using an LU-decomposition. The decomposition can be calculated analytically in terms of spacial matrices given the specific structure in equation~\eqref{eq:ferm_mat_block_v1}.
+In order to calculate the determinant of $M$ and solve systems of equations, compute the LU-decomposition of $M$. This can be done analytically in terms of spacial matrices given the specific structure in equation~\eqref{eq:ferm_mat_block_v1}.
 Use the following ansatz\footnote{This is an adaptation of the algorithm presented in \url{https://hrcak.srce.hr/100527} and is a simplified version of the algorithm presented in~\cref{sec:lu_decomposition_v2}}:
 \begin{align}
   L =
@@ -113,11 +113,36 @@ Note that each $l$, $d$, and $v$ is an $N_x \times N_x$ matrix. Multiplying this
 \item $l_i d_i = -F_{i+1}$ for $0 \le i \le N_t-2$
 \item $v_0 = F_0$;\hspace{2em} $l_{i-1} v_{i-1} + v_i = 0$ for $1 \le i \le N_t-2$
 \end{itemize}
-Since we only care about the determinant and
+
+\noindent
+Using $d_i = K$ for $i < N_t-1$, we get
+\begin{align}
+  l_i = - F_{i+1} K^{-1}\label{eq:mlu_l}
+\end{align}
+and from this
+\begin{align}
+  v_i &= -l_{i-1}v_{i-1} = F_i K^{-1} v_{i-1} = F_i K^{-1} F_{i-1} K^{-1} v_{i-2}\\
+      &\equiv K A_{0i}\label{eq:mlu_v}
+\end{align}
+with
+\begin{align}
+  A_{tt'} \equiv K^{-1} F_{t'} K^{-1} F_{i-1} \cdots K^{-1} F_t.\label{eq:def_partial_A}
+\end{align}
+Finally, we get the non trivial $d$:
+\begin{align}
+  d_{N_t-1} = K + F_{N_t-1} K^{-1} K A_{0(n-2)} = K (1 + A),
+\end{align}
+where $A$ without index is
+\begin{align}
+  A &\equiv K^{-1}F_{N_t-1}K^{-1} F_{N_t-2} \cdots K^{-1}F_{1}K^{-1} F_{0}.\label{eq:def_A}
+\end{align}
+
+\subsection{Action}
+
+Given the LU-decomposition of the previous section, we can write
 \begin{align}
   \det M = \det L \det U = (\prod_{i=0}^{N_t-1}\,1) (\prod_{i=0}^{N_t-1}\,d_i)
 \end{align}
-we only need the $d$'s.
 Resumming ('remultiplying'?) the equations for the non-trivial $d$ gives
 \begin{align}
   d_{N_t-1} = K + F_{N_t-1}K^{-1} F_{N_t-2}K^{-1} \cdots F_{1}K^{-1} F_{0}.
@@ -132,7 +157,7 @@ Apply the logarithm to get the final result:
   \vspace{-\baselineskip}
   \begin{align}
     \log \det M &= N_t \log \det(K)  + \log \det (1 + A),\label{eq:det_M}\\
-    A &\equiv K^{-1}F_{N_t-1}K^{-1} F_{N_t-2} \cdots K^{-1}F_{1}K^{-1} F_{0}.\label{eq:def_A}
+    A &\equiv K^{-1}F_{N_t-1}K^{-1} F_{N_t-2} \cdots K^{-1}F_{1}K^{-1} F_{0}.
   \end{align}
 \end{resultbox}
 \noindent
@@ -192,8 +217,9 @@ Combining those results gives the momentum as
 \noindent
 For reference, write out $\dot{\pi}_{\text{ferm}}$ explicitly. First, in order to improve readability denote partial products of $A^{-1}$ as
 \begin{align}
-  A^{-1}_{tt'} \equiv F_t^{-1}K \cdots F_{t'}^{-1}K, \qquad A^{-1}_{tt} \equiv F_t^{-1}K.
+  A^{-1}_{tt'} \equiv F_t^{-1}K \cdots F_{t'}^{-1}K, \qquad A^{-1}_{tt} \equiv F_t^{-1}K
 \end{align}
+which is the inverse of~\eqref{eq:def_partial_A}.
 The general case:
 \begin{align}
   {(\dot{\pi}_{\text{ferm}})}_{\mu\tau} = -\i {\big(A^{-1}_{p,(\tau+1)(N_t-1)} {(1+A_p^{-1})}^{-1} A^{-1}_{p,0\tau}\big)}_{\mu\mu} + \i {\big(A^{-1}_{h,(\tau+1)(N_t-1)} {(1+A_h^{-1})}^{-1} A^{-1}_{h,0\tau}\big)}_{\mu\mu}
