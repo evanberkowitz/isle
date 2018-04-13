@@ -1,5 +1,3 @@
-#!/usr/bin/env python3
-
 """
 Plot results of benchmarks.
 """
@@ -21,10 +19,8 @@ def main():
     ax.set_title("Benchmark '{}'".format(sys.argv[1]))
     ax.set_xlabel(ben["xlabel"])
     ax.set_ylabel(ben["ylabel"])
-    ax.set_xscale('log', basex=2)
-    ax.set_yscale('log', basey=10)
     for name, values in ben["results"].items():
-        ax.plot(ben["xvalues"], values, 'P-', label=name)
+        ax.plot(ben["xvalues"][:len(values)], values, label=name)
     ax.legend()
     fig.tight_layout()
     plt.show()
