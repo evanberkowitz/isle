@@ -355,6 +355,14 @@ namespace cnxx {
     std::complex<double> logdetM(const HubbardFermiMatrix &hfm, const CDVector &phi,
                                  Species species);
 
+    /// Solve a system of equations.
+    /**
+     * \todo Document.
+     */
+    std::vector<CDVector> solveM(const HubbardFermiMatrix &hfm,
+                                 const CDVector &phi,
+                                 Species species,
+                                 const std::vector<CDVector> &rhs);
 }  // namespace cnxx
 
 #endif  // ndef HUBBARD_FERMI_MATRIX_HPP

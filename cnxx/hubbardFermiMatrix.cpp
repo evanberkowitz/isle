@@ -576,4 +576,54 @@ namespace cnxx {
             );
     }
 
+    std::vector<CDVector> solveM(const HubbardFermiMatrix &hfm,
+                                 const CDVector &phi,
+                                 const Species species,
+                                 const std::vector<CDVector> &rhs) {
+
+        const std::size_t nx = hfm.nx();
+        const std::size_t nt = getNt(phi, nx);
+        const auto kinv = hfm.Kinv(species);
+
+        std::vector<CDVector> res(rhs.size());
+
+        // solve Ly = b
+        CDSparseMatrix f;
+        for (std::size_t i = 0; i < rhs.size(); ++i) {
+            res[i].resize(nx*nt);
+            spacevec(res[i], 0, nx) = kinv*spacevec(rhs[i], 0, nx);
+            for (std::size_t t = 1; t < nt; ++t) {
+                hfm.F(f, t, phi, species, false);
+                spacevec(res[i], t, nx) = kinv*(spacevec(rhs[i], t, nx) + f*spacevec(res[i], t-1, nx));
+            }
+        }
+        // now res ~ K^-1 y
+        
+        // partial products of A
+        std::vector<CDMatrix> partialA;
+        partialA.reserve(nt-1);  // not storing the full A
+        hfm.F(f, 0, phi, species, false);
+        partialA.emplace_back(kinv*f);
+        for (std::size_t t = 1; t < nt-1; ++t) {
+            hfm.F(f, t, phi, species, false);
+            partialA.emplace_back(kinv * f * partialA.back());
+        }
+
+        // (1+A)^-1
+        hfm.F(f, nt-1, phi, species, false);
+        CDMatrix invmat = IdMatrix<std::complex<double>>(nx) + kinv*f*partialA.back();
+        auto ipiv = std::make_unique<int[]>(invmat.rows());
+        invert(invmat, ipiv);
+
+        // solve Ux = y
+        for (std::size_t i = 0; i < rhs.size(); ++i) {
+            spacevec(res[i], nt-1, nx) = invmat*spacevec(res[i], nt-1, nx);
+            for (std::size_t t = 0; t < nt-1; ++t) {
+                spacevec(res[i], t, nx) -= partialA[t]*spacevec(res[i], nt-1, nx);
+            }
+        }
+
+        return res;
+    }
+
 }  // namespace cnxx

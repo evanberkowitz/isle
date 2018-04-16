@@ -50,8 +50,7 @@ namespace bind {
                                                     const CDVector&)>(logdetQ));
         mod.def("logdetQ",
                 static_cast<std::complex<double>(*)(const HubbardFermiMatrix::QLU&)>(logdetQ));
-        mod.def("logdetM",
-                static_cast<std::complex<double>(*)(const HubbardFermiMatrix&,
-                                                    const CDVector&, Species)>(logdetM));
+        mod.def("logdetM", logdetM);
+        mod.def("solveM", solveM);
     }
 }
