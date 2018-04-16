@@ -152,6 +152,21 @@ namespace cnxx {
     template <typename T>
     constexpr T pi = static_cast<T>(3.1415926535897932384626433832795028841971693993751058209749L);
 
+    /// Compute temporal lattice size from a spacetime vector and spatial lattice size.
+    /**
+     * \throws std::runtime_error if vector size is not a multiple of `nx` and not in release mode.
+     * \param stVec An arbitrary spacetime vector.
+     * \param nx spatial lattice size.
+     * \return Number of time slices `nt = stVec.size() / nx`.
+     */
+    template <typename VT>
+    std::size_t getNt(const VT &stVec, const std::size_t nx) noexcept(ndebug) {
+#ifndef NDEBUG
+        if (stVec.size() % nx != 0)
+            throw std::runtime_error("Vector dimension does not match, expected a spacetime vector.");
+#endif
+        return stVec.size() / nx;
+    }
 
     /// Return the flat spacetime coordinate for a given pair of space and time coordinates.
     /**

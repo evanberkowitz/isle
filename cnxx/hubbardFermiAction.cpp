@@ -23,7 +23,7 @@ namespace cnxx {
                                    const CDSparseMatrix &k, const Species species) {
 
             const auto nx = hfm.nx();
-            const auto nt = phi.size()/nx;
+            const auto nt = getNt(phi, nx);
 
             if (nt < 2)
                 throw std::runtime_error("nt < 2 in HubbardFermiAction not supported");
@@ -68,7 +68,7 @@ namespace cnxx {
         CDVector forceVariant2(const HubbardFermiMatrix &hfm,
                                const CDVector &phi) {
             const auto nx = hfm.nx();
-            const auto nt = phi.size()/nx;
+            const auto nt = getNt(phi, nx);
 
             // invert Q
             Matrix<std::complex<double>> QInv{hfm.Q(phi)};

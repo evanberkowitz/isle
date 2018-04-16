@@ -91,7 +91,7 @@ namespace cnxx {
                                const std::size_t tp, const CDVector &phi,
                                const Species species, const bool inv) const {
         const std::size_t NX = nx();
-        const std::size_t NT = phi.size()/NX;
+        const std::size_t NT = getNt(phi, NX);
         const std::size_t tm1 = tp==0 ? NT-1 : tp-1;  // t' - 1
         resizeMatrix(f, NX);
 
@@ -112,7 +112,7 @@ namespace cnxx {
                                const CDVector &phi,
                                const Species species) const {
         const std::size_t NX = nx();
-        const std::size_t NT = phi.size()/NX;
+        const std::size_t NT = getNt(phi, NX);
         resizeMatrix(m, NX*NT);
 
         // zeroth row
@@ -156,7 +156,7 @@ namespace cnxx {
                                    const std::size_t tp,
                                    const CDVector &phi) const {
         const std::size_t NX = nx();
-        const std::size_t NT = phi.size()/NX;
+        const std::size_t NT = getNt(phi, NX);
         const std::size_t tm1 = tp==0 ? NT-1 : tp-1;  // t' - 1
         const double antiPSign = tp==0 ? -1 : 1;   // encode anti-periodic BCs
         resizeMatrix(T, NX);
@@ -177,7 +177,7 @@ namespace cnxx {
                                     const std::size_t tp,
                                     const CDVector &phi) const {
         const std::size_t NX = nx();
-        const std::size_t NT = phi.size()/NX;
+        const std::size_t NT = getNt(phi, NX);
         const double antiPSign = tp==NT-1 ? -1 : 1;  // encode anti-periodic BCs
         resizeMatrix(T, NX);
 
@@ -195,7 +195,7 @@ namespace cnxx {
 
     void HubbardFermiMatrix::Q(CDSparseMatrix &q, const CDVector &phi) const {
         const std::size_t NX = nx();
-        const std::size_t NT = phi.size()/NX;
+        const std::size_t NT = getNt(phi, NX);
         resizeMatrix(q, NX*NT);
 
         const auto p = P();
@@ -398,7 +398,7 @@ namespace cnxx {
         HubbardFermiMatrix::QLU generalQLU(const HubbardFermiMatrix &hfm,
                                            const CDVector &phi) {
             const std::size_t nx = hfm.nx();
-            const std::size_t nt = phi.size()/nx;
+            const std::size_t nt = getNt(phi, nx);
             HubbardFermiMatrix::QLU lu{nt};
 
             const auto P = hfm.P();  // diagonal block P
@@ -555,7 +555,7 @@ namespace cnxx {
             throw std::runtime_error("Called logdetM with mu != 0. This is not supported yet because the algorithm is unstable.");
 
         const auto NX = hfm.nx();
-        const auto NT = phi.size()/NX;
+        const auto NT = getNt(phi, NX);
 
         const auto kinv = hfm.Kinv(species);
 
