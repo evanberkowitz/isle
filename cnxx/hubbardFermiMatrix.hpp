@@ -101,53 +101,65 @@ namespace cnxx {
         /**
          * \param k Any old content is erased and the matrix is
          *          resized if need be.
-         * \param ph Select whether to construct for particles or holes.
+         * \param species Select whether to construct for particles or holes.
          */        
-        void K(DSparseMatrix &k, Species ph) const;
+        void K(DSparseMatrix &k, Species species) const;
 
         /// Return the diagonal block matrix K of matrix M.
         /**
-         * \param ph Select whether to construct for particles or holes.
+         * \param species Select whether to construct for particles or holes.
          */
-        DSparseMatrix K(Species ph) const;
-        
+        DSparseMatrix K(Species species) const;
+
+        /// Return the inverse of the diagonal block matrix K of matrix M.
+        /**
+         * \param species Select whether to construct for particles or holes.
+         */
+        const DMatrix &Kinv(Species species) const;
+
+        /// Return log(det(K^-1)).
+        /**
+         * \param species Select whether to construct for particles or holes.
+         */
+        std::complex<double> logdetKinv(Species species) const;
+
         /// Store an off-diagonal block F of matrix M in the parameter.
         /**
          * \param f Any old content is erased and the matrix is
          *          resized if need be.
          * \param tp Temporal row index t'.
          * \param phi Auxilliary field.
-         * \param ph Select whether to construct for particles or holes.
-         * \param inv If `true` consttructs the inverse of F.
+         * \param species Select whether to construct for particles or holes.
+         * \param inv If `true` constructs the inverse of F.
          */        
         void F(CDSparseMatrix &f, std::size_t tp, const CDVector &phi,
-               Species ph, bool inv=false) const;
+               Species species, bool inv=false) const;
 
         /// Return an off-diagonal block matrix F of matrix M.
         /**
          * \param tp Temporal row index t'.
          * \param phi Auxilliary field.
-         * \param ph Select whether to construct for particles or holes.
-         * \param inv If `true` consttructs the inverse of F.
+         * \param species Select whether to construct for particles or holes.
+         * \param inv If `true` constructs the inverse of F.
          */
         CDSparseMatrix F(std::size_t tp, const CDVector &phi,
-                         Species ph, bool inv=false) const;
+                         Species species, bool inv=false) const;
 
         /// Store the matrix \f$M\f$ in the parameter.
         /**
          * \param m Any old content is erased and the matrix is
          *          resized if need be.
          * \param phi Auxilliary field.
-         * \param ph Select whether to construct for particles or holes.
+         * \param species Select whether to construct for particles or holes.
          */
-        void M(CDSparseMatrix &m, const CDVector &phi, Species ph) const;
+        void M(CDSparseMatrix &m, const CDVector &phi, Species species) const;
 
         /// Return the matrix \f$M\f$.
         /**
          * \param phi Auxilliary field.
-         * \param ph Select whether to construct for particles or holes.
+         * \param species Select whether to construct for particles or holes.
          */
-        CDSparseMatrix M(const CDVector &phi, Species ph) const;
+        CDSparseMatrix M(const CDVector &phi, Species species) const;
 
         /// Store the block on the diagonal \f$P\f$ in the parameter.
         /**
@@ -263,6 +275,10 @@ namespace cnxx {
         DSparseMatrix _kappa;  ///< Hopping matrix.
         double _mu;              ///< Chemical potential.
         std::int8_t _sigmaKappa; ///< Sign of kappa in M^dag.
+        mutable DMatrix _kinvp;  ///< K^-1 for particles, has size zero if not set.
+        mutable DMatrix _kinvh;  ///< K^-1 for holes, has size zero if not set.
+        mutable std::complex<double> _logdetKinvp;  ///< log(det(K^-1)) for particles, real part is NaN if not set.
+        mutable std::complex<double> _logdetKinvh;  ///< log(det(K^-1)) for holes, real part is NaN if not set.
     };
 
 
@@ -332,12 +348,12 @@ namespace cnxx {
     /**
      * \param hfm %HubbardFermiMatrix to compute the determinant of.
      * \param phi Auxilliary field.
-     * \param ph Select whether to use particles or holes.
+     * \param species Select whether to use particles or holes.
      * \return Value equivalent to `log(det(hfm.M()))` and projected onto the
      *         first branch of the logarithm.
      */
     std::complex<double> logdetM(const HubbardFermiMatrix &hfm, const CDVector &phi,
-                                 Species ph);
+                                 Species species);
 
 }  // namespace cnxx
 

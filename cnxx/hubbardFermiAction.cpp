@@ -20,7 +20,7 @@ namespace cnxx {
          * Constructs rest on the fly ('right', contains (1+A^-1)^-1).
          */
         CDVector forceVariant1Part(const HubbardFermiMatrix &hfm, const CDVector &phi,
-                                   const CDSparseMatrix &k, const Species ph) {
+                                   const CDSparseMatrix &k, const Species species) {
 
             const auto nx = hfm.nx();
             const auto nt = phi.size()/nx;
@@ -33,15 +33,15 @@ namespace cnxx {
             lefts.reserve(nt-1);  // not storing full A^-1 here
 
             // first term for tau = nt-2
-            CDSparseMatrix f = hfm.F(nt-1, phi, ph, true);
+            CDSparseMatrix f = hfm.F(nt-1, phi, species, true);
             lefts.emplace_back(f*k);
             // other terms
             for (std::size_t t = nt-2; t != 0; --t) {
-                hfm.F(f, t, phi, ph, true);
+                hfm.F(f, t, phi, species, true);
                 lefts.emplace_back(f*k*lefts.back());
             }
             // full A^-1
-            hfm.F(f, 0, phi, ph, true);
+            hfm.F(f, 0, phi, species, true);
             const CDMatrix Ainv = f * k * lefts.back();
 
             // start right with (1+A^-1)^-1
@@ -56,7 +56,7 @@ namespace cnxx {
 
             // all sites except tau = nt-1
             for (std::size_t tau = 0; tau < nt-1; ++tau) {
-                hfm.F(f, tau, phi, ph, true);
+                hfm.F(f, tau, phi, species, true);
                 right = right * f * k;
                 spacevec(force, tau, nx) = blaze::diagonal(lefts[nt-1-tau-1]*right);
             }

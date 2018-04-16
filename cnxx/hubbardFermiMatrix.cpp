@@ -1,6 +1,8 @@
 #include "hubbardFermiMatrix.hpp"
 
 #include <memory>
+#include <limits>
+#include <cmath>
 
 using namespace std::complex_literals;
 
@@ -25,7 +27,10 @@ namespace cnxx {
     HubbardFermiMatrix::HubbardFermiMatrix(const DSparseMatrix &kappa,
                                            const double mu,
                                            const std::int8_t sigmaKappa)
-        : _kappa{kappa}, _mu{mu}, _sigmaKappa{sigmaKappa}
+        : _kappa{kappa}, _mu{mu}, _sigmaKappa{sigmaKappa},
+          _kinvp(0, 0), _kinvh(0, 0),
+          _logdetKinvp{std::numeric_limits<double>::quiet_NaN(), 0},
+          _logdetKinvh{std::numeric_limits<double>::quiet_NaN(), 0}
     {
 #ifndef NDEBUG
         if (kappa.rows() != kappa.columns())
@@ -34,69 +39,101 @@ namespace cnxx {
     }
 
 
-    void HubbardFermiMatrix::K(DSparseMatrix &k, const Species ph) const {
+    void HubbardFermiMatrix::K(DSparseMatrix &k, const Species species) const {
         const std::size_t NX = nx();
         resizeMatrix(k, NX);
 
-        if (ph == Species::PARTICLE)
+        if (species == Species::PARTICLE)
             k = (1+_mu)*IdMatrix<double>(NX) - _kappa;
         else
             k = (1-_mu)*IdMatrix<double>(NX) - _sigmaKappa*_kappa;
     }
-
-    DSparseMatrix HubbardFermiMatrix::K(const Species ph) const {
+   
+    DSparseMatrix HubbardFermiMatrix::K(const Species species) const {
         DSparseMatrix k;
-        K(k, ph);
+        K(k, species);
         return k;
+    }
+
+    const DMatrix &HubbardFermiMatrix::Kinv(const Species species) const {
+        if (species == Species::PARTICLE) {
+            if (_kinvp.rows() == 0) {
+                _kinvp = K(species);
+                auto ipiv = std::make_unique<int[]>(_kinvp.rows());
+                invert(_kinvp, ipiv);
+            }
+            return _kinvp;
+        }
+        else {
+            if (_kinvh.rows() == 0) {
+                _kinvh = K(species);
+                auto ipiv = std::make_unique<int[]>(_kinvh.rows());
+                invert(_kinvh, ipiv);
+            }
+            return _kinvh;
+        }
+    }
+
+    std::complex<double> HubbardFermiMatrix::logdetKinv(Species species) const {
+        if (species == Species::PARTICLE) {
+            if (std::isnan(std::real(_logdetKinvp)))
+                _logdetKinvp = logdet(Kinv(species));
+            return _logdetKinvp;
+        }
+        else {
+            if (std::isnan(std::real(_logdetKinvh)))
+                _logdetKinvh = logdet(Kinv(species));
+            return _logdetKinvh;
+        }
     }
 
     void HubbardFermiMatrix::F(CDSparseMatrix &f,
                                const std::size_t tp, const CDVector &phi,
-                               const Species ph, const bool inv) const {
+                               const Species species, const bool inv) const {
         const std::size_t NX = nx();
         const std::size_t NT = phi.size()/NX;
         const std::size_t tm1 = tp==0 ? NT-1 : tp-1;  // t' - 1
         resizeMatrix(f, NX);
 
-        if ((inv && ph == Species::PARTICLE) || (ph == Species::HOLE && !inv))
+        if ((inv && species == Species::PARTICLE) || (species == Species::HOLE && !inv))
             blaze::diagonal(f) = blaze::exp(-1.i*spacevec(phi, tm1, NX));
         else
             blaze::diagonal(f) = blaze::exp(1.i*spacevec(phi, tm1, NX));
     }
 
     CDSparseMatrix HubbardFermiMatrix::F(const std::size_t tp, const CDVector &phi,
-                                         const Species ph, const bool inv) const {
+                                         const Species species, const bool inv) const {
         CDSparseMatrix f;
-        F(f, tp, phi, ph, inv);
+        F(f, tp, phi, species, inv);
         return f;
     }
 
     void HubbardFermiMatrix::M(CDSparseMatrix &m,
                                const CDVector &phi,
-                               const Species ph) const {
+                               const Species species) const {
         const std::size_t NX = nx();
         const std::size_t NT = phi.size()/NX;
         resizeMatrix(m, NX*NT);
 
         // zeroth row
-        const auto k = K(ph);
+        const auto k = K(species);
         spacemat(m, 0, 0, NX) = k;
         // explicit boundary condition
-        auto f = F(0, phi, ph);
+        auto f = F(0, phi, species);
         spacemat(m, 0, NT-1, NX) = f;
 
         // other rows
         for (std::size_t tp = 1; tp < NT; ++tp) {
-            F(f, tp, phi, ph);
+            F(f, tp, phi, species);
             spacemat(m, tp, tp-1, NX) = -f;
             spacemat(m, tp, tp, NX) = k;
         }
     }
 
     CDSparseMatrix HubbardFermiMatrix::M(const CDVector &phi,
-                                         const Species ph) const {
+                                         const Species species) const {
         CDSparseMatrix m;
-        M(m, phi, ph);
+        M(m, phi, species);
         return m;
     }
 
@@ -182,10 +219,18 @@ namespace cnxx {
 
 
     void HubbardFermiMatrix::updateKappa(const SparseMatrix<double> &kappa) {
+        _kinvp.clear();
+        _kinvh.clear();
+        _logdetKinvp = std::numeric_limits<double>::quiet_NaN();
+        _logdetKinvh = std::numeric_limits<double>::quiet_NaN();
         _kappa = kappa;
     }
 
     void HubbardFermiMatrix::updateMu(const double mu) {
+        _kinvp.clear();
+        _kinvh.clear();
+        _logdetKinvp = std::numeric_limits<double>::quiet_NaN();
+        _logdetKinvh = std::numeric_limits<double>::quiet_NaN();
         _mu = mu;
     }
 
@@ -505,30 +550,28 @@ namespace cnxx {
 
 
     std::complex<double> logdetM(const HubbardFermiMatrix &hfm,
-                                 const CDVector &phi, const Species ph) {
+                                 const CDVector &phi, const Species species) {
         if (hfm.mu() != 0)
             throw std::runtime_error("Called logdetM with mu != 0. This is not supported yet because the algorithm is unstable.");
 
         const auto NX = hfm.nx();
         const auto NT = phi.size()/NX;
 
-        DMatrix kinv = hfm.K(ph);
-        auto ipiv = std::make_unique<int[]>(kinv.rows());
-        invert(kinv, ipiv);
+        const auto kinv = hfm.Kinv(species);
 
         // first K*F pair
-        auto f = hfm.F(0, phi, ph, false);
+        auto f = hfm.F(0, phi, species, false);
         Matrix<std::complex<double>> aux = kinv*f;
         // other pairs
         for (std::size_t t = 1; t < NT; ++t) {
-            hfm.F(f, t, phi, ph, false);
+            hfm.F(f, t, phi, species, false);
             aux = aux*kinv*f;
         }        
 
         // use kinv for first term because we already have it, otherwise would need dense K
         // gives extra minus sign
         return toFirstLogBranch(
-            -static_cast<double>(NT)*logdet(kinv)
+            -static_cast<double>(NT)*hfm.logdetKinv(species)
             + logdet(blaze::evaluate(IdMatrix<std::complex<double>>(NX) + aux))
             );
     }
