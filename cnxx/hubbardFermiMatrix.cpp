@@ -34,17 +34,17 @@ namespace cnxx {
     }
 
 
-    void HubbardFermiMatrix::K(DSparseMatrix &k, const PH ph) const {
+    void HubbardFermiMatrix::K(DSparseMatrix &k, const Species ph) const {
         const std::size_t NX = nx();
         resizeMatrix(k, NX);
 
-        if (ph == PH::PARTICLE)
+        if (ph == Species::PARTICLE)
             k = (1+_mu)*IdMatrix<double>(NX) - _kappa;
         else
             k = (1-_mu)*IdMatrix<double>(NX) - _sigmaKappa*_kappa;
     }
 
-    DSparseMatrix HubbardFermiMatrix::K(const PH ph) const {
+    DSparseMatrix HubbardFermiMatrix::K(const Species ph) const {
         DSparseMatrix k;
         K(k, ph);
         return k;
@@ -52,20 +52,20 @@ namespace cnxx {
 
     void HubbardFermiMatrix::F(CDSparseMatrix &f,
                                const std::size_t tp, const CDVector &phi,
-                               const PH ph, const bool inv) const {
+                               const Species ph, const bool inv) const {
         const std::size_t NX = nx();
         const std::size_t NT = phi.size()/NX;
         const std::size_t tm1 = tp==0 ? NT-1 : tp-1;  // t' - 1
         resizeMatrix(f, NX);
 
-        if ((inv && ph == PH::PARTICLE) || (ph == PH::HOLE && !inv))
+        if ((inv && ph == Species::PARTICLE) || (ph == Species::HOLE && !inv))
             blaze::diagonal(f) = blaze::exp(-1.i*spacevec(phi, tm1, NX));
         else
             blaze::diagonal(f) = blaze::exp(1.i*spacevec(phi, tm1, NX));
     }
 
     CDSparseMatrix HubbardFermiMatrix::F(const std::size_t tp, const CDVector &phi,
-                                         const PH ph, const bool inv) const {
+                                         const Species ph, const bool inv) const {
         CDSparseMatrix f;
         F(f, tp, phi, ph, inv);
         return f;
@@ -73,7 +73,7 @@ namespace cnxx {
 
     void HubbardFermiMatrix::M(CDSparseMatrix &m,
                                const CDVector &phi,
-                               const PH ph) const {
+                               const Species ph) const {
         const std::size_t NX = nx();
         const std::size_t NT = phi.size()/NX;
         resizeMatrix(m, NX*NT);
@@ -94,7 +94,7 @@ namespace cnxx {
     }
 
     CDSparseMatrix HubbardFermiMatrix::M(const CDVector &phi,
-                                         const PH ph) const {
+                                         const Species ph) const {
         CDSparseMatrix m;
         M(m, phi, ph);
         return m;
@@ -505,7 +505,7 @@ namespace cnxx {
 
 
     std::complex<double> logdetM(const HubbardFermiMatrix &hfm,
-                                 const CDVector &phi, const PH ph) {
+                                 const CDVector &phi, const Species ph) {
         if (hfm.mu() != 0)
             throw std::runtime_error("Called logdetM with mu != 0. This is not supported yet because the algorithm is unstable.");
 

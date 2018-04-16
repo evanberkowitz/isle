@@ -16,14 +16,14 @@ class LogDet:
 
     def __init__(self, kappaTilde, mu, SIGMA_KAPPA):
         self.hfm = cns.HubbardFermiMatrix(kappaTilde, mu, SIGMA_KAPPA)
-        self.logDet = {cns.PH.PARTICLE: [], cns.PH.HOLE: []}
+        self.logDet = {cns.Species.PARTICLE: [], cns.Species.HOLE: []}
 
     def __call__(self, phi, inline=False, **kwargs):
         """!Record logDet."""
         for species in self.logDet:
             self.logDet[species].append(cns.logdetM(self.hfm, phi, species))
 
-    def report(self, species=cns.PH.PARTICLE, binsize=41, ax=None):
+    def report(self, species=cns.Species.PARTICLE, binsize=41, ax=None):
         r"""!
         Plot the determinant in the complex plane
         \param species a `cns.PH` species that identifies the determinant of interest.

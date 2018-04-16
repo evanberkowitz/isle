@@ -12,7 +12,7 @@
 namespace cnxx {
 
     /// Mark particles and holes.
-    enum class PH {PARTICLE, HOLE};
+    enum class Species {PARTICLE, HOLE};
 
     /// Represents a fermion matrix for the Hubbard model.
     /**
@@ -103,13 +103,13 @@ namespace cnxx {
          *          resized if need be.
          * \param ph Select whether to construct for particles or holes.
          */        
-        void K(DSparseMatrix &k, PH ph) const;
+        void K(DSparseMatrix &k, Species ph) const;
 
         /// Return the diagonal block matrix K of matrix M.
         /**
          * \param ph Select whether to construct for particles or holes.
          */
-        DSparseMatrix K(PH ph) const;
+        DSparseMatrix K(Species ph) const;
         
         /// Store an off-diagonal block F of matrix M in the parameter.
         /**
@@ -121,7 +121,7 @@ namespace cnxx {
          * \param inv If `true` consttructs the inverse of F.
          */        
         void F(CDSparseMatrix &f, std::size_t tp, const CDVector &phi,
-               PH ph, bool inv=false) const;
+               Species ph, bool inv=false) const;
 
         /// Return an off-diagonal block matrix F of matrix M.
         /**
@@ -131,7 +131,7 @@ namespace cnxx {
          * \param inv If `true` consttructs the inverse of F.
          */
         CDSparseMatrix F(std::size_t tp, const CDVector &phi,
-                         PH ph, bool inv=false) const;
+                         Species ph, bool inv=false) const;
 
         /// Store the matrix \f$M\f$ in the parameter.
         /**
@@ -140,14 +140,14 @@ namespace cnxx {
          * \param phi Auxilliary field.
          * \param ph Select whether to construct for particles or holes.
          */
-        void M(CDSparseMatrix &m, const CDVector &phi, PH ph) const;
+        void M(CDSparseMatrix &m, const CDVector &phi, Species ph) const;
 
         /// Return the matrix \f$M\f$.
         /**
          * \param phi Auxilliary field.
          * \param ph Select whether to construct for particles or holes.
          */
-        CDSparseMatrix M(const CDVector &phi, PH ph) const;
+        CDSparseMatrix M(const CDVector &phi, Species ph) const;
 
         /// Store the block on the diagonal \f$P\f$ in the parameter.
         /**
@@ -337,7 +337,7 @@ namespace cnxx {
      *         first branch of the logarithm.
      */
     std::complex<double> logdetM(const HubbardFermiMatrix &hfm, const CDVector &phi,
-                                 PH ph);
+                                 Species ph);
 
 }  // namespace cnxx
 

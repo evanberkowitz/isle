@@ -56,8 +56,8 @@ def main():
     phi = cns.hmc.hmc(phi, ham,
                       cns.hmc.LinearStepLeapfrog(ham, (1, 1), (N_LEAPFROG_THERM, N_LEAPFROG), NTHERM-1), NTHERM,
                       [
-                          (1, accMeas), 
-                          (1, actMeas), 
+                          (1, accMeas),
+                          (1, actMeas),
                           (NTHERM/10, thermalizationProgress)
                       ],
                       [(20, cns.checks.realityCheck)])
@@ -68,9 +68,9 @@ def main():
     print("running production")
     phi = cns.hmc.hmc(phi, ham, cns.hmc.ConstStepLeapfrog(ham, 1, N_LEAPFROG), NPROD,
                       [
-                          (1, accMeas), 
-                          (1, actMeas), 
-                          (500, productionProgress), 
+                          (1, accMeas),
+                          (1, actMeas),
+                          (500, productionProgress),
                           (1, logDet)
                       ])
 
@@ -81,8 +81,8 @@ def main():
     ax = actMeas.report(20)
     ax.axvline(NTHERM, c="k")  # mark thermalization - production border
 
-    ax = logDet.report(cns.PH.PARTICLE)
-    ax = logDet.report(cns.PH.HOLE)
+    ax = logDet.report(cns.Species.PARTICLE)
+    ax = logDet.report(cns.Species.HOLE)
 
     plt.show()
 

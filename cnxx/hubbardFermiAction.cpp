@@ -20,7 +20,7 @@ namespace cnxx {
          * Constructs rest on the fly ('right', contains (1+A^-1)^-1).
          */
         CDVector forceVariant1Part(const HubbardFermiMatrix &hfm, const CDVector &phi,
-                                   const CDSparseMatrix &k, const PH ph) {
+                                   const CDSparseMatrix &k, const Species ph) {
 
             const auto nx = hfm.nx();
             const auto nt = phi.size()/nx;
@@ -93,16 +93,16 @@ namespace cnxx {
         if (_variant2)
             return -logdetQ(_hfm, phi);
         else
-            return -toFirstLogBranch(logdetM(_hfm, phi, PH::PARTICLE)
-                                     + logdetM(_hfm, phi, PH::HOLE));
+            return -toFirstLogBranch(logdetM(_hfm, phi, Species::PARTICLE)
+                                     + logdetM(_hfm, phi, Species::HOLE));
     }
 
     CDVector HFA::force(const CDVector &phi) {
         if (_variant2)
             return forceVariant2(_hfm, phi);
         else
-            return -1.i*(forceVariant1Part(_hfm, phi, _kp, PH::PARTICLE)
-                         - forceVariant1Part(_hfm, phi, _kh, PH::HOLE));
+            return -1.i*(forceVariant1Part(_hfm, phi, _kp, Species::PARTICLE)
+                         - forceVariant1Part(_hfm, phi, _kh, Species::HOLE));
     }
 
 }  // namespace cnxx
