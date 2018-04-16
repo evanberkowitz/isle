@@ -15,13 +15,13 @@ class LogDet:
     """
 
     def __init__(self, kappaTilde, mu, SIGMA_KAPPA):
-        self.M = cns.HubbardFermiMatrix(kappaTilde, mu, SIGMA_KAPPA)
+        self.hfm = cns.HubbardFermiMatrix(kappaTilde, mu, SIGMA_KAPPA)
         self.logDet = {cns.PH.PARTICLE: [], cns.PH.HOLE: []}
 
     def __call__(self, phi, inline=False, **kwargs):
         """!Record logDet."""
         for species in self.logDet:
-            self.logDet[species].append(cns.logdetM(self.M, phi, cns.PH.PARTICLE))
+            self.logDet[species].append(cns.logdetM(self.hfm, phi, species))
 
     def report(self, species=cns.PH.PARTICLE, binsize=41, ax=None):
         r"""!
