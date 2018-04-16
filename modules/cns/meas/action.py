@@ -35,8 +35,10 @@ class Action:
         doTightLayout = False
         binned = binnedArray(self.act, binsize)
         if ax is None:
-            fig, ax = newAxes(r"Action: global mean of <$S$> = {:3.5f}+{:3.5f}*I".format(np.mean(np.real(binned)),
-                                                                                     np.mean(np.imag(binned))),
+            fig, ax = newAxes(r"Action: global mean of <$S$> = {:3.5f}+{:3.5f}*I+/-{:3.5f}+{:3.5f}*I".format(np.mean(np.real(binned)),
+                                                                                                             np.mean(np.imag(binned)),
+                                                                                                             np.std(np.real(binned)),
+                                                                                                             np.std(np.imag(binned))),
                               r"$N_{\mathrm{tr}}$", r"$S$")
             doTightLayout = True
         
