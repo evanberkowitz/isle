@@ -37,7 +37,7 @@ class TotalPhi:
         doTightLayout = False
         if ax is None:
             fig, ax = newAxes(r"global mean of <$\phi^2$> = {:3.5f}+/-{:3.5f}".format(np.mean(binned),
-            np.std(binned)),
+                                                                                      np.std(binned)),
                               r"$N_{\mathrm{tr}}$", r"<$\phi^2$>($N_{\mathrm{tr}})$")
             doTightLayout = True
 
