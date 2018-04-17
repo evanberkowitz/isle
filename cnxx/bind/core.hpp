@@ -22,7 +22,7 @@
 namespace py = pybind11;
 
 // use a custom type
-PYBIND11_MAKE_OPAQUE(std::vector<cnxx::CDVector>);
+PYBIND11_MAKE_OPAQUE(std::vector<cnxx::CDVector>)
 
 /// Bindings between `cnxx` and Python.
 namespace bind {
