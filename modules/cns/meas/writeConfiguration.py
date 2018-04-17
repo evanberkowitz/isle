@@ -3,10 +3,8 @@ Measurement of logDet.
 """
 
 import numpy as np
-import cns
-from matplotlib.colors import LogNorm
 
-from .common import newAxes, ensureH5GroupExists
+from .common import ensureH5GroupExists
 
 class WriteConfiguration:
     r"""!
