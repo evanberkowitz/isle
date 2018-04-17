@@ -278,7 +278,7 @@ indent-after-paren=4
 indent-string='    '
 
 # Maximum number of characters on a single line.
-max-line-length=100
+max-line-length=192
 
 # Maximum number of lines in a module
 max-module-lines=1000
@@ -397,6 +397,8 @@ function-naming-style=camelCase
 good-names=i,
            j,
            k,
+           x,
+           t,
            ex,
            Run,
            _
