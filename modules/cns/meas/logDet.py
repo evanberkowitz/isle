@@ -6,7 +6,7 @@ import numpy as np
 import cns
 from matplotlib.colors import LogNorm
 
-from .common import newAxes
+from .common import newAxes, ensureH5GroupExists
 
 class LogDet:
     r"""!
@@ -45,3 +45,12 @@ class LogDet:
         if doTightLayout:
             fig.tight_layout()
         return ax
+
+    def save(self, the_file, path):
+        ensureH5GroupExists(the_file, path)
+        the_file.create_array(path, "particles", self.logDet[cns.Species.PARTICLE])
+        the_file.create_array(path, "holes", self.logDet[cns.Species.HOLE])
+        
+    def read(self, the_file, path):
+        self.logDet[cns.Species.PARTICLE] = the_file.get_node(path+"/particles").read()
+        self.logDet[cns.Species.HOLE] = the_file.get_node(path+"/holes").read()

@@ -4,7 +4,7 @@ Measurement of action.
 
 import numpy as np
 
-from .common import newAxes
+from .common import newAxes, ensureH5GroupExists
 from ..util import binnedArray
 
 class Action:
@@ -49,3 +49,10 @@ class Action:
         if doTightLayout:
             fig.tight_layout()
         return ax
+        
+    def save(self, the_file, path):
+        ensureH5GroupExists(the_file, path)
+        the_file.create_array(path, "action", np.array(self.act))
+    
+    def read(self, the_file, path):
+        self.act = the_file.get_node(path+"/action").read()

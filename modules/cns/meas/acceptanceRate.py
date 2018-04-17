@@ -4,7 +4,7 @@ Measurement of acceptance rate.
 
 import numpy as np
 
-from .common import newAxes
+from .common import newAxes, ensureH5GroupExists
 from ..util import binnedArray
 
 class AcceptanceRate:
@@ -48,3 +48,10 @@ class AcceptanceRate:
             fig.tight_layout()
 
         return ax
+
+    def save(self, the_file, path):
+        ensureH5GroupExists(the_file, path)
+        the_file.create_array(path, "acceptanceRate", np.array(self.accRate))
+    
+    def read(self, the_file, path):
+        self.accRate = the_file.get_node(path+"/acceptanceRate").read()
