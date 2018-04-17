@@ -44,10 +44,10 @@ namespace cnxx {
         ~HubbardFermiAction() override = default;
 
         /// Evaluate the %Action for given auxilliary field phi.
-        std::complex<double> eval(const CDVector &phi) override;
+        std::complex<double> eval(const CDVector &phi) const override;
 
         /// Calculate force for given auxilliary field phi.
-        CDVector force(const CDVector &phi) override;
+        CDVector force(const CDVector &phi) const override;
 
     private:
         const HubbardFermiMatrix _hfm;  ///< Stores all necessary parameters.

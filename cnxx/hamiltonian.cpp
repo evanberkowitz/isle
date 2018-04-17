@@ -33,14 +33,14 @@ namespace cnxx {
     }
 
     std::complex<double> Hamiltonian::eval(const Vector<std::complex<double>> &phi,
-                                           const Vector<std::complex<double>> &pi) {
+                                           const Vector<std::complex<double>> &pi) const {
         std::complex<double> res = 0;
         for (auto &act : _actions)
             res += act->eval(phi);
         return addMomentum(pi, res);
     }
 
-    Vector<std::complex<double>> Hamiltonian::force(const Vector<std::complex<double>> &phi) {
+    Vector<std::complex<double>> Hamiltonian::force(const Vector<std::complex<double>> &phi) const {
         Vector<std::complex<double>> res(phi.size(), 0);
         for (auto &act : _actions)
             res += act->force(phi);

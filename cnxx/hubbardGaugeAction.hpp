@@ -28,10 +28,10 @@ namespace cnxx {
         ~HubbardGaugeAction() override = default;
 
         /// Evaluate the %Action for given auxilliary field phi.
-        std::complex<double> eval(const Vector<std::complex<double>> &phi) override;
+        std::complex<double> eval(const Vector<std::complex<double>> &phi) const override;
 
         /// Calculate force for given auxilliary field phi.
-        Vector<std::complex<double>> force(const Vector<std::complex<double>> &phi) override;
+        Vector<std::complex<double>> force(const Vector<std::complex<double>> &phi) const override;
     };
 }  // namespace cnxx
 

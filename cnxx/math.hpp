@@ -1,10 +1,5 @@
 /** \file
  * \brief Wraps a round a math library and provides abstracted types and functions.
- *
- * The types do not provide a distinction between space and spacetime vectors / matrices.
- * Spacetime vectors are assumed to be encoded as a single vector with index
- * \f$(it) \equiv i n_{t} + t\f$, where \f$i\f$ is a space index, \f$t\f$ a time index, and
- * \f$n_{t}\f$ the number of time slices.
  */
 
 #ifndef MATH_HPP

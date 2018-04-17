@@ -89,7 +89,7 @@ namespace cnxx {
         }
     }
 
-    std::complex<double> HFA::eval(const CDVector &phi) {
+    std::complex<double> HFA::eval(const CDVector &phi) const {
         if (_variant2)
             return -logdetQ(_hfm, phi);
         else
@@ -97,7 +97,7 @@ namespace cnxx {
                                      + logdetM(_hfm, phi, Species::HOLE));
     }
 
-    CDVector HFA::force(const CDVector &phi) {
+    CDVector HFA::force(const CDVector &phi) const {
         if (_variant2)
             return forceVariant2(_hfm, phi);
         else

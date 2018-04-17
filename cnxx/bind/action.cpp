@@ -12,7 +12,7 @@ namespace bind {
         /// Trampoline class for cnxx::Action to allow Python classes to
         /// override its virtual members.
         struct ActionTramp : Action {
-            std::complex<double> eval(const Vector<std::complex<double>> &phi) override {
+            std::complex<double> eval(const Vector<std::complex<double>> &phi) const override {
                 PYBIND11_OVERLOAD_PURE(
                     std::complex<double>,
                     Action,
@@ -22,7 +22,7 @@ namespace bind {
             }
 
             Vector<std::complex<double>> force(
-                const Vector<std::complex<double>> &phi) override {
+                const Vector<std::complex<double>> &phi) const override {
 
                 PYBIND11_OVERLOAD_PURE(
                     Vector<std::complex<double>>,

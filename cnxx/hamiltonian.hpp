@@ -69,10 +69,10 @@ namespace cnxx {
          * Evaluates all actions and adds the momentum term.
          */
         std::complex<double> eval(const Vector<std::complex<double>> &phi,
-                                  const Vector<std::complex<double>> &pi);
+                                  const Vector<std::complex<double>> &pi) const;
 
         /// Calculate force for given auxilliary field phi and momentum pi.
-        Vector<std::complex<double>> force(const Vector<std::complex<double>> &phi);
+        Vector<std::complex<double>> force(const Vector<std::complex<double>> &phi) const ;
 
         /// Add the momentum term to an action.
         std::complex<double> addMomentum(const Vector<std::complex<double>> &pi,
