@@ -10,6 +10,9 @@
 #include <pybind11/functional.h>
 #include <pybind11/numpy.h>
 #include <pybind11/complex.h>
+#include <pybind11/stl_bind.h>
+
+#include "../math.hpp"
 
 // remove macro defined in termios.h on Mac to avoid clash in blaze
 #ifdef VT1
@@ -17,6 +20,9 @@
 #endif
 
 namespace py = pybind11;
+
+// use a custom type
+PYBIND11_MAKE_OPAQUE(std::vector<cnxx::CDVector>);
 
 /// Bindings between `cnxx` and Python.
 namespace bind {
