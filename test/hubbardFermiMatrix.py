@@ -162,23 +162,43 @@ class TestHubbardFermiMatrix(unittest.TestCase):
         nx = kappa.rows()
         self.assertRaises(RuntimeError,
                           lambda msg:
-                          cns.logdetM(cns.HubbardFermiMatrix(kappa, 1, 1), cns.CDVector(nx), True),
+                          cns.logdetM(cns.HubbardFermiMatrix(kappa, 1, 1), cns.CDVector(nx), cns.Species.PARTICLE),
                           msg="logdetM must throw a RuntimeError when called with mu != 0. If this bug has been fixed, update the unit test!")
 
-        for nt, mu, sigmaKappa, hole, rep in itertools.product((4, 8, 32), [0], (-1, 1),
-                                                               (False, True), range(N_REP)):
+        for nt, mu, sigmaKappa, species, rep in itertools.product((4, 8, 32),
+                                                                  [0],
+                                                                  (-1, 1),
+                                                                  (cns.Species.PARTICLE, cns.Species.HOLE),
+                                                                  range(N_REP)):
             hfm = cns.HubbardFermiMatrix(kappa/nt, mu/nt, sigmaKappa)
             phi = _randomPhi(nx*nt)
 
-            plain = cns.logdet(cns.Matrix(hfm.M(phi, hole)))
-            viaLU = cns.logdetM(hfm, phi, hole)
+            plain = cns.logdet(cns.Matrix(hfm.M(phi, species)))
+            viaLU = cns.logdetM(hfm, phi, species)
 
             self.assertAlmostEqual(plain, viaLU, places=10,
                                    msg="Failed check log(det(M)) in repetition {}".format(rep)\
-                                   + "for nt={}, mu={}, sigmaKappa={}, hole={}:".format(nt, mu, sigmaKappa, hole)\
+                                   + "for nt={}, mu={}, sigmaKappa={}, species={}:".format(nt, mu, sigmaKappa, species)\
                                    + "\nplain = {}".format(plain) \
                                    + "\nviaLU = {}".format(viaLU))
 
+    def _test_logdetQ(self, kappa):
+        "Test log(det(Q))."
+
+        nx = kappa.rows()
+        for nt, mu, sigmaKappa, rep in itertools.product((4, 8, 32), [0],
+                                                         (-1, 1), range(N_REP)):
+            hfm = cns.HubbardFermiMatrix(kappa/nt, mu/nt, sigmaKappa)
+            phi = _randomPhi(nx*nt)
+
+            plain = cns.logdet(cns.Matrix(hfm.Q(phi)))
+            viaLU = cns.logdetQ(hfm, phi)
+
+            self.assertAlmostEqual(plain, viaLU, places=10,
+                                   msg="Failed check log(det(Q)) in repetition {}".format(rep)\
+                                   + "for nt={}, mu={}, sigmaKappa={}:".format(nt, mu, sigmaKappa)\
+                                   + "\nplain = {}".format(plain) \
+                                   + "\nviaLU = {}".format(viaLU))
 
     def test_3_logdet(self):
         "Test log(det(M)) and log(deg(Q))."
@@ -188,7 +208,39 @@ class TestHubbardFermiMatrix(unittest.TestCase):
             with open(latfile, "r") as f:
                 lat = yaml.safe_load(f)
                 self._test_logdetM(lat.hopping())
+                self._test_logdetQ(lat.hopping())
 
+
+    def _test_solveM(self, kappa):
+        "Test solveM()."
+
+        nx = kappa.rows()
+        for nt, mu, sigmaKappa, species, rep in itertools.product((4, 8, 32),
+                                                                  [0],
+                                                                  (-1, 1),
+                                                                  (cns.Species.PARTICLE, cns.Species.HOLE),
+                                                                  range(N_REP)):
+            hfm = cns.HubbardFermiMatrix(kappa/nt, mu/nt, sigmaKappa)
+            phi = _randomPhi(nx*nt)
+            M = hfm.M(phi, species)
+            rhss = [_randomPhi(nx*nt) for _ in range(2)]
+
+            res = cns.solveM(hfm, phi, species, rhss)
+            chks = [np.max(np.abs(M*r-rhs)) for r, rhs in zip(res, rhss)]
+            for chk in chks:
+                self.assertAlmostEqual(chk, 0, places=10,
+                                       msg="Failed check solveM in repetition {}".format(rep)\
+                                       + "for nt={}, mu={}, sigmaKappa={}, species={}:".format(nt, mu, sigmaKappa, species)\
+                                       + "\nMx - rhs = {}".format(chk))
+
+    def test_4_solver(self):
+        "Test Ax=b solvers."
+        logger = core.get_logger()
+        for latfile in LATTICES:
+            logger.info("Testing solveM on %s", latfile)
+            with open(latfile, "r") as f:
+                lat = yaml.safe_load(f)
+                self._test_solveM(lat.hopping())
 
 
 def setUpModule():
