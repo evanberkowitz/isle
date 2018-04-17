@@ -49,9 +49,19 @@ class AcceptanceRate:
 
         return ax
 
-    def save(self, the_file, path):
-        ensureH5GroupExists(the_file, path)
-        the_file.create_array(path, "acceptanceRate", np.array(self.accRate))
-    
-    def read(self, the_file, path):
-        self.accRate = the_file.get_node(path+"/acceptanceRate").read()
+    def save(self, theFile, path):
+        r"""!
+        Write the acceptance rate to a file.
+        \param theFile An open HDF5 file.
+        \param path Where to write to in theFile
+        """
+        ensureH5GroupExists(theFile, path)
+        theFile.create_array(path, "acceptanceRate", np.array(self.accRate))
+
+    def read(self, theFile, path):
+        r"""!
+        Read the acceptance rate from a file.
+        \param theFile An open HDF5 file.
+        \param path Where to read from in theFile.
+        """
+        self.accRate = theFile.get_node(path+"/acceptanceRate").read()
