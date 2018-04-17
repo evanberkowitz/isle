@@ -41,7 +41,7 @@ class Action:
                                                                                                              np.std(np.imag(binned))),
                               r"$N_{\mathrm{tr}}$", r"$S$")
             doTightLayout = True
-        
+
         mcTime = np.arange(0, len(self.act), binsize)
         ax.plot(mcTime, np.real(binned), fmtre, label="Re($S$)")
         ax.plot(mcTime, np.imag(binned), fmtim, label="Im($S$)")
@@ -49,10 +49,20 @@ class Action:
         if doTightLayout:
             fig.tight_layout()
         return ax
-        
-    def save(self, the_file, path):
-        ensureH5GroupExists(the_file, path)
-        the_file.create_array(path, "action", np.array(self.act))
-    
-    def read(self, the_file, path):
-        self.act = the_file.get_node(path+"/action").read()
+
+    def save(self, theFile, path):
+        r"""!
+        Write the action to a file.
+        \param theFile An open HDF5 file.
+        \param path Where to write to in theFile
+        """
+        ensureH5GroupExists(theFile, path)
+        theFile.create_array(path, "action", np.array(self.act))
+
+    def read(self, theFile, path):
+        r"""!
+        Read the action from a file.
+        \param theFile An open HDF5 file.
+        \param path Where to read from in theFile.
+        """
+        self.act = theFile.get_node(path+"/action").read()
