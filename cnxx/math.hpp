@@ -195,8 +195,10 @@ namespace cnxx {
             throw std::runtime_error("t is -1");
         if (t == static_cast<std::size_t>(-2))
             throw std::runtime_error("t is -2");
-#endif
         return blaze::subvector(std::forward<VT>(vec), t*nx, nx);
+#else
+        return blaze::subvector(std::forward<VT>(vec), t*nx, nx, blaze::unchecked);
+#endif
     }
 
     /// Return a view on a spatial matrix for given timeslices of a spacetime matrix.
@@ -213,8 +215,10 @@ namespace cnxx {
             throw std::runtime_error("t is -1");
         if (t == static_cast<std::size_t>(-2))
             throw std::runtime_error("t is -2");
-#endif
         return blaze::submatrix(std::forward<MT>(mat), tp*nx, t*nx, nx, nx);
+#else
+        return blaze::submatrix(std::forward<MT>(mat), tp*nx, t*nx, nx, nx, blaze::unchecked);
+#endif
     }
 
 
