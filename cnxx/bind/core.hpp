@@ -12,12 +12,12 @@
 #include <pybind11/complex.h>
 #include <pybind11/stl_bind.h>
 
-#include "../math.hpp"
-
 // remove macro defined in termios.h on Mac to avoid clash in blaze
 #ifdef VT1
   #undef VT1
 #endif
+
+#include "../math.hpp"
 
 namespace py = pybind11;
 
