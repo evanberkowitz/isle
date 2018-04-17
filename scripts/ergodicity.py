@@ -100,8 +100,8 @@ def main():
     print("Saving measurements...")
 
     saved_measurements = [
-        (action, "/action"),
-        (acceptanceRate, "/acceptanceRate"),
+        (action, "/metropolis"),
+        (acceptanceRate, "/metropolis"),
         (corrs, "/correlation_functions/single_particle"),
         (logDet, "/logDet"),
     ]
