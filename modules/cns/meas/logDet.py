@@ -46,11 +46,21 @@ class LogDet:
             fig.tight_layout()
         return ax
 
-    def save(self, the_file, path):
-        ensureH5GroupExists(the_file, path)
-        the_file.create_array(path, "particles", self.logDet[cns.Species.PARTICLE])
-        the_file.create_array(path, "holes", self.logDet[cns.Species.HOLE])
-        
-    def read(self, the_file, path):
-        self.logDet[cns.Species.PARTICLE] = the_file.get_node(path+"/particles").read()
-        self.logDet[cns.Species.HOLE] = the_file.get_node(path+"/holes").read()
+    def save(self, theFile, path):
+        r"""!
+        Write both the particle and hole logDet to a file.
+        \param theFile An open HDF5 file.
+        \param path Where to write to in theFile
+        """
+        ensureH5GroupExists(theFile, path)
+        theFile.create_array(path, "particles", self.logDet[cns.Species.PARTICLE])
+        theFile.create_array(path, "holes", self.logDet[cns.Species.HOLE])
+
+    def read(self, theFile, path):
+        r"""!
+        Read the logDet from a file.
+        \param theFile An open HDF5 file.
+        \param path Where to read from in theFile.
+        """
+        self.logDet[cns.Species.PARTICLE] = theFile.get_node(path+"/particles").read()
+        self.logDet[cns.Species.HOLE] = theFile.get_node(path+"/holes").read()
