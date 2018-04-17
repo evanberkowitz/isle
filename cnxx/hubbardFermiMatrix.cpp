@@ -556,8 +556,7 @@ namespace cnxx {
 
         const auto NX = hfm.nx();
         const auto NT = getNt(phi, NX);
-
-        const auto kinv = hfm.Kinv(species);
+        const auto &kinv = hfm.Kinv(species);
 
         // first K*F pair
         auto f = hfm.F(0, phi, species, false);
@@ -583,18 +582,21 @@ namespace cnxx {
 
         const std::size_t nx = hfm.nx();
         const std::size_t nt = getNt(phi, nx);
-        const auto kinv = hfm.Kinv(species);
+        const auto &kinv = hfm.Kinv(species);
+        std::vector<CDVector> res(rhs.size());  // the results
 
-        std::vector<CDVector> res(rhs.size());
-
-        // solve Ly = b
+        // solve Ly = rhs (including a factor of K^-1)
         CDSparseMatrix f;
-        for (std::size_t i = 0; i < rhs.size(); ++i) {
-            res[i].resize(nx*nt);
-            spacevec(res[i], 0, nx) = kinv*spacevec(rhs[i], 0, nx);
-            for (std::size_t t = 1; t < nt; ++t) {
-                hfm.F(f, t, phi, species, false);
-                spacevec(res[i], t, nx) = kinv*(spacevec(rhs[i], t, nx) + f*spacevec(res[i], t-1, nx));
+        BLAZE_SERIAL_SECTION {  // we don't want the puny intra vector parallelization
+#pragma omp parallel for private(f)
+            for (std::size_t i = 0; i < rhs.size(); ++i) {
+                res[i].resize(nx*nt);
+                spacevec(res[i], 0, nx) = blaze::serial(kinv*spacevec(rhs[i], 0, nx));  // t=0
+                for (std::size_t t = 1; t < nt; ++t) {  // other t's
+                    hfm.F(f, t, phi, species, false);
+                    spacevec(res[i], t, nx) = blaze::serial(kinv*(spacevec(rhs[i], t, nx)
+                                                                  + f*spacevec(res[i], t-1, nx)));
+                }
             }
         }
         // now res ~ K^-1 y
@@ -609,17 +611,20 @@ namespace cnxx {
             partialA.emplace_back(kinv * f * partialA.back());
         }
 
-        // (1+A)^-1
+        // invmat = (1+A)^-1
         hfm.F(f, nt-1, phi, species, false);
         CDMatrix invmat = IdMatrix<std::complex<double>>(nx) + kinv*f*partialA.back();
         auto ipiv = std::make_unique<int[]>(invmat.rows());
         invert(invmat, ipiv);
 
-        // solve Ux = y
-        for (std::size_t i = 0; i < rhs.size(); ++i) {
-            spacevec(res[i], nt-1, nx) = invmat*spacevec(res[i], nt-1, nx);
-            for (std::size_t t = 0; t < nt-1; ++t) {
-                spacevec(res[i], t, nx) -= partialA[t]*spacevec(res[i], nt-1, nx);
+        // solve Ux = y inplace (in res)
+        BLAZE_SERIAL_SECTION {
+#pragma omp parallel for
+            for (std::size_t i = 0; i < rhs.size(); ++i) {
+                spacevec(res[i], nt-1, nx) = invmat*spacevec(res[i], nt-1, nx);  // t = nt-1
+                for (std::size_t t = 0; t < nt-1; ++t) {  // other t's
+                    spacevec(res[i], t, nx) -= partialA[t]*spacevec(res[i], nt-1, nx);
+                }
             }
         }
 

@@ -355,9 +355,16 @@ namespace cnxx {
     std::complex<double> logdetM(const HubbardFermiMatrix &hfm, const CDVector &phi,
                                  Species species);
 
-    /// Solve a system of equations.
+    /// Solve a system of equations \f$M x = b\f$.
     /**
-     * \todo Document.
+     * Can be called for multiple right hand sides b in order to re-use parts of
+     * the calculation.
+     *
+     * \param hfm Represents matrix M which describes the system of equations.
+     * \param phi Gauge configuration needed to construct M.
+     * \param species Select whether to solve for particles or holes.
+     * \param rhs Right hand sides b.
+     * \returns Results x, same length as rhs.
      */
     std::vector<CDVector> solveM(const HubbardFermiMatrix &hfm,
                                  const CDVector &phi,
