@@ -57,8 +57,8 @@ class Corr_1p:
         correlator = np.array(self.corr)
 
         timeSlice = range(self.nt)
-        avg = np.mean(correlator, axis=2)
-        err = np.std(correlator, axis=2)
+        avg = np.mean(np.real(correlator), axis=2)
+        err = np.std(np.real(correlator), axis=2)
 
         ax.set_yscale("log")
 
