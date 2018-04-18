@@ -19,8 +19,9 @@ An inline measurement must be a callable with parameters `phi, inline, itr, act,
 - <B>`itr`</B> - trajectory index,
 - <B>`act`</B> - action given configuration `phi`,
 - <B>`acc`</B> - `True` if trajectory was accepted, `False` otherwise.
+- <B>`rng`</B> - A random number generator that implements cns.random.RNGWrapper.
 
-`phi` and `inline` are called by position whereas `itr`, `act`, and `acc` are called
+`phi` and `inline` are called by position whereas `itr`, `act`, `acc`, and `rng` are called
 by name. The return value is ignored when the measurement is called in-line.
 
 Out-of-line measurements can have an arbitrary interface because they are only called

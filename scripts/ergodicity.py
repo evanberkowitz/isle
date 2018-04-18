@@ -13,6 +13,8 @@ core.prepare_module_import()
 import cns
 import cns.meas
 
+ENSEMBLE_NAME = "two_sites"
+
 LATFILE = "two_sites.yml"  # input lattice
 # LATFILE = "one_site.yml"  # input lattice
 # LATFILE="c20.yml"
@@ -84,9 +86,8 @@ def main():
     # print("running production")
     # detMeas = DetMeas(cns.HubbardFermiMatrix(kappa, 0, SIGMA_KAPPA))
     print("running production")
-    with h5.open_file("ensemble_name.h5","w") as configurationFile:
-        write = cns.meas.WriteConfiguration(configurationFile,"/configurations")
-        phi = cns.hmc.hmc(phi, ham, cns.hmc.ConstStepLeapfrog(ham, 1, N_LEAPFROG),
+    write = cns.meas.WriteConfiguration(ENSEMBLE_NAME+".h5", "/")
+    phi = cns.hmc.hmc(phi, ham, cns.hmc.ConstStepLeapfrog(ham, 1, N_LEAPFROG),
                           NPROD,
                           rng,
                           [
@@ -97,6 +98,7 @@ def main():
                               (100, corrs),
                               (100, particleCorrelators),
                               (100, holeCorrelators),
+                              (1, write)
                           ])
 
     print("Saving measurements...")

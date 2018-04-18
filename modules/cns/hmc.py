@@ -107,7 +107,7 @@ def hmc(phi, ham, proposer, ntr, rng, measurements=[], checks=[]):
         # perform measurements
         for (freq, meas) in measurements:
             if freq > 0 and itr % freq == 0:
-                meas(phi, True, itr=itr, act=act, acc=acc)
+                meas(phi, True, itr=itr, act=act, acc=acc, rng=rng)
 
     return phi
 
