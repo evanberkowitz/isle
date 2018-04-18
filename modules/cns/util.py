@@ -64,15 +64,28 @@ def spaceToSpacetime(vector, time, nt):
     \param time The timeslice on which the wall vector should live.
     \param nt The number of total timeslices.
     """
-
-    nx=len(vector)
+    nx = len(vector)
     spacetimeVector = np.zeros(nx*nt, dtype=complex)
     spacetimeVector[time*nx:(time+1)*nx] = vector
     return spacetimeVector
 
-def rotateTemporally(spacetimeVector, space, time, fermionic=True):
-    result = np.roll(spacetimeVector.reshape([space,time]),time)
-    mask = np.array([ [-1 for x in range(space)] if t < 3 else [+1 for x in range(space)] for t in range(time) ])
+def rotateTemporally(timeVector, time, fermionic=True):
+    r"""!
+    Rotate a time vector, accounting for anti/periodic boundary conditions.
+    \param timeVector The vector to rotate.
+    \param time The zero entry of `timeVector` will wind up as as time entry of the result.
+    \param fermionic Account for antisymmetry in time.
+    """
+    nt = len(timeVector)
+    result = np.roll(timeVector, time, axis=0)
+    if fermionic:
+        if time > 0:
+            mask = np.array([-1 if t < time else +1 for t in range(nt)])
+        elif time < 0:
+            mask = np.array([-1 if t > nt+time-1 else +1 for t in range(nt)])
+        else:
+            mask = np.array([+1 for t in range(nt)])
+    else:
+        mask = np.array([+1 for t in range(nt)])
     result *= mask
-    result = result.reshape([space*time])
     return result

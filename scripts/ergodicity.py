@@ -19,9 +19,9 @@ LATFILE = "two_sites.yml"  # input lattice
 # LATFILE = "one_site.yml"  # input lattice
 # LATFILE="c20.yml"
 
-NT = 6  # number of time slices
-NTHERM = 1000  # number of thermalization trajectories
-NPROD = 1000 # number of production trajectories
+NT = 8  # number of time slices
+NTHERM = 3000  # number of thermalization trajectories
+NPROD = 3000 # number of production trajectories
 
 N_LEAPFROG_THERM = 8
 N_LEAPFROG = 3
@@ -65,7 +65,6 @@ def main():
     print("and their corresponding energies")
     print(noninteracting_energies)
 
-    corrs = cns.meas.Corr_1p(irreps, NT, kappa, MU, SIGMA_KAPPA)
     particleCorrelators = cns.meas.SingleParticleCorrelator(irreps, NT, kappa, MU, SIGMA_KAPPA, cns.Species.PARTICLE)
     holeCorrelators = cns.meas.SingleParticleCorrelator(irreps, NT, kappa, MU, SIGMA_KAPPA, cns.Species.HOLE)
 
@@ -83,8 +82,6 @@ def main():
                       [(20, cns.checks.realityCheck)])
     print("thermalized!")
 
-    # print("running production")
-    # detMeas = DetMeas(cns.HubbardFermiMatrix(kappa, 0, SIGMA_KAPPA))
     print("running production")
     write = cns.meas.WriteConfiguration(ENSEMBLE_NAME+".h5", "/")
     phi = cns.hmc.hmc(phi, ham, cns.hmc.ConstStepLeapfrog(ham, 1, N_LEAPFROG),
@@ -95,7 +92,6 @@ def main():
                               (1, action),
                               (500, productionProgress),
                               (1, logDet),
-                              (100, corrs),
                               (100, particleCorrelators),
                               (100, holeCorrelators),
                               (1, write)
@@ -118,7 +114,6 @@ def main():
     print("Processing results...")
     ax = particleCorrelators.report()
     ax = holeCorrelators.report()
-    ax = corrs.report()
 
     ax = acceptanceRate.report(20)
     ax.axvline(NTHERM, c="k")  # mark thermalization - production border

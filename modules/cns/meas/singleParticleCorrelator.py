@@ -6,7 +6,7 @@ import numpy as np
 import cns
 
 from .common import newAxes, ensureH5GroupExists
-from ..util import spaceToSpacetime
+from ..util import spaceToSpacetime, rotateTemporally
 
 class SingleParticleCorrelator:
     r"""!
@@ -18,45 +18,31 @@ class SingleParticleCorrelator:
         self.hfm = cns.HubbardFermiMatrix(kappaTilde, mu, SIGMA_KAPPA)
         self.numIrreps = len(irreps)
         self.nt = nt           # number of timeslices of the problem
-        self.corr = [[[] for t in range(nt)] for i in range(len(irreps))]  # array where correlators will be stored
+        self.corr = [] #[[[] for t in range(nt)] for i in range(len(irreps))]  # array where correlators will be stored
         self.irreps = irreps
-        self.species=species
+        self.species = species
 
     def __call__(self, phi, inline=False, **kwargs):
         """!Record the single-particle correlators."""
-        nx = len(self.irreps[0])  # this should give the number of ions
         
         # Create a large set of sources:
-        rhss = [ cns.Vector(spaceToSpacetime(irrep, time, self.nt)) for irrep in self.irreps for time in range(self.nt) ]
+        rhss = [cns.Vector(spaceToSpacetime(irrep, time, self.nt)) for irrep in self.irreps for time in range(self.nt)]
         # For the j^th spacetime vector of the i^th state, go to self.rhss[i * nt + j]
         # In other words, time is faster.
-
+        
         # Solve M.x = b for different right-hand sides:
         res = np.array(cns.solveM(self.hfm, phi, self.species, rhss))#.reshape([self.numIrreps, self.nt, self.numIrreps, self.nt])
         
-        print(res.shape)
-        r = res.reshape([self.numIrreps, self.nt, self.numIrreps, self.nt])
-        
-        [ ]
-
-        print(r[0,0].shape)
-
-        evancorr = [ np.vdot(self.irreps[i], r[i,time]) for i in range(self.numIrreps) for time in range(self.nt) ]
-        print(evancorr.shape)
-        exit()
-        
-        for i in range(self.numIrreps):
-            corr = [0 for time in range(self.nt)]
-            for t0 in range(self.nt):
-                for time in range(t0, t0+self.nt):
-                    if time < self.nt:
-                        corr[time-t0] += np.vdot(rhss[i*self.nt + time], res[i*self.nt + t0])
-                    elif time >= self.nt:  # this takes into account the anti-periodic boundary conditions
-                        corr[time-t0] -= np.vdot(rhss[i*self.nt + time-self.nt], res[i*self.nt + t0])
-            for time in range(self.nt):  # now average over initial timeslice and append to correlator
-                corr[time] /= self.nt
-                self.corr[i][time].append(corr[time])
-
+        propagators = res.reshape([self.numIrreps, self.nt, self.nt, self.numIrreps])
+        # The logic for the one-liner goes as:
+        # sunk = np.array([ [ np.dot(propagators[i,src],np.conj(self.irreps[i])) for src in range(self.nt) ] for i in range(len(self.irreps)) ])
+        # rotated = np.array([ [ rotateTemporally(sunk[i,src], -src) for src in range(self.nt) ] for i in range(self.numIrreps) ])
+        # sourceAveraged = np.mean(rotated, axis=1)
+        self.corr.append(np.mean(
+            np.array([[ 
+                rotateTemporally(np.dot(propagators[i, src], np.conj(self.irreps[i])), -src)
+                for src in range(self.nt)] 
+                for i in range(self.numIrreps)]), axis=1))
 
     def report(self, ax=None):
         r"""!
@@ -70,13 +56,13 @@ class SingleParticleCorrelator:
         correlator = np.array(self.corr)
 
         timeSlice = range(self.nt)
-        avg = np.mean(np.real(correlator), axis=2)
-        err = np.std(np.real(correlator), axis=2)
+        avg = np.mean(np.real(correlator), axis=0)
+        err = np.std(np.real(correlator), axis=0)
 
         ax.set_yscale("log")
 
-        for mean, stdDev in zip(avg, err):
-            ax.errorbar(timeSlice, mean, yerr=stdDev)
+        for i in range(self.numIrreps):
+            ax.errorbar(timeSlice, avg[i], yerr=err[i])
 
         if doTightLayout:
             fig.tight_layout()
