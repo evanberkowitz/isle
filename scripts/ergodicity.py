@@ -17,9 +17,9 @@ LATFILE = "two_sites.yml"  # input lattice
 # LATFILE = "one_site.yml"  # input lattice
 # LATFILE="c20.yml"
 
-NT = 8  # number of time slices
-NTHERM = 3000  # number of thermalization trajectories
-NPROD = 5000 # number of production trajectories
+NT = 6  # number of time slices
+NTHERM = 1000  # number of thermalization trajectories
+NPROD = 1000 # number of production trajectories
 
 N_LEAPFROG_THERM = 8
 N_LEAPFROG = 3
@@ -66,6 +66,8 @@ def main():
     print(noninteracting_energies)
 
     corrs = cns.meas.Corr_1p(irreps, NT, kappa, MU, SIGMA_KAPPA)
+    particleCorrelators = cns.meas.SingleParticleCorrelator(irreps, NT, kappa, MU, SIGMA_KAPPA, cns.Species.PARTICLE)
+    holeCorrelators = cns.meas.SingleParticleCorrelator(irreps, NT, kappa, MU, SIGMA_KAPPA, cns.Species.HOLE)
 
     print("thermalizing")
     phi = cns.hmc.hmc(phi, ham,
@@ -77,40 +79,41 @@ def main():
                       ],
                       [(20, cns.checks.realityCheck)])
     print("thermalized!")
-
-    the_configurations = h5.open_file("ensemble_name.h5","w")
     
-    write = cns.meas.WriteConfiguration(the_configurations,"/configurations")
-
     # print("running production")
     # detMeas = DetMeas(cns.HubbardFermiMatrix(kappa, 0, SIGMA_KAPPA))
     print("running production")
-    phi = cns.hmc.hmc(phi, ham, cns.hmc.ConstStepLeapfrog(ham, 1, N_LEAPFROG), NPROD,
-                      [
-                          (1, acceptanceRate),
-                          (1, action),
-                          (500, productionProgress),
-                          (1, logDet),
-                          (1, corrs),
-                          (100, write),
-                      ])
-
-    the_configurations.close()
+    with h5.open_file("ensemble_name.h5","w") as configurationFile:
+        write = cns.meas.WriteConfiguration(configurationFile,"/configurations")
+        phi = cns.hmc.hmc(phi, ham, cns.hmc.ConstStepLeapfrog(ham, 1, N_LEAPFROG), NPROD,
+                          [
+                              (1, acceptanceRate),
+                              (1, action),
+                              (500, productionProgress),
+                              (1, logDet),
+                              (100, corrs),
+                              (100, particleCorrelators),
+                              (100, holeCorrelators),
+                              (100, write),
+                          ])
 
     print("Saving measurements...")
 
     saved_measurements = [
         (action, "/metropolis"),
         (acceptanceRate, "/metropolis"),
-        (corrs, "/correlation_functions/single_particle"),
+        (particleCorrelators, "/correlation_functions/single_particle"),
+        (holeCorrelators, "/correlation_functions/single_hole"),
         (logDet, "/logDet"),
     ]
 
-    with h5.open_file("measurements.h5", "w") as the_measurements:
+    with h5.open_file("measurements.h5", "w") as measurementFile:
         for measurement, path in saved_measurements:
-            measurement.save(the_measurements,path)
+            measurement.save(measurementFile,path)
 
     print("Processing results...")
+    ax = particleCorrelators.report()
+    ax = holeCorrelators.report()
     ax = corrs.report()
 
     ax = acceptanceRate.report(20)

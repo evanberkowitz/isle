@@ -56,3 +56,23 @@ def createH5Group(base, name):
                          +" name already exists in '{}/{}'").format(name, base.filename, base.name))
     # does not exists yet
     return base.create_group(name)
+
+def spaceToSpacetime(vector, time, nt):
+    r"""!
+    Take a spatial vector and a timeslice and return a spacetime vector.
+    \param vector The spatial vector.
+    \param time The timeslice on which the wall vector should live.
+    \param nt The number of total timeslices.
+    """
+
+    nx=len(vector)
+    spacetimeVector = np.zeros(nx*nt, dtype=complex)
+    spacetimeVector[time*nx:(time+1)*nx] = vector
+    return spacetimeVector
+
+def rotateTemporally(spacetimeVector, space, time, fermionic=True):
+    result = np.roll(spacetimeVector.reshape([space,time]),time)
+    mask = np.array([ [-1 for x in range(space)] if t < 3 else [+1 for x in range(space)] for t in range(time) ])
+    result *= mask
+    result = result.reshape([space*time])
+    return result

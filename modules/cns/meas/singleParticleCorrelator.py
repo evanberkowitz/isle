@@ -6,32 +6,45 @@ import numpy as np
 import cns
 
 from .common import newAxes, ensureH5GroupExists
+from ..util import spaceToSpacetime
 
-class Corr_1p:
+class SingleParticleCorrelator:
     r"""!
     \ingroup meas
     Tabulate single-particle correlator
     """
 
-    def __init__(self, irreps, nt, kappaTilde, mu, SIGMA_KAPPA):
+    def __init__(self, irreps, nt, kappaTilde, mu, SIGMA_KAPPA, species=cns.Species.PARTICLE):
         self.hfm = cns.HubbardFermiMatrix(kappaTilde, mu, SIGMA_KAPPA)
         self.numIrreps = len(irreps)
         self.nt = nt           # number of timeslices of the problem
         self.corr = [[[] for t in range(nt)] for i in range(len(irreps))]  # array where correlators will be stored
         self.irreps = irreps
+        self.species=species
 
     def __call__(self, phi, inline=False, **kwargs):
         """!Record the single-particle correlators."""
         nx = len(self.irreps[0])  # this should give the number of ions
-        rhss = []
-        for eigenstate in self.irreps:
-            for time in range(self.nt):
-                vec = np.zeros(nx*self.nt, dtype=complex)
-                vec[time*nx:(time+1)*nx] = eigenstate
-                rhss.append(cns.Vector(vec))
-        # for the t^th spacetime vector of the i^th state, go to self.rhss[i * nt + t]
+        
+        # Create a large set of sources:
+        rhss = [ cns.Vector(spaceToSpacetime(irrep, time, self.nt)) for irrep in self.irreps for time in range(self.nt) ]
+        # For the j^th spacetime vector of the i^th state, go to self.rhss[i * nt + j]
+        # In other words, time is faster.
 
-        res = cns.solveM(self.hfm, phi, cns.Species.PARTICLE, rhss)  # this solves M.x = b for the different timeslices and eigenstates
+        # Solve M.x = b for different right-hand sides:
+        res = np.array(cns.solveM(self.hfm, phi, self.species, rhss))#.reshape([self.numIrreps, self.nt, self.numIrreps, self.nt])
+        
+        print(res.shape)
+        r = res.reshape([self.numIrreps, self.nt, self.numIrreps, self.nt])
+        
+        [ ]
+
+        print(r[0,0].shape)
+
+        evancorr = [ np.vdot(self.irreps[i], r[i,time]) for i in range(self.numIrreps) for time in range(self.nt) ]
+        print(evancorr.shape)
+        exit()
+        
         for i in range(self.numIrreps):
             corr = [0 for time in range(self.nt)]
             for t0 in range(self.nt):
@@ -51,7 +64,7 @@ class Corr_1p:
         """
 
         if ax is None:
-            fig, ax = newAxes("TOM Correlator", r"t", r"C")
+            fig, ax = newAxes(str(self.species)+" Correlator", r"t", r"C")
             doTightLayout = True
 
         correlator = np.array(self.corr)
