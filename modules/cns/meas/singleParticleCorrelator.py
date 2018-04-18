@@ -14,7 +14,11 @@ class SingleParticleCorrelator:
     Tabulate single-particle correlator
     """
 
-    def __init__(self, irreps, nt, kappaTilde, mu, SIGMA_KAPPA, species=cns.Species.PARTICLE):
+    def __init__(self, nt, kappaTilde, mu, SIGMA_KAPPA, species=cns.Species.PARTICLE):
+        
+        noninteracting_energies, irreps = np.linalg.eig(cns.Matrix(kappaTilde))
+        irreps = np.transpose(irreps)
+        
         self.hfm = cns.HubbardFermiMatrix(kappaTilde, mu, SIGMA_KAPPA)
         self.numIrreps = len(irreps)
         self.nt = nt           # number of timeslices of the problem

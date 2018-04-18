@@ -65,8 +65,8 @@ def main():
     print("and their corresponding energies")
     print(noninteracting_energies)
 
-    particleCorrelators = cns.meas.SingleParticleCorrelator(irreps, NT, kappa, MU, SIGMA_KAPPA, cns.Species.PARTICLE)
-    holeCorrelators = cns.meas.SingleParticleCorrelator(irreps, NT, kappa, MU, SIGMA_KAPPA, cns.Species.HOLE)
+    particleCorrelators = cns.meas.SingleParticleCorrelator(NT, kappa, MU, SIGMA_KAPPA, cns.Species.PARTICLE)
+    holeCorrelators = cns.meas.SingleParticleCorrelator(NT, kappa, MU, SIGMA_KAPPA, cns.Species.HOLE)
 
     rng = cns.random.NumpyRNG(1075)
     print("thermalizing")
