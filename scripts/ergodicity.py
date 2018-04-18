@@ -27,7 +27,7 @@ N_LEAPFROG = 3
 # model parameters
 U = 2
 BETA = 5
-MU=0
+MU = 0
 SIGMA_KAPPA = -1
 
 UTILDE = U*BETA/NT
@@ -35,8 +35,6 @@ UTILDE = U*BETA/NT
 
 def main():
     """!Run HMC and analyze results."""
-
-    np.random.seed(1075)
 
     # load lattice
     with open(str(core.SCRIPT_PATH/"../lattices"/LATFILE), "r") as yamlf:
@@ -69,9 +67,12 @@ def main():
     particleCorrelators = cns.meas.SingleParticleCorrelator(irreps, NT, kappa, MU, SIGMA_KAPPA, cns.Species.PARTICLE)
     holeCorrelators = cns.meas.SingleParticleCorrelator(irreps, NT, kappa, MU, SIGMA_KAPPA, cns.Species.HOLE)
 
+    rng = cns.random.NumpyRNG(1075)
     print("thermalizing")
     phi = cns.hmc.hmc(phi, ham,
-                      cns.hmc.LinearStepLeapfrog(ham, (1, 1), (N_LEAPFROG_THERM, N_LEAPFROG), NTHERM-1), NTHERM,
+                      cns.hmc.LinearStepLeapfrog(ham, (1, 1), (N_LEAPFROG_THERM, N_LEAPFROG), NTHERM-1),
+                      NTHERM,
+                      rng,
                       [
                           (1, acceptanceRate),
                           (1, action),
@@ -79,13 +80,15 @@ def main():
                       ],
                       [(20, cns.checks.realityCheck)])
     print("thermalized!")
-    
+
     # print("running production")
     # detMeas = DetMeas(cns.HubbardFermiMatrix(kappa, 0, SIGMA_KAPPA))
     print("running production")
     with h5.open_file("ensemble_name.h5","w") as configurationFile:
         write = cns.meas.WriteConfiguration(configurationFile,"/configurations")
-        phi = cns.hmc.hmc(phi, ham, cns.hmc.ConstStepLeapfrog(ham, 1, N_LEAPFROG), NPROD,
+        phi = cns.hmc.hmc(phi, ham, cns.hmc.ConstStepLeapfrog(ham, 1, N_LEAPFROG),
+                          NPROD,
+                          rng,
                           [
                               (1, acceptanceRate),
                               (1, action),
@@ -94,7 +97,6 @@ def main():
                               (100, corrs),
                               (100, particleCorrelators),
                               (100, holeCorrelators),
-                              (100, write),
                           ])
 
     print("Saving measurements...")

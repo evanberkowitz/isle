@@ -12,19 +12,20 @@ from . import Vector, leapfrog
 from .util import hingeRange
 
 
-def _initialConditions(ham, oldPhi, oldAct):
+def _initialConditions(ham, oldPhi, oldAct, rng):
     r"""!
     Construct initial conditions for proposer.
 
     \param ham Hamiltonian.
     \param oldPhi Old configuration, result of previous run or some new phi.
     \param oldAct Old action, result of previous run or `None` if first run.
+    \param rng Randum number generator that implements cns.random.RNGWrapper.
 
     \returns Tuple `(phi, pi, energy)`.
     """
 
     # new random pi
-    pi = Vector(np.random.normal(0, 1, len(oldPhi))+0j)
+    pi = Vector(rng.normal(0, 1, len(oldPhi))+0j)
     if oldAct is None:
         # need to compute energy from scratch
         energy = ham.eval(oldPhi, pi)
@@ -33,7 +34,7 @@ def _initialConditions(ham, oldPhi, oldAct):
         energy = ham.addMomentum(pi, oldAct)
     return oldPhi, pi, energy
 
-def hmc(phi, ham, proposer, ntr, measurements=[], checks=[]):
+def hmc(phi, ham, proposer, ntr, rng, measurements=[], checks=[]):
     r"""!
     Compute Hybrid Monte-Carlo trajectories.
 
@@ -53,6 +54,8 @@ def hmc(phi, ham, proposer, ntr, measurements=[], checks=[]):
                       - `acc`: `True` if previous trajectory was accepted, `False` otherwise.
 
     \param ntr Number of trajectories to compute.
+
+    \param rng Randum number generator that implements cns.random.RNGWrapper.
 
     \param measurements List of tuples `(freq, meas)`, where `freq` is the measurement
                         frequency: 1 means measure every trajectory, 2 means
@@ -77,7 +80,7 @@ def hmc(phi, ham, proposer, ntr, measurements=[], checks=[]):
     act = None  # running action (without pi)
     for itr in range(ntr):
         # get initial conditions for proposer
-        startPhi, startPi, startEnergy = _initialConditions(ham, phi, act)
+        startPhi, startPi, startEnergy = _initialConditions(ham, phi, act, rng)
 
         # evolve fields using proposer
         endPhi, endPi = proposer(startPhi, startPi, acc)
@@ -92,7 +95,7 @@ def hmc(phi, ham, proposer, ntr, measurements=[], checks=[]):
 
         # accept-reject
         deltaE = np.real(endEnergy - startEnergy)
-        if deltaE < 0 or np.exp(-deltaE) > np.random.uniform(0, 1):
+        if deltaE < 0 or np.exp(-deltaE) > rng.uniform(0, 1):
             acc = True
             phi = endPhi
             act = ham.stripMomentum(endPi, endEnergy)
