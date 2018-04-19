@@ -7,58 +7,34 @@ import yaml
 import numpy as np
 import matplotlib.pyplot as plt
 import tables as h5
-import os
+import os, sys
+from pathlib import Path
 
 import core
 core.prepare_module_import()
 import cns
 import cns.meas
 
-LATFILE = "two_sites.yml"  # input lattice
-# LATFILE = "one_site.yml"  # input lattice
-# LATFILE="c20.yml"
-
-NT = 8  # number of time slices
-NTHERM = 3000  # number of thermalization trajectories
-NPROD = 100000 # number of production trajectories
-
-N_LEAPFROG_THERM = 8
-N_LEAPFROG = 3
-
-# model parameters
-U = 2
-BETA = 5
-MU = 0
-SIGMA_KAPPA = -1
-
-UTILDE = U*BETA/NT
-
 
 def main():
     """!Run HMC and analyze results."""
-
-    ensembleName = ".".join(LATFILE.split(".")[:-1])+".nt"+str(NT)
-
-    # load lattice
-    with open(str(core.SCRIPT_PATH/"../lattices"/LATFILE), "r") as yamlf:
-        lat = yaml.safe_load(yamlf)
-    kappa = lat.hopping() * (BETA / NT)  # actually \tilde{kappa}
-
-    # Hamiltonian for the Hubbard model
-    ham = cns.Hamiltonian(cns.HubbardGaugeAction(UTILDE),
-                          cns.HubbardFermiAction(kappa, MU, SIGMA_KAPPA))
-
+    
+    cns.env["latticeDirectory"] = str(Path(__file__).resolve().parent.parent)+"/lattices"
+    
+    ensembleFile = sys.argv[1]
+    ensemble = cns.importEnsemble(ensembleFile)
+    
     # initial state
-    phi = cns.Vector(np.random.normal(0, np.sqrt(UTILDE), lat.nx()*NT)+0j)
+    phi = cns.Vector(np.random.normal(0, np.sqrt(ensemble.UTilde), ensemble.spacetime)+0j)
 
     acceptanceRate = cns.meas.AcceptanceRate()
     action = cns.meas.Action()
-    thermalizationProgress = cns.meas.Progress("Thermalization", NTHERM)
-    productionProgress = cns.meas.Progress("Production", NPROD)
-    logDet = cns.meas.LogDet(kappa, MU, SIGMA_KAPPA)
+    thermalizationProgress = cns.meas.Progress("Thermalization", ensemble.nTherm)
+    productionProgress = cns.meas.Progress("Production", ensemble.nProduction)
+    logDet = cns.meas.LogDet(ensemble.kappaTilde, ensemble.mu, ensemble.sigma_kappa)
 
     # NB!! np.linalg.eig produces eigenvectors in COLUMNS
-    noninteracting_energies, irreps = np.linalg.eig(cns.Matrix(lat.hopping()))
+    noninteracting_energies, irreps = np.linalg.eig(cns.Matrix(ensemble.lattice.hopping()))
     irreps = np.transpose(irreps)
 
     print("Non-interacting Irreps...")
@@ -66,25 +42,25 @@ def main():
     print("and their corresponding energies")
     print(noninteracting_energies)
 
-    particleCorrelators = cns.meas.SingleParticleCorrelator(NT, kappa, MU, SIGMA_KAPPA, cns.Species.PARTICLE)
-    holeCorrelators = cns.meas.SingleParticleCorrelator(NT, kappa, MU, SIGMA_KAPPA, cns.Species.HOLE)
+    particleCorrelators = cns.meas.SingleParticleCorrelator(ensemble.nt, ensemble.kappaTilde, ensemble.mu, ensemble.sigma_kappa, cns.Species.PARTICLE)
+    holeCorrelators = cns.meas.SingleParticleCorrelator(ensemble.nt, ensemble.kappaTilde, ensemble.mu, ensemble.sigma_kappa, cns.Species.HOLE)
 
     rng = cns.random.NumpyRNG(1075)
     print("thermalizing")
-    phi = cns.hmc.hmc(phi, ham,
-                      cns.hmc.LinearStepLeapfrog(ham, (1, 1), (N_LEAPFROG_THERM, N_LEAPFROG), NTHERM-1),
-                      NTHERM,
+    phi = cns.hmc.hmc(phi, ensemble.hamiltonian,
+                      ensemble.thermalizer,
+                      ensemble.nTherm,
                       rng,
                       [
                           (1, acceptanceRate),
                           (1, action),
-                          (NTHERM/10, thermalizationProgress),
+                          (ensemble.nTherm/10, thermalizationProgress),
                       ],
                       [(20, cns.checks.realityCheck)])
     print("thermalized!")
 
     print("running production")
-    configurationFile = ensembleName+".h5"
+    configurationFile = ensemble.name+".h5"
     
     # Right now, throw away previously generated ensemble.
     # Here's where instead we might load a checkpoint file.
@@ -94,8 +70,8 @@ def main():
         pass
     
     write = cns.meas.WriteConfiguration(configurationFile, "/cfg/cfg_{itr}")
-    phi = cns.hmc.hmc(phi, ham, cns.hmc.ConstStepLeapfrog(ham, 1, N_LEAPFROG),
-                          NPROD,
+    phi = cns.hmc.hmc(phi, ensemble.hamiltonian, ensemble.proposer,
+                          ensemble.nProduction,
                           rng,
                           [
                               (1, acceptanceRate),
@@ -117,7 +93,7 @@ def main():
         (logDet, "/logDet"),
     ]
 
-    with h5.open_file(ensembleName+".measurements.h5", "w") as measurementFile:
+    with h5.open_file(ensemble.name+".measurements.h5", "w") as measurementFile:
         for measurement, path in saved_measurements:
             measurement.save(measurementFile,path)
 
