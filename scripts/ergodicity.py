@@ -93,7 +93,7 @@ def main():
     except:
         pass
     
-    write = cns.meas.WriteConfiguration(configurationFile, "/")
+    write = cns.meas.WriteConfiguration(configurationFile, "/cfg/cfg_{itr}")
     phi = cns.hmc.hmc(phi, ham, cns.hmc.ConstStepLeapfrog(ham, 1, N_LEAPFROG),
                           NPROD,
                           rng,
