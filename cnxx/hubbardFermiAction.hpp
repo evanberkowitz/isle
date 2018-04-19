@@ -22,7 +22,6 @@ namespace cnxx {
      * for description and derivation of the algorithms.
      *
      * \warning Only supports `nt > 2`.
-     * \todo Compute and cache det(K) and K^-1 or compute action via A^-1 and invert that.
      */
     class HubbardFermiAction : Action {
     public:
