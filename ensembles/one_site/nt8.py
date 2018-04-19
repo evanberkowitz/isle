@@ -27,7 +27,10 @@ nLeapfrog = 3               # production leapfrog steps
 nProduction = 10000         # number of production trajectories
 
 hamiltonian = cns.Hamiltonian(cns.HubbardGaugeAction(UTilde),
-                          cns.HubbardFermiAction(kappaTilde, muTilde, sigma_kappa))
+                              cns.HubbardFermiAction(kappaTilde, muTilde, sigma_kappa))
 
 thermalizer = cns.hmc.LinearStepLeapfrog(hamiltonian, (1, 1), (nLeapfrogTherm, nLeapfrog), nTherm-1)
 proposer = cns.hmc.ConstStepLeapfrog(hamiltonian, 1, nLeapfrog)
+
+rng = cns.random.NumpyRNG(1075)
+initialConfig = cns.Vector(rng.normal(0, UTilde**(1/2), spacetime)+0j)

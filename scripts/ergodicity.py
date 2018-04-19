@@ -5,7 +5,6 @@ Investigate the ergodicity problem.
 
 import sys
 from pathlib import Path
-import numpy as np
 import h5py as h5
 
 import core
@@ -24,11 +23,6 @@ def main(argv):
 
     ensemble = cns.importEnsemble(argv[1])
 
-    # TODO encode initial conditions and RNG in ensemble
-    rng = cns.random.NumpyRNG(1075)
-    # initial state (hot)
-    phi = cns.Vector(rng.normal(0, np.sqrt(ensemble.UTilde), ensemble.spacetime)+0j)
-
     measurements = [
         (1, cns.meas.LogDet(ensemble.kappaTilde, ensemble.mu, ensemble.sigma_kappa), "/logdet"),
         (1, cns.meas.TotalPhi(), "/field"),
@@ -43,10 +37,10 @@ def main(argv):
     ]
 
     print("thermalizing")
-    phi = cns.hmc.hmc(phi, ensemble.hamiltonian,
+    phi = cns.hmc.hmc(ensemble.initialConfig, ensemble.hamiltonian,
                       ensemble.thermalizer,
                       ensemble.nTherm,
-                      rng,
+                      ensemble.rng,
                       [
                           (ensemble.nTherm/10, cns.meas.Progress("Thermalization", ensemble.nTherm)),
                       ],
@@ -55,7 +49,7 @@ def main(argv):
     print("running production")
     write = cns.meas.WriteConfiguration(ensemble.name+".h5", "/cfg/cfg_{itr}")
     phi = cns.hmc.hmc(phi, ensemble.hamiltonian, ensemble.proposer,
-                      ensemble.nProduction, rng,
+                      ensemble.nProduction, ensemble.rng,
                       [
                           (100, write),
                           (500, cns.meas.Progress("Production", ensemble.nProduction)),
