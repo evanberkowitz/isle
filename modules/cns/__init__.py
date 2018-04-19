@@ -10,7 +10,9 @@ import cns.hmc
 import cns.checks
 import cns.random
 import cns.util
+import cns.h5io
 from cns.importEnsemble import *
 from cns.readLattice import *
 
-env={}
+## Environment variables for CNS.
+env = {}

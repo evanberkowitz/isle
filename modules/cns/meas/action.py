@@ -5,7 +5,8 @@ Measurement of action.
 import numpy as np
 
 from .common import newAxes
-from ..util import binnedArray, createH5Group
+from ..util import binnedArray
+from ..h5io import createH5Group
 
 class Action:
     r"""!

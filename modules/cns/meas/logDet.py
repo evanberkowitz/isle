@@ -7,6 +7,7 @@ from matplotlib.colors import LogNorm
 
 import cns
 from .common import newAxes
+from ..h5io import createH5Group
 
 class LogDet:
     r"""!
@@ -52,7 +53,7 @@ class LogDet:
         \param base HDF5 group in which to store data.
         \param name Name of the subgroup ob base for this measurement.
         """
-        group = cns.util.createH5Group(base, name)
+        group = createH5Group(base, name)
         group["particles"] = self.logdet[cns.Species.PARTICLE]
         group["holes"] = self.logdet[cns.Species.HOLE]
 

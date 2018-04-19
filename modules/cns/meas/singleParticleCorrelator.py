@@ -6,7 +6,8 @@ import numpy as np
 
 import cns
 from .common import newAxes
-from ..util import spaceToSpacetime, rotateTemporally, createH5Group
+from ..util import spaceToSpacetime, rotateTemporally
+from ..h5io import createH5Group
 
 class SingleParticleCorrelator:
     r"""!
