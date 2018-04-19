@@ -571,7 +571,7 @@ namespace cnxx {
         // gives extra minus sign
         return toFirstLogBranch(
             -static_cast<double>(NT)*hfm.logdetKinv(species)
-            + logdet(blaze::evaluate(IdMatrix<std::complex<double>>(NX) + aux))
+            + logdet(CDMatrix(IdMatrix<std::complex<double>>(NX) + aux))
             );
     }
 
