@@ -5,6 +5,7 @@ Investigate the ergodicity problem.
 
 import sys
 from pathlib import Path
+
 import h5py as h5
 
 import core
@@ -15,7 +16,7 @@ import cns.meas
 def main(argv):
     """!Run HMC and measurements."""
 
-    cns.env["latticeDirectory"] = str(Path(__file__).resolve().parent.parent/"lattices")
+    cns.env["latticeDirectory"] = Path(__file__).resolve().parent.parent/"lattices"
 
     ensemble = cns.importEnsemble(argv[1])
 

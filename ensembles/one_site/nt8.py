@@ -1,7 +1,8 @@
+from pathlib import Path
 import cns
 
 # Physics parameters
-latticeFile = "one_site.yml"    # input lattice
+latticeFile = Path("one_site.yml")    # input lattice
 nt = 8                          # number of time slices
 U = 2                           # Hubbard parameter
 beta = 5                        # Inverse temperature
@@ -11,7 +12,7 @@ sigma_kappa = -1
 delta = beta / nt
 UTilde = U * delta
 muTilde = mu * delta
-name = "{}.nt{}.U{}.beta{}.mu{}".format(latticeFile.split(".")[0],nt,U,beta,mu)
+name = "{}.nt{}.U{}.beta{}.mu{}".format(latticeFile.stem, nt, U, beta, mu)
 
 
 lattice = cns.readLattice(latticeFile)
