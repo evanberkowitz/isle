@@ -7,45 +7,29 @@ import yaml
 import numpy as np
 import matplotlib.pyplot as plt
 import tables as h5
+import os, sys
+from pathlib import Path
 
 import core
 core.prepare_module_import()
 import cns
 import cns.meas
 
-#LATFILE = "four_sites.yml"  # input lattice
-LATFILE = "one_site.yml"  # input lattice
-# LATFILE="c20.yml"
-
-NT = 16  # number of time slices
-NTHERM = 3000  # number of thermalization trajectories
-
-# model parameters
-U = 2
-BETA = 3
-MU = 0
-SIGMA_KAPPA = 1
-
-UTILDE = U*BETA/NT
 
 def main():
     """!Analyze HMC results."""
     
-    ensembleName = ".".join(LATFILE.split(".")[:-1])+".nt"+str(NT)
+    cns.env["latticeDirectory"] = str(Path(__file__).resolve().parent.parent)+"/lattices"
     
-    # TODO: also read the lattice from there?
-    # load lattice
-    with open(str(core.SCRIPT_PATH/"../lattices"/LATFILE), "r") as yamlf:
-        lat = yaml.safe_load(yamlf)
-    kappa = lat.hopping() * (BETA / NT)  # actually \tilde{kappa}
-    nx = len(np.array(cns.Matrix(kappa)))
-
+    ensembleFile = sys.argv[1]
+    ensemble = cns.importEnsemble(ensembleFile)
+    
     acceptanceRate = cns.meas.AcceptanceRate()
     action = cns.meas.Action()
-    logDet = cns.meas.LogDet(kappa, MU, SIGMA_KAPPA)
+    logDet = cns.meas.LogDet(ensemble.kappaTilde, ensemble.mu, ensemble.sigma_kappa)
 
-    particleCorrelators = cns.meas.SingleParticleCorrelator(NT, kappa, MU, SIGMA_KAPPA, cns.Species.PARTICLE)
-    holeCorrelators = cns.meas.SingleParticleCorrelator(NT, kappa, MU, SIGMA_KAPPA, cns.Species.HOLE)
+    particleCorrelators = cns.meas.SingleParticleCorrelator(ensemble.nt, ensemble.kappaTilde, ensemble.mu, ensemble.sigma_kappa, cns.Species.PARTICLE)
+    holeCorrelators = cns.meas.SingleParticleCorrelator(ensemble.nt, ensemble.kappaTilde, ensemble.mu, ensemble.sigma_kappa, cns.Species.HOLE)
 
 
     saved_measurements = [
@@ -56,7 +40,7 @@ def main():
         (logDet, "/logDet"),
     ]
 
-    with h5.open_file(ensembleName+".measurements.h5", "r") as measurementFile:
+    with h5.open_file(ensemble.name+".measurements.h5", "r") as measurementFile:
         for measurement, path in saved_measurements:
             measurement.read(measurementFile,path)
 
@@ -76,21 +60,21 @@ def main():
         mean_err = np.std(np.array([ np.mean(np.array([species.corr[cfg] for cfg in bootstrapIndices[sample]]), axis=0) for sample in range(NBS) ] ), axis=0)
     
         fig, ax = cns.meas.common.newAxes("Bootstrapped "+str(label)+" Correlator", r"t", r"C")
-        time = [ t * BETA / NT for t in range(NT) ]
+        time = [ t * ensemble.beta / ensemble.nt for t in range(ensemble.nt) ]
         ax.set_yscale("log")
 
-        for i in range(nx):
+        for i in range(ensemble.nx):
             ax.errorbar(time, np.real(mean[i]), yerr=np.real(mean_err[i]))
 
         fig.tight_layout()
         
-        ax = species.report()
+        # ax = species.report()
 
     ax = acceptanceRate.report(20)
-    ax.axvline(NTHERM, c="k")  # mark thermalization - production border
+    ax.axvline(ensemble.nTherm, c="k")  # mark thermalization - production border
 
     ax = action.report(20)
-    ax.axvline(NTHERM, c="k")  # mark thermalization - production border
+    ax.axvline(ensemble.nTherm, c="k")  # mark thermalization - production border
 
     ax = logDet.report(cns.Species.PARTICLE)
     ax = logDet.report(cns.Species.HOLE)
