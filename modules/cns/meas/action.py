@@ -63,5 +63,16 @@ class Action:
         r"""!
         Read the action from a file.
         \param group HDF5 group which contains the data of this measurement.
+        \param fromCfgFile
+               - `True`: Read data from a configuration file as written by
+                          cns.meas.WriteConfiguration.
+               - `False`: Read data from a single dataset as written by this measurement.
         """
-        self.act = group["action"][()]
+        try:
+            if fromCfgFile:
+                self.act = [group[cfg]["action"][()] for cfg in group]
+            else:
+                self.act = group["action"][()]
+        except KeyError:
+            raise RuntimeError("No dataset 'action' found in group {} in file {}"\
+                               .format(group.name, group.file)) from None

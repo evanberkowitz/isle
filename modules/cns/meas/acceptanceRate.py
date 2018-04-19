@@ -58,9 +58,20 @@ class AcceptanceRate:
         group = createH5Group(base, name)
         group["acceptanceRate"] = self.accRate
 
-    def read(self, group):
+    def read(self, group, fromCfgFile=False):
         r"""!
         Read the acceptance rate from a file.
         \param group HDF5 group which contains the data of this measurement.
+        \param fromCfgFile
+               - `True`: Read data from a configuration file as written by
+                          cns.meas.WriteConfiguration.
+               - `False`: Read data from a single dataset as written by this measurement.
         """
-        self.accRate = group["acceptanceRate"][()]
+        try:
+            if fromCfgFile:
+                self.accRate = [group[cfg]["acceptanceRate"][()] for cfg in group]
+            else:
+                self.accRate = group["acceptanceRate"][()]
+        except KeyError:
+            raise RuntimeError("No dataset 'acceptanceRate' found in group {} in file {}"\
+                               .format(group.name, group.file)) from None

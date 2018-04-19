@@ -14,7 +14,6 @@ import cns.meas
 
 
 # TODO nt, spacetime in lattice
-# TODO acceptance rate and action as post process from cfg file
 
 def main(argv):
     """!Run HMC and measurements."""
