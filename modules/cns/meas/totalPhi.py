@@ -4,7 +4,7 @@ Measurement of total phi and norm of phi.
 
 import numpy as np
 
-from .common import newAxes
+from .common import newAxes, ensureH5GroupExists
 from ..util import binnedArray
 
 class TotalPhi:
@@ -95,3 +95,22 @@ class TotalPhi:
             fig.tight_layout()
 
         return ax
+
+    def save(self, theFile, path):
+        r"""!
+        Write both Phi and phiSquared.
+        \param theFile An open HDF5 file.
+        \param path Where to write to in theFile
+        """
+        ensureH5GroupExists(theFile, path)
+        theFile.create_array(path, "Phi", self.Phi)
+        theFile.create_array(path, "phiSquared", self.phiSq)
+
+    def read(self, theFile, path):
+        r"""!
+        Read Phi and phiSquared from a file.
+        \param theFile An open HDF5 file.
+        \param path Where to read from in theFile.
+        """
+        self.Phi = theFile.get_node(path+"/Phi").read()
+        self.phiSq = theFile.get_node(path+"/phiSquared").read()

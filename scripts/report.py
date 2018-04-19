@@ -27,7 +27,8 @@ def main():
     acceptanceRate = cns.meas.AcceptanceRate()
     action = cns.meas.Action()
     logDet = cns.meas.LogDet(ensemble.kappaTilde, ensemble.mu, ensemble.sigma_kappa)
-
+    totalPhi = cns.meas.TotalPhi()
+    
     particleCorrelators = cns.meas.SingleParticleCorrelator(ensemble.nt, ensemble.kappaTilde, ensemble.mu, ensemble.sigma_kappa, cns.Species.PARTICLE)
     holeCorrelators = cns.meas.SingleParticleCorrelator(ensemble.nt, ensemble.kappaTilde, ensemble.mu, ensemble.sigma_kappa, cns.Species.HOLE)
 
@@ -37,6 +38,7 @@ def main():
         (acceptanceRate, "/metropolis"),
         (particleCorrelators, "/correlation_functions/single_particle"),
         (holeCorrelators, "/correlation_functions/single_hole"),
+        (totalPhi, "/field"),
         (logDet, "/logDet"),
     ]
 
@@ -78,6 +80,9 @@ def main():
 
     ax = logDet.report(cns.Species.PARTICLE)
     ax = logDet.report(cns.Species.HOLE)
+
+    ax = totalPhi.reportPhiHistogram()
+    ax = totalPhi.reportPhi()
 
     plt.show()
 

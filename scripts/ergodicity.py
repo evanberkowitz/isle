@@ -32,6 +32,7 @@ def main():
     thermalizationProgress = cns.meas.Progress("Thermalization", ensemble.nTherm)
     productionProgress = cns.meas.Progress("Production", ensemble.nProduction)
     logDet = cns.meas.LogDet(ensemble.kappaTilde, ensemble.mu, ensemble.sigma_kappa)
+    totalPhi = cns.meas.TotalPhi()
 
     # NB!! np.linalg.eig produces eigenvectors in COLUMNS
     noninteracting_energies, irreps = np.linalg.eig(cns.Matrix(ensemble.lattice.hopping()))
@@ -54,6 +55,7 @@ def main():
                       [
                           (1, acceptanceRate),
                           (1, action),
+                          (1, totalPhi),
                           (ensemble.nTherm/10, thermalizationProgress),
                       ],
                       [(20, cns.checks.realityCheck)])
@@ -76,11 +78,12 @@ def main():
                           [
                               (1, acceptanceRate),
                               (1, action),
-                              (500, productionProgress),
                               (1, logDet),
+                              (1, totalPhi),
                               (100, particleCorrelators),
                               (100, holeCorrelators),
-                              (100, write)
+                              (100, write),
+                              (500, productionProgress),
                           ])
 
     print("Saving measurements...")
@@ -90,6 +93,7 @@ def main():
         (acceptanceRate, "/metropolis"),
         (particleCorrelators, "/correlation_functions/single_particle"),
         (holeCorrelators, "/correlation_functions/single_hole"),
+        (totalPhi, "/field"),
         (logDet, "/logDet"),
     ]
 
