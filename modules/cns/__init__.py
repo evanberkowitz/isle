@@ -11,8 +11,7 @@ import cns.checks
 import cns.random
 import cns.util
 import cns.h5io
-from cns.importEnsemble import *
-from cns.readLattice import *
+import cns.ensemble
 
 ## Environment variables for CNS.
 env = {}

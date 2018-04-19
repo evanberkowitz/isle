@@ -15,7 +15,7 @@ muTilde = mu * delta
 name = "{}.nt{}.U{}.beta{}.mu{}".format(latticeFile.stem, nt, U, beta, mu)
 
 
-lattice = cns.readLattice(latticeFile)
+lattice = cns.ensemble.readLattice(latticeFile)
 lattice.nt(nt)
 kappaTilde = lattice.hopping() * delta  # actually \tilde{kappa}
 

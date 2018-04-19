@@ -45,7 +45,8 @@ class WriteConfiguration:
     """
 
     def __init__(self, filename, cfgGroupnameFmt="cfg_{imeas}_{itr}",
-                 checkpointFreq=0, checkpointGroupnameFmt="chkpt_{imeas}_{itr}"):
+                 checkpointFreq=0, checkpointGroupnameFmt="chkpt_{imeas}_{itr}",
+                 ensemble=None):
         r"""!
         Configurations are stored under a path determined from `cfgGroupnameFmt`.
         This format specifier is processed for each configuration by replacing
@@ -67,10 +68,6 @@ class WriteConfiguration:
         \param cfgGroupnameFmt Format string for groups containing checkpoints;
                                relative to root of file.
         """
-
-        if Path(filename).exists():
-            raise RuntimeError("Configuration file already exists")
-
         self.filename = filename
         self.cfgGroupnameFmt = cfgGroupnameFmt
         self.checkpointFreq = checkpointFreq

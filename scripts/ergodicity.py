@@ -18,7 +18,10 @@ def main(argv):
 
     cns.env["latticeDirectory"] = Path(__file__).resolve().parent.parent/"lattices"
 
-    ensemble = cns.importEnsemble(argv[1])
+    ensemble = cns.ensemble.importEnsemble(argv[1])
+    cfgFile = ensemble.name+".h5"
+    with h5.File(cfgFile, "w-") as cfgf:
+        cns.ensemble.writeH5(argv[1], cfgf)
 
     measurements = [
         (1, cns.meas.LogDet(ensemble.kappaTilde, ensemble.mu, ensemble.sigma_kappa), "/logdet"),
@@ -44,11 +47,11 @@ def main(argv):
                       [(20, cns.checks.realityCheck)])
 
     print("running production")
-    write = cns.meas.WriteConfiguration(ensemble.name+".h5", "/cfg/cfg_{itr}")
     phi = cns.hmc.hmc(phi, ensemble.hamiltonian, ensemble.proposer,
                       ensemble.nProduction, ensemble.rng,
                       [
-                          (100, write),
+                          (100, cns.meas.WriteConfiguration(ensemble.name+".h5",
+                                                            "/cfg/cfg_{itr}")),
                           (500, cns.meas.Progress("Production", ensemble.nProduction)),
                           *[(freq, meas) for freq, meas, _ in measurements]
                       ],
