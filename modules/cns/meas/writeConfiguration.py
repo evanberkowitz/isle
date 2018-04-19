@@ -2,6 +2,7 @@
 Write a configuration do HDF5.
 """
 
+from pathlib import Path
 import numpy as np
 import h5py as h5
 
@@ -66,6 +67,9 @@ class WriteConfiguration:
         \param cfgGroupnameFmt Format string for groups containing checkpoints;
                                relative to root of file.
         """
+
+        if Path(filename).exists():
+            raise RuntimeError("Configuration file already exists")
 
         self.filename = filename
         self.cfgGroupnameFmt = cfgGroupnameFmt

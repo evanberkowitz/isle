@@ -54,7 +54,7 @@ def main(argv):
                       [(20, cns.checks.realityCheck)])
 
     print("Saving measurements...")
-    with h5.File(ensemble.name+".measurements.h5", "w") as measFile:
+    with h5.File(ensemble.name+".measurements.h5", "w-") as measFile:
         for _, meas, path in measurements:
             meas.save(measFile, path)
 
