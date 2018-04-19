@@ -13,23 +13,20 @@ core.prepare_module_import()
 import cns
 import cns.meas
 
-LATFILE = "two_sites.yml"  # input lattice
-# LATFILE = "one_site.yml"  # input lattice
+#LATFILE = "four_sites.yml"  # input lattice
+LATFILE = "one_site.yml"  # input lattice
 # LATFILE="c20.yml"
 
-# TODO: would it be better to write all the ensemble parameters and read them from there?
-
-NT = 8  # number of time slices
+NT = 16  # number of time slices
 NTHERM = 3000  # number of thermalization trajectories
 
 # model parameters
 U = 2
-BETA = 5
-MU=0
-SIGMA_KAPPA = -1
+BETA = 3
+MU = 0
+SIGMA_KAPPA = 1
 
 UTILDE = U*BETA/NT
-
 
 def main():
     """!Analyze HMC results."""
@@ -79,7 +76,7 @@ def main():
         mean_err = np.std(np.array([ np.mean(np.array([species.corr[cfg] for cfg in bootstrapIndices[sample]]), axis=0) for sample in range(NBS) ] ), axis=0)
     
         fig, ax = cns.meas.common.newAxes("Bootstrapped "+str(label)+" Correlator", r"t", r"C")
-        time = [ t / BETA for t in range(NT) ]
+        time = [ t * BETA / NT for t in range(NT) ]
         ax.set_yscale("log")
 
         for i in range(nx):
