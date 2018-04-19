@@ -61,5 +61,5 @@ class LogDet:
         Read particle and hole logdet from a file.
         \param group HDF5 group which contains the data of this measurement.
         """
-        self.logdet[cns.Species.PARTICLE] = group["particles"]
-        self.logdet[cns.Species.HOLE] = group["holes"]
+        self.logdet[cns.Species.PARTICLE] = group["particles"][()]
+        self.logdet[cns.Species.HOLE] = group["holes"][()]

@@ -112,5 +112,5 @@ class TotalPhi:
         Read Phi and phiSquared from a file.
         \param group HDF5 group which contains the data of this measurement.
         """
-        self.Phi = group["Phi"]
-        self.phiSq = group["phiSquared"]
+        self.Phi = group["Phi"][()]
+        self.phiSq = group["phiSquared"][()]

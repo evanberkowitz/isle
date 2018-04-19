@@ -59,9 +59,9 @@ class Action:
         group = createH5Group(base, name)
         group["action"] = self.act
 
-    def read(self, group):
+    def read(self, group, fromCfgFile=False):
         r"""!
         Read the action from a file.
         \param group HDF5 group which contains the data of this measurement.
         """
-        self.act = group["action"]
+        self.act = group["action"][()]

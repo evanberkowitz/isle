@@ -63,4 +63,4 @@ class AcceptanceRate:
         Read the acceptance rate from a file.
         \param group HDF5 group which contains the data of this measurement.
         """
-        self.accRate = group["acceptanceRate"]
+        self.accRate = group["acceptanceRate"][()]

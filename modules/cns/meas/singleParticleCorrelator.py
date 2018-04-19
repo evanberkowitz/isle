@@ -83,5 +83,5 @@ class SingleParticleCorrelator:
         Read the irreps and their correlators from a file.
         \param group HDF5 group which contains the data of this measurement.
         """
-        self.corr = group["correlators"]
-        self.irreps = group["irreps"]
+        self.corr = group["correlators"][()]
+        self.irreps = group["irreps"][()]
