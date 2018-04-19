@@ -2,6 +2,6 @@
 name: 'four sites'
 comment: 'Four sites (hexagonal)'
 nt: 0
-adjacency: [[0,1],[0,3],[0,3],[1,2],[1,2],[2,3]]
-hopping: [2, 1, 1, 1, 1, 2]
+adjacency: [[0,1],[0,3],[1,2],[2,3]]
+hopping: [1, 2, 2, 1]
 positions: [[-0.5, 0., 0.], [0.5, 0., 0.],[1,0,0],[0,1,0]]
