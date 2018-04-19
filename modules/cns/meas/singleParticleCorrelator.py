@@ -3,10 +3,10 @@ Measurement of single-particle correlator.
 """
 
 import numpy as np
-import cns
 
-from .common import newAxes, ensureH5GroupExists
-from ..util import spaceToSpacetime, rotateTemporally
+import cns
+from .common import newAxes
+from ..util import spaceToSpacetime, rotateTemporally, createH5Group
 
 class SingleParticleCorrelator:
     r"""!
@@ -15,38 +15,33 @@ class SingleParticleCorrelator:
     """
 
     def __init__(self, nt, kappaTilde, mu, SIGMA_KAPPA, species=cns.Species.PARTICLE):
-        
-        noninteracting_energies, irreps = np.linalg.eig(cns.Matrix(kappaTilde))
-        irreps = np.transpose(irreps)
-        
         self.hfm = cns.HubbardFermiMatrix(kappaTilde, mu, SIGMA_KAPPA)
-        self.numIrreps = len(irreps)
         self.nt = nt           # number of timeslices of the problem
-        self.corr = [] #[[[] for t in range(nt)] for i in range(len(irreps))]  # array where correlators will be stored
-        self.irreps = irreps
+        self.corr = []
+        self.irreps = np.transpose(np.linalg.eig(cns.Matrix(kappaTilde))[1])
         self.species = species
 
     def __call__(self, phi, inline=False, **kwargs):
         """!Record the single-particle correlators."""
-        
+
         # Create a large set of sources:
         rhss = [cns.Vector(spaceToSpacetime(irrep, time, self.nt)) for irrep in self.irreps for time in range(self.nt)]
         # For the j^th spacetime vector of the i^th state, go to self.rhss[i * nt + j]
         # In other words, time is faster.
-        
+
         # Solve M.x = b for different right-hand sides:
-        res = np.array(cns.solveM(self.hfm, phi, self.species, rhss))#.reshape([self.numIrreps, self.nt, self.numIrreps, self.nt])
-        
-        propagators = res.reshape([self.numIrreps, self.nt, self.nt, self.numIrreps])
+        res = np.array(cns.solveM(self.hfm, phi, self.species, rhss))#.reshape([len(self.irreps), self.nt, len(self.irreps), self.nt])
+
+        propagators = res.reshape([len(self.irreps), self.nt, self.nt, len(self.irreps)])
         # The logic for the one-liner goes as:
         # sunk = np.array([ [ np.dot(propagators[i,src],np.conj(self.irreps[i])) for src in range(self.nt) ] for i in range(len(self.irreps)) ])
-        # rotated = np.array([ [ rotateTemporally(sunk[i,src], -src) for src in range(self.nt) ] for i in range(self.numIrreps) ])
+        # rotated = np.array([ [ rotateTemporally(sunk[i,src], -src) for src in range(self.nt) ] for i in range(len(self.irreps)) ])
         # sourceAveraged = np.mean(rotated, axis=1)
         self.corr.append(np.mean(
-            np.array([[ 
+            np.array([[
                 rotateTemporally(np.dot(propagators[i, src], np.conj(self.irreps[i])), -src)
-                for src in range(self.nt)] 
-                for i in range(self.numIrreps)]), axis=1))
+                for src in range(self.nt)]
+                      for i in range(len(self.irreps))]), axis=1))
 
     def report(self, ax=None):
         r"""!
@@ -65,7 +60,7 @@ class SingleParticleCorrelator:
 
         ax.set_yscale("log")
 
-        for i in range(self.numIrreps):
+        for i in range(len(self.irreps)):
             ax.errorbar(timeSlice, avg[i], yerr=err[i])
 
         if doTightLayout:
@@ -73,21 +68,20 @@ class SingleParticleCorrelator:
 
         return ax
 
-    def save(self, theFile, path):
+    def save(self, base, name):
         r"""!
         Write the irreps and their correlators to a file.
-        \param theFile An open HDF5 file.
-        \param path Where to write to in theFile
+        \param base HDF5 group in which to store data.
+        \param name Name of the subgroup ob base for this measurement.
         """
-        ensureH5GroupExists(theFile, path)
-        theFile.create_array(path, "correlators", np.array(self.corr))
-        theFile.create_array(path, "irreps", self.irreps)
+        group = createH5Group(base, name)
+        group["correlators"] = self.corr
+        group["irreps"] = self.irreps
 
-    def read(self, theFile, path):
+    def read(self, group):
         r"""!
         Read the irreps and their correlators from a file.
-        \param theFile An open HDF5 file.
-        \param path Where to read from in theFile.
+        \param group HDF5 group which contains the data of this measurement.
         """
-        self.corr = theFile.get_node(path+"/correlators").read()
-        self.irreps = theFile.get_node(path, "irreps").read()
+        self.corr = group["correlators"]
+        self.irreps = group["irreps"]

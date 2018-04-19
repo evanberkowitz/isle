@@ -2,10 +2,11 @@
 Measurement of total phi and norm of phi.
 """
 
+from pathlib import Path
 import numpy as np
 
-from .common import newAxes, ensureH5GroupExists
-from ..util import binnedArray
+from .common import newAxes
+from ..util import binnedArray, createH5Group
 
 class TotalPhi:
     r"""!
@@ -96,21 +97,20 @@ class TotalPhi:
 
         return ax
 
-    def save(self, theFile, path):
+    def save(self, base, name):
         r"""!
         Write both Phi and phiSquared.
-        \param theFile An open HDF5 file.
-        \param path Where to write to in theFile
+        \param base HDF5 group in which to store data.
+        \param name Name of the subgroup ob base for this measurement.
         """
-        ensureH5GroupExists(theFile, path)
-        theFile.create_array(path, "Phi", self.Phi)
-        theFile.create_array(path, "phiSquared", self.phiSq)
+        group = createH5Group(base, name)
+        group["Phi"] = self.Phi
+        group["phiSquared"] = self.phiSq
 
-    def read(self, theFile, path):
+    def read(self, group):
         r"""!
         Read Phi and phiSquared from a file.
-        \param theFile An open HDF5 file.
-        \param path Where to read from in theFile.
+        \param group HDF5 group which contains the data of this measurement.
         """
-        self.Phi = theFile.get_node(path+"/Phi").read()
-        self.phiSq = theFile.get_node(path+"/phiSquared").read()
+        self.Phi = group["Phi"]
+        self.phiSq = group["phiSquared"]

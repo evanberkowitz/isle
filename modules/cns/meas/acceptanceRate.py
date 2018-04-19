@@ -4,8 +4,8 @@ Measurement of acceptance rate.
 
 import numpy as np
 
-from .common import newAxes, ensureH5GroupExists
-from ..util import binnedArray
+from .common import newAxes
+from ..util import binnedArray, createH5Group
 
 class AcceptanceRate:
     r"""!
@@ -49,19 +49,18 @@ class AcceptanceRate:
 
         return ax
 
-    def save(self, theFile, path):
+    def save(self, base, name):
         r"""!
         Write the acceptance rate to a file.
-        \param theFile An open HDF5 file.
-        \param path Where to write to in theFile
+        \param base HDF5 group in which to store data.
+        \param name Name of the subgroup ob base for this measurement.
         """
-        ensureH5GroupExists(theFile, path)
-        theFile.create_array(path, "acceptanceRate", np.array(self.accRate))
+        group = createH5Group(base, name)
+        group["acceptanceRate"] = self.accRate
 
-    def read(self, theFile, path):
+    def read(self, group):
         r"""!
         Read the acceptance rate from a file.
-        \param theFile An open HDF5 file.
-        \param path Where to read from in theFile.
+        \param group HDF5 group which contains the data of this measurement.
         """
-        self.accRate = theFile.get_node(path+"/acceptanceRate").read()
+        self.accRate = group["acceptanceRate"]

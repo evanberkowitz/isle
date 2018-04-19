@@ -4,8 +4,8 @@ Measurement of action.
 
 import numpy as np
 
-from .common import newAxes, ensureH5GroupExists
-from ..util import binnedArray
+from .common import newAxes
+from ..util import binnedArray, createH5Group
 
 class Action:
     r"""!
@@ -50,19 +50,18 @@ class Action:
             fig.tight_layout()
         return ax
 
-    def save(self, theFile, path):
+    def save(self, base, name):
         r"""!
         Write the action to a file.
-        \param theFile An open HDF5 file.
-        \param path Where to write to in theFile
+        \param base HDF5 group in which to store data.
+        \param name Name of the subgroup ob base for this measurement.
         """
-        ensureH5GroupExists(theFile, path)
-        theFile.create_array(path, "action", np.array(self.act))
+        group = createH5Group(base, name)
+        group["action"] = self.act
 
-    def read(self, theFile, path):
+    def read(self, group):
         r"""!
         Read the action from a file.
-        \param theFile An open HDF5 file.
-        \param path Where to read from in theFile.
+        \param group HDF5 group which contains the data of this measurement.
         """
-        self.act = theFile.get_node(path+"/action").read()
+        self.act = group["action"]

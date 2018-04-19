@@ -1,12 +1,12 @@
 """!
-Measurement of logDet.
+Measurement of logdet.
 """
 
 import numpy as np
-import cns
 from matplotlib.colors import LogNorm
 
-from .common import newAxes, ensureH5GroupExists
+import cns
+from .common import newAxes
 
 class LogDet:
     r"""!
@@ -16,12 +16,12 @@ class LogDet:
 
     def __init__(self, kappaTilde, mu, SIGMA_KAPPA):
         self.hfm = cns.HubbardFermiMatrix(kappaTilde, mu, SIGMA_KAPPA)
-        self.logDet = {cns.Species.PARTICLE: [], cns.Species.HOLE: []}
+        self.logdet = {cns.Species.PARTICLE: [], cns.Species.HOLE: []}
 
     def __call__(self, phi, inline=False, **kwargs):
-        """!Record logDet."""
-        for species in self.logDet:
-            self.logDet[species].append(cns.logdetM(self.hfm, phi, species))
+        """!Record logdet."""
+        for species in self.logdet:
+            self.logdet[species].append(cns.logdetM(self.hfm, phi, species))
 
     def report(self, species=cns.Species.PARTICLE, binsize=41, ax=None):
         r"""!
@@ -37,7 +37,7 @@ class LogDet:
             fig, ax = newAxes(str(species)+" Determinant", r"Re($det$)", r"Im($det$)")
             doTightLayout = True
 
-        dets = np.exp(self.logDet[species])
+        dets = np.exp(self.logdet[species])
 
         ax.hist2d(np.real(dets), np.imag(dets), bins=binsize, norm=LogNorm())
         ax.set_aspect('equal')
@@ -46,21 +46,20 @@ class LogDet:
             fig.tight_layout()
         return ax
 
-    def save(self, theFile, path):
+    def save(self, base, name):
         r"""!
-        Write both the particle and hole logDet to a file.
-        \param theFile An open HDF5 file.
-        \param path Where to write to in theFile
+        Write both the particle and hole logdet to a file.
+        \param base HDF5 group in which to store data.
+        \param name Name of the subgroup ob base for this measurement.
         """
-        ensureH5GroupExists(theFile, path)
-        theFile.create_array(path, "particles", self.logDet[cns.Species.PARTICLE])
-        theFile.create_array(path, "holes", self.logDet[cns.Species.HOLE])
+        group = cns.util.createH5Group(base, name)
+        group["particles"] = self.logdet[cns.Species.PARTICLE]
+        group["holes"] = self.logdet[cns.Species.HOLE]
 
-    def read(self, theFile, path):
+    def read(self, group):
         r"""!
-        Read the logDet from a file.
-        \param theFile An open HDF5 file.
-        \param path Where to read from in theFile.
+        Read particle and hole logdet from a file.
+        \param group HDF5 group which contains the data of this measurement.
         """
-        self.logDet[cns.Species.PARTICLE] = theFile.get_node(path+"/particles").read()
-        self.logDet[cns.Species.HOLE] = theFile.get_node(path+"/holes").read()
+        self.logdet[cns.Species.PARTICLE] = group["particles"]
+        self.logdet[cns.Species.HOLE] = group["holes"]
