@@ -120,6 +120,10 @@ namespace cnxx {
         std::size_t nt() const noexcept {
             return _nTslice;
         }
+        /// Returns the number of time slices.
+        std::size_t &nt() noexcept {
+            return _nTslice;
+        }
 
         /// Returns the number of spatial sites.
         std::size_t nx() const noexcept {
@@ -137,7 +141,7 @@ namespace cnxx {
         }
 
     private:
-        const std::size_t _nTslice;  ///< Number of time slices.
+        std::size_t _nTslice;  ///< Number of time slices.
         const std::size_t _nSpatial;  ///< Number of spatial lattice sites.
         SparseMatrix<double> _hoppingMat;  ///< Matrix of hopping strengths (`nx() x nx()`).
         SymmetricMatrix<double> _distMat;  ///< matrix of physical distances (`nx() x nx()`).

@@ -12,9 +12,6 @@ core.prepare_module_import()
 import cns
 import cns.meas
 
-
-# TODO nt, spacetime in lattice
-
 def main(argv):
     """!Run HMC and measurements."""
 

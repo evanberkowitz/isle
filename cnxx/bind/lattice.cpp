@@ -27,7 +27,10 @@ namespace bind {
                  double (Lattice::*)(std::size_t, std::size_t) const>(&Lattice::distance))
             .def("distance", static_cast<
                  void (Lattice::*)(std::size_t, std::size_t, double)>(&Lattice::distance))
-            .def("nt", &Lattice::nt)
+            .def("nt", py::overload_cast<>(&Lattice::nt))
+            .def("nt", [](Lattice &lat, const std::size_t nt) {
+                    lat.nt() = nt;
+                })
             .def("nx", &Lattice::nx)
             .def("lattSize", &Lattice::lattSize)
             ;

@@ -15,10 +15,8 @@ name = "{}.nt{}.U{}.beta{}.mu{}".format(latticeFile.split(".")[0],nt,U,beta,mu)
 
 
 lattice = cns.readLattice(latticeFile)
+lattice.nt(nt)
 kappaTilde = lattice.hopping() * delta  # actually \tilde{kappa}
-
-nx = lattice.nx()
-spacetime = nx*nt
 
 # Evolution / HMC Information
 nTherm = 3000               # number of thermalization trajectories
@@ -33,4 +31,4 @@ thermalizer = cns.hmc.LinearStepLeapfrog(hamiltonian, (1, 1), (nLeapfrogTherm, n
 proposer = cns.hmc.ConstStepLeapfrog(hamiltonian, 1, nLeapfrog)
 
 rng = cns.random.NumpyRNG(1075)
-initialConfig = cns.Vector(rng.normal(0, UTilde**(1/2), spacetime)+0j)
+initialConfig = cns.Vector(rng.normal(0, UTilde**(1/2), lattice.lattSize())+0j)
