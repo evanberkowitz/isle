@@ -1,20 +1,20 @@
 import cns
 
 # Physics parameters
-file = "two_sites"      # input lattice
-nt = 8                      # number of time slices
-U = 2                       # Hubbard parameter
-beta = 5                    # Inverse temperature
-mu = 0                      # Chemical potential
+latticeFile = "two_sites.yml"   # input lattice
+nt = 8                          # number of time slices
+U = 2                           # Hubbard parameter
+beta = 5                        # Inverse temperature
+mu = 0                          # Chemical potential
 sigma_kappa = -1
 
 delta = beta / nt
 UTilde = U * delta
 muTilde = mu * delta
-name = "{}.nt{}.U{}.beta{}.mu{}".format(file,nt,U,beta,mu)
+name = "{}.nt{}.U{}.beta{}.mu{}".format(latticeFile.split(".")[0],nt,U,beta,mu)
 
 
-lattice = cns.readLattice(file+".yml")
+lattice = cns.readLattice(latticeFile)
 kappaTilde = lattice.hopping() * delta  # actually \tilde{kappa}
 
 nx = lattice.nx()
