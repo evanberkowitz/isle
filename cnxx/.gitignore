@@ -1,5 +1,6 @@
 # binaries
 build
+build_rel
 
 # debug files
 *dSYM
