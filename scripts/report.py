@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """!
-Investigate the ergodicity problem.
+Produce a report of measurement output.
 """
 
 import yaml
@@ -17,12 +17,10 @@ LATFILE = "two_sites.yml"  # input lattice
 # LATFILE = "one_site.yml"  # input lattice
 # LATFILE="c20.yml"
 
+# TODO: would it be better to write all the ensemble parameters and read them from there?
+
 NT = 8  # number of time slices
 NTHERM = 3000  # number of thermalization trajectories
-NPROD = 3000 # number of production trajectories
-
-N_LEAPFROG_THERM = 8
-N_LEAPFROG = 3
 
 # model parameters
 U = 2
@@ -34,30 +32,23 @@ UTILDE = U*BETA/NT
 
 
 def main():
-    """!Run HMC and analyze results."""
-
+    """!Analyze HMC results."""
+    
+    ensembleName = ".".join(LATFILE.split(".")[:-1])+".nt"+str(NT)
+    
+    # TODO: also read the lattice from there?
     # load lattice
     with open(str(core.SCRIPT_PATH/"../lattices"/LATFILE), "r") as yamlf:
         lat = yaml.safe_load(yamlf)
     kappa = lat.hopping() * (BETA / NT)  # actually \tilde{kappa}
-
-    # NB!! np.linalg.eig produces eigenvectors in COLUMNS
-    noninteracting_energies, irreps = np.linalg.eig(cns.Matrix(lat.hopping()))
-    irreps = np.transpose(irreps)
-
-    print("Non-interacting Irreps...")
-    print(irreps)
-    print("and their corresponding energies")
-    print(noninteracting_energies)
+    nx = len(np.array(cns.Matrix(kappa)))
 
     acceptanceRate = cns.meas.AcceptanceRate()
     action = cns.meas.Action()
-    thermalizationProgress = cns.meas.Progress("Thermalization", NTHERM)
-    productionProgress = cns.meas.Progress("Production", NPROD)
     logDet = cns.meas.LogDet(kappa, MU, SIGMA_KAPPA)
 
-    particleCorrelators = cns.meas.SingleParticleCorrelator(irreps, NT, kappa, MU, SIGMA_KAPPA, cns.Species.PARTICLE)
-    holeCorrelators = cns.meas.SingleParticleCorrelator(irreps, NT, kappa, MU, SIGMA_KAPPA, cns.Species.HOLE)
+    particleCorrelators = cns.meas.SingleParticleCorrelator(NT, kappa, MU, SIGMA_KAPPA, cns.Species.PARTICLE)
+    holeCorrelators = cns.meas.SingleParticleCorrelator(NT, kappa, MU, SIGMA_KAPPA, cns.Species.HOLE)
 
 
     saved_measurements = [
@@ -68,13 +59,35 @@ def main():
         (logDet, "/logDet"),
     ]
 
-    with h5.open_file("measurements.h5", "r") as measurementFile:
+    with h5.open_file(ensembleName+".measurements.h5", "r") as measurementFile:
         for measurement, path in saved_measurements:
             measurement.read(measurementFile,path)
 
     print("Processing results...")
-    ax = particleCorrelators.report()
-    ax = holeCorrelators.report()
+
+    np.random.seed(4386)
+    additionalThermalizationCut = 0
+    finalMeasurement = particleCorrelators.corr.shape[0]
+    NBS = 100
+    BSLENGTH=finalMeasurement-additionalThermalizationCut
+
+    bootstrapIndices = np.random.randint(additionalThermalizationCut, finalMeasurement, [NBS, BSLENGTH])
+
+    for species, label in zip([particleCorrelators, holeCorrelators], ("PARTICLE", "HOLE")):
+        mean = np.mean(species.corr,axis=0)
+        std  = np.std(species.corr,axis=0)
+        mean_err = np.std(np.array([ np.mean(np.array([species.corr[cfg] for cfg in bootstrapIndices[sample]]), axis=0) for sample in range(NBS) ] ), axis=0)
+    
+        fig, ax = cns.meas.common.newAxes("Bootstrapped "+str(label)+" Correlator", r"t", r"C")
+        time = [ t / BETA for t in range(NT) ]
+        ax.set_yscale("log")
+
+        for i in range(nx):
+            ax.errorbar(time, np.real(mean[i]), yerr=np.real(mean_err[i]))
+
+        fig.tight_layout()
+        
+        ax = species.report()
 
     ax = acceptanceRate.report(20)
     ax.axvline(NTHERM, c="k")  # mark thermalization - production border

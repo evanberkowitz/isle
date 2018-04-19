@@ -7,13 +7,12 @@ import yaml
 import numpy as np
 import matplotlib.pyplot as plt
 import tables as h5
+import os
 
 import core
 core.prepare_module_import()
 import cns
 import cns.meas
-
-ENSEMBLE_NAME = "two_sites"
 
 LATFILE = "two_sites.yml"  # input lattice
 # LATFILE = "one_site.yml"  # input lattice
@@ -21,7 +20,7 @@ LATFILE = "two_sites.yml"  # input lattice
 
 NT = 8  # number of time slices
 NTHERM = 3000  # number of thermalization trajectories
-NPROD = 3000 # number of production trajectories
+NPROD = 100000 # number of production trajectories
 
 N_LEAPFROG_THERM = 8
 N_LEAPFROG = 3
@@ -37,6 +36,8 @@ UTILDE = U*BETA/NT
 
 def main():
     """!Run HMC and analyze results."""
+
+    ensembleName = ".".join(LATFILE.split(".")[:-1])+".nt"+str(NT)
 
     # load lattice
     with open(str(core.SCRIPT_PATH/"../lattices"/LATFILE), "r") as yamlf:
@@ -83,7 +84,16 @@ def main():
     print("thermalized!")
 
     print("running production")
-    write = cns.meas.WriteConfiguration(ENSEMBLE_NAME+".h5", "/")
+    configurationFile = ensembleName+".h5"
+    
+    # Right now, throw away previously generated ensemble.
+    # Here's where instead we might load a checkpoint file.
+    try:
+        os.remove(configurationFile)
+    except:
+        pass
+    
+    write = cns.meas.WriteConfiguration(configurationFile, "/")
     phi = cns.hmc.hmc(phi, ham, cns.hmc.ConstStepLeapfrog(ham, 1, N_LEAPFROG),
                           NPROD,
                           rng,
@@ -94,7 +104,7 @@ def main():
                               (1, logDet),
                               (100, particleCorrelators),
                               (100, holeCorrelators),
-                              (1, write)
+                              (100, write)
                           ])
 
     print("Saving measurements...")
@@ -107,24 +117,11 @@ def main():
         (logDet, "/logDet"),
     ]
 
-    with h5.open_file("measurements.h5", "w") as measurementFile:
+    with h5.open_file(ensembleName+".measurements.h5", "w") as measurementFile:
         for measurement, path in saved_measurements:
             measurement.save(measurementFile,path)
 
-    print("Processing results...")
-    ax = particleCorrelators.report()
-    ax = holeCorrelators.report()
-
-    ax = acceptanceRate.report(20)
-    ax.axvline(NTHERM, c="k")  # mark thermalization - production border
-
-    ax = action.report(20)
-    ax.axvline(NTHERM, c="k")  # mark thermalization - production border
-
-    ax = logDet.report(cns.Species.PARTICLE)
-    ax = logDet.report(cns.Species.HOLE)
-
-    plt.show()
+    
 
 if __name__ == "__main__":
     main()
