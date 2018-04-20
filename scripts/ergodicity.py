@@ -26,6 +26,9 @@ def main(args):
     measurements = [
         (1, cns.meas.LogDet(ensemble.kappaTilde, ensemble.mu, ensemble.sigmaKappa), "/logdet"),
         (1, cns.meas.TotalPhi(), "/field"),
+        (1, cns.meas.Action(),"/"),
+        (1, cns.meas.AcceptanceRate(), "/monte_carlo"),
+        (1, cns.meas.Timer(), "/monte_carlo"),
         (100, cns.meas.SingleParticleCorrelator(ensemble.nt, ensemble.kappaTilde,
                                                 ensemble.mu, ensemble.sigmaKappa,
                                                 cns.Species.PARTICLE),
@@ -34,8 +37,7 @@ def main(args):
                                                 ensemble.mu, ensemble.sigmaKappa,
                                                 cns.Species.HOLE),
          "/correlation_functions/single_hole"),
-        (100, cns.meas.Action(),"/"),
-        
+        (100, cns.meas.Phase(), "/")
     ]
 
     print("thermalizing")
@@ -52,18 +54,18 @@ def main(args):
     phi = cns.hmc.hmc(phi, ensemble.hamiltonian, ensemble.proposer,
                       ensemble.nProduction, ensemble.rng,
                       [
-                          (100, cns.meas.WriteConfiguration(ensemble.name+".h5",
-                                                            "/cfg/cfg_{itr}")),
+                          ( 10, cns.meas.WriteConfiguration(ensemble.name+".h5",
+                                                            "/configuration/{itr}")),
                           (500, cns.meas.Progress("Production", ensemble.nProduction)),
-                          *[(freq, meas) for freq, meas, _ in measurements]
-                      ],
+                      ] + ([(freq, meas) for freq, meas, _ in measurements] if args.measure else []),
                       [(20, cns.checks.realityCheck)])
 
-    print("Saving measurements...")
-    with h5.File(ensemble.name+".measurements.h5",
-                 "w" if args.overwrite else "w-") as measFile:
-        for _, meas, path in measurements:
-            meas.save(measFile, path)
+    if args.measure:
+        print("Saving measurements...")
+        with h5.File(ensemble.name+".measurements.h5",
+                     "w" if args.overwrite else "w-") as measFile:
+            for _, meas, path in measurements:
+                meas.save(measFile, path)
 
 def parseArgs():
     "Parse command line arguments."
@@ -73,6 +75,8 @@ def parseArgs():
     parser.add_argument("ensemble", help="Ensemble module")
     parser.add_argument("--overwrite", action="store_true",
                         help="Overwrite existing output files")
+    parser.add_argument("--measure", action="store_true",
+                        help="Perform additional measurements inline.")
     return parser.parse_args()
 
 if __name__ == "__main__":
