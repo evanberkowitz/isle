@@ -6,7 +6,7 @@ Produce a report of measurement output.
 import yaml
 import numpy as np
 import matplotlib.pyplot as plt
-import tables as h5
+import h5py as h5
 import os, sys
 from pathlib import Path
 
@@ -16,13 +16,12 @@ import cns
 import cns.meas
 
 
-def main():
+def main(argv):
     """!Analyze HMC results."""
     
-    cns.env["latticeDirectory"] = str(Path(__file__).resolve().parent.parent)+"/lattices"
-    
-    ensembleFile = sys.argv[1]
-    ensemble = cns.importEnsemble(ensembleFile)
+    cns.env["latticeDirectory"] = Path(__file__).resolve().parent.parent/"lattices"
+
+    ensemble = cns.ensemble.importEnsemble(argv[1])
     
     acceptanceRate = cns.meas.AcceptanceRate()
     action = cns.meas.Action()
@@ -34,17 +33,16 @@ def main():
 
 
     saved_measurements = [
-        (action, "/metropolis"),
-        (acceptanceRate, "/metropolis"),
+        (action, "/"),
         (particleCorrelators, "/correlation_functions/single_particle"),
         (holeCorrelators, "/correlation_functions/single_hole"),
         (totalPhi, "/field"),
-        (logDet, "/logDet"),
+        (logDet, "/logdet"),
     ]
 
-    with h5.open_file(ensemble.name+".measurements.h5", "r") as measurementFile:
+    with h5.File(ensemble.name+".measurements.h5", "r") as measurementFile:
         for measurement, path in saved_measurements:
-            measurement.read(measurementFile,path)
+            measurement.read(measurementFile[path])
 
     print("Processing results...")
 
@@ -65,7 +63,7 @@ def main():
         time = [ t * ensemble.beta / ensemble.nt for t in range(ensemble.nt) ]
         ax.set_yscale("log")
 
-        for i in range(ensemble.nx):
+        for i in range(ensemble.lattice.nx()):
             ax.errorbar(time, np.real(mean[i]), yerr=np.real(mean_err[i]))
 
         fig.tight_layout()
@@ -87,4 +85,4 @@ def main():
     plt.show()
 
 if __name__ == "__main__":
-    main()
+    main(sys.argv)

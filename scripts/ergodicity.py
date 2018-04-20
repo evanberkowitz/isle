@@ -33,7 +33,9 @@ def main(args):
         (100, cns.meas.SingleParticleCorrelator(ensemble.nt, ensemble.kappaTilde,
                                                 ensemble.mu, ensemble.sigma_kappa,
                                                 cns.Species.HOLE),
-         "/correlation_functions/single_hole")
+         "/correlation_functions/single_hole"),
+        (100, cns.meas.Action(),"/"),
+        
     ]
 
     print("thermalizing")
