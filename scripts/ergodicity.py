@@ -3,8 +3,8 @@
 Investigate the ergodicity problem.
 """
 
-import sys
 from pathlib import Path
+import argparse
 
 import h5py as h5
 
@@ -13,15 +13,15 @@ core.prepare_module_import()
 import cns
 import cns.meas
 
-def main(argv):
+def main(args):
     """!Run HMC and measurements."""
 
     cns.env["latticeDirectory"] = Path(__file__).resolve().parent.parent/"lattices"
 
-    ensemble = cns.ensemble.importEnsemble(argv[1])
+    ensemble = cns.ensemble.importEnsemble(args.ensemble)
     cfgFile = ensemble.name+".h5"
-    with h5.File(cfgFile, "w-") as cfgf:
-        cns.ensemble.writeH5(argv[1], cfgf)
+    with h5.File(cfgFile, "w" if args.overwrite else "w-") as cfgf:
+        cns.ensemble.writeH5(args.ensemble, cfgf)
 
     measurements = [
         (1, cns.meas.LogDet(ensemble.kappaTilde, ensemble.mu, ensemble.sigma_kappa), "/logdet"),
@@ -58,9 +58,20 @@ def main(argv):
                       [(20, cns.checks.realityCheck)])
 
     print("Saving measurements...")
-    with h5.File(ensemble.name+".measurements.h5", "w-") as measFile:
+    with h5.File(ensemble.name+".measurements.h5",
+                 "w" if args.overwrite else "w-") as measFile:
         for _, meas, path in measurements:
             meas.save(measFile, path)
 
+def parseArgs():
+    "Parse command line arguments."
+    parser = argparse.ArgumentParser(description="""
+    Investigate the ergodicity problem.
+    """)
+    parser.add_argument("ensemble", help="Ensemble module")
+    parser.add_argument("--overwrite", action="store_true",
+                        help="Overwrite existing output files")
+    return parser.parse_args()
+
 if __name__ == "__main__":
-    main(sys.argv)
+    main(parseArgs())
