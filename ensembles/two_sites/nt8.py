@@ -7,7 +7,7 @@ nt = 8                          # number of time slices
 U = 2                           # Hubbard parameter
 beta = 5                        # Inverse temperature
 mu = 0                          # Chemical potential
-sigma_kappa = -1
+sigmaKappa = -1
 
 delta = beta / nt
 UTilde = U * delta
@@ -26,7 +26,7 @@ nLeapfrog = 3               # production leapfrog steps
 nProduction = 10000         # number of production trajectories
 
 hamiltonian = cns.Hamiltonian(cns.HubbardGaugeAction(UTilde),
-                              cns.HubbardFermiAction(kappaTilde, muTilde, sigma_kappa))
+                              cns.HubbardFermiAction(kappaTilde, muTilde, sigmaKappa))
 
 thermalizer = cns.hmc.LinearStepLeapfrog(hamiltonian, (1, 1), (nLeapfrogTherm, nLeapfrog), nTherm-1)
 proposer = cns.hmc.ConstStepLeapfrog(hamiltonian, 1, nLeapfrog)

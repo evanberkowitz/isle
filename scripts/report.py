@@ -25,11 +25,11 @@ def main(argv):
     
     acceptanceRate = cns.meas.AcceptanceRate()
     action = cns.meas.Action()
-    logDet = cns.meas.LogDet(ensemble.kappaTilde, ensemble.mu, ensemble.sigma_kappa)
+    logDet = cns.meas.LogDet(ensemble.kappaTilde, ensemble.mu, ensemble.sigmaKappa)
     totalPhi = cns.meas.TotalPhi()
     
-    particleCorrelators = cns.meas.SingleParticleCorrelator(ensemble.nt, ensemble.kappaTilde, ensemble.mu, ensemble.sigma_kappa, cns.Species.PARTICLE)
-    holeCorrelators = cns.meas.SingleParticleCorrelator(ensemble.nt, ensemble.kappaTilde, ensemble.mu, ensemble.sigma_kappa, cns.Species.HOLE)
+    particleCorrelators = cns.meas.SingleParticleCorrelator(ensemble.nt, ensemble.kappaTilde, ensemble.mu, ensemble.sigmaKappa, cns.Species.PARTICLE)
+    holeCorrelators = cns.meas.SingleParticleCorrelator(ensemble.nt, ensemble.kappaTilde, ensemble.mu, ensemble.sigmaKappa, cns.Species.HOLE)
 
 
     saved_measurements = [
