@@ -28,7 +28,7 @@ class LogDet:
         r"""!
         Plot the determinant in the complex plane
         \param species a `cns.PH` species that identifies the determinant of interest.
-        \param binzise Number of bins in each direction.
+        \param binsize Number of bins in each direction.
                        An odd number highlights the avoidance of 0 determinant.
         \param ax Matplotlib Axes to plot in. If `None`, a new one is created in a new figure.
         \returns The Axes with the plot.
