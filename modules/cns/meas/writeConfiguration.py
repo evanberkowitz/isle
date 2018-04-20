@@ -9,7 +9,7 @@ import h5py as h5
 def writeCfg(base, groupname, phi, act, acc):
     """Write a configuration to a HDF5 group."""
     grp = base.create_group(groupname)
-    grp["config"] = np.array(phi, copy=False)
+    grp["phi"] = np.array(phi, copy=False)
     grp["action"] = act
     grp["acceptance"] = acc
     return grp
