@@ -32,4 +32,4 @@ thermalizer = cns.hmc.LinearStepLeapfrog(hamiltonian, (1, 1), (nLeapfrogTherm, n
 proposer = cns.hmc.ConstStepLeapfrog(hamiltonian, 1, nLeapfrog)
 
 rng = cns.random.NumpyRNG(1075)
-initialConfig = cns.Vector(rng.normal(0, UTilde**(1/2), lattice.lattSize)+0j)
+initialConfig = cns.Vector(rng.normal(0, UTilde**(1/2), lattice.lattSize())+0j)
