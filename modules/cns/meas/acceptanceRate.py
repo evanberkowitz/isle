@@ -57,7 +57,7 @@ class AcceptanceRate:
         \param name Name of the subgroup ob base for this measurement.
         """
         group = createH5Group(base, name)
-        group["acceptanceRate"] = self.accRate
+        group["acceptance"] = self.accRate
 
     def read(self, group, fromCfgFile=False):
         r"""!
@@ -70,9 +70,9 @@ class AcceptanceRate:
         """
         try:
             if fromCfgFile:
-                self.accRate = [group[cfg]["acceptanceRate"][()] for cfg in group]
+                self.accRate = [group[cfg]["acceptance"][()] for cfg in group]
             else:
-                self.accRate = group["acceptanceRate"][()]
+                self.accRate = group["acceptance"][()]
         except KeyError:
-            raise RuntimeError("No dataset 'acceptanceRate' found in group {} in file {}"\
+            raise RuntimeError("No dataset 'acceptance' found in group {} in file {}"\
                                .format(group.name, group.file)) from None
