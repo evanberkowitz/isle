@@ -75,7 +75,7 @@ class WriteConfiguration:
         self._cfgCnt = 0
         self._chkptCnt = 0
 
-    def __call__(self, inline, phi, itr, act, acc, rng, **kwargs):
+    def __call__(self, phi, inline, itr, act, acc, rng, **kwargs):
         """!Write a configuration to HDF5."""
         with h5.File(self.filename, "a") as h5f:
             # write configuration
