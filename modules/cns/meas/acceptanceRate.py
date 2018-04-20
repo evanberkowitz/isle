@@ -23,7 +23,7 @@ class AcceptanceRate:
             raise RuntimeError("Cannot call AcceptanceRate measurement out of line")
         self.accRate.append(kwargs["acc"])
 
-    def report(self, binsize, ax=None, fmt=""):
+    def report(self, binsize=20, ax=None, fmt=""):
         r"""!
         Plot the acceptance rate against Monte Carlo time.
         \param binsize The acceptance rate is averaged over `binsize` trajectories.

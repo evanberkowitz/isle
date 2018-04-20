@@ -21,7 +21,7 @@ class Action:
         """!Record action."""
         self.act.append(kwargs["act"])
 
-    def report(self, binsize, ax=None, fmtre="", fmtim=""):
+    def report(self, binsize=20, ax=None, fmtre="", fmtim=""):
         r"""!
         Plot the action against Monte Carlo time.
         \param binsize The action is averaged over `binsize` trajectories.
