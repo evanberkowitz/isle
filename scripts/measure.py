@@ -27,15 +27,15 @@ def main(args):
         configurations = sorted(cfgF["/configuration"],key=lambda x: int(x))
 
     measurements = [
-        (1, cns.meas.LogDet(ensemble.kappaTilde, ensemble.mu, ensemble.sigma_kappa), "/logdet"),
+        (1, cns.meas.LogDet(ensemble.kappaTilde, ensemble.mu, ensemble.sigmaKappa), "/logdet"),
         (1, cns.meas.TotalPhi(), "/field"),
         (1, cns.meas.Action(),"/"),
         (100, cns.meas.SingleParticleCorrelator(ensemble.nt, ensemble.kappaTilde,
-                                                ensemble.mu, ensemble.sigma_kappa,
+                                                ensemble.mu, ensemble.sigmaKappa,
                                                 cns.Species.PARTICLE),
          "/correlation_functions/single_particle"),
         (100, cns.meas.SingleParticleCorrelator(ensemble.nt, ensemble.kappaTilde,
-                                                ensemble.mu, ensemble.sigma_kappa,
+                                                ensemble.mu, ensemble.sigmaKappa,
                                                 cns.Species.HOLE),
          "/correlation_functions/single_hole"),
         (100, cns.meas.Phase(), "/"),
