@@ -4,6 +4,8 @@ Measurement of total phi and norm of phi.
 
 from pathlib import Path
 import numpy as np
+import matplotlib.pyplot as plt
+from matplotlib.ticker import NullFormatter
 
 from .common import newAxes
 from ..util import binnedArray
@@ -51,6 +53,32 @@ class TotalPhi:
             fig.tight_layout()
 
         return ax
+
+    def report(self, ax=None):
+        spacer = 0.05
+        left, width = 0.1, 0.65
+        bottom, height = 0.1, 0.8
+        
+        fig = plt.figure()
+        nullfmt = NullFormatter()
+        
+        history = plt.axes([left, bottom, width, height])
+        dist    = plt.axes([left+width+spacer, bottom, 1-left-width-2*spacer, height])
+        
+        history.set_title(r"Monte Carlo History of $\Phi$")
+        history.set_xlabel(r"$N_{\mathrm{tr}}$")
+        history.set_ylabel(r"$\Phi$")
+        history.plot(np.arange(len(self.Phi)), np.real(self.Phi), color='green', alpha=0.75)
+        
+        ylimits = history.get_ylim()
+        
+        dist.set_title(r"PDF")
+        dist.set_xlabel(r"Freq.")
+        dist.hist(np.real(self.Phi), 50, normed=1, facecolor='green', alpha=0.75, orientation="horizontal")
+        dist.yaxis.set_major_formatter(nullfmt)
+        dist.set_ylim(ylimits)
+
+        return fig
 
     def reportPhiHistogram(self, ax=None):
         r"""!
