@@ -77,7 +77,6 @@ def main(args):
     weight = np.exp(phase.theta*1j)
 
     for species, label in zip([particleCorrelators, holeCorrelators], ("PARTICLE", "HOLE")):
-        # TODO: implement reweighting correctly!
         reweighted = [ w * c for w,c in zip(weight,species.corr) ]
         mean = np.mean( reweighted, axis=0) / np.mean(weight)
         std  = np.std(reweighted ,axis=0)
@@ -89,7 +88,7 @@ def main(args):
         ax.set_yscale("log")
 
         for i in range(ensemble.lattice.nx()):
-            ax.errorbar(time, np.real(mean[i]), yerr=np.real(mean_err[i]))
+            ax.errorbar(time, np.real(mean[i,i]), yerr=np.real(mean_err[i,i]))
 
         fig.tight_layout()
     
@@ -105,8 +104,7 @@ def main(args):
     ax = logDet.report(cns.Species.PARTICLE)
     ax = logDet.report(cns.Species.HOLE)
 
-    ax = totalPhi.reportPhiHistogram()
-    ax = totalPhi.reportPhi()
+    ax = totalPhi.report()
 
     plt.show()
 

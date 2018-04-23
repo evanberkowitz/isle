@@ -35,14 +35,15 @@ class SingleParticleCorrelator:
 
         propagators = res.reshape([len(self.irreps), self.nt, self.nt, len(self.irreps)])
         # The logic for the one-liner goes as:
-        # sunk = np.array([ [ np.dot(propagators[i,src],np.conj(self.irreps[i])) for src in range(self.nt) ] for i in range(len(self.irreps)) ])
-        # rotated = np.array([ [ rotateTemporally(sunk[i,src], -src) for src in range(self.nt) ] for i in range(len(self.irreps)) ])
-        # sourceAveraged = np.mean(rotated, axis=1)
+        # For each source irrep we need to apply a sink for every irrep.  This produces a big cross-correlator.
+        # For each source time we need to rotate so that the source lives on timeslice 0.
+        # Finally, we need to average over all the source correlators with the same source irrep but different timeslices.
         self.corr.append(np.mean(
-            np.array([[
-                rotateTemporally(np.dot(propagators[i, src], np.conj(self.irreps[i])), -src)
+            np.array([[[
+                rotateTemporally(np.dot(propagators[i, src], np.conj(self.irreps[j])), -src)
                 for src in range(self.nt)]
-                      for i in range(len(self.irreps))]), axis=1))
+                for i in range(len(self.irreps))]
+                for j in range(len(self.irreps))]), axis=2))
 
     def report(self, ax=None):
         r"""!
