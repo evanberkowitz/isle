@@ -31,7 +31,7 @@ class SingleParticleCorrelator:
         # In other words, time is faster.
 
         # Solve M.x = b for different right-hand sides:
-        res = np.array(cns.solveM(self.hfm, phi, self.species, rhss))#.reshape([len(self.irreps), self.nt, len(self.irreps), self.nt])
+        res = np.array(cns.solveM(self.hfm, phi, self.species, rhss), copy=False)
 
         propagators = res.reshape([len(self.irreps), self.nt, self.nt, len(self.irreps)])
         # The logic for the one-liner goes as:
