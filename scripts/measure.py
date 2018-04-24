@@ -30,15 +30,19 @@ def main(args):
         (1, cns.meas.LogDet(ensemble.kappaTilde, ensemble.mu, ensemble.sigmaKappa), "/logdet"),
         (1, cns.meas.TotalPhi(), "/field"),
         (1, cns.meas.Action(),"/"),
-        (100, cns.meas.SingleParticleCorrelator(ensemble.nt, ensemble.kappaTilde,
+        (1, cns.meas.ChiralCondensate(1234, 10, ensemble.nt, ensemble.kappaTilde,
+                                                ensemble.mu, ensemble.sigmaKappa,
+                                                cns.Species.PARTICLE),
+        "/"),
+        (10, cns.meas.SingleParticleCorrelator(ensemble.nt, ensemble.kappaTilde,
                                                 ensemble.mu, ensemble.sigmaKappa,
                                                 cns.Species.PARTICLE),
          "/correlation_functions/single_particle"),
-        (100, cns.meas.SingleParticleCorrelator(ensemble.nt, ensemble.kappaTilde,
+        (10, cns.meas.SingleParticleCorrelator(ensemble.nt, ensemble.kappaTilde,
                                                 ensemble.mu, ensemble.sigmaKappa,
                                                 cns.Species.HOLE),
          "/correlation_functions/single_hole"),
-        (100, cns.meas.Phase(), "/"),
+        (10, cns.meas.Phase(), "/"),
     ]
 
     print("Performing measurements...")
