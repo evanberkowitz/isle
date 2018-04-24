@@ -25,6 +25,6 @@ namespace cnxx {
         // last half step
         piOut += blaze::real(ham.force(phiOut))*(eps/2);
 
-        return {std::move(phiOut), std::move(piOut)};
+        return std::tuple<CDVector, CDVector>{std::move(phiOut), std::move(piOut)};
     }
 }
