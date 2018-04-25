@@ -3,6 +3,7 @@ Simply report the progress.
 """
 
 import numpy as np
+import datetime
 
 class Progress:
     r"""!
@@ -24,14 +25,15 @@ class Progress:
         self.percent = 0
         self.target = targetIteration
         digits = str(int(np.ceil(np.log10(self.target))))
-        self.string = "{} {:5.2f}% complete at iteration {:"+digits+"} (aiming for {:"+digits+"})."
+        self.string = "{} {:5.2f}% complete at iteration {:"+digits+"} (aiming for {:"+digits+"}), {}."
 
     def __call__(self, phi, inline=True, **kwargs):
         """!Print progress report."""
         if inline:
             self.current = kwargs['itr']
             self.percent = 100 * (self.current-self.start) / (self.target-self.start)
-            print(self.string.format(self.name, self.percent, self.current, self.target))
+            now = datetime.datetime.now().strftime('%Y-%m-%dT%H:%M:%S')
+            print(self.string.format(self.name, self.percent, self.current, self.target, now))
         else:
             pass
 
