@@ -17,7 +17,7 @@ import rand                 # random initializer
 SEED = 8613
 RAND_MEAN = 0
 RAND_STD = 0.2
-N_REP = 1 # number of repetitions
+N_REP = 10 # number of repetitions
 
 
 class _DummyAction(cns.Action):
@@ -26,6 +26,12 @@ class _DummyAction(cns.Action):
 
     def force(self, phi):
         return phi
+
+def _randomPhi(n):
+    "Return a normally distributed random complex vector of n elements."
+    real = np.random.normal(RAND_MEAN, RAND_STD, n)
+    imag = np.random.normal(RAND_MEAN, RAND_STD, n)
+    return cns.Vector(real + 1j*imag)
 
 
 def _testConstructionPureCNXX():
@@ -118,6 +124,41 @@ class TestHamiltonian(unittest.TestCase):
         _testConstructionPureCNXX()
         _testConstructionPurePy()
         _testConstructionMixed()
+
+    def test_2_eval(self):
+        "Test eval function of cns.Hamiltonian."
+
+        logger = core.get_logger()
+        logger.info("Testing Hamiltonian.eval()")
+        for rep in range(N_REP):
+            ham = cns.Hamiltonian(_DummyAction(), cns.HubbardGaugeAction(1))
+            phi = np.random.normal(RAND_MEAN, RAND_STD, 1000) \
+                  + 1j*np.random.normal(RAND_MEAN, RAND_STD, 1000)
+            pi = np.random.normal(RAND_MEAN, RAND_STD, 1000) \
+                 + 1j*np.random.normal(RAND_MEAN, RAND_STD, 1000)
+
+            hameval = ham.eval(cns.Vector(phi), cns.Vector(pi))
+            manualeval = np.linalg.norm(pi)**2/2 + np.sum(phi) + np.linalg.norm(phi)**2/2/1
+
+            self.assertAlmostEqual(hameval, manualeval, places=10,
+                                   msg="Failed check of Hamiltonian.eval in repetition {}\n".format(rep)\
+                                   + f"with hameval = {hameval}, manualeval = {manualeval}")
+    def test_3_force(self):
+        "Test force function of cns.Hamiltonian."
+
+        logger = core.get_logger()
+        logger.info("Testing Hamiltonian.force()")
+        for rep in range(N_REP):
+            ham = cns.Hamiltonian(_DummyAction(), cns.HubbardGaugeAction(1))
+            phi = np.random.normal(RAND_MEAN, RAND_STD, 1000) \
+                  + 1j*np.random.normal(RAND_MEAN, RAND_STD, 1000)
+
+            hamforce = ham.force(cns.Vector(phi))
+            manualforce = phi - phi/1
+
+            self.assertAlmostEqual(np.linalg.norm(hamforce-manualforce), 0., places=10,
+                                   msg="Failed check of Hamiltonian.force in repetition {}\n".format(rep)\
+                                   + f"with hamforce = {hamforce}, manualforce = {manualforce}")
 
 def setUpModule():
     "Setup the vector test module."
