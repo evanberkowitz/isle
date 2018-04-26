@@ -3,8 +3,13 @@
 #include <iostream>
 
 namespace cnxx {
-    Action *Hamiltonian::add(Action *const action) {
-        _actions.emplace_back(action);
+    Action *Hamiltonian::add(Action *const action, const bool takeOwnership) {
+        _actions.emplace_back(action, takeOwnership);
+        return _actions.back().get();
+    }
+
+    Action *Hamiltonian::add(UnObHybridPtr<Action> &&action) {
+        _actions.emplace_back(std::move(action));
         return _actions.back().get();
     }
 
