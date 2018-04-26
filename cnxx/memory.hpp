@@ -214,8 +214,7 @@ namespace cnxx {
         }
 
         /// Dereference pointer, i.e. return managed object.
-        std::add_lvalue_reference_t<ElementType> &operator*()
-            const noexcept(noexcept(*_pfp.pointer())) {
+        std::add_lvalue_reference_t<ElementType> &operator*() const {
 
             return *_pfp.pointer();
         }
