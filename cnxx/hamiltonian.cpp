@@ -54,11 +54,11 @@ namespace cnxx {
 
     std::complex<double> Hamiltonian::addMomentum(const Vector<std::complex<double>> &pi,
                                                   const std::complex<double> action) const {
-        return action + blaze::sqrNorm(pi)/2.;
+        return action + (blaze::conj(pi), pi)/2.;
     }
 
     std::complex<double> Hamiltonian::stripMomentum(const Vector<std::complex<double>> &pi,
                                                     const std::complex<double> action) const {
-        return action - blaze::sqrNorm(pi)/2.;
+        return action - (blaze::conj(pi), pi)/2.;
     }
 }
