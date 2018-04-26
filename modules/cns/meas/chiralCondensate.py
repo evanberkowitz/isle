@@ -34,8 +34,9 @@ class ChiralCondensate:
         # Create a large set of sources:
         rhss = [cns.Vector(self.rng.normal(0,1,self.nt*self.nx)+0j) for s in range(self.samples)]
 
-        # Solve M.x = b for different right-hand sides:
-        res = np.array(cns.solveM(self.hfm, phi, self.species, rhss), copy=False)
+        # Solve M.x = b for different right-hand sides,
+        # Normalize by spacetime volume
+        res = np.array(cns.solveM(self.hfm, phi, self.species, rhss), copy=False) / (self.nx * self.nt)
 
         self.cc.append(np.mean([ np.dot(rhss[s], res[s]) for s in range(self.samples)]))
 
