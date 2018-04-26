@@ -6,11 +6,10 @@
 #define HAMILTONIAN_HPP
 
 #include <vector>
-#include <memory>
-#include <initializer_list>
 
 #include "core.hpp"
 #include "action.hpp"
+#include "memory.hpp"
 
 namespace cnxx {
     /// Collection of actions.
@@ -34,11 +33,22 @@ namespace cnxx {
 
         /// Add an action to the collection.
         /**
-         * \param action Pointer to the action to store. <B>%Hamiltonian assumes ownership
-         *               of the object, i.e. it manages the actions lifetime.</B>
+         * \param action Pointer to the action to store.
+         * \param takeOwnership If `true` %Hamiltonian takes ownership of the
+         *                      action and deletes it in its destructor.
+         *                      If `false` ownership lies with someone else and the user
+         *                      is responsible for cleaning up.
          * \returns `action`.
          */
-        Action *add(Action *action);
+        Action *add(Action *action, bool takeOwnership);
+
+        /// Add an action to the collection.
+        /**
+         * \param action Pointer to the action to store. Onwership is transferred to
+         *               Hamiltonian if the UnObHybridPtr owns the action.
+         * \returns `action`.
+         */
+        Action *add(UnObHybridPtr<Action> &&action);
 
         /// Construct a new action in place.
         /**
@@ -49,7 +59,7 @@ namespace cnxx {
          */
         template <typename T, typename... Args>
         Action *emplace(Args... args) {
-            _actions.emplace_back(new T{args...});
+            _actions.emplace_back(new T{std::forward<Args>(args)...}, true);
             return _actions.back().get();
         }
 
@@ -83,7 +93,7 @@ namespace cnxx {
                                            std::complex<double> action) const;
         
     private:
-        std::vector<std::unique_ptr<Action>> _actions;  ///< Stores actions to evaluate.
+        std::vector<UnObHybridPtr<Action>> _actions;  ///< Stores actions to evaluate.
     };
 }
 

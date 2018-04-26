@@ -3,8 +3,13 @@
 #include <iostream>
 
 namespace cnxx {
-    Action *Hamiltonian::add(Action *const action) {
-        _actions.emplace_back(action);
+    Action *Hamiltonian::add(Action *const action, const bool takeOwnership) {
+        _actions.emplace_back(action, takeOwnership);
+        return _actions.back().get();
+    }
+
+    Action *Hamiltonian::add(UnObHybridPtr<Action> &&action) {
+        _actions.emplace_back(std::move(action));
         return _actions.back().get();
     }
 
@@ -49,11 +54,11 @@ namespace cnxx {
 
     std::complex<double> Hamiltonian::addMomentum(const Vector<std::complex<double>> &pi,
                                                   const std::complex<double> action) const {
-        return action + blaze::sqrNorm(pi)/2.;
+        return action + (blaze::conj(pi), pi)/2.;
     }
 
     std::complex<double> Hamiltonian::stripMomentum(const Vector<std::complex<double>> &pi,
                                                     const std::complex<double> action) const {
-        return action - blaze::sqrNorm(pi)/2.;
+        return action - (blaze::conj(pi), pi)/2.;
     }
 }
