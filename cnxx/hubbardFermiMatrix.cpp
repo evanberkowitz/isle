@@ -56,21 +56,26 @@ namespace cnxx {
     }
 
     const DMatrix &HubbardFermiMatrix::Kinv(const Species species) const {
-        if (species == Species::PARTICLE) {
-            if (_kinvp.rows() == 0) {
-                _kinvp = K(species);
-                auto ipiv = std::make_unique<int[]>(_kinvp.rows());
-                invert(_kinvp, ipiv);
+        try {
+            if (species == Species::PARTICLE) {
+                if (_kinvp.rows() == 0) {
+                    _kinvp = K(species);
+                    auto ipiv = std::make_unique<int[]>(_kinvp.rows());
+                    invert(_kinvp, ipiv);
+                }
+                return _kinvp;
             }
-            return _kinvp;
+            else {
+                if (_kinvh.rows() == 0) {
+                    _kinvh = K(species);
+                    auto ipiv = std::make_unique<int[]>(_kinvh.rows());
+                    invert(_kinvh, ipiv);
+                }
+                return _kinvh;
+            }
         }
-        else {
-            if (_kinvh.rows() == 0) {
-                _kinvh = K(species);
-                auto ipiv = std::make_unique<int[]>(_kinvh.rows());
-                invert(_kinvh, ipiv);
-            }
-            return _kinvh;
+        catch (std::runtime_error) {
+            throw std::runtime_error("Inversion of K failed, did you forget to multiply kappa by delta?");
         }
     }
 
