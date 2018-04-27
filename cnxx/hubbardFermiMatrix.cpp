@@ -38,6 +38,11 @@ namespace cnxx {
 #endif
     }
 
+    HubbardFermiMatrix::HubbardFermiMatrix(const Lattice &lat,
+                                           const double beta,
+                                           const double mu,
+                                           const std::int8_t sigmaKappa)
+        : HubbardFermiMatrix{lat.hopping()*beta/lat.nt(), mu, sigmaKappa} { }
 
     void HubbardFermiMatrix::K(DSparseMatrix &k, const Species species) const {
         const std::size_t NX = nx();

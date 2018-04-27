@@ -5,9 +5,10 @@
 #ifndef HUBBARD_FERMI_MATRIX_HPP
 #define HUBBARD_FERMI_MATRIX_HPP
 
-#include "math.hpp"
-
 #include <vector>
+
+#include "math.hpp"
+#include "lattice.hpp"
 
 namespace cnxx {
 
@@ -88,6 +89,9 @@ namespace cnxx {
          * \param sigmaKappa Sign of hopping matrix in hole matrix.
          */
         HubbardFermiMatrix(const SparseMatrix<double> &kappa,
+                           double mu, std::int8_t sigmaKappa);
+
+        HubbardFermiMatrix(const Lattice &lat, double beta,
                            double mu, std::int8_t sigmaKappa);
 
         HubbardFermiMatrix(const HubbardFermiMatrix &) = default;

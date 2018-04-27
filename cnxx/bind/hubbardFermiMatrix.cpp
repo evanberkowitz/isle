@@ -13,6 +13,7 @@ namespace bind {
 
         py::class_<HFM> hfm{mod, "HubbardFermiMatrix"};
         hfm.def(py::init<DSparseMatrix, double, std::int8_t>())
+            .def(py::init<Lattice, double, double, std::int8_t>())
             .def("K", py::overload_cast<Species>(&HFM::K, py::const_))
             .def("F", py::overload_cast<std::size_t, const CDVector&,
                  Species, bool>(&HFM::F, py::const_))

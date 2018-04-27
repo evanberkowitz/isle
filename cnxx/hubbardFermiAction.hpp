@@ -7,6 +7,7 @@
 
 #include "action.hpp"
 #include "hubbardFermiMatrix.hpp"
+#include "lattice.hpp"
 
 namespace cnxx {
     /// Fermion action for Hubbard model.
@@ -34,6 +35,11 @@ namespace cnxx {
         HubbardFermiAction(const SparseMatrix<double> &kappa,
                            double mu, std::int8_t sigmaKappa, const bool variant2=false)
             : _hfm{kappa, mu, sigmaKappa}, _kp{_hfm.K(Species::PARTICLE)},
+              _kh{_hfm.K(Species::HOLE)}, _variant2{variant2} { }
+
+        HubbardFermiAction(const Lattice &lat, double beta,
+                           double mu, std::int8_t sigmaKappa, const bool variant2=false)
+            : _hfm{lat, beta, mu, sigmaKappa}, _kp{_hfm.K(Species::PARTICLE)},
               _kh{_hfm.K(Species::HOLE)}, _variant2{variant2} { }
 
         HubbardFermiAction(const HubbardFermiAction &other) = default;

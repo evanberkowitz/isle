@@ -52,6 +52,8 @@ namespace bind {
             .def(py::init<HubbardFermiMatrix, bool>(), "hfm"_a, "variant2"_a=false)
             .def(py::init<SparseMatrix<double>, double, std::int8_t, bool>(),
                       "kappa"_a, "mu"_a, "sigmaKappa"_a, "variant2"_a=false)
+            .def(py::init<Lattice, double, double, std::int8_t, bool>(),
+                      "lat"_a, "beta"_a, "mu"_a, "sigmaKappa"_a, "variant2"_a=false)
             .def("eval", &HubbardFermiAction::eval)
             .def("force", &HubbardFermiAction::force)
             ;
