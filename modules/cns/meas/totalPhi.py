@@ -2,12 +2,11 @@
 Measurement of total phi and norm of phi.
 """
 
-from pathlib import Path
 import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.ticker import NullFormatter
 
-from .common import newAxes
+from .common import newAxes, oneDimKDE
 from ..util import binnedArray
 from ..h5io import createH5Group
 
@@ -25,6 +24,10 @@ class TotalPhi:
         """!Record the total phi and mean value of phi^2."""
         self.Phi.append(np.sum(phi))
         self.phiSq.append(np.linalg.norm(phi)**2 / len(phi))
+
+    def report(self):
+        """!Calls TotalPhi.reportPhISq()."""
+        return self.reportTotalPhi()
 
     def reportPhiSq(self, binsize, ax=None, fmt=""):
         r"""!
@@ -54,37 +57,57 @@ class TotalPhi:
 
         return ax
 
-    def report(self, ax=None):
-        spacer = 0.05
-        left, width = 0.1, 0.65
-        bottom, height = 0.1, 0.8
-        
-        fig = plt.figure()
-        nullfmt = NullFormatter()
-        
-        history = plt.axes([left, bottom, width, height])
-        dist    = plt.axes([left+width+spacer, bottom, 1-left-width-2*spacer, height])
-        
-        history.set_title(r"Monte Carlo History of $\Phi$")
-        history.set_xlabel(r"$N_{\mathrm{tr}}$")
-        history.set_ylabel(r"$\Phi$")
-        history.plot(np.arange(len(self.Phi)), np.real(self.Phi), color='green', alpha=0.75)
-        
-        ylimits = history.get_ylim()
-        
-        dist.set_title(r"PDF")
-        dist.set_xlabel(r"Freq.")
-        dist.hist(np.real(self.Phi), 50, normed=1, facecolor='green', alpha=0.75, orientation="horizontal")
-        dist.yaxis.set_major_formatter(nullfmt)
-        dist.set_ylim(ylimits)
+    def reportTotalPhi(self, axes=None):
+        r"""!
+        Plot \f$\Phi = \sum \phi\f$.
+        \param axes Tuple of two axes to draw history and distribution of \f$\Phi\f$ in.
+                    If `None`, a new figure is created.
+        \returns Tuple of axes objects for history and distribution plots.
+        """
 
-        return fig
+        if axes is None:  # need to make new Axes
+            spacer = 0.05
+            left, width = 0.1, 0.65
+            bottom, height = 0.1, 0.8
 
-    def reportPhiHistogram(self, ax=None):
+            fig = plt.figure()
+            histax = plt.axes([left, bottom, width, height])
+            distax = plt.axes([left+width+spacer, bottom, 1-left-width-2*spacer, height])
+            doTightLayout = False
+        else:  # use Axes that were passed in
+            fig = plt.gcf()
+            histax, distax = axes
+            doTightLayout = True
+
+        # history
+        self.plotPhi(histax, alpha=0.75)
+        histax.set_title(r"Monte Carlo History of $\Phi$")
+        histax.set_xlabel(r"$N_{\mathrm{tr}}$")
+        histax.set_ylabel(r"$\Phi$")
+        histax.tick_params(right=True)
+
+        # density
+        self.plotPhiDistribution(distax, orientation="horizontal", alpha=0.75)
+        distax.set_title(r"PDF")
+        distax.set_xlabel(r"Freq.")
+        distax.yaxis.set_major_formatter(NullFormatter())
+        distax.set_ylim(histax.get_ylim())
+
+        if doTightLayout:
+            fig.tight_layout()
+        return (histax, distax)
+
+    def plotPhiDistribution(self, ax=None, hist=True, kde=True, orientation="vertical",
+                            facecolor="green", color="black", **kwargs):
         r"""!
         Plot histogram of summed Phi.
         \param ax Matplotlib Axes to plot in. If `None`, a new one is created in a new figure.
-        \param fmt Plot format passed to matplotlib. Can encode color, marker and line styles.
+        \param hist Choose whether to show histogram.
+        \param kde Choose whether to show kernel densitiy estimation.
+        \param orientation Set to `"horizontal"` to rotate plot 90°.
+        \param facecolor Color of the histogram.
+        \param color Line color of kernel density estimate.
+        \param kwargs Passed to `matplotlib.Axes.hist` <B>and</B> `matplotlib.Axes.plot`.
         \returns The Axes with the plot.
         """
 
@@ -94,20 +117,32 @@ class TotalPhi:
             fig, ax = newAxes("", r"$\Phi$", r"PDF")
             doTightLayout = True
 
-        # the histogram of the data
-        ax.hist(np.real(self.Phi), 50, normed=1, facecolor='green', alpha=0.75)
+        totalPhi = np.real(self.Phi)  # get real
 
-        ax.grid(True)
+        if hist:  # history
+            ax.hist(totalPhi, 50, normed=1, facecolor=facecolor,
+                    orientation=orientation, label="histogram", **kwargs)
+
+        if kde:  # kernel density estimation
+            samplePts, dens = oneDimKDE(totalPhi, bandwidth=3/5)
+            if orientation == "vertical":
+                ax.plot(samplePts, dens, color=color, label="kde", **kwargs)
+            elif orientation == "horizontal":
+                ax.plot(dens, samplePts, color=color, label="kde", **kwargs)
+            else:
+                raise RuntimeError(f"Unknown orientation: {orientation}")
+            ax.set_xlim((0, np.max(dens)*1.1))
+
         if doTightLayout:
             fig.tight_layout()
-
         return ax
 
-    def reportPhi(self, ax=None, fmt=""):
+    def plotPhi(self, ax=None, color="green", **kwargs):
         r"""!
-        Plot monte carlo history of summed Phi.
+        Plot monte carlo history of total Phi.
         \param ax Matplotlib Axes to plot in. If `None`, a new one is created in a new figure.
-        \param fmt Plot format passed to matplotlib. Can encode color, marker and line styles.
+        \param color Line color of the plot.
+        \param kwargs Passed to `matplotlib.Axes.plot`.
         \returns The Axes with the plot.
         """
 
@@ -117,13 +152,14 @@ class TotalPhi:
             fig, ax = newAxes("", r"$N_{\mathrm{tr}}$", r"$\Phi$")
             doTightLayout = True
 
-        ax.plot(np.arange(len(self.Phi)), np.real(self.Phi), fmt,
-                label=r"\Phi($i_{\mathrm{tr}})$")
+        if "label" in kwargs:
+            ax.plot(np.arange(len(self.Phi)), np.real(self.Phi), color=color, **kwargs)
+        else:
+            ax.plot(np.arange(len(self.Phi)), np.real(self.Phi),
+                    label=r"\Phi($i_{\mathrm{tr}})$", color=color, **kwargs)
 
-        ax.grid(True)
         if doTightLayout:
             fig.tight_layout()
-
         return ax
 
     def save(self, base, name):
