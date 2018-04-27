@@ -45,8 +45,7 @@ class WriteConfiguration:
     """
 
     def __init__(self, filename, cfgGroupnameFmt="cfg_{imeas}_{itr}",
-                 checkpointFreq=0, checkpointGroupnameFmt="chkpt_{imeas}_{itr}",
-                 ensemble=None):
+                 checkpointFreq=0, checkpointGroupnameFmt="chkpt_{imeas}_{itr}"):
         r"""!
         Configurations are stored under a path determined from `cfgGroupnameFmt`.
         This format specifier is processed for each configuration by replacing
