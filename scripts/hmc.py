@@ -29,6 +29,10 @@ def main(args):
         (1, cns.meas.Action(),"/"),
         (1, cns.meas.AcceptanceRate(), "/monte_carlo"),
         (1, cns.meas.Timer(), "/monte_carlo"),
+        (100, cns.meas.ChiralCondensate(1234, 10, ensemble.nt, ensemble.kappaTilde,
+                                                ensemble.mu, ensemble.sigmaKappa,
+                                                cns.Species.PARTICLE),
+        "/"),
         (100, cns.meas.SingleParticleCorrelator(ensemble.nt, ensemble.kappaTilde,
                                                 ensemble.mu, ensemble.sigmaKappa,
                                                 cns.Species.PARTICLE),
@@ -64,6 +68,7 @@ def main(args):
         print("Saving measurements...")
         with h5.File(ensemble.name+".measurements.h5",
                      "w" if args.overwrite else "w-") as measFile:
+            cns.ensemble.writeH5(args.ensemble, measFile)
             for _, meas, path in measurements:
                 meas.save(measFile, path)
 
