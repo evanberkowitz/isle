@@ -4,3 +4,4 @@
 *.h5
 *.hdf5
 __pycache__
+*.ipynb_checkpoints
