@@ -30,7 +30,7 @@ adjacency:
 - [16, 17]
 - [17, 18]
 - [18, 19]
-comment: ''
+comment: 'The smallest fullerene---12 pentagons in a dodecahedron'
 hopping: [1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0,
   1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0]
 name: C20
