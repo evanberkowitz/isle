@@ -202,6 +202,26 @@ class AbstractMatrixTest(metaclass=abc.ABCMeta):
               self._test_list_construction(mtyp, verbose=True)
 #-------------- Constructors --------------
 
+#-------------- Buffer Protocol --------------
+    def test_2_buffer_protocol(self):
+        """
+        Test the buffer protocol on matrices.
+        """
+        logger = core.get_logger()
+        for mtyp in self.matrixTypes:
+            logger.info("Testing buffer protocol for %s", mtyp)
+            typ = self.matrixTypes[mtyp]
+            if typ is int or "Sparse" in str(mtyp): continue
+
+            pyMat = rand.randn(RAND_MIN, RAND_MAX, self.mShape, typ)
+            cMat = mtyp(pyMat)
+            self.assertTrue(
+                core.isEqual(pyMat, np.array(cMat, copy=False)),
+                msg=f"Failed equality check for matrix type: {mtyp}"
+                + f"\npyMat = {pyMat}\ncMat = {cMat}"
+            )
+#-------------- Buffer Protocol --------------
+
 #-------------- Vector Constructors --------------
     def _construct_vector(self, vtyp, transpose=False):
         """
@@ -215,7 +235,7 @@ class AbstractMatrixTest(metaclass=abc.ABCMeta):
 
 
 #-------------- Operators ------------------
-    def test_2_operators(self):
+    def test_3_operators(self):
         "Test all operator overloads"
         logger = core.get_logger()
         # iterate operator types: "+", "-", ...
