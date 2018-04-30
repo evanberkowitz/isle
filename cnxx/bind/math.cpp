@@ -559,10 +559,14 @@ namespace {
                         return oss.str();
                     })
                 .def_buffer([](MT &mat) {
+                        // alignment adjusted number of columns
+                        const std::size_t adjColumns = mat.rows()>1 ?
+                                                         (&mat(1,0)-&mat(0,0)) :
+                                                         mat.columns();
                         return py::buffer_info{
                             &mat(0, 0), sizeof(ET), py::format_descriptor<ET>::format(),
                             2, {mat.rows(), mat.columns()},
-                            {sizeof(ET)*mat.columns(), sizeof(ET)}};
+                            {sizeof(ET)*adjColumns, sizeof(ET)}};
                     })
                 .def("__neg__", [](const MT &mat) {
                         return blaze::evaluate(-mat);
