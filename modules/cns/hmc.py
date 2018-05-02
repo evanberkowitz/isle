@@ -34,7 +34,7 @@ def _initialConditions(ham, oldPhi, oldAct, rng):
         energy = ham.addMomentum(pi, oldAct)
     return oldPhi, pi, energy
 
-def hmc(phi, ham, proposer, ntr, rng, measurements=[], checks=[]):
+def hmc(phi, ham, proposer, ntr, rng, measurements=[], checks=[], itrOffset=0):
     r"""!
     Compute Hybrid Monte-Carlo trajectories.
 
@@ -73,6 +73,9 @@ def hmc(phi, ham, proposer, ntr, rng, measurements=[], checks=[]):
                      - `startEnergy`/`endEnergy`: Energy before and after the proposer,
                                                   includes the momentum.
 
+    \param itrOffset Is added to the trajectory index when calling measurements.
+                     Also affects when the measurement gets called.
+
     \returns Result configuration after all trajectories.
     """
 
@@ -106,8 +109,8 @@ def hmc(phi, ham, proposer, ntr, rng, measurements=[], checks=[]):
 
         # perform measurements
         for (freq, meas) in measurements:
-            if freq > 0 and itr % freq == 0:
-                meas(phi, True, itr=itr, act=act, acc=acc, rng=rng)
+            if freq > 0 and (itr+itrOffset) % freq == 0:
+                meas(phi, True, itr=itr+itrOffset, act=act, acc=acc, rng=rng)
 
     return phi
 
