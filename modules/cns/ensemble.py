@@ -40,7 +40,7 @@ def loadH5(modName, group, name="ensemble"):
     \returns Imported module and plain text of module contents.
     """
     text = group[name][()]
-    return importEnsemble(modName, text)
+    return importEnsemble(modName, text), text
 
 def saveH5(ensembleText, group, name="ensemble"):
     r"""!
