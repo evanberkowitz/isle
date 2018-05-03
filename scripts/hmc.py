@@ -172,7 +172,8 @@ def _parseArgs():
     parser = argparse.ArgumentParser(description="""
     Basic HMC without any measurements.
     """)
-    parser.add_argument("infile", help="", type=cns.fileio.pathAndType)
+    parser.add_argument("infile", help="Input file. Python module or HDF5 file",
+                        type=cns.fileio.pathAndType)
     requiredGrp = parser.add_argument_group("required named arguments")
     requiredGrp.add_argument("-n", "--nproduction", type=int, required=True,
                              help="Number of production trajectories")
