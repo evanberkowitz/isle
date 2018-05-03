@@ -11,7 +11,6 @@ import cns.fileio
 import cns.hmc
 import cns.random
 import cns.util
-from .hubbardFermiActionSpinBasis import HubbardFermiActionSpinBasis
 
 ## Environment variables for CNS.
 env = {}
