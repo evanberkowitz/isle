@@ -13,65 +13,91 @@ core.prepare_module_import()
 import cns
 import cns.meas
 
+def _setup(args):
+    """!Setup the run; load input data and prepare output file."""
+
+    # setup environment
+    cns.env["latticeDirectory"] = Path(__file__).resolve().parent.parent/"lattices"
+
+    ensemble, ensembleText = cns.ensemble.load(args.infile[0].stem, args.infile[0])
+
+    if args.outfile is None:
+        args.outfile = cns.fileio.pathAndType(str(args.infile[0]).rsplit(".", 1)[0]+"_meas.h5")
+
+    # prepare output file
+    # delete if necessary and save ensemble
+    if args.outfile[0].exists():
+        if args.overwrite:
+            args.outfile[0].unlink()
+            with h5.File(args.outfile[0], "w") as cfgf:
+                cns.ensemble.saveH5(ensembleText, cfgf)
+        # else: Try to write to existing file. Will fail if trying to overwrite a dataset.
+    else:
+        with h5.File(args.outfile[0], "w") as cfgf:
+            cns.ensemble.saveH5(ensembleText, cfgf)
+
+    return ensemble
+
 def main(args):
     """!Run measurements from a file with saved configurations."""
 
-    cns.env["latticeDirectory"] = Path(__file__).resolve().parent.parent/"lattices"
-
-    ensemble = cns.ensemble.importEnsemble(args.ensemble)
-    cfgFile = ensemble.name+".h5"
+    ensemble = _setup(args)
 
     # Keep configuration h5 file closed as much as possible during measurements
     # First find find out all the configurations.
-    with h5.File(cfgFile, "r") as cfgF:
-        configurations = sorted(cfgF["/configuration"],key=lambda x: int(x))
+    with h5.File(args.infile[0], "r") as cfgf:
+        configNames = sorted(cfgf["/configuration"], key=int)
 
     measurements = [
         (1, cns.meas.LogDet(ensemble.kappaTilde, ensemble.mu, ensemble.sigmaKappa), "/logdet"),
         (1, cns.meas.TotalPhi(), "/field"),
-        (1, cns.meas.Action(),"/"),
+        (1, cns.meas.Action(), "/"),
         (1, cns.meas.ChiralCondensate(1234, 10, ensemble.nt, ensemble.kappaTilde,
-                                                ensemble.mu, ensemble.sigmaKappa,
-                                                cns.Species.PARTICLE),
-        "/"),
+                                      ensemble.mu, ensemble.sigmaKappa,
+                                      cns.Species.PARTICLE),
+         "/"),
         (10, cns.meas.SingleParticleCorrelator(ensemble.nt, ensemble.kappaTilde,
-                                                ensemble.mu, ensemble.sigmaKappa,
-                                                cns.Species.PARTICLE),
+                                               ensemble.mu, ensemble.sigmaKappa,
+                                               cns.Species.PARTICLE),
          "/correlation_functions/single_particle"),
         (10, cns.meas.SingleParticleCorrelator(ensemble.nt, ensemble.kappaTilde,
-                                                ensemble.mu, ensemble.sigmaKappa,
-                                                cns.Species.HOLE),
+                                               ensemble.mu, ensemble.sigmaKappa,
+                                               cns.Species.HOLE),
          "/correlation_functions/single_hole"),
         (10, cns.meas.Phase(), "/"),
     ]
 
     print("Performing measurements...")
-    
-    for configuration, iteration in zip(configurations, range(len(configurations))):
-        # Then, only keep the file open during reading of the data from that configuration.
-        with h5.File(cfgFile, "r") as cfgF:
-            phi = cfgF["configuration"][configuration]["phi"][()]
-            action = cfgF["configuration"][configuration]["action"][()]
-        # Finally, measure:
-        for frequency, measurement, _ in measurements + [(100, cns.meas.Progress("Measurement", len(configurations)), "/monte_carlo")]:
-            if iteration % frequency == 0:
-                measurement(phi, act=action, itr=iteration)
+    for i, configName in enumerate(configNames):
+        # read config and action
+        with h5.File(args.infile[0], "r") as cfgf:
+            phi = cfgf["configuration"][configName]["phi"][()]
+            action = cfgf["configuration"][configName]["action"][()]
+        # measure
+        for frequency, measurement, _ in measurements \
+            +[(100, cns.meas.Progress("Measurement", len(configNames)), "")]:
+
+            if i % frequency == 0:
+                measurement(phi, act=action, itr=i)
 
     print("Saving measurements...")
-    with h5.File(ensemble.name+".measurements.h5",
-                 "w" if args.overwrite else "w-") as measFile:
+    with h5.File(args.outfile[0], "a") as measFile:
         for _, meas, path in measurements:
             meas.save(measFile, path)
 
-def parseArgs():
-    "Parse command line arguments."
+def _parseArgs():
+    """!Parse command line arguments."""
     parser = argparse.ArgumentParser(description="""
-    Investigate the ergodicity problem.
+    Run common measurements.
     """)
-    parser.add_argument("ensemble", help="Ensemble module")
+    parser.add_argument("infile", help="Input HDF5 file",
+                        type=cns.fileio.pathAndType)
+    parser.add_argument("-o", "--output", help="Output file",
+                        type=cns.fileio.pathAndType, dest="outfile")
     parser.add_argument("--overwrite", action="store_true",
-                        help="Overwrite existing output files")
+                        help="Overwrite existing output file."
+                        +" This will delete the entire file, not just the datasets that are overwritten!")
     return parser.parse_args()
 
 if __name__ == "__main__":
-    main(parseArgs())
+    main(_parseArgs())
