@@ -31,9 +31,9 @@ def main(args):
     cns.env["latticeDirectory"] = str(Path(__file__).resolve().parent.parent)+"/lattices"
 
     with h5.File(args.file, "r") as cfgf:
-        ensemble = cns.ensemble.readH5(cfgf)
-        nconfig = len(cfgf["cfg"])
-        (acceptanceRate, action) = readMeas(cfgf["cfg"])
+        ensemble = cns.ensemble.load(args.file.replace(".", "_"), args.file)[0]
+        nconfig = len(cfgf["configuration"])
+        (acceptanceRate, action) = readMeas(cfgf["configuration"])
 
     fig = plt.figure(figsize=(11, 6))
     fig.canvas.set_window_title("Overview - "+ensemble.name)
