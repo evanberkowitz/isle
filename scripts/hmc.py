@@ -45,7 +45,9 @@ def main(args):
                                                        "/configuration/{itr}",
                                                        args.checkpoint_freq,
                                                        "/checkpoint/{itr}")),
-                          (500, cns.meas.Progress("Production", args.nproduction)),
+                          (500, cns.meas.Progress("Production",
+                                                  args.nproduction+itrOffset-1,
+                                                  itrOffset)),
                       ],
                       checks,
                       itrOffset)
