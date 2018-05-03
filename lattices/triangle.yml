@@ -1,0 +1,12 @@
+!lattice
+name: 'four sites'
+comment: 'Four sites (hexagonal)'
+nt: 0
+adjacency: [[0,1],[0,2],[1,2]]
+hopping: [1,1,1]
+positions: [
+    # A triangle that rests in the xy-plane, centered on the origin, with vertices at e^{2 pi i k / 3} for integer k.
+    [1.0, 0, 0],
+    [-0.5, +0.8660254038, 0],
+    [-0.5, -0.8660254038, 0],
+]

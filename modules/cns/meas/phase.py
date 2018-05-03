@@ -21,7 +21,7 @@ class Phase:
         """!Record phase."""
         self.theta.append(np.imag(kwargs["act"]))
 
-    def report(self, binsize=20, ax=None, fmtre="", fmtim=""):
+    def report(self, binsize=1, ax=None, fmtre="", fmtim=""):
         r"""!
         Plot the phase against Monte Carlo time.
         \param binsize The phase is averaged over `binsize` trajectories.

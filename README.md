@@ -1,14 +1,26 @@
-Some CNS stuff
+Simulating carbon nanostructures.
+
+# Short Summary
+
+[The Hubbard Model][hubbard] is an approximate model that describes fermions on a lattice that have a contact interaction.  The Hamiltonian  includes a nearest-neighbor "hopping", in which the fermions can go from one site to another, and an interaction that two fermions feel if they're on the same site.  In solid-state and condensed matter physics, sites can represent atoms in some material, while the fermions are the electrons in the outer-most shells.
+
+It's thought that the Hubbard model approximates carbon nanostructures, such as graphene, nanotubes, and fullerenes, very well.  This code is intended to allow us to study the Hubbard model, focusing on carbon nanostructures.  However, it has enough generality to allow the study of the Hubbard model on arbitrary graphs.  Some graphs have special features---the hexagonal lattice of graphene is [*bipartite*](https://en.wikipedia.org/wiki/Bipartite_graph), for example.  In some circumstances, these special features may unlock numerical speedup.
+
+[hubbard]:  https://doi.org/10.1098%2Frspa.1963.0204
 
 
 # Requirements
 
 - C++14 compiler
-- Python 3
-- blaze
-- Pybind11
+- [Python 3](https://www.python.org/), [numpy](http://www.numpy.org/)
+- [blaze](https://bitbucket.org/blaze-lib/blaze)
+- [Pybind11](https://github.com/pybind/pybind11)
 - BLAS/LAPACK
 
+Optionally
+
+- Python modules [`matplotlib`](https://matplotlib.org/), `sklearn`, [`h5py`](http://www.h5py.org/), all of which may be installed with `pip3`.
+- [HDF5](https://www.hdfgroup.org/) (for I/O), though you can write custom I/O in Python if you'd prefer.
 
 # Build and install cnxx
 
