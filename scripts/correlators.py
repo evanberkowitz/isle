@@ -140,8 +140,10 @@ def main(args):
         fig, ax = cns.meas.common.newAxes("Bootstrapped "+str(label)+" Diagonal Entries", r"t", r"C")
         mean = np.mean( reweighted, axis=0) / np.mean(weight)
         # Bootstrap an error bar on the diagonal
-        mean_err = np.std(np.array([ np.mean(np.array([reweighted[cfg] for cfg in bootstrapIndices[sample]]), axis=0)
+        mean_err = np.std(np.array([ np.mean(np.array([reweighted[cfg] for cfg in bootstrapIndices[sample]]), axis=0) /
+                                     np.mean(np.array([weight[cfg] for cfg in bootstrapIndices[sample]]), axis=0)
                                      for sample in range(NBS) ] ), axis=0)
+        
         ax.set_yscale("log")
         for i in range(ensemble.lattice.nx()):
             ax.errorbar(time, np.real(mean[i,i]), yerr=np.real(mean_err[i,i]))
