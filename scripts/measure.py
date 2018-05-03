@@ -57,7 +57,7 @@ def run(args, measurements):
         configNames = sorted(cfgf["/configuration"], key=int)
 
     print("Performing measurements...")
-    for i, configName in enumerate(configNames):
+    for i, configName in enumerate(configNames[args.n]):
         # read config and action
         with h5.File(args.infile[0], "r") as cfgf:
             phi = cfgf["configuration"][configName]["phi"][()]
@@ -111,6 +111,9 @@ def parseArgs(argv=None):
     \returns Parsed arguments.
     """
 
+    def _sliceArgType(arg):
+        return slice(*map(lambda x: int(x) if x else None, arg.split(":")))
+
     parser = argparse.ArgumentParser(description="""
     Run common measurements.
     """)
@@ -121,6 +124,8 @@ def parseArgs(argv=None):
     parser.add_argument("--overwrite", action="store_true",
                         help="Overwrite existing output file."
                         +" This will delete the entire file, not just the datasets that are overwritten!")
+    parser.add_argument("-n", type=_sliceArgType,
+                        help="Select which trajectories to process. In slice notation without spaces.")
     return parser.parse_args(argv)
 
 if __name__ == "__main__":
