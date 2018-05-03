@@ -24,27 +24,30 @@ def main(args):
 
     ensemble, phi, rng, itrOffset = _setup(args)
 
-    if not args.cont and ensemble.nTherm > 0:
+    checks = [] if args.no_checks else [(20, cns.checks.realityCheck)]
+
+    if not args.cont and args.ntherm > 0:
         print("thermalizing")
         phi = cns.hmc.hmc(phi, ensemble.hamiltonian, ensemble.thermalizer,
-                          ensemble.nTherm, rng,
+                          args.ntherm, rng,
                           [
-                              (ensemble.nTherm/10,
-                               cns.meas.Progress("Thermalization", ensemble.nTherm)),
+                              (args.ntherm/10,
+                               cns.meas.Progress("Thermalization", args.ntherm)),
                           ],
-                          [(20, cns.checks.realityCheck)])
+                          checks)
 
     print("running production")
     phi = cns.hmc.hmc(phi, ensemble.hamiltonian, ensemble.proposer,
-                      ensemble.nProduction, rng,
+                      args.nproduction, rng,
                       [
-                          (10, cns.meas.WriteConfiguration(str(args.outfile[0]),
-                                                           "/configuration/{itr}",
-                                                           100,
-                                                           "/checkpoint/{itr}")),
-                          (500, cns.meas.Progress("Production", ensemble.nProduction)),
+                          (args.save_freq,
+                           cns.meas.WriteConfiguration(str(args.outfile[0]),
+                                                       "/configuration/{itr}",
+                                                       args.checkpoint_freq,
+                                                       "/checkpoint/{itr}")),
+                          (500, cns.meas.Progress("Production", args.nproduction)),
                       ],
-                      [(20, cns.checks.realityCheck)],
+                      checks,
                       itrOffset)
 
 def _setup(args):
@@ -130,12 +133,24 @@ def _parseArgs():
     Basic HMC without any measurements.
     """)
     parser.add_argument("infile", help="", type=cns.fileio.pathAndType)
+    requiredGrp = parser.add_argument_group("required named arguments")
+    requiredGrp.add_argument("-n", "--nproduction", type=int, required=True,
+                             help="Number of production trajectories")
     parser.add_argument("-o", "--output", help="Output file",
                         type=Path, dest="outfile")
     parser.add_argument("--overwrite", action="store_true",
                         help="Overwrite existing output files")
     parser.add_argument("-c", "--continue", action="store_true",
                         help="Continue from previous run", dest="cont")
+    parser.add_argument("-t", "--ntherm", type=int, default=0,
+                        help="Number of thermalization trajectories."
+                        +" Is ignored if doing a continuation run. Defaults to 0.")
+    parser.add_argument("-s", "--save-freq", type=int, default=10,
+                        help="Frequency with which configurations are saved. Defaults to 10.")
+    parser.add_argument("--checkpoint-freq", type=int, default=100,
+                        help="Checkpoint frequency relative to measurement frequency. Defaults to 100.")
+    parser.add_argument("--no-checks", action="store_true",
+                        help="Disable consistency checks")
     return parser.parse_args()
 
 if __name__ == "__main__":
