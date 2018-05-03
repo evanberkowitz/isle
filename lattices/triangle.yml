@@ -1,6 +1,6 @@
 !lattice
-name: 'four sites'
-comment: 'Four sites (hexagonal)'
+name: 'triangle'
+comment: 'An equilateral triangle.'
 nt: 0
 adjacency: [[0,1],[0,2],[1,2]]
 hopping: [1,1,1]
