@@ -6,8 +6,8 @@ r"""!
 \ingroup scripts
 
 Runs HMC for an ensemble and saves configurations to disk.
-Can start a new calcaulation or continue from an old one.
-Use command line arguemnt `-h` or `--help` to get information on supported arguments.
+Can start a new calculation or continue from an old one.
+Use command line argument `-h` or `--help` to get information on supported arguments.
 
 ### Input
 The only positional argument to this script is a file containing an ensemble.
@@ -42,7 +42,7 @@ See cns.meas.writeConfiguration.WriteConfiguration for more information on the o
 
 If no output file is given, its name is either deduced from the ensemble name for new runs
 or it is identical to the input file for continuation runs.
-`hmc.py` will not overwrite any old data unless the ``--overwrite`` command line argument
+`hmc.py` will not overwrite any old data unless the `--overwrite` command line argument
 is given.
 """
 
