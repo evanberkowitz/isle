@@ -13,8 +13,73 @@ core.prepare_module_import()
 import cns
 import cns.meas
 
-def _setup(args):
-    """!Setup the run; load input data and prepare output file."""
+
+def main(args):
+    """!Run measurements from a file with saved configurations."""
+
+    ensemble = setup(args)
+
+    measurements = [
+        (1, cns.meas.LogDet(ensemble.kappaTilde, ensemble.mu, ensemble.sigmaKappa), "/logdet"),
+        (1, cns.meas.TotalPhi(), "/field"),
+        (1, cns.meas.Action(), "/"),
+        (1, cns.meas.ChiralCondensate(1234, 10, ensemble.nt, ensemble.kappaTilde,
+                                      ensemble.mu, ensemble.sigmaKappa,
+                                      cns.Species.PARTICLE),
+         "/"),
+        (10, cns.meas.SingleParticleCorrelator(ensemble.nt, ensemble.kappaTilde,
+                                               ensemble.mu, ensemble.sigmaKappa,
+                                               cns.Species.PARTICLE),
+         "/correlation_functions/single_particle"),
+        (10, cns.meas.SingleParticleCorrelator(ensemble.nt, ensemble.kappaTilde,
+                                               ensemble.mu, ensemble.sigmaKappa,
+                                               cns.Species.HOLE),
+         "/correlation_functions/single_hole"),
+        (10, cns.meas.Phase(), "/"),
+    ]
+
+    run(args, measurements)
+
+def run(args, measurements):
+    r"""!
+    Run Measurements.
+    \param args Parsed command line arguments. Encode which configurations are processed.
+    \param measurements List of measurements to execute. Each element is a tuple of
+                        - Measurement frequency
+                        - Measurement object.
+                        - Path to location where measurements are saved. Is passed to
+                          save function of measurement.
+    """
+
+    # Keep configuration h5 file closed as much as possible during measurements
+    # First find find out all the configurations.
+    with h5.File(args.infile[0], "r") as cfgf:
+        configNames = sorted(cfgf["/configuration"], key=int)
+
+    print("Performing measurements...")
+    for i, configName in enumerate(configNames):
+        # read config and action
+        with h5.File(args.infile[0], "r") as cfgf:
+            phi = cfgf["configuration"][configName]["phi"][()]
+            action = cfgf["configuration"][configName]["action"][()]
+        # measure
+        for frequency, measurement, _ in measurements \
+            +[(100, cns.meas.Progress("Measurement", len(configNames)), "")]:
+
+            if i % frequency == 0:
+                measurement(phi, act=action, itr=i)
+
+    print("Saving measurements...")
+    with h5.File(args.outfile[0], "a") as measFile:
+        for _, meas, path in measurements:
+            meas.save(measFile, path)
+
+def setup(args):
+    r"""!
+    Setup the run; load input data and prepare output file.
+    \param args Parsed command line arguments.
+    \returns The ensemble module.
+    """
 
     # setup environment
     cns.env["latticeDirectory"] = Path(__file__).resolve().parent.parent/"lattices"
@@ -38,55 +103,14 @@ def _setup(args):
 
     return ensemble
 
-def main(args):
-    """!Run measurements from a file with saved configurations."""
+def parseArgs(argv=None):
+    r"""!
+    Parse command line arguments.
+    \param argv List of arguments to parse. Does not include the file name.
+                I.e. use `sys.argv[1:]`.
+    \returns Parsed arguments.
+    """
 
-    ensemble = _setup(args)
-
-    # Keep configuration h5 file closed as much as possible during measurements
-    # First find find out all the configurations.
-    with h5.File(args.infile[0], "r") as cfgf:
-        configNames = sorted(cfgf["/configuration"], key=int)
-
-    measurements = [
-        (1, cns.meas.LogDet(ensemble.kappaTilde, ensemble.mu, ensemble.sigmaKappa), "/logdet"),
-        (1, cns.meas.TotalPhi(), "/field"),
-        (1, cns.meas.Action(), "/"),
-        (1, cns.meas.ChiralCondensate(1234, 10, ensemble.nt, ensemble.kappaTilde,
-                                      ensemble.mu, ensemble.sigmaKappa,
-                                      cns.Species.PARTICLE),
-         "/"),
-        (10, cns.meas.SingleParticleCorrelator(ensemble.nt, ensemble.kappaTilde,
-                                               ensemble.mu, ensemble.sigmaKappa,
-                                               cns.Species.PARTICLE),
-         "/correlation_functions/single_particle"),
-        (10, cns.meas.SingleParticleCorrelator(ensemble.nt, ensemble.kappaTilde,
-                                               ensemble.mu, ensemble.sigmaKappa,
-                                               cns.Species.HOLE),
-         "/correlation_functions/single_hole"),
-        (10, cns.meas.Phase(), "/"),
-    ]
-
-    print("Performing measurements...")
-    for i, configName in enumerate(configNames):
-        # read config and action
-        with h5.File(args.infile[0], "r") as cfgf:
-            phi = cfgf["configuration"][configName]["phi"][()]
-            action = cfgf["configuration"][configName]["action"][()]
-        # measure
-        for frequency, measurement, _ in measurements \
-            +[(100, cns.meas.Progress("Measurement", len(configNames)), "")]:
-
-            if i % frequency == 0:
-                measurement(phi, act=action, itr=i)
-
-    print("Saving measurements...")
-    with h5.File(args.outfile[0], "a") as measFile:
-        for _, meas, path in measurements:
-            meas.save(measFile, path)
-
-def _parseArgs():
-    """!Parse command line arguments."""
     parser = argparse.ArgumentParser(description="""
     Run common measurements.
     """)
@@ -97,7 +121,7 @@ def _parseArgs():
     parser.add_argument("--overwrite", action="store_true",
                         help="Overwrite existing output file."
                         +" This will delete the entire file, not just the datasets that are overwritten!")
-    return parser.parse_args()
+    return parser.parse_args(argv)
 
 if __name__ == "__main__":
-    main(_parseArgs())
+    main(parseArgs())
