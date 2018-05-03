@@ -1,6 +1,60 @@
 #!/usr/bin/env python3
-"""!
-Run measurements on existing configurations.
+
+r"""!
+\file
+\brief Run measurements on existing configurations.
+\ingroup scripts
+
+Runs a set of common measurements on a set of configurations.
+Use command line argument `-h` or `--help` to get information on supported arguments.
+
+### Input
+An HDF5 file as written by scripts/hmc.py.
+You can select the configurations you want to process using the `-n` command line argument.
+It takes uses the Python slice notation indexing the location in the input file, not the
+trajectory index. The argument must not contain spaces. E.g.
+- `-n 10` - Process the first ten configuration.
+- `-n 50:-1` or `-n 50:` - Process configurations 50 through to the end.
+- `-n=-10:-1` - Process only last ten configurations. (Note the = sign which is needed
+                because of the leading minus in the argument.)
+- `-n 0:-1:10` - Process only every tenth configuration.
+
+Keep in mind that measurement frequencies apply on top of the stride (third number).
+
+### Output
+An HDF5 file containing the results of the measurements.
+Each measurement has its own frequency meaning that not all datasets in the output have
+the same length.
+
+If no output file is given, its name is deduced from the input file.
+If the input is called `configs.h5`, the output is called `configs_meas.h5`.
+`measure.py` will not overwrite any old data unless the `--overwrite` command line argument
+is given. However, overwriting erases any old files completely and not just datasets that
+are written again.
+
+### Running from other script
+If you want to define you own measurements, you can still use this module to execute them
+and handle IO. Just use
+```{.py}
+import sys
+import cns.meas
+import measure
+
+# parse command line arguments like for batch mode
+# you can also pass your own arguments in if you want to control them programmatically
+args = measure.parseArgs()
+# load input and prepare output
+ensemble = measure.setup(args)
+# define measurements
+measurements = [
+    (1, cns.meas.TotalPhi(), "/field"),
+    (1, cns.meas.Action(), "/")
+]
+# execute measurements
+measure.run(args, measurements)
+```
+Also see measure.defaultMeasurements() to get the measurements used by measure.py
+in batch mode.
 """
 
 from pathlib import Path
@@ -18,8 +72,12 @@ def main(args):
     """!Run measurements from a file with saved configurations."""
 
     ensemble = setup(args)
+    measurements = defaultMeasurements(ensemble)
+    run(args, measurements)
 
-    measurements = [
+def defaultMeasurements(ensemble):
+    """!Returnt he default measurements used by scripts.measure.py in batch mode."""
+    return [
         (1, cns.meas.LogDet(ensemble.kappaTilde, ensemble.mu, ensemble.sigmaKappa), "/logdet"),
         (1, cns.meas.TotalPhi(), "/field"),
         (1, cns.meas.Action(), "/"),
@@ -37,8 +95,6 @@ def main(args):
          "/correlation_functions/single_hole"),
         (10, cns.meas.Phase(), "/"),
     ]
-
-    run(args, measurements)
 
 def run(args, measurements):
     r"""!
@@ -124,7 +180,7 @@ def parseArgs(argv=None):
     parser.add_argument("--overwrite", action="store_true",
                         help="Overwrite existing output file."
                         +" This will delete the entire file, not just the datasets that are overwritten!")
-    parser.add_argument("-n", type=_sliceArgType,
+    parser.add_argument("-n", type=_sliceArgType, default=slice(-1),
                         help="Select which trajectories to process. In slice notation without spaces.")
     return parser.parse_args(argv)
 
