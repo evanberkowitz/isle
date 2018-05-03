@@ -1,16 +1,19 @@
+r"""!
+\file
+\brief Basic helpers for scripts using cnxx.
 """
-Basic helpers for scripts using cnxx.
-"""
+
+## \defgroup scripts Scripts
+# Python scripts based in the `cns` module.
 
 from pathlib import Path
 #: Absolute path to script directory.
 SCRIPT_PATH = Path(__file__).resolve().parent
 
 def prepare_module_import(path=Path("../modules")):
-    """
+    r"""!
     Prepare site to import modules from ../modules.
-    Arguments:
-        path: Path to directory that contains the modules. Relative to SCRIPT_PATH.
+    \param path Path to directory that contains the modules. Relative to SCRIPT_PATH.
     """
 
     import site
