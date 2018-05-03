@@ -1,10 +1,49 @@
 #!/usr/bin/env python3
-"""!
-Basic HMC without measurements.
 
-\todo document
+r"""!
+\file
+\brief Basic HMC without measurements.
+\ingroup scripts
 
-needs config and chkpt names to be just an int: itr
+Runs HMC for an ensemble and saves configurations to disk.
+Can start a new calcaulation or continue from an old one.
+Use command line arguemnt `-h` or `--help` to get information on supported arguments.
+
+### Input
+The only positional argument to this script is a file containing an ensemble.
+This file can be either a Python module or an HDF5 file with a dataset called 'ensemble'
+in the root.
+In case of a continuation run, only HDF5 files are allowed and must probide a checkpoint
+to start off of. The format of HDF5 files for continuation runs must match the format
+descibed under 'Output' below.
+
+An ensemble must provide the following variables:
+- `hamiltonian`: An instance of `cns.Hamiltonian` passed to cns.hmc.hmc.
+- `thermalizer`: A proposer used during thermalization.
+- `proposer`: A proposer used during production.
+- `rng`: A random number generator. Is only used for new runs. For continuation runs,
+         the rng is loaded from a checkpoint.
+- `initialConfig`: Initial gauge configuration. Is only used for new runs.
+                   For continuation runs, it is is loaded from a checkpoint.
+- `name`: A string name of the ensemble. Only needed if no name for the output file is given.
+
+### Output
+A single HDF5 file containing:
+- `ensemble`: Dataset holding the text of the ensemble module.
+- `configuration`: Group holding groups labeled with just the trajectory index,
+                   no other characters. Each subgroup contains datasets holding
+                   configuration (`phi`), the action with that configuration (`action`),
+                   and whether the trajectory was accepted (`acceptance`).
+- `checkpoint`:  Group containing groups labeled with just the trajectory index, no
+                 other charaters. Each subgroup contains a link to a configuration
+                 and a group holding the RNG state.
+
+See cns.meas.writeConfiguration.WriteConfiguration for more information on the output.
+
+If no output file is given, its name is either deduced from the ensemble name for new runs
+or it is identical to the input file for continuation runs.
+`hmc.py` will not overwrite any old data unless the ``--overwrite`` command line argument
+is given.
 """
 
 import sys
@@ -23,7 +62,6 @@ def main(args):
     """!Run HMC."""
 
     ensemble, phi, rng, itrOffset = _setup(args)
-
     checks = [] if args.no_checks else [(20, cns.checks.realityCheck)]
 
     if not args.cont and args.ntherm > 0:
