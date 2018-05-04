@@ -14,10 +14,11 @@ You can select the configurations you want to process using the `-n` command lin
 It takes uses the Python slice notation indexing the location in the input file, not the
 trajectory index. The argument must not contain spaces. E.g.
 - `-n 10` - Process the first ten configuration.
-- `-n 50:-1` or `-n 50:` - Process configurations 50 through to the end.
-- `-n=-10:-1` - Process only last ten configurations. (Note the = sign which is needed
-                because of the leading minus in the argument.)
-- `-n 0:-1:10` - Process only every tenth configuration.
+- `-n 50:` - Process configurations 50 through to the end.
+- `-n=-10:-1` - Process only last nine configurations leaving out the last one.
+                (Note the = sign which is needed because of the leading
+                 minus in the argument.)
+- `-n 0::10` - Process only every tenth configuration.
 
 Keep in mind that measurement frequencies apply on top of the stride (third number).
 
@@ -36,21 +37,20 @@ are written again.
 If you want to define you own measurements, you can still use this module to execute them
 and handle IO. Just use
 ```{.py}
-import sys
 import cns.meas
 import measure
 
-# parse command line arguments like for batch mode
-# you can also pass your own arguments in if you want to control them programmatically
+# Parse command line arguments like for batch mode.
+# You can also pass in your own arguments if you want to control them programmatically.
 args = measure.parseArgs()
-# load input and prepare output
+# Load input and prepare output.
 ensemble = measure.setup(args)
-# define measurements
+# Define measurements.
 measurements = [
     (1, cns.meas.TotalPhi(), "/field"),
     (1, cns.meas.Action(), "/")
 ]
-# execute measurements
+# Execute measurements.
 measure.run(args, measurements)
 ```
 Also see measure.defaultMeasurements() to get the measurements used by measure.py
@@ -59,6 +59,7 @@ in batch mode.
 
 from pathlib import Path
 import argparse
+import sys
 
 import h5py as h5
 
@@ -152,7 +153,9 @@ def setup(args):
             args.outfile[0].unlink()
             with h5.File(args.outfile[0], "w") as cfgf:
                 cns.ensemble.saveH5(ensembleText, cfgf)
-        # else: Try to write to existing file. Will fail if trying to overwrite a dataset.
+        else:
+            print("Error: Output file exists. Use --overwrite to remove and replace it.")
+            sys.exit(1)
     else:
         with h5.File(args.outfile[0], "w") as cfgf:
             cns.ensemble.saveH5(ensembleText, cfgf)
