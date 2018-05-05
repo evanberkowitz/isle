@@ -29,8 +29,8 @@ def main(args):
     
     
     monteCarloDiagnostics = [
-        # cns.meas.Action(),
-        # cns.meas.TotalPhi(),
+        cns.meas.Action(),
+        cns.meas.TotalPhi(),
         cns.meas.Phase()
     ]
     
