@@ -35,7 +35,9 @@ def main(args):
     ]
     
     with h5.File(args.ensemble,'r') as measurementFile:
-        for cfg in measurementFile["configuration"]:
+        # h5 groups are unordered.  Sort them to get them into Monte Carlo time order.
+        configurations = sorted([ cfg for cfg in measurementFile["configuration"]], key=int)
+        for cfg in configurations:
             action = measurementFile["configuration"][cfg]["action"][()]
             field  = measurementFile["configuration"][cfg]["phi"][()]
             for diagnostic in monteCarloDiagnostics:
