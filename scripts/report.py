@@ -26,7 +26,7 @@ def main(args):
 
     # ensemble = cns.ensemble.importEnsemble(args.ensemble)
     with h5.File(args.ensemble,'r') as measFile:
-        ensemble = cns.ensemble.readH5(measFile)
+        ensemble, ensembleText = cns.ensemble.loadH5("ensemble", measFile)
     
     action = cns.meas.Action()
     totalPhi = cns.meas.TotalPhi()
@@ -58,7 +58,7 @@ def main(args):
         (chiralCondensate, "/"),
     ]
 
-    with h5.File(ensemble.name+".measurements.h5", "r") as measurementFile:
+    with h5.File(args.ensemble,'r') as measurementFile:
         # "acceptance rate is measured only if measurements were created inline"
         if "/monte_carlo/acceptance" in measurementFile:
             with_acceptance = True
