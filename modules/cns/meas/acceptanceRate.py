@@ -23,7 +23,7 @@ class AcceptanceRate:
             raise RuntimeError("Cannot call AcceptanceRate measurement out of line")
         self.accRate.append(kwargs["acc"])
 
-    def report(self, binsize=20, ax=None, fmt=""):
+    def report(self, binsize=1, ax=None, fmt=""):
         r"""!
         Plot the acceptance rate against Monte Carlo time.
         \param binsize The acceptance rate is averaged over `binsize` trajectories.
@@ -42,8 +42,14 @@ class AcceptanceRate:
             doTightLayout = True
 
         # plot acceptance rate
-        ax.plot(np.arange(0, len(self.accRate), binsize), binned,
+        t = np.arange(0, len(self.accRate), binsize)
+        ax.plot(t, binned,
                 fmt, label="Acceptance Rate")
+                
+        # Plot cumulative average
+        cumulative = np.cumsum(binned) / (1 + np.arange(len(binned)))
+        ax.plot(t, cumulative)
+                
         ax.set_ylim((-0.05, 1.05))
         if doTightLayout:
             fig.tight_layout()

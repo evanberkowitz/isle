@@ -31,7 +31,8 @@ def main(args):
     monteCarloDiagnostics = [
         cns.meas.Action(),
         cns.meas.TotalPhi(),
-        cns.meas.Phase()
+        cns.meas.Phase(),
+        cns.meas.AcceptanceRate()
     ]
     
     with h5.File(args.ensemble,'r') as measurementFile:
@@ -40,8 +41,9 @@ def main(args):
         for cfg in configurations:
             action = measurementFile["configuration"][cfg]["action"][()]
             field  = measurementFile["configuration"][cfg]["phi"][()]
+            acceptance = measurementFile["configuration"][cfg]["acceptance"][()]
             for diagnostic in monteCarloDiagnostics:
-                diagnostic(field, act=action)
+                diagnostic(field, act=action, acc=acceptance, inline=True)
     
     
     for diagnostic in monteCarloDiagnostics:
