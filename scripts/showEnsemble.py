@@ -28,7 +28,7 @@ def readMeas(group):
 def main(args):
     """!Run the module"""
 
-    cns.env["latticeDirectory"] = str(Path(__file__).resolve().parent.parent)+"/lattices"
+    cns.env["latticeDirectory"] = Path(__file__).resolve().parent.parent/"lattices"
 
     with h5.File(args.file, "r") as cfgf:
         ensemble = cns.ensemble.load(args.file.replace(".", "_"), args.file)[0]
