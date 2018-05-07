@@ -129,7 +129,7 @@ def main(args):
         weight = np.exp(phase.theta*1j)
 
     print("Processing results...")
-    pivot = int(args.pivot)
+    pivot = args.pivot
     print("Diagonalization pivot is {}".format(pivot))
 
     np.random.seed(4386)
@@ -197,12 +197,14 @@ def main(args):
 
 
     # NOW do the chopping of the zeros.
-    referenceTime = 0
-    # Make sure you catch the lowest eigenvalue:
-    cutoff=np.min(np.real(diagonalized[cns.Species.PARTICLE]["mean"][:,0]))/2
-
-    # Or, take all the data:
-    # cutoff=0
+    referenceTime = pivot
+    if args.cutoff is None:
+        # Try to catch the lowest eigenvalue:
+        cutoff=np.min(np.abs(diagonalized[cns.Species.PARTICLE]["mean"][:,referenceTime]))/2
+        print("Cutoff automatically determined.")
+    else:
+        cutoff=args.cutoff
+    print("Statistical zero of magnitude below {} will be zeroed exactly.".format(cutoff))
 
     magnitude = np.abs(np.mean(correlator[cns.Species.PARTICLE].corr, axis=0)[:,:,referenceTime])
     chopped_magnitude = np.where(magnitude > cutoff, magnitude,0)
@@ -265,9 +267,8 @@ def parseArgs():
     Produce a measurement report.
     """)
     parser.add_argument("ensemble", help="Ensemble module")
-    parser.add_argument("pivot", help="Integer timeslice on which to pivot the analysis.")
-    parser.add_argument("--with-thermalization", action="store_true",
-                        help="Measurements include thermalization.")
+    parser.add_argument("--pivot", help="Integer timeslice on which to pivot the analysis.", type=int, default=0)
+    parser.add_argument("--cutoff", help="Use the pivot timeslice to mask entries below this cut off.", type=float)
     return parser.parse_args()
 
 if __name__ == "__main__":
