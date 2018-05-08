@@ -38,7 +38,7 @@ class Phase:
         else:  # use Axes that were passed in
             fig = plt.gcf()
             histax, distax = axes
-            doTightLayout = True
+            doTightLayout = False
         
         # history
         self.plotMCHistory(histax, alpha=0.75)

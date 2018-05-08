@@ -110,7 +110,7 @@ def readLattice(filename):
     if cns.fileio.fileType(filename) != cns.fileio.FileType.YAML:
         raise ValueError(f"Cannot read lattice from file {filename}. Wrong file type, only YAML is supported.")
     try:
-        with open(str(cns.env["latticeDirectory"]/filename)) as yamlf:
+        with open(str(cns.env["latticeDirectory"])+"/"+str(filename)) as yamlf:
             return yaml.safe_load(yamlf)
     except KeyError:
         raise KeyError("Need to set cns.env[\"latticeDirectory\"] before reading a lattice.") from None
