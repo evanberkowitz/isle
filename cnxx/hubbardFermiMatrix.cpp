@@ -79,7 +79,7 @@ namespace cnxx {
                 return _kinvh;
             }
         }
-        catch (std::runtime_error) {
+        catch (std::runtime_error&) {
             throw std::runtime_error("Inversion of K failed, did you forget to multiply kappa by delta?");
         }
     }
