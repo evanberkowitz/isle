@@ -22,8 +22,8 @@ namespace bind {
     }
 }
 
-PYBIND11_MODULE(cnxx, mod) {
-    mod.doc() = "Python bindings for cnxx";
+PYBIND11_MODULE(ISLE_LIBNAME, mod) {
+    mod.doc() = "Python bindings for isle";
 
     bind::bindTensors(mod);
     bind::bindLattice(mod);

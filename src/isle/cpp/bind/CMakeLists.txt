@@ -1,3 +1,6 @@
+# Python bindings for C++ module isle_cpp
+#
+
 set(SOURCE
   ${SOURCE}
   bind/bindings.cpp
