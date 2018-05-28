@@ -1,3 +1,8 @@
+# benchmark output
+*.ben
+
+# jupyter
 .ipynb_checkpoints
-files/
+
+# images
 *.pdf

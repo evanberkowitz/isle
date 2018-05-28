@@ -1,7 +1,15 @@
-*.dSYM
-*.ben
-.DS_Store
+# datafiles
 *.h5
 *.hdf5
+
+# Python binaries
 __pycache__
-*.ipynb_checkpoints
+*.pyc
+
+# C++ binaries
+*.so
+*.dSYM
+.DS_Store
+
+# build directory
+build
