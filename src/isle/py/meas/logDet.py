@@ -5,7 +5,7 @@ Measurement of logdet.
 import numpy as np
 from matplotlib.colors import LogNorm
 
-import cns
+import isle
 from .common import newAxes
 from ..h5io import createH5Group
 
@@ -16,18 +16,18 @@ class LogDet:
     """
 
     def __init__(self, kappaTilde, mu, SIGMA_KAPPA):
-        self.hfm = cns.HubbardFermiMatrix(kappaTilde, mu, SIGMA_KAPPA)
-        self.logdet = {cns.Species.PARTICLE: [], cns.Species.HOLE: []}
+        self.hfm = isle.HubbardFermiMatrix(kappaTilde, mu, SIGMA_KAPPA)
+        self.logdet = {isle.Species.PARTICLE: [], isle.Species.HOLE: []}
 
     def __call__(self, phi, inline=False, **kwargs):
         """!Record logdet."""
         for species in self.logdet:
-            self.logdet[species].append(cns.logdetM(self.hfm, phi, species))
+            self.logdet[species].append(isle.logdetM(self.hfm, phi, species))
 
-    def report(self, species=cns.Species.PARTICLE, binsize=41, ax=None):
+    def report(self, species=isle.Species.PARTICLE, binsize=41, ax=None):
         r"""!
         Plot the determinant in the complex plane
-        \param species a `cns.PH` species that identifies the determinant of interest.
+        \param species a `isle.Species` species that identifies the determinant of interest.
         \param binsize Number of bins in each direction.
                        An odd number highlights the avoidance of 0 determinant.
         \param ax Matplotlib Axes to plot in. If `None`, a new one is created in a new figure.
@@ -54,13 +54,13 @@ class LogDet:
         \param name Name of the subgroup ob base for this measurement.
         """
         group = createH5Group(base, name)
-        group["particles"] = self.logdet[cns.Species.PARTICLE]
-        group["holes"] = self.logdet[cns.Species.HOLE]
+        group["particles"] = self.logdet[isle.Species.PARTICLE]
+        group["holes"] = self.logdet[isle.Species.HOLE]
 
     def read(self, group):
         r"""!
         Read particle and hole logdet from a file.
         \param group HDF5 group which contains the data of this measurement.
         """
-        self.logdet[cns.Species.PARTICLE] = group["particles"][()]
-        self.logdet[cns.Species.HOLE] = group["holes"][()]
+        self.logdet[isle.Species.PARTICLE] = group["particles"][()]
+        self.logdet[isle.Species.HOLE] = group["holes"][()]

@@ -4,7 +4,7 @@ Measurement of single-particle correlator.
 
 import numpy as np
 
-import cns
+import isle
 from .common import newAxes
 from ..util import spaceToSpacetime, rotateTemporally
 from ..h5io import createH5Group
@@ -15,23 +15,23 @@ class SingleParticleCorrelator:
     Tabulate single-particle correlator
     """
 
-    def __init__(self, nt, kappaTilde, mu, SIGMA_KAPPA, species=cns.Species.PARTICLE):
-        self.hfm = cns.HubbardFermiMatrix(kappaTilde, mu, SIGMA_KAPPA)
+    def __init__(self, nt, kappaTilde, mu, SIGMA_KAPPA, species=isle.Species.PARTICLE):
+        self.hfm = isle.HubbardFermiMatrix(kappaTilde, mu, SIGMA_KAPPA)
         self.nt = nt           # number of timeslices of the problem
         self.corr = []
-        self.irreps = np.transpose(np.linalg.eig(cns.Matrix(kappaTilde))[1])
+        self.irreps = np.transpose(np.linalg.eig(isle.Matrix(kappaTilde))[1])
         self.species = species
 
     def __call__(self, phi, inline=False, **kwargs):
         """!Record the single-particle correlators."""
 
         # Create a large set of sources:
-        rhss = [cns.Vector(spaceToSpacetime(irrep, time, self.nt)) for irrep in self.irreps for time in range(self.nt)]
+        rhss = [isle.Vector(spaceToSpacetime(irrep, time, self.nt)) for irrep in self.irreps for time in range(self.nt)]
         # For the j^th spacetime vector of the i^th state, go to self.rhss[i * nt + j]
         # In other words, time is faster.
 
         # Solve M.x = b for different right-hand sides:
-        res = np.array(cns.solveM(self.hfm, phi, self.species, rhss), copy=False)
+        res = np.array(isle.solveM(self.hfm, phi, self.species, rhss), copy=False)
 
         propagators = res.reshape([len(self.irreps), self.nt, self.nt, len(self.irreps)])
         # The logic for the one-liner goes as:

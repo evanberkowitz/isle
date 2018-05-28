@@ -1,22 +1,20 @@
 """!
-Import cnxx.
+Import C++ extension.
 
-Imports everything from cnxx into this modules namespace and defines wrappers
+Imports everything from isle_cpp into this modules namespace and defines wrappers
 around linear algebra types.
 """
 
 import numpy as np
 
-from cns.core import prepare_cnxx_import
-prepare_cnxx_import()
-from cnxx import *
+from ..isle_cpp import *
 
 
 class Vector:
     """!
-    Wrapper around datatype specific vectors in cnxx.
+    Wrapper around datatype specific vectors in isle_cpp.
 
-    The constructor returns an instance of cnxx.XVector where X is chosen based
+    The constructor returns an instance of isle_cpp.XVector where X is chosen based
     on the argument dtype.
     """
 
@@ -41,9 +39,9 @@ class Vector:
 
 class Matrix:
     """!
-    Wrapper around datatype specific matrices in cnxx.
+    Wrapper around datatype specific matrices in isle_cpp.
 
-    The constructor returns an instance of cnxx.XMatrix where X is chosen based
+    The constructor returns an instance of isle_cpp.XMatrix where X is chosen based
     on the argument dtype.
     """
 
@@ -57,12 +55,12 @@ class Matrix:
             # deduce dtype from numpy array
             if isinstance(args[0], np.ndarray):
                 dtype = args[0].dtype
-            # or deduce from other cns matrix
-            elif isinstance(args[0], DSparseMatrix) or isinstance(args[0], DMatrix):
+            # or deduce from other isle matrix
+            elif isinstance(args[0], (DSparseMatrix, DMatrix)):
                 dtype = float
-            elif isinstance(args[0], ISparseMatrix) or isinstance(args[0], IMatrix):
+            elif isinstance(args[0], (ISparseMatrix, IMatrix)):
                 dtype = int
-            elif isinstance(args[0], CDSparseMatrix) or isinstance(args[0], CDMatrix):
+            elif isinstance(args[0], (CDSparseMatrix, CDMatrix)):
                 dtype = complex
 
         # include possible numpy types in checks
@@ -76,9 +74,9 @@ class Matrix:
 
 class SparseMatrix:
     """!
-    Wrapper around datatype specific sparse matrices in cnxx.
+    Wrapper around datatype specific sparse matrices in isle_cpp.
 
-    The constructor returns an instance of cnxx.XSparseMatrix where X is chosen based
+    The constructor returns an instance of isle_cpp.XSparseMatrix where X is chosen based
     on the argument dtype.
     """
 
@@ -88,13 +86,13 @@ class SparseMatrix:
         `dtype` is deduced from other arguments if possible.
         """
 
-        # deduce dtype from other cns matrix
+        # deduce dtype from other isle matrix
         if dtype is None and len(args) == 1:
-            if isinstance(args[0], DSparseMatrix) or isinstance(args[0], DMatrix):
+            if isinstance(args[0], (DSparseMatrix, DMatrix)):
                 dtype = float
-            elif isinstance(args[0], ISparseMatrix) or isinstance(args[0], IMatrix):
+            elif isinstance(args[0], (ISparseMatrix, IMatrix)):
                 dtype = int
-            elif isinstance(args[0], CDSparseMatrix) or isinstance(args[0], CDMatrix):
+            elif isinstance(args[0], (CDSparseMatrix, CDMatrix)):
                 dtype = complex
 
         if dtype == float:

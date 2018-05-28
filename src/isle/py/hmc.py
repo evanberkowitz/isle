@@ -19,7 +19,7 @@ def _initialConditions(ham, oldPhi, oldAct, rng):
     \param ham Hamiltonian.
     \param oldPhi Old configuration, result of previous run or some new phi.
     \param oldAct Old action, result of previous run or `None` if first run.
-    \param rng Randum number generator that implements cns.random.RNGWrapper.
+    \param rng Randum number generator that implements isle.random.RNGWrapper.
 
     \returns Tuple `(phi, pi, energy)`.
     """
@@ -55,7 +55,7 @@ def hmc(phi, ham, proposer, ntr, rng, measurements=[], checks=[], itrOffset=0):
 
     \param ntr Number of trajectories to compute.
 
-    \param rng Randum number generator that implements cns.random.RNGWrapper.
+    \param rng Randum number generator that implements isle.random.RNGWrapper.
 
     \param measurements List of tuples `(freq, meas)`, where `freq` is the measurement
                         frequency: 1 means measure every trajectory, 2 means

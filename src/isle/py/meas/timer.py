@@ -5,7 +5,7 @@ A crude timer
 import time
 import numpy as np
 
-import cns
+import isle
 from .common import newAxes
 from ..util import binnedArray
 from ..h5io import createH5Group
@@ -44,7 +44,7 @@ class Timer:
 
         binned = binnedArray(self.times, binsize)
 
-        ax.plot(np.arange(0, len(self.times), binsize), binned, 
+        ax.plot(np.arange(0, len(self.times), binsize), binned,
                 fmt, color="magenta")
 
         if doTightLayout:

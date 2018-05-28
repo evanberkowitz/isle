@@ -1,6 +1,6 @@
-from .isle import *
+from .isle_cpp import *
 from .py import *
 
 # get rid of the individual modules
 del py
-del pycpp_build
+del isle_cpp

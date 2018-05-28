@@ -6,7 +6,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.ticker import NullFormatter
 
-import cns
+import isle
 from .common import newAxes
 from ..util import spaceToSpacetime, rotateTemporally
 from ..h5io import createH5Group
@@ -18,13 +18,13 @@ class ChiralCondensate:
     Tabulate single-particle correlator
     """
 
-    def __init__(self, seed, samples, nt, kappaTilde, mu, SIGMA_KAPPA, species=cns.Species.PARTICLE):
+    def __init__(self, seed, samples, nt, kappaTilde, mu, SIGMA_KAPPA, species=isle.Species.PARTICLE):
         self.samples = samples
         self.seed = seed
-        self.rng = cns.random.NumpyRNG(seed)
+        self.rng = isle.random.NumpyRNG(seed)
         self.nt = nt           # number of timeslices of the problem
-        self.hfm = cns.HubbardFermiMatrix(kappaTilde, mu, SIGMA_KAPPA)
-        self.nx = len(np.array(cns.Matrix(kappaTilde)))
+        self.hfm = isle.HubbardFermiMatrix(kappaTilde, mu, SIGMA_KAPPA)
+        self.nx = len(np.array(isle.Matrix(kappaTilde)))
         self.species = species
         self.cc = []
 
@@ -32,11 +32,11 @@ class ChiralCondensate:
         """!Record the single-particle correlators."""
 
         # Create a large set of sources:
-        rhss = [cns.Vector(self.rng.normal(0,1,self.nt*self.nx)+0j) for s in range(self.samples)]
+        rhss = [isle.Vector(self.rng.normal(0,1,self.nt*self.nx)+0j) for s in range(self.samples)]
 
         # Solve M.x = b for different right-hand sides,
         # Normalize by spacetime volume
-        res = np.array(cns.solveM(self.hfm, phi, self.species, rhss), copy=False) / (self.nx * self.nt)
+        res = np.array(isle.solveM(self.hfm, phi, self.species, rhss), copy=False) / (self.nx * self.nt)
 
         self.cc.append(np.mean([ np.dot(rhss[s], res[s]) for s in range(self.samples)]))
 

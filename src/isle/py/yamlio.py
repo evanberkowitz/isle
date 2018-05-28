@@ -1,7 +1,7 @@
 """!
 Routines for YAML IO.
 
-Registers cns.Lattice with YAML allowing automatic loading and dumping.
+Registers isle.Lattice with YAML allowing automatic loading and dumping.
 """
 
 import yaml

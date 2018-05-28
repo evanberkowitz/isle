@@ -71,7 +71,7 @@ class AcceptanceRate:
         \param group HDF5 group which contains the data of this measurement.
         \param fromCfgFile
                - `True`: Read data from a configuration file as written by
-                          cns.meas.WriteConfiguration.
+                          isle.meas.WriteConfiguration.
                - `False`: Read data from a single dataset as written by this measurement.
         """
         try:

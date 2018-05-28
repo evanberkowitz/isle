@@ -8,7 +8,8 @@ import tempfile
 import yaml
 import h5py as h5
 
-import cns
+from . import fileio
+import isle
 
 def importEnsemble(name, ensembleText):
     r"""!
@@ -82,17 +83,17 @@ def load(modName, fname, ftype=None):
     \param modName Name of the Python module. Can be chosen arbitrarily and is
                    assigned to the new module.
     \param fname Name of the input file.
-    \param ftype Type of the input file, allowed values are `cns.fileio.FileType.PY`
-                   and `cns.fileio.FileType.HDF5`.
+    \param ftype Type of the input file, allowed values are `isle.fileio.FileType.PY`
+                   and `isle.fileio.FileType.HDF5`.
     \returns The imported ensemble module and plain text of module contents.
     """
     if ftype is None:
-        ftype = cns.fileio.fileType(fname)
+        ftype = fileio.fileType(fname)
 
-    if ftype == cns.fileio.FileType.PY:
+    if ftype == fileio.FileType.PY:
         # load from Python module
         return loadPlain(modName, fname)
-    elif ftype == cns.fileio.FileType.HDF5:
+    elif ftype == fileio.FileType.HDF5:
         # load from HDF5 file
         with h5.File(fname, "r") as h5f:
             return loadH5(modName, h5f)
@@ -103,14 +104,14 @@ def load(modName, fname, ftype=None):
 
 def readLattice(filename):
     r"""!
-    Read a lattice file from YAML file cns.env["latticeDirectory"].
+    Read a lattice file from YAML file isle.env["latticeDirectory"].
     \param filename The name of the lattice to read.
-    \returns An instance of cns.Lattice constructed from the file.
+    \returns An instance of isle.Lattice constructed from the file.
     """
-    if cns.fileio.fileType(filename) != cns.fileio.FileType.YAML:
+    if fileio.fileType(filename) != fileio.FileType.YAML:
         raise ValueError(f"Cannot read lattice from file {filename}. Wrong file type, only YAML is supported.")
     try:
-        with open(str(cns.env["latticeDirectory"])+"/"+str(filename)) as yamlf:
+        with open(str(isle.env["latticeDirectory"])+"/"+str(filename)) as yamlf:
             return yaml.safe_load(yamlf)
     except KeyError:
-        raise KeyError("Need to set cns.env[\"latticeDirectory\"] before reading a lattice.") from None
+        raise KeyError("Need to set isle.env[\"latticeDirectory\"] before reading a lattice.") from None

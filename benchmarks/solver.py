@@ -5,17 +5,15 @@ Demonstrate and benchmark custom solver for HFM based systems of equations.
 """
 
 import timeit
-import site
 import pickle
 from pathlib import Path
 
 import yaml
 import numpy as np
-import matplotlib.pyplot as plt
+
+import isle
 
 BENCH_PATH = Path(__file__).resolve().parent
-site.addsitedir(str(BENCH_PATH/"../modules"))
-import cns
 
 def main():
     np.random.seed(1)
@@ -27,17 +25,17 @@ def main():
     timeLU = []
     timeSolve = []
     timePardiso = []
-    solveQ = cns.solveQ
-    getQLU = cns.getQLU
-    # solvePardiso = cns.solvePardiso
+    solveQ = isle.solveQ
+    getQLU = isle.getQLU
+    # solvePardiso = isle.solvePardiso
     for nt in nts:
         # make random auxilliary field and HFM
-        phi = cns.Vector(np.random.randn(lat.nx()*nt)
+        phi = isle.Vector(np.random.randn(lat.nx()*nt)
                          + 1j*np.random.randn(lat.nx()*nt), dtype=complex)
-        hfm = cns.HubbardFermiMatrix(lat.hopping(), 0, -1)
+        hfm = isle.HubbardFermiMatrix(lat.hopping(), 0, -1)
 
         # make random right hand side
-        rhs = cns.Vector(np.random.randn(lat.nx()*nt)
+        rhs = isle.Vector(np.random.randn(lat.nx()*nt)
                          + 1j*np.random.randn(lat.nx()*nt), dtype=complex)
 
         # measure time for LU-decompositon

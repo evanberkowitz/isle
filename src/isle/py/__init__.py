@@ -1,17 +1,17 @@
 """!
-Base module for CNS calculations.
+Base Python package of isle.
 
-Contains Python modules and imports everything from cnxx into the cns namespace.
+Contains Python modules and imports everything from C++ extension into the isle namespace.
 """
 
-from cns.cnxx_wrappers import *
-import cns.checks
-import cns.ensemble
-import cns.fileio
-import cns.hmc
-import cns.random
-import cns.util
-from cns.hubbardFermiActionSpinBasis import HubbardFermiActionSpinBasis
+from .cpp_wrappers import *
+from . import checks
+from . import ensemble
+from . import fileio
+from . import hmc
+from . import random
+from . import util
+from .hubbardFermiActionSpinBasis import HubbardFermiActionSpinBasis
 
 ## Environment variables for CNS.
 env = {}

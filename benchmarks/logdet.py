@@ -3,16 +3,15 @@ Showcase and benchmark logdet.
 """
 
 import timeit
-import site
 from pathlib import Path
 import pickle
 
 import yaml
 import numpy as np
 
+import isle
+
 BENCH_PATH = Path(__file__).resolve().parent
-site.addsitedir(str(BENCH_PATH/"../modules"))
-import cns
 
 NTS = (4, 8, 12, 16, 24, 32, 64, 96)
 NREP = 5
@@ -24,9 +23,9 @@ def main():
     nx = lat.nx()
 
     functions = {
-        "dense": (cns.logdet, "fn(Q)", "Q = cns.Matrix(hfm.Q(phi))"),
-        "logdetQ": (cns.logdetQ, "fn(hfm, phi)", ""),
-        "logdetM": (cns.logdetM, "fn(hfm, phi, cns.PH.PARTICLE)+fn(hfm, phi, cns.PH.HOLE)", "")
+        "dense": (isle.logdet, "fn(Q)", "Q = isle.Matrix(hfm.Q(phi))"),
+        "logdetQ": (isle.logdetQ, "fn(hfm, phi)", ""),
+        "logdetM": (isle.logdetM, "fn(hfm, phi, isle.PH.PARTICLE)+fn(hfm, phi, isle.PH.HOLE)", "")
     }
     times = {key: [] for key in functions}
 
@@ -34,9 +33,9 @@ def main():
         print("nt = {}".format(nt))
 
         # make random auxilliary field and HFM
-        phi = cns.Vector(np.random.randn(nx*nt)
+        phi = isle.Vector(np.random.randn(nx*nt)
                          + 1j*np.random.randn(nx*nt))
-        hfm = cns.HubbardFermiMatrix(lat.hopping()/nt, 0, -1)
+        hfm = isle.HubbardFermiMatrix(lat.hopping()/nt, 0, -1)
 
         # do the benchmarks
         for name, (function, execStr, setupStr) in functions.items():
@@ -46,7 +45,7 @@ def main():
             times[name].append(timeit.timeit(execStr,
                                              setup=setupStr,
                                              globals={"fn": function, "hfm": hfm,
-                                                      "phi": phi, "cns": cns},
+                                                      "phi": phi, "isle": isle},
                                              number=NREP) / NREP)
 
     # save benchmark to file

@@ -1,7 +1,7 @@
 """!
 Utilities for random number generators.
 
-See cns.random.RNGWrapper for the common interface of wrappers.
+See isle.random.RNGWrapper for the common interface of wrappers.
 """
 
 from abc import ABC, abstractmethod

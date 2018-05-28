@@ -4,7 +4,6 @@ General file input / output.
 
 from enum import Enum, auto
 from pathlib import Path
-import argparse
 
 # import those to make them available outside of the package
 from . import yamlio as yaml  # (unused import) pylint: disable=W0611
