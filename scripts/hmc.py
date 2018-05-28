@@ -18,7 +18,7 @@ to start off of. The format of HDF5 files for continuation runs must match the f
 descibed under 'Output' below.
 
 An ensemble must provide the following variables:
-- `hamiltonian`: An instance of `cns.Hamiltonian` passed to cns.hmc.hmc.
+- `hamiltonian`: An instance of `isle.Hamiltonian` passed to isle.hmc.hmc.
 - `thermalizer`: A proposer used during thermalization.
 - `proposer`: A proposer used during production.
 - `rng`: A random number generator. Is only used for new runs. For continuation runs,
@@ -38,7 +38,7 @@ A single HDF5 file containing:
                  other charaters. Each subgroup contains a link to a configuration
                  and a group holding the RNG state.
 
-See cns.meas.writeConfiguration.WriteConfiguration for more information on the output.
+See isle.meas.writeConfiguration.WriteConfiguration for more information on the output.
 
 If no output file is given, its name is either deduced from the ensemble name for new runs
 or it is identical to the input file for continuation runs.
@@ -53,50 +53,48 @@ import argparse
 import numpy as np
 import h5py as h5
 
-import core
-core.prepare_module_import()
-import cns
-import cns.meas
+import isle
+import isle.meas
 
 def main(args):
     """!Run HMC."""
 
     ensemble, phi, rng, itrOffset = _setup(args)
-    checks = [] if args.no_checks else [(20, cns.checks.realityCheck)]
+    checks = [] if args.no_checks else [(20, isle.checks.realityCheck)]
 
     if not args.cont and args.ntherm > 0:
         print("thermalizing")
-        phi = cns.hmc.hmc(phi, ensemble.hamiltonian, ensemble.thermalizer,
-                          args.ntherm, rng,
-                          [
-                              (args.ntherm/10,
-                               cns.meas.Progress("Thermalization", args.ntherm)),
-                          ],
-                          checks)
+        phi = isle.hmc.hmc(phi, ensemble.hamiltonian, ensemble.thermalizer,
+                           args.ntherm, rng,
+                           [
+                               (args.ntherm/10,
+                                isle.meas.Progress("Thermalization", args.ntherm)),
+                           ],
+                           checks)
 
     print("running production")
-    phi = cns.hmc.hmc(phi, ensemble.hamiltonian, ensemble.proposer,
-                      args.nproduction, rng,
-                      [
-                          (args.save_freq,
-                           cns.meas.WriteConfiguration(str(args.outfile[0]),
-                                                       "/configuration/{itr}",
-                                                       args.checkpoint_freq,
-                                                       "/checkpoint/{itr}")),
-                          (500, cns.meas.Progress("Production",
-                                                  args.nproduction+itrOffset-1,
-                                                  itrOffset)),
-                      ],
-                      checks,
-                      itrOffset)
+    phi = isle.hmc.hmc(phi, ensemble.hamiltonian, ensemble.proposer,
+                       args.nproduction, rng,
+                       [
+                           (args.save_freq,
+                            isle.meas.WriteConfiguration(str(args.outfile[0]),
+                                                         "/configuration/{itr}",
+                                                         args.checkpoint_freq,
+                                                         "/checkpoint/{itr}")),
+                           (500, isle.meas.Progress("Production",
+                                                    args.nproduction+itrOffset-1,
+                                                    itrOffset)),
+                       ],
+                       checks,
+                       itrOffset)
 
 def _setup(args):
     """!Setup the HMC run; load input data and prepare output file."""
 
     # setup environment
-    cns.env["latticeDirectory"] = Path(__file__).resolve().parent.parent/"lattices"
+    isle.env["latticeDirectory"] = Path(__file__).resolve().parent.parent/"lattices"
 
-    ensemble, ensembleText = cns.ensemble.load(args.infile[0].stem, args.infile[0])
+    ensemble, ensembleText = isle.ensemble.load(args.infile[0].stem, args.infile[0])
 
     if args.outfile is None:
         if args.cont:
@@ -104,7 +102,7 @@ def _setup(args):
         else:
             args.outfile = ensemble.name+".h5"
         print("Set output file to '{}'".format(args.outfile))
-    args.outfile = cns.fileio.pathAndType(args.outfile)
+    args.outfile = isle.fileio.pathAndType(args.outfile)
 
     # prepare output file
     # delete if necessary and save ensemble
@@ -113,7 +111,7 @@ def _setup(args):
             if args.overwrite:
                 args.outfile[0].unlink()  # just erase the file so we can safely write to it
                 with h5.File(args.outfile[0], "w") as cfgf:
-                    cns.ensemble.saveH5(ensembleText, cfgf)
+                    isle.ensemble.saveH5(ensembleText, cfgf)
             else:
                 print("Error: Output file already exists."
                       +" Use --overwrite to overwrite it or do acontinuation run with identical input and output files.")
@@ -122,7 +120,7 @@ def _setup(args):
         # Don't do anything here, just write to the file.
     else:
         with h5.File(args.outfile[0], "w") as cfgf:
-            cns.ensemble.saveH5(ensembleText, cfgf)
+            isle.ensemble.saveH5(ensembleText, cfgf)
 
     return (ensemble, *_initialState(args, ensemble))
 
@@ -153,14 +151,14 @@ def _initialStateFromHDF5(fname, overwrite):
                   +" {} vs {}.".format(chkptNames[-1], cfgNames[-1]))
             sys.exit(1)
 
-        return cns.Vector(np.array(h5f["checkpoint"][str(chkptNames[-1])]["cfg"]["phi"])),\
-               cns.random.readStateH5(h5f["checkpoint"][str(chkptNames[-1])]["rng_state"]),\
+        return isle.Vector(np.array(h5f["checkpoint"][str(chkptNames[-1])]["cfg"]["phi"])),\
+               isle.random.readStateH5(h5f["checkpoint"][str(chkptNames[-1])]["rng_state"]),\
                chkptNames[-1]+1  # +1 because we want to point to next trajectory
 
 def _initialState(args, ensemble):
     """!Get the initial state for HMC tuple of (config, rng, trajectory index)."""
     if args.cont:
-        if args.infile[1] != cns.fileio.FileType.HDF5:
+        if args.infile[1] != isle.fileio.FileType.HDF5:
             print("Error: Can only load initial state for continuation run from HDF5 file."
                   +"Given file type is {}".format(args.infile[1]))
         return _initialStateFromHDF5(str(args.infile[0]), args.overwrite)
@@ -173,7 +171,7 @@ def _parseArgs():
     Basic HMC without any measurements.
     """)
     parser.add_argument("infile", help="Input file. Python module or HDF5 file",
-                        type=cns.fileio.pathAndType)
+                        type=isle.fileio.pathAndType)
     requiredGrp = parser.add_argument_group("required named arguments")
     requiredGrp.add_argument("-n", "--nproduction", type=int, required=True,
                              help="Number of production trajectories")

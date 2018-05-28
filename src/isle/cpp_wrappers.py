@@ -7,7 +7,7 @@ around linear algebra types.
 
 import numpy as np
 
-from ..isle_cpp import *
+from .isle_cpp import *
 
 
 class Vector:
