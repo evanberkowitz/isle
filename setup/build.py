@@ -61,8 +61,7 @@ def get_cmake_builder(config_file, test_dir=None):
             extdir = Path(self.get_ext_fullpath(extension.name)).parent.resolve()
             # finalize arguments for cmake
             cmake_args = cmake_args \
-                         + [f"-DLIBRARY_NAME={libname}",
-                            f"-DCMAKE_LIBRARY_OUTPUT_DIRECTORY={extdir}"]
+                         + [f"-DCMAKE_LIBRARY_OUTPUT_DIRECTORY={extdir}"]
 
             try:
                 # call cmake from ext_build_dir

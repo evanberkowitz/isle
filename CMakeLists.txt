@@ -20,12 +20,19 @@ function (target_linker_flags target flags)
   endif ()
 endfunction ()
 
+# verify required arguments are there
+set(TEST_DIR "" CACHE STRING "Directory for unit tests")
+if ("${TEST_DIR}" STREQUAL "")
+  message(FATAL_ERROR "No test directory given")
+endif ()
+
+
 project(isle CXX)
 
 get_filename_component(SOURCE_DIR "src/isle/cpp"
   REALPATH BASE_DIR "${CMAKE_SOURCE_DIR}")
 add_subdirectory(${SOURCE_DIR})
 
-# get_filename_component(TEST_DIR "tests/cpp"
-#   REALPATH BASE_DIR "${CMAKE_SOURCE_DIR}")
-# add_subdirectory(${TEST_DIR})
+get_filename_component(TEST_DIR "tests/cpp"
+  REALPATH BASE_DIR "${CMAKE_SOURCE_DIR}")
+add_subdirectory(${TEST_DIR})

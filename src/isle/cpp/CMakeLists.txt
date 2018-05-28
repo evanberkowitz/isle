@@ -32,6 +32,7 @@ target_compile_definitions(${LIBNAME} PUBLIC -DISLE_LIBNAME=${LIBNAME})
 set_target_properties(${LIBNAME} PROPERTIES CXX_STANDARD 14
   CXX_STANDARD_REQUIRED ON)
 
+# warnings
 target_compile_options(${LIBNAME} PUBLIC -Wall -Wextra -pedantic)
 if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
   target_compile_options(${LIBNAME} PUBLIC -Wno-c++98-compat)
