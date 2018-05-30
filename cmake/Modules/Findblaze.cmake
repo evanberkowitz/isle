@@ -26,9 +26,6 @@ if ("${BLAS_VENDOR}" STREQUAL "All")
 
 elseif ("${BLAS_VENDOR}" STREQUAL "Generic")
   message(STATUS "Using generic BLAS/LAPACK. Might be slow!")
-  if (NOT ${PARALLEL_BLAS})
-    message(WARNING "Assuming BLAS is not parallel. This cannot be verified for the generic library.")
-  endif ()
 
 elseif ("${BLAS_VENDOR}" MATCHES "^Intel.*")
   set(PARALLEL_BLAS "TRUE")
