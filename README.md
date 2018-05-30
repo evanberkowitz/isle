@@ -11,63 +11,78 @@ It's thought that the Hubbard model approximates carbon nanostructures, such as 
 
 # Requirements
 
-- C++14 compiler
+## C++
+- C++14 compiler (tested with recent versions of gcc and clang)
 - [Python 3](https://www.python.org/), [numpy](http://www.numpy.org/)
 - [blaze](https://bitbucket.org/blaze-lib/blaze)
-- [Pybind11](https://github.com/pybind/pybind11)
 - BLAS/LAPACK
 
-Optionally
+## Python
+- [Pybind11](https://github.com/pybind/pybind11)
+- [numpy](http://www.numpy.org/)
+- [h5py](http://www.h5py.org/)
+- [sklearn](http://scikit-learn.org/stable/)
+- [matplotlib](https://matplotlib.org/)
 
-- Python modules [`matplotlib`](https://matplotlib.org/), `sklearn`, [`h5py`](http://www.h5py.org/), all of which may be installed with `pip3`.
-- [HDF5](https://www.hdfgroup.org/) (for I/O), though you can write custom I/O in Python if you'd prefer.
+# Setup
 
-# Build and install cnxx
-
+## TL;DR
+See other sections for an explanation and details.
 ```
-cd cnxx
-mkdir build
-cd build
-cmake ..
-make
-make install
+python3 setup.py configure --build-type=RELEASE --blaze=<path-to-blaze>
+pip3 install . [--user]
 ```
-This will compile and install the `cnxx` Python module under `modules/cnxx.suffix` with
-a system specific suffix.
 
-CMake supports the following options: (use `-DOPT=VAL` in call to cmake)
-- PYTHON: select Python 3 interpreter
-- BLAZE: point to blaze installation (has to contain `blaze/Blaze.h`)
-- BLAS_VENDOR: select vendor of BLAS/LAPACK library. Supported values are:
-    - `Generic` Reference implementation
-    - `Intel10_32`, `Intel10_64lp`, `Intel10_64lp_seq`, `Intel` for MKL, see https://cmake.org/cmake/help/v3.0/module/FindBLAS.html
-- PARALLEL_BLAS: Set whether the BLAS implementation is parallelized or not.
+## Configuring
+This project is installable via `pip`. However since the C++ extension is rather complex, you need to configure the build first by running
+```
+python3 setup.py configure
+```
+with suitable arguments. The supported arguments are (run `python3 setup.py configure --help`):
+- *compiler*: Choose a C++ compiler. isle is tested with current versions of gcc and clang. The intel compiler is not supported because of a bug in the compiler.
+- *build-type*: Set the CMake build type. Can be DEVEL (default), RELEASE, DEBUG
+- *blaze*: Point to blaze installation (has to contain `blaze/Blaze.h`)
+- *blaze-parallelism*: Select parallelism used by blaze. Allowed values are NONE (default), OMP (OpenMP), CPP (C++ threads)
+- *blas-vendor*: Select vendor of BLAS/LAPACK library. Supported values are:
+    - `Generic` - Reference implementation (default)
+    - `Intel10_32`, `Intel10_64lp`, `Intel10_64lp_seq`, `Intel` - MKL, see https://cmake.org/cmake/help/v3.0/module/FindBLAS.html
+- *parallel-blas*: Specify this flag if the BLAS/LAPACK inplementation is parallelized. Otherwise blaze might parallelize on top of it which can slow down the program.
+- *pardiso*: Select a PARDISO implementation. Can be either `STANDALONE` or `MKL`. PARDISO is currently not used by isle but if this argument is set, a wrapper around it is created in the module `isle.pardiso`.
 
-You can set the compiler via `-DCMAKE_CXX_COMPILER` when calling CMake.
-Remember to configure in release mode (`-DCMAKE_BUILD_TYPE=RELEASE`) when compiling for production.
+This does not actually run CMake to configure the C++ build but merely performs some rudimentary checks and saves the parameters.
 
-## Notes for JURECA
-Example that works as of 2018-02-08:
-- Install blaze and pybind11
-- `ml Intel/2018.1.163-GCC-5.4.0 ParaStationMPI/5.2.0-1 imkl/2018.1.163 Python/3.6.3 SciPy-Stack/2017b-Python-3.6.3 CMake`
-- run cmake: `cmake .. -DCMAKE_CXX_COMPILER=g++ -DCMAKE_BUILD_TYPE=RELEASE -DBLAZE=/work/cascade/casc0003/logdet/blaze-3.2 -DBLAS_VENDOR=Intel10_64lp`
+Note that specifying the compiler of build type when running `python3 setup.py build` does not work; they need to be set when configuring.
 
-Note that `icc` has a bug which prevents it from compiling `hubbardFermimatrix.cpp`.
-Something related to pushing back a blaze matrix into a std vector.
-Couldn't reproduce, something really nasty apparently.
+## Building
+For **users**:
+Compile and install the package using
+```
+pip3 install . [--user]
+# or alternatively: python3 setup.py install [--user]
+```
 
+For **developers**:
+Compile and install in development mode using
+```
+pip3 install -e . [--user]
+# or alternatively: python3 setup.py develop [--user]
+```
+And just re-run the command after changing the code.
 
-# Usage
-
-After installing `cnxx`, the Python package `cns` can be imported from `modules/cns`.
-It provides a high level interface for `cnxx` and extra routines.
+Unfortunately neither pip nor setupt.py's install or develop commands support concurrent builds. So the first time you compile takes some time. If you installed in development mode, you can run
+```
+python3 setup.py build -j<n-threads>
+```
+to compile your changes in a parallel fashion.
 
 
 # Documentation
+Run
+```
+python3 setup.py doc
+```
+to generate the source code documentation using Doxygen. Then open `docs/html/index.html` in a browser.
 
-Go into `docs` and run `make` to generate source code documentation for `cnxx` and some
-Python scipts using Doxygen. Note that the `C++` interface is not identical to the
-`Python` interface. Documentation of the `Python` side is incomplete as of now.
+Note that the `C++` interface is not identical to the `Python` interface. Documentation of the `Python` side is incomplete as of now.
 
-If you don't want to look at Doxygens ugly default style, initialize the git submodule
-`that_style` under `docs`.
+There is additional documentation available under `docs/algorithm`; run `make` to generate it. This needs LaTeX to compiler PDFs.
