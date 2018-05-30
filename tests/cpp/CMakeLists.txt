@@ -35,11 +35,17 @@ target_include_directories(${TEST_EXE} SYSTEM PUBLIC ${SOURCE_DIR})
 # endif ()
 
 # blaze
-find_package(blaze REQUIRED)
 target_include_directories(${TEST_EXE} SYSTEM PUBLIC ${blaze_INCLUDE_DIRS})
 target_compile_options(${TEST_EXE} PUBLIC "${blaze_CXX_FLAGS}")
 target_link_libraries(${TEST_EXE} ${blaze_LIBRARIES})
 target_linker_flags(${TEST_EXE} "${blaze_LINKER_FLAGS}")
+
+# OpenMP if blaze does not use it
+if (NOT "${BLAZE_PARALLELISM}" STREQUAL "OMP")
+  target_compile_options(${TEST_EXE} PUBLIC "${OMP_CXX_FLAGS}")
+  target_link_libraries(${TEST_EXE} ${OMP_LIBRARIES})
+  target_linker_flags(${TEST_EXE} "${OMP_LINKER_FLAGS}")
+endif ()
 
 # install into test directory
 install(TARGETS ${TEST_EXE} DESTINATION "${TEST_DIR}/../bin")

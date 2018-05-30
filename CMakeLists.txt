@@ -26,8 +26,14 @@ if ("${TEST_DIR}" STREQUAL "")
   message(FATAL_ERROR "No test directory given")
 endif ()
 
-
+# define the project
 project(isle CXX)
+
+# look for 3rd party packages
+find_package(Pybind11 REQUIRED)
+find_package(blaze REQUIRED)
+find_package(OMP REQUIRED)
+find_package(PARDISO)
 
 get_filename_component(SOURCE_DIR "src/isle/cpp"
   REALPATH BASE_DIR "${CMAKE_SOURCE_DIR}")
