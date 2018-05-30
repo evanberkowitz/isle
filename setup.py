@@ -16,9 +16,29 @@ CONFIG_FILE = BUILD_DIR/"configure.out.pkl"
 # relative path to coax doxygen into placing the output where it belongs
 DOXY_FILE = "docs/doxyfile.conf"
 
+# allowed values for configure arguments
+BLAS_VENDORS = ("Generic", "Intel10_32", "Intel10_64lp", "Intel10_64lp_seq", "Intel")
+PARDISO_IMPLEMENTATIONS = ("STANDALONE", "MKL")
+
 @configure_command(CONFIG_FILE)
 class Configure:
-    pass
+    blaze = dict(help="Path to blaze. Has to contain blaze/Blaze.h",
+                 cmake="BLAZE",
+                 check=predicate.directory)
+    blaze_parallelism = dict(help="Select parallelism used by blaze. Allowed values are NONE (default), OMP, CPP",
+                             cmake="BLAZE_PARALLELISM",
+                             default="NONE",
+                             check=predicate.one_of("NONE", "OMP", "CPP"))
+    blas_vendor = dict(help=f"Select vendor of BLAS/LAPACK. Allowed values are {BLAS_VENDORS}."
+                       "See documentation of CMake for more information.",
+                       cmake="BLAS_VENDOR",
+                       check=predicate.one_of(*BLAS_VENDORS))
+    parallel_blas = dict(help="Pass flag if the BLAS implementation is parallelized",
+                         cmake="PARALLEL_BLAS", bool=True)
+    pardiso = dict(help=f"Implementation of PARDISO. Allowed values are {PARDISO_IMPLEMENTATIONS}",
+                   cmake="PARDISO",
+                   check=predicate.one_of(*PARDISO_IMPLEMENTATIONS))
+
 
 setup(
     name="isle",
