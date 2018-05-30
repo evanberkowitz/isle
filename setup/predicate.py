@@ -38,3 +38,12 @@ def directory(dname):
         print(f"error: Not a directory: {dname}")
         return False
     return True
+
+def one_of(*allowed):
+    "Return a function that checks whether a value is in allowed."
+    def _one_of_impl(val):
+        if val not in allowed:
+            print(f"error: Value not allowed: '{val}', must be one of {allowed}")
+            return False
+        return True
+    return _one_of_impl
