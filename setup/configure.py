@@ -9,7 +9,7 @@ import pickle
 import inspect
 import distutils.cmd
 
-from .predicate import executable
+from .predicate import executable, one_of
 
 # allowed values of build types
 _BUILD_TYPES = ("DEVEL", "RELEASE", "DEBUG")
@@ -26,7 +26,7 @@ _DEFAULT_OPTIONS = dict(compiler={**_DEFAULT_OPT_ARGS,
                                     "cmake": "CMAKE_BUILD_TYPE",
                                     "long_name": "build_type=",
                                     "default": "DEVEL",
-                                    "check": lambda x: x in _BUILD_TYPES})
+                                    "check": one_of(*_BUILD_TYPES)})
 # protected attribute names that may not be used as options
 _FORBIDDEN_OPTIONS = ("description", "user_options")
 
