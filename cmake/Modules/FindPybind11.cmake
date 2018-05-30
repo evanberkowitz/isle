@@ -8,17 +8,17 @@
 #  PYBIND11_LIB_SUFFIX    - Library extension suffix for this version of python
 #
 
-set(PYTHON "python" CACHE STRING "Python 3 executable")
-
+set(PYTHON_EXECUTABLE "python3" CACHE STRING "Python 3 executable")
+set(PYTHON_CONFIG "python3-config" CACHE STRING "Python 3 config script")
 
 # Execute python-config with given arguments.
 function (python_config args output)
-  execute_process(COMMAND "${PYTHON}-config" ${args}
+  execute_process(COMMAND ${PYTHON_CONFIG} ${args}
     RESULT_VARIABLE rc
     OUTPUT_VARIABLE result
     OUTPUT_STRIP_TRAILING_WHITESPACE)
   if (NOT "${rc}" STREQUAL "0")
-    message(FATAL_ERROR "Command '${PYTHON}-config ${args}' could not be executed. Return code: ${rc}")
+    message(FATAL_ERROR "Command '${PYTHON_CONFIG} ${args}' could not be executed. Return code: ${rc}")
   endif (NOT "${rc}" STREQUAL "0")
   set(${output} ${result} PARENT_SCOPE)
 endfunction ()
@@ -48,7 +48,7 @@ endfunction ()
 
 
 ### get includes ###
-execute_process(COMMAND ${PYTHON} "-m" "pybind11" "--includes"
+execute_process(COMMAND ${PYTHON_EXECUTABLE} "-m" "pybind11" "--includes"
   RESULT_VARIABLE RC
   OUTPUT_VARIABLE RAW_INCLUDES
   OUTPUT_STRIP_TRAILING_WHITESPACE)
