@@ -1,5 +1,5 @@
 from pathlib import Path
-import cns
+import isle
 
 # Physics parameters
 latticeFile = Path("one_site.yml")    # input lattice
@@ -15,7 +15,7 @@ muTilde = mu * delta
 name = "{}.nt{}.U{}.beta{}.mu{}".format(latticeFile.stem, nt, U, beta, mu)
 
 
-lattice = cns.ensemble.readLattice(latticeFile)
+lattice = isle.ensemble.readLattice(latticeFile)
 lattice.nt(nt)
 kappaTilde = lattice.hopping() * delta  # actually \tilde{kappa}
 
@@ -23,11 +23,11 @@ kappaTilde = lattice.hopping() * delta  # actually \tilde{kappa}
 nLeapfrogTherm = 12         # number of steps in the leapfrog at the beginning of thermalization
 nLeapfrog = 3               # production leapfrog steps
 
-hamiltonian = cns.Hamiltonian(cns.HubbardGaugeAction(UTilde),
-                              cns.HubbardFermiActionSpinBasis(kappaTilde, muTilde, sigmaKappa))
+hamiltonian = isle.Hamiltonian(isle.HubbardGaugeAction(UTilde),
+                              isle.HubbardFermiActionSpinBasis(kappaTilde, muTilde, sigmaKappa))
 
-thermalizer = cns.hmc.LinearStepLeapfrog(hamiltonian, (1, 1), (nLeapfrogTherm, nLeapfrog), 3000-1)
-proposer = cns.hmc.ConstStepLeapfrog(hamiltonian, 1, nLeapfrog)
+thermalizer = isle.hmc.LinearStepLeapfrog(hamiltonian, (1, 1), (nLeapfrogTherm, nLeapfrog), 3000-1)
+proposer = isle.hmc.ConstStepLeapfrog(hamiltonian, 1, nLeapfrog)
 
-rng = cns.random.NumpyRNG(1075)
-initialConfig = cns.Vector(rng.normal(0, UTilde**(1/2), lattice.lattSize())+0j)
+rng = isle.random.NumpyRNG(1075)
+initialConfig = isle.Vector(rng.normal(0, UTilde**(1/2), lattice.lattSize())+0j)
