@@ -12,11 +12,21 @@ from setuptools.command.build_ext import build_ext
 from . import predicate
 from .cmake_extension import CMakeExtension
 
+def _in_virtualenv():
+    "Detect whether Python is running in a virutal environment."
+    return sys.prefix == sys.base_prefix
+
+def _python_config():
+    "Return name of the python-config script."
+    if not _in_virtualenv():
+        return f"{sys.executable}-config"
+    return "python-config"
+
 def _common_cmake_args(config, test_dir):
     "Format arguments for CMake common to all extensions."
     args = [f"-D{key}={val}" for key, val in config.items() if val is not None] \
-                       + [f"-DPYTHON_EXECUTABLE={sys.executable}",
-                          f"-DPYTHON_CONFIG={sys.executable}-config"]
+        + [f"-DPYTHON_EXECUTABLE={sys.executable}",
+           f"-DPYTHON_CONFIG={_python_config()}"]
     if test_dir is not None:
         args += [f"-DTEST_DIR={test_dir}"]
     return args
