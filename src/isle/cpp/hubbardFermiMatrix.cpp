@@ -17,6 +17,19 @@ namespace {
         if (mat.rows() != target)
             mat.resize(target, target, false);
     }
+
+    /// Compute eigenvalues to check whether a matrix is invertible.
+    template <typename MT>
+    bool isInvertible(MT mat, const double eps=1e-15) {
+        cnxx::CDVector eigenvals;
+        blaze::geev(mat, eigenvals);
+
+        for (const auto x : eigenvals) {
+            if (blaze::abs(x) > eps)
+                return false;
+        }
+        return true;
+    }
 }
 
 namespace cnxx {
@@ -60,27 +73,38 @@ namespace cnxx {
         return k;
     }
 
-    const DMatrix &HubbardFermiMatrix::Kinv(const Species species) const {
-        try {
-            if (species == Species::PARTICLE) {
-                if (_kinvp.rows() == 0) {
-                    _kinvp = K(species);
-                    auto ipiv = std::make_unique<int[]>(_kinvp.rows());
-                    invert(_kinvp, ipiv);
-                }
-                return _kinvp;
+    namespace {
+        /// Invert matrix K.
+        void invertK(DMatrix &k) {
+            // Check here in addition to LAPACKs internal check because it
+            // puts a tighter criterion than LAPACK.
+            if (!isInvertible(k))
+                throw std::runtime_error("Matrix K is not invertible, did you forget to multiply kappa by delta?");
+
+            auto ipiv = std::make_unique<int[]>(k.rows());
+            try {
+                invert(k, ipiv);
             }
-            else {
-                if (_kinvh.rows() == 0) {
-                    _kinvh = K(species);
-                    auto ipiv = std::make_unique<int[]>(_kinvh.rows());
-                    invert(_kinvh, ipiv);
-                }
-                return _kinvh;
+            catch (std::runtime_error&) {
+                throw std::runtime_error("Inversion of K failed, did you forget to multiply kappa by delta?");
             }
         }
-        catch (std::runtime_error&) {
-            throw std::runtime_error("Inversion of K failed, did you forget to multiply kappa by delta?");
+    }
+
+    const DMatrix &HubbardFermiMatrix::Kinv(const Species species) const {
+        if (species == Species::PARTICLE) {
+            if (_kinvp.rows() == 0) {
+                _kinvp = K(species);
+                invertK(_kinvp);
+            }
+            return _kinvp;
+        }
+        else {
+            if (_kinvh.rows() == 0) {
+                _kinvh = K(species);
+                invertK(_kinvh);
+            }
+            return _kinvh;
         }
     }
 
