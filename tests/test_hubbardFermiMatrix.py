@@ -20,11 +20,12 @@ RAND_MEAN = 0
 RAND_STD = 0.2
 N_REP = 1 # number of repetitions
 
+LAT_DIR = core.TEST_PATH/"../resources/lattices"
 # lattices to test matrix with
-LATTICES = [core.TEST_PATH/"../lattices/c60_ipr.yml",
-            core.TEST_PATH/"../lattices/tube_3-3_1.yml",
-            core.TEST_PATH/"../lattices/tube_3-3_5.yml",
-            core.TEST_PATH/"../lattices/tube_4-2_2.yml"]
+LATTICES = [LAT_DIR/"c60_ipr.yml",
+            LAT_DIR/"tube_3-3_1.yml",
+            LAT_DIR/"tube_3-3_5.yml",
+            LAT_DIR/"tube_4-2_2.yml"]
 
 # test with these values of chemical potential
 MU = [0, 1, 1.5]
