@@ -22,18 +22,6 @@ endif ()
 # use a system include because we get all the warnings from the library compilation already
 target_include_directories(${TEST_EXE} SYSTEM PUBLIC ${SOURCE_DIR})
 
-# catch
-# set(CATCH_INCLUDE "" CACHE STRING "Path to catch")
-# if (NOT "${CATCH_INCLUDE}" STREQUAL "")
-#   message(STATUS "Using catch in ${CATCH_INCLUDE}")
-#   get_filename_component(catch_dir "${CATCH_INCLUDE}"
-#     REALPATH BASE_DIR "${CMAKE_SOURCE_DIR}")
-#   target_include_directories(${TEST_EXE} SYSTEM PUBLIC "${catch_dir}")
-#   unset(catch_dir)
-# else ()
-#   message(STATUS "Using catch in default path")
-# endif ()
-
 # blaze
 target_include_directories(${TEST_EXE} SYSTEM PUBLIC ${blaze_INCLUDE_DIRS})
 target_compile_options(${TEST_EXE} PUBLIC "${blaze_CXX_FLAGS}")
