@@ -75,6 +75,13 @@ python3 setup.py build -j<n-threads>
 ```
 to compile your changes in a parallel fashion.
 
+## Testing
+Unit tests are automatically compiled when using the above command (sorry for the extra compilation time, you are welcome to fix this :D).
+You can run them via
+```
+python3 setupt.py test
+```
+Keep in mind that some tests take a long time because they need to process fairly big matrices in an inefficient way to make sure the efficient algorithms are correct.
 
 # Documentation
 Run
