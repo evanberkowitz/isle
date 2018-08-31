@@ -4,14 +4,13 @@
 Unittest for 'cnxx' vector classes.
 """
 
-import unittest     # unittest module
-import abc          # abstract classes
-import numpy as np  # numpy
+import unittest
+import abc
+import numpy as np
 
-import rand         # random initializer
-import core                 # base setup and import
-core.prepare_module_import()
-import cns                  # c++ bindings
+import isle
+from . import rand
+from . import core
 
 # RNG params
 SEED = 1
@@ -19,10 +18,6 @@ RAND_MIN = -5
 RAND_MAX = +5
 
 
-
-#===============================================================================
-#     Abstract basic test
-#===============================================================================
 class AbstractVectorTest(metaclass=abc.ABCMeta):
     "Abstract vector class test. Vector test must inherit from this class"
     Nvec        = None  # Size of tested vectors
@@ -46,7 +41,7 @@ class AbstractVectorTest(metaclass=abc.ABCMeta):
     #----------------------------
     def _test_op_construction(self, array, op):
         a = op(array)
-        v = cns.Vector(op(array))
+        v = isle.Vector(op(array))
         self.assertTrue(core.isEqual(a, v),
                         msg="Failed check for scalar type: {typ} and operation: {op}".format(
                             typ=array.dtype, op=op))
@@ -184,187 +179,180 @@ class AbstractVectorTest(metaclass=abc.ABCMeta):
 #-------------- Operators ------------------
 
 
-#===============================================================================
-#     Unittest for vectors  --- needs to be further extended
-#===============================================================================
 class TestVector(AbstractVectorTest, unittest.TestCase):
     "Test for all cVec types and opertions"
     Nvec        = 100             # Size of tested vectors
     cVecTypes   = [               # Initializers
-        cns.IVector,
-        cns.DVector,
-        cns.CDVector,
+        isle.IVector,
+        isle.DVector,
+        isle.CDVector,
     ]
     scalarTypes = {               # Element type maps
-        cns.IVector : int,
-        cns.DVector : float,
-        cns.CDVector: complex,
+        isle.IVector : int,
+        isle.DVector : float,
+        isle.CDVector: complex,
     }
     operations = {                # Operations to be tested
       "*"  : [
         # IVector
-        ((cns.IVector , cns.IVector ), cns.IVector ),
-        ((cns.IVector , int          ), cns.IVector ),
-        #((int          , cns.IVector ), cns.IVector ),
+        ((isle.IVector , isle.IVector ), isle.IVector ),
+        ((isle.IVector , int          ), isle.IVector ),
+        #((int          , isle.IVector ), isle.IVector ),
         # DVector
-        ((cns.DVector , cns.DVector ), cns.DVector ),
-        ((cns.DVector , cns.IVector ), cns.DVector ),
-        ((cns.IVector , cns.DVector ), cns.DVector ),
-        ((cns.DVector,  float        ), cns.DVector ),
-        ((cns.DVector,  int          ), cns.DVector ),
-        #((float        , cns.DVector ), cns.DVector ),
-        #((int        , cns.DVector ), cns.DVector ),
+        ((isle.DVector , isle.DVector ), isle.DVector ),
+        ((isle.DVector , isle.IVector ), isle.DVector ),
+        ((isle.IVector , isle.DVector ), isle.DVector ),
+        ((isle.DVector,  float        ), isle.DVector ),
+        ((isle.DVector,  int          ), isle.DVector ),
+        #((float        , isle.DVector ), isle.DVector ),
+        #((int        , isle.DVector ), isle.DVector ),
         #CVector
-        ((cns.CDVector, cns.CDVector), cns.CDVector),
-        ((cns.CDVector, cns.DVector ), cns.CDVector),
-        ((cns.DVector,  cns.CDVector), cns.CDVector),
-        #((cns.CDVector, cns.IVector ), cns.CDVector),
-        #((cns.IVector,  cns.CDVector), cns.CDVector),
-        ((cns.CDVector, complex      ), cns.CDVector),
-        ((cns.CDVector, float        ), cns.CDVector),
-        ((cns.CDVector, int          ), cns.CDVector),
-        #(( complex     , cns.CDVector), cns.CDVector),
-        #(( float       , cns.CDVector), cns.CDVector),
-        #(( int         , cns.CDVector), cns.CDVector),
+        ((isle.CDVector, isle.CDVector), isle.CDVector),
+        ((isle.CDVector, isle.DVector ), isle.CDVector),
+        ((isle.DVector,  isle.CDVector), isle.CDVector),
+        #((isle.CDVector, isle.IVector ), isle.CDVector),
+        #((isle.IVector,  isle.CDVector), isle.CDVector),
+        ((isle.CDVector, complex      ), isle.CDVector),
+        ((isle.CDVector, float        ), isle.CDVector),
+        ((isle.CDVector, int          ), isle.CDVector),
+        #(( complex     , isle.CDVector), isle.CDVector),
+        #(( float       , isle.CDVector), isle.CDVector),
+        #(( int         , isle.CDVector), isle.CDVector),
       ],
       "/"  : [
         # IVector
-        ((cns.IVector , cns.IVector ), cns.DVector ),
-        ((cns.IVector , int          ), cns.DVector ),
+        ((isle.IVector , isle.IVector ), isle.DVector ),
+        ((isle.IVector , int          ), isle.DVector ),
         # DVector
-        ((cns.DVector , cns.DVector ), cns.DVector ),
-        ((cns.DVector , cns.IVector ), cns.DVector ),
-        ((cns.IVector , cns.DVector ), cns.DVector ),
-        ((cns.DVector,  float        ), cns.DVector ),
-        ((cns.DVector,  int          ), cns.DVector ),
+        ((isle.DVector , isle.DVector ), isle.DVector ),
+        ((isle.DVector , isle.IVector ), isle.DVector ),
+        ((isle.IVector , isle.DVector ), isle.DVector ),
+        ((isle.DVector,  float        ), isle.DVector ),
+        ((isle.DVector,  int          ), isle.DVector ),
         #CVector
-        ((cns.CDVector, cns.CDVector), cns.CDVector),
-        ((cns.CDVector, cns.DVector ), cns.CDVector),
-        ((cns.DVector,  cns.CDVector), cns.CDVector),
-        #((cns.CDVector, cns.IVector ), cns.CDVector),
-        #((cns.IVector,  cns.CDVector), cns.CDVector),
-        ((cns.CDVector, complex      ), cns.CDVector),
-        ((cns.CDVector, float        ), cns.CDVector),
-        ((cns.CDVector, int          ), cns.CDVector),
+        ((isle.CDVector, isle.CDVector), isle.CDVector),
+        ((isle.CDVector, isle.DVector ), isle.CDVector),
+        ((isle.DVector,  isle.CDVector), isle.CDVector),
+        #((isle.CDVector, isle.IVector ), isle.CDVector),
+        #((isle.IVector,  isle.CDVector), isle.CDVector),
+        ((isle.CDVector, complex      ), isle.CDVector),
+        ((isle.CDVector, float        ), isle.CDVector),
+        ((isle.CDVector, int          ), isle.CDVector),
       ],
       "//"  : [
         # IVector
-        ((cns.IVector , cns.IVector ), cns.IVector ),
-        ((cns.IVector , int          ), cns.IVector ),
+        ((isle.IVector , isle.IVector ), isle.IVector ),
+        ((isle.IVector , int          ), isle.IVector ),
         # DVector
-        ((cns.DVector , cns.DVector ), cns.DVector ),
-        ((cns.DVector , cns.IVector ), cns.DVector ),
-        ((cns.IVector , cns.DVector ), cns.DVector ),
-        ((cns.DVector,  float        ), cns.DVector ),
-        ((cns.DVector,  int          ), cns.DVector ),
+        ((isle.DVector , isle.DVector ), isle.DVector ),
+        ((isle.DVector , isle.IVector ), isle.DVector ),
+        ((isle.IVector , isle.DVector ), isle.DVector ),
+        ((isle.DVector,  float        ), isle.DVector ),
+        ((isle.DVector,  int          ), isle.DVector ),
       ],
       "*=" : [
         # IVector
-        ((cns.IVector , cns.IVector ), cns.IVector ),
-        ((cns.IVector , int          ), cns.IVector ),
+        ((isle.IVector , isle.IVector ), isle.IVector ),
+        ((isle.IVector , int          ), isle.IVector ),
         # DVector
-        ((cns.DVector , cns.DVector ), cns.DVector ),
-        ((cns.DVector , cns.IVector ), cns.DVector ),
-        ((cns.DVector,  float        ), cns.DVector ),
-        ((cns.DVector,  int          ), cns.DVector ),
+        ((isle.DVector , isle.DVector ), isle.DVector ),
+        ((isle.DVector , isle.IVector ), isle.DVector ),
+        ((isle.DVector,  float        ), isle.DVector ),
+        ((isle.DVector,  int          ), isle.DVector ),
         #CVector
-        ((cns.CDVector, cns.CDVector), cns.CDVector),
-        ((cns.CDVector, cns.DVector ), cns.CDVector),
-        #((cns.CDVector, cns.IVector ), cns.CDVector),
-        ((cns.CDVector, complex      ), cns.CDVector),
-        ((cns.CDVector, float        ), cns.CDVector),
-        ((cns.CDVector, int          ), cns.CDVector),
+        ((isle.CDVector, isle.CDVector), isle.CDVector),
+        ((isle.CDVector, isle.DVector ), isle.CDVector),
+        #((isle.CDVector, isle.IVector ), isle.CDVector),
+        ((isle.CDVector, complex      ), isle.CDVector),
+        ((isle.CDVector, float        ), isle.CDVector),
+        ((isle.CDVector, int          ), isle.CDVector),
       ],
       "/=" : [
         # IVector
-        #((cns.IVector , cns.IVector ), cns.DVector ),
-        #((cns.IVector , int          ), cns.DVector ),
+        #((isle.IVector , isle.IVector ), isle.DVector ),
+        #((isle.IVector , int          ), isle.DVector ),
         # DVector
-        ((cns.DVector , cns.DVector ), cns.DVector ),
-        ((cns.DVector , cns.IVector ), cns.DVector ),
-        ((cns.DVector,  float        ), cns.DVector ),
-        ((cns.DVector,  int          ), cns.DVector ),
+        ((isle.DVector , isle.DVector ), isle.DVector ),
+        ((isle.DVector , isle.IVector ), isle.DVector ),
+        ((isle.DVector,  float        ), isle.DVector ),
+        ((isle.DVector,  int          ), isle.DVector ),
         #CVector
-        ((cns.CDVector, cns.CDVector), cns.CDVector),
-        ((cns.CDVector, cns.DVector ), cns.CDVector),
-        #((cns.CDVector, cns.IVector ), cns.CDVector),
-        ((cns.CDVector, complex      ), cns.CDVector),
-        ((cns.CDVector, float        ), cns.CDVector),
-        ((cns.CDVector, int          ), cns.CDVector),
+        ((isle.CDVector, isle.CDVector), isle.CDVector),
+        ((isle.CDVector, isle.DVector ), isle.CDVector),
+        #((isle.CDVector, isle.IVector ), isle.CDVector),
+        ((isle.CDVector, complex      ), isle.CDVector),
+        ((isle.CDVector, float        ), isle.CDVector),
+        ((isle.CDVector, int          ), isle.CDVector),
       ],
       "+"  : [
         # IVector
-        ((cns.IVector , cns.IVector ), cns.IVector ),
+        ((isle.IVector , isle.IVector ), isle.IVector ),
         # DVector
-        ((cns.DVector , cns.DVector ), cns.DVector ),
-        ((cns.DVector , cns.IVector ), cns.DVector ),
-        ((cns.IVector , cns.DVector ), cns.DVector ),
+        ((isle.DVector , isle.DVector ), isle.DVector ),
+        ((isle.DVector , isle.IVector ), isle.DVector ),
+        ((isle.IVector , isle.DVector ), isle.DVector ),
         #CVector
-        ((cns.CDVector, cns.CDVector), cns.CDVector),
-        ((cns.CDVector, cns.DVector ), cns.CDVector),
-        ((cns.DVector,  cns.CDVector), cns.CDVector),
-        #((cns.CDVector, cns.IVector ), cns.CDVector),
-        #((cns.IVector,  cns.CDVector), cns.CDVector),
+        ((isle.CDVector, isle.CDVector), isle.CDVector),
+        ((isle.CDVector, isle.DVector ), isle.CDVector),
+        ((isle.DVector,  isle.CDVector), isle.CDVector),
+        #((isle.CDVector, isle.IVector ), isle.CDVector),
+        #((isle.IVector,  isle.CDVector), isle.CDVector),
       ],
       "+=" : [
         # IVector
-        ((cns.IVector , cns.IVector ), cns.IVector ),
+        ((isle.IVector , isle.IVector ), isle.IVector ),
         # DVector
-        ((cns.DVector , cns.DVector ), cns.DVector ),
-        ((cns.DVector , cns.IVector ), cns.DVector ),
+        ((isle.DVector , isle.DVector ), isle.DVector ),
+        ((isle.DVector , isle.IVector ), isle.DVector ),
         #CVector
-        ((cns.CDVector, cns.CDVector), cns.CDVector),
-        ((cns.CDVector, cns.DVector ), cns.CDVector),
-        #((cns.CDVector, cns.IVector ), cns.CDVector),
+        ((isle.CDVector, isle.CDVector), isle.CDVector),
+        ((isle.CDVector, isle.DVector ), isle.CDVector),
+        #((isle.CDVector, isle.IVector ), isle.CDVector),
       ],
       "-"  : [
         # IVector
-        ((cns.IVector , cns.IVector ), cns.IVector ),
+        ((isle.IVector , isle.IVector ), isle.IVector ),
         # DVector
-        ((cns.DVector , cns.DVector ), cns.DVector ),
-        ((cns.DVector , cns.IVector ), cns.DVector ),
-        ((cns.IVector , cns.DVector ), cns.DVector ),
+        ((isle.DVector , isle.DVector ), isle.DVector ),
+        ((isle.DVector , isle.IVector ), isle.DVector ),
+        ((isle.IVector , isle.DVector ), isle.DVector ),
         #CVector
-        ((cns.CDVector, cns.CDVector), cns.CDVector),
-        ((cns.CDVector, cns.DVector ), cns.CDVector),
-        ((cns.DVector,  cns.CDVector), cns.CDVector),
-        #((cns.CDVector, cns.IVector ), cns.CDVector),
-        #((cns.IVector,  cns.CDVector), cns.CDVector),
+        ((isle.CDVector, isle.CDVector), isle.CDVector),
+        ((isle.CDVector, isle.DVector ), isle.CDVector),
+        ((isle.DVector,  isle.CDVector), isle.CDVector),
+        #((isle.CDVector, isle.IVector ), isle.CDVector),
+        #((isle.IVector,  isle.CDVector), isle.CDVector),
       ],
       "-=" : [
         # IVector
-        ((cns.IVector , cns.IVector ), cns.IVector ),
+        ((isle.IVector , isle.IVector ), isle.IVector ),
         # DVector
-        ((cns.DVector , cns.DVector ), cns.DVector ),
-        ((cns.DVector , cns.IVector ), cns.DVector ),
+        ((isle.DVector , isle.DVector ), isle.DVector ),
+        ((isle.DVector , isle.IVector ), isle.DVector ),
         #CVector
-        ((cns.CDVector, cns.CDVector), cns.CDVector),
-        ((cns.CDVector, cns.DVector ), cns.CDVector),
-        #((cns.CDVector, cns.IVector ), cns.CDVector),
+        ((isle.CDVector, isle.CDVector), isle.CDVector),
+        ((isle.CDVector, isle.DVector ), isle.CDVector),
+        #((isle.CDVector, isle.IVector ), isle.CDVector),
       ],
       "@"  : [
         # IVector
-        ((cns.IVector , cns.IVector ), int          ),
+        ((isle.IVector , isle.IVector ), int          ),
         # DVector
-        ((cns.DVector , cns.DVector ), float        ),
-        ((cns.DVector , cns.IVector ), float        ),
-        ((cns.IVector , cns.DVector ), float        ),
+        ((isle.DVector , isle.DVector ), float        ),
+        ((isle.DVector , isle.IVector ), float        ),
+        ((isle.IVector , isle.DVector ), float        ),
         #CVector
-        ((cns.CDVector, cns.CDVector), complex      ),
-        ((cns.CDVector, cns.DVector ), complex      ),
-        ((cns.DVector,  cns.CDVector), complex      ),
-        #((cns.CDVector, cns.IVector ), cns.CDVector),
-        #((cns.IVector,  cns.CDVector), cns.CDVector),
+        ((isle.CDVector, isle.CDVector), complex      ),
+        ((isle.CDVector, isle.DVector ), complex      ),
+        ((isle.DVector,  isle.CDVector), complex      ),
+        #((isle.CDVector, isle.IVector ), isle.CDVector),
+        #((isle.IVector,  isle.CDVector), isle.CDVector),
       ],
     }
 
-
-#===============================================================================
-#     Setup
-#===============================================================================
 def setUpModule():
     "Setup the vector test module."
-
+    print(__file__)
     logger = core.get_logger()
     logger.info("""Parameters for RNG:
     seed: {}
@@ -372,7 +360,3 @@ def setUpModule():
     max:  {}""".format(SEED, RAND_MIN, RAND_MAX))
 
     rand.setup(SEED)
-
-
-if __name__ == "__main__":
-    unittest.main()

@@ -4,15 +4,14 @@
 Unittest for 'cnxx' vector classes.
 """
 
-import unittest     # unittest module
-import operator     # acces to operators as functions
-import abc          # abstract classes
-import numpy as np  # numpy!
+import unittest
+import operator
+import abc
+import numpy as np
 
-import core                 # base setup and import
-core.prepare_module_import()
-import cns                  # c++ bindings
-import rand                 # random initializer
+import isle
+from . import core
+from . import rand
 
 # RNG params
 SEED = 1
@@ -20,13 +19,10 @@ RAND_MIN = -5
 RAND_MAX = +5
 
 
-#===============================================================================
-#     Define matrix iteration
-#===============================================================================
 def matIterator(mat, dtype=float):
   """
   Creates python objects from the input matrix.
-  The input matrix must be cns matrix types.
+  The input matrix must be isle matrix types.
   """
   isSparse = 'Sparse' in str(type(mat))
 
@@ -42,10 +38,6 @@ def matIterator(mat, dtype=float):
   return oMat
 
 
-
-#===============================================================================
-#     Abstract basic test
-#===============================================================================
 class AbstractMatrixTest(metaclass=abc.ABCMeta):
     "Abstract matrix class test. Matrix test must inherit from this class"
     mShape      = None  # Shape of tested matrix
@@ -94,7 +86,7 @@ class AbstractMatrixTest(metaclass=abc.ABCMeta):
     #----------------------------
     def _test_op_construction(self, array, op):
         a = op(array)
-        m = cns.Matrix(op(array))
+        m = isle.Matrix(op(array))
         self.assertTrue(core.isEqual(a, matIterator(m, dtype=a.dtype)),
                         msg="Failed check for scalar type: {typ} and operation: {op}".format(
                           typ=array.dtype, op=op))
@@ -282,7 +274,7 @@ class AbstractMatrixTest(metaclass=abc.ABCMeta):
                 # Cast matrix back to array
                 elif type(cOut) in self.vectorTypes.keys():
                     pyOut = np.array(pyOut).T[0]
- 
+
                 ## Check value
                 self.assertTrue(
                     core.isEqual(
@@ -301,134 +293,128 @@ class AbstractMatrixTest(metaclass=abc.ABCMeta):
 #-------------- Operators ------------------
 
 
-#===============================================================================
-#     Unittest for matrices --- needs to be further extended
-#===============================================================================
 class TestMatrix(AbstractMatrixTest, unittest.TestCase):
     "Test for all cVec types and opertions"
     mShape      = (40, 40)        # Shape of tested matrix
     matrixTypes = {               # Element type maps
-        cns.IMatrix: int,
-        cns.ISparseMatrix: int,
-        #cns.ISymmetricSparseMatrix: int,
-        cns.DMatrix: float,
-        cns.DSparseMatrix: float,
-        #cns.DSymmetricSparseMatrix: float,
-        cns.CDMatrix: complex,
-        cns.CDSparseMatrix: complex,
-        #cns.CDSymmetricSparseMatrix: complex,
+        isle.IMatrix: int,
+        isle.ISparseMatrix: int,
+        #isle.ISymmetricSparseMatrix: int,
+        isle.DMatrix: float,
+        isle.DSparseMatrix: float,
+        #isle.DSymmetricSparseMatrix: float,
+        isle.CDMatrix: complex,
+        isle.CDSparseMatrix: complex,
+        #isle.CDSymmetricSparseMatrix: complex,
     }
     vectorTypes = {
-        cns.IVector : int,
-        cns.DVector : float,
-        cns.CDVector: complex,
+        isle.IVector : int,
+        isle.DVector : float,
+        isle.CDVector: complex,
     }
     operations = {
       "*"  : [
         # IMatrix
-        ((cns.IMatrix , cns.IMatrix ), cns.IMatrix ),
-        ((cns.IMatrix , int         ), cns.IMatrix ),
+        ((isle.IMatrix , isle.IMatrix ), isle.IMatrix ),
+        ((isle.IMatrix , int         ), isle.IMatrix ),
         # IVector
-        ((cns.IMatrix , cns.IVector ), cns.IVector ),
+        ((isle.IMatrix , isle.IVector ), isle.IVector ),
         # DMatrix
-        ((cns.DMatrix , cns.DMatrix ), cns.DMatrix ),
-        ((cns.DMatrix , cns.IMatrix ), cns.DMatrix ),
-        ((cns.IMatrix , cns.DMatrix ), cns.DMatrix ),
-        ((cns.DMatrix,  float       ), cns.DMatrix ),
-        ((cns.DMatrix,  int         ), cns.DMatrix ),
+        ((isle.DMatrix , isle.DMatrix ), isle.DMatrix ),
+        ((isle.DMatrix , isle.IMatrix ), isle.DMatrix ),
+        ((isle.IMatrix , isle.DMatrix ), isle.DMatrix ),
+        ((isle.DMatrix,  float       ), isle.DMatrix ),
+        ((isle.DMatrix,  int         ), isle.DMatrix ),
         # DVector
-        ((cns.DMatrix , cns.DVector ), cns.DVector ),
-        ((cns.DMatrix , cns.IVector ), cns.DVector ),
-        ((cns.IMatrix , cns.DVector ), cns.DVector ),
+        ((isle.DMatrix , isle.DVector ), isle.DVector ),
+        ((isle.DMatrix , isle.IVector ), isle.DVector ),
+        ((isle.IMatrix , isle.DVector ), isle.DVector ),
         # CMatrix
-        ((cns.CDMatrix, cns.CDMatrix), cns.CDMatrix),
-        ((cns.CDMatrix, cns.DMatrix ), cns.CDMatrix),
-        ((cns.DMatrix,  cns.CDMatrix), cns.CDMatrix),
-        ((cns.CDMatrix, complex      ), cns.CDMatrix),
-        ((cns.CDMatrix, float        ), cns.CDMatrix),
-        ((cns.CDMatrix, int          ), cns.CDMatrix),
+        ((isle.CDMatrix, isle.CDMatrix), isle.CDMatrix),
+        ((isle.CDMatrix, isle.DMatrix ), isle.CDMatrix),
+        ((isle.DMatrix,  isle.CDMatrix), isle.CDMatrix),
+        ((isle.CDMatrix, complex      ), isle.CDMatrix),
+        ((isle.CDMatrix, float        ), isle.CDMatrix),
+        ((isle.CDMatrix, int          ), isle.CDMatrix),
         # CVector
-        ((cns.CDMatrix, cns.CDVector), cns.CDVector),
-        ((cns.CDMatrix, cns.DVector ), cns.CDVector),
-        ((cns.DMatrix , cns.CDVector), cns.CDVector),
+        ((isle.CDMatrix, isle.CDVector), isle.CDVector),
+        ((isle.CDMatrix, isle.DVector ), isle.CDVector),
+        ((isle.DMatrix , isle.CDVector), isle.CDVector),
       ],
       "*=" : [
         # IMatrix
-        ((cns.IMatrix , cns.IMatrix ), cns.IMatrix ),
-        ((cns.IMatrix , int          ), cns.IMatrix ),
+        ((isle.IMatrix , isle.IMatrix ), isle.IMatrix ),
+        ((isle.IMatrix , int          ), isle.IMatrix ),
         # DMatrix
-        ((cns.DMatrix , cns.DMatrix ), cns.DMatrix ),
-        ((cns.DMatrix , cns.IMatrix ), cns.DMatrix ),
-        ((cns.DMatrix,  float        ), cns.DMatrix ),
-        ((cns.DMatrix,  int          ), cns.DMatrix ),
+        ((isle.DMatrix , isle.DMatrix ), isle.DMatrix ),
+        ((isle.DMatrix , isle.IMatrix ), isle.DMatrix ),
+        ((isle.DMatrix,  float        ), isle.DMatrix ),
+        ((isle.DMatrix,  int          ), isle.DMatrix ),
         #CMatrix
-        ((cns.CDMatrix, cns.CDMatrix), cns.CDMatrix),
-        ((cns.CDMatrix, cns.DMatrix ), cns.CDMatrix),
-        #((cns.CDMatrix, cns.IMatrix ), cns.CDMatrix),
-        ((cns.CDMatrix, complex      ), cns.CDMatrix),
-        ((cns.CDMatrix, float        ), cns.CDMatrix),
-        ((cns.CDMatrix, int          ), cns.CDMatrix),
+        ((isle.CDMatrix, isle.CDMatrix), isle.CDMatrix),
+        ((isle.CDMatrix, isle.DMatrix ), isle.CDMatrix),
+        #((isle.CDMatrix, isle.IMatrix ), isle.CDMatrix),
+        ((isle.CDMatrix, complex      ), isle.CDMatrix),
+        ((isle.CDMatrix, float        ), isle.CDMatrix),
+        ((isle.CDMatrix, int          ), isle.CDMatrix),
       ],
       "+"  : [
         # IMatrix
-        ((cns.IMatrix , cns.IMatrix ), cns.IMatrix ),
+        ((isle.IMatrix , isle.IMatrix ), isle.IMatrix ),
         # DMatrix
-        ((cns.DMatrix , cns.DMatrix ), cns.DMatrix ),
-        ((cns.DMatrix , cns.IMatrix ), cns.DMatrix ),
-        ((cns.IMatrix , cns.DMatrix ), cns.DMatrix ),
+        ((isle.DMatrix , isle.DMatrix ), isle.DMatrix ),
+        ((isle.DMatrix , isle.IMatrix ), isle.DMatrix ),
+        ((isle.IMatrix , isle.DMatrix ), isle.DMatrix ),
         #CMatrix
-        ((cns.CDMatrix, cns.CDMatrix), cns.CDMatrix),
-        ((cns.CDMatrix, cns.DMatrix ), cns.CDMatrix),
-        ((cns.DMatrix,  cns.CDMatrix), cns.CDMatrix),
-        #((cns.CDMatrix, cns.IMatrix ), cns.CDMatrix),
-        #((cns.IMatrix,  cns.CDMatrix), cns.CDMatrix),
+        ((isle.CDMatrix, isle.CDMatrix), isle.CDMatrix),
+        ((isle.CDMatrix, isle.DMatrix ), isle.CDMatrix),
+        ((isle.DMatrix,  isle.CDMatrix), isle.CDMatrix),
+        #((isle.CDMatrix, isle.IMatrix ), isle.CDMatrix),
+        #((isle.IMatrix,  isle.CDMatrix), isle.CDMatrix),
       ],
       "+=" : [
         # IMatrix
-        ((cns.IMatrix , cns.IMatrix ), cns.IMatrix ),
+        ((isle.IMatrix , isle.IMatrix ), isle.IMatrix ),
         # DMatrix
-        ((cns.DMatrix , cns.DMatrix ), cns.DMatrix ),
-        ((cns.DMatrix , cns.IMatrix ), cns.DMatrix ),
+        ((isle.DMatrix , isle.DMatrix ), isle.DMatrix ),
+        ((isle.DMatrix , isle.IMatrix ), isle.DMatrix ),
         #CMatrix
-        ((cns.CDMatrix, cns.CDMatrix), cns.CDMatrix),
-        ((cns.CDMatrix, cns.DMatrix ), cns.CDMatrix),
-        #((cns.CDMatrix, cns.IMatrix ), cns.CDMatrix),
+        ((isle.CDMatrix, isle.CDMatrix), isle.CDMatrix),
+        ((isle.CDMatrix, isle.DMatrix ), isle.CDMatrix),
+        #((isle.CDMatrix, isle.IMatrix ), isle.CDMatrix),
       ],
       "-"  : [
         # IMatrix
-        ((cns.IMatrix , cns.IMatrix ), cns.IMatrix ),
+        ((isle.IMatrix , isle.IMatrix ), isle.IMatrix ),
         # DMatrix
-        ((cns.DMatrix , cns.DMatrix ), cns.DMatrix ),
-        ((cns.DMatrix , cns.IMatrix ), cns.DMatrix ),
-        ((cns.IMatrix , cns.DMatrix ), cns.DMatrix ),
+        ((isle.DMatrix , isle.DMatrix ), isle.DMatrix ),
+        ((isle.DMatrix , isle.IMatrix ), isle.DMatrix ),
+        ((isle.IMatrix , isle.DMatrix ), isle.DMatrix ),
         #CMatrix
-        ((cns.CDMatrix, cns.CDMatrix), cns.CDMatrix),
-        ((cns.CDMatrix, cns.DMatrix ), cns.CDMatrix),
-        ((cns.DMatrix,  cns.CDMatrix), cns.CDMatrix),
-        #((cns.CDMatrix, cns.IMatrix ), cns.CDMatrix),
-        #((cns.IMatrix,  cns.CDMatrix), cns.CDMatrix),
+        ((isle.CDMatrix, isle.CDMatrix), isle.CDMatrix),
+        ((isle.CDMatrix, isle.DMatrix ), isle.CDMatrix),
+        ((isle.DMatrix,  isle.CDMatrix), isle.CDMatrix),
+        #((isle.CDMatrix, isle.IMatrix ), isle.CDMatrix),
+        #((isle.IMatrix,  isle.CDMatrix), isle.CDMatrix),
       ],
       "-=" : [
         # IMatrix
-        ((cns.IMatrix , cns.IMatrix ), cns.IMatrix ),
+        ((isle.IMatrix , isle.IMatrix ), isle.IMatrix ),
         # DMatrix
-        ((cns.DMatrix , cns.DMatrix ), cns.DMatrix ),
-        ((cns.DMatrix , cns.IMatrix ), cns.DMatrix ),
+        ((isle.DMatrix , isle.DMatrix ), isle.DMatrix ),
+        ((isle.DMatrix , isle.IMatrix ), isle.DMatrix ),
         #CMatrix
-        ((cns.CDMatrix, cns.CDMatrix), cns.CDMatrix),
-        ((cns.CDMatrix, cns.DMatrix ), cns.CDMatrix),
-        #((cns.CDMatrix, cns.IMatrix ), cns.CDMatrix),
+        ((isle.CDMatrix, isle.CDMatrix), isle.CDMatrix),
+        ((isle.CDMatrix, isle.DMatrix ), isle.CDMatrix),
+        #((isle.CDMatrix, isle.IMatrix ), isle.CDMatrix),
       ],
     }
 
 
-
-#===============================================================================
-#     Setup
-#===============================================================================
 def setUpModule():
     "Setup the matrix test module."
 
+    print(__file__)
     logger = core.get_logger()
     logger.info("""Parameters for RNG:
     seed: {}
@@ -436,7 +422,3 @@ def setUpModule():
     max:  {}""".format(SEED, RAND_MIN, RAND_MAX))
 
     rand.setup(SEED)
-
-
-if __name__ == "__main__":
-    unittest.main()

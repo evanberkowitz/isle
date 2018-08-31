@@ -4,16 +4,15 @@
 Unittest for HubbardFermiMatrix.
 """
 
-import unittest     # unittest module
+import unittest
 import itertools
 
 import numpy as np
 import yaml
 
-import core                 # base setup and import
-core.prepare_module_import()
-import cns                  # C++ bindings
-import rand                 # random initializer
+import isle
+from . import core
+from . import rand
 
 # RNG params
 SEED = 8613
@@ -34,7 +33,7 @@ def _randomPhi(n):
     "Return a normally distributed random complex vector of n elements."
     real = np.random.normal(RAND_MEAN, RAND_STD, n)
     imag = np.random.normal(RAND_MEAN, RAND_STD, n)
-    return cns.Vector(real + 1j*imag)
+    return isle.Vector(real + 1j*imag)
 
 
 class TestHubbardFermiMatrix(unittest.TestCase):
@@ -43,11 +42,11 @@ class TestHubbardFermiMatrix(unittest.TestCase):
 
         nt = 1
         nx = kappa.rows()
-        hfm = cns.HubbardFermiMatrix(kappa, mu, sigmaKappa)
+        hfm = isle.HubbardFermiMatrix(kappa, mu, sigmaKappa)
         phi = _randomPhi(nx*nt)
 
-        auto = np.array(cns.Matrix(hfm.Q(phi)), copy=False)
-        manual = np.array(cns.Matrix(hfm.P()+hfm.Tplus(0, phi)+hfm.Tminus(0, phi)), copy=False)
+        auto = np.array(isle.Matrix(hfm.Q(phi)), copy=False)
+        manual = np.array(isle.Matrix(hfm.P()+hfm.Tplus(0, phi)+hfm.Tminus(0, phi)), copy=False)
         self.assertTrue(core.isEqual(auto, manual),
                         msg="Failed equality check for construction of hubbardFermiMatrix "\
                         + "for nt={}, mu={}, sigmaKappa={}".format(nt, mu, sigmaKappa)\
@@ -59,18 +58,18 @@ class TestHubbardFermiMatrix(unittest.TestCase):
 
         nt = 2
         nx = kappa.rows()
-        hfm = cns.HubbardFermiMatrix(kappa, mu, sigmaKappa)
+        hfm = isle.HubbardFermiMatrix(kappa, mu, sigmaKappa)
         phi = _randomPhi(nx*nt)
 
-        auto = np.array(cns.Matrix(hfm.Q(phi)), copy=False) # full matrix
+        auto = np.array(isle.Matrix(hfm.Q(phi)), copy=False) # full matrix
         manual = np.empty(auto.shape, auto.dtype)
-        P = np.array(cns.Matrix(hfm.P())) # diagonal blocks
+        P = np.array(isle.Matrix(hfm.P())) # diagonal blocks
         manual[:nx, :nx] = P
         manual[nx:, nx:] = P
         # upper off-diagonal
-        manual[:nx, nx:] = cns.Matrix(hfm.Tminus(0, phi) + hfm.Tplus(0, phi))
+        manual[:nx, nx:] = isle.Matrix(hfm.Tminus(0, phi) + hfm.Tplus(0, phi))
         # lower off-diagonal
-        manual[nx:, :nx] = cns.Matrix(hfm.Tminus(1, phi) + hfm.Tplus(1, phi))
+        manual[nx:, :nx] = isle.Matrix(hfm.Tminus(1, phi) + hfm.Tplus(1, phi))
 
         self.assertTrue(core.isEqual(auto, manual),
                         msg="Failed equality check for construction of hubbardFermiMatrix "\
@@ -83,23 +82,23 @@ class TestHubbardFermiMatrix(unittest.TestCase):
 
         nt = 3
         nx = kappa.rows()
-        hfm = cns.HubbardFermiMatrix(kappa, mu, sigmaKappa)
+        hfm = isle.HubbardFermiMatrix(kappa, mu, sigmaKappa)
         phi = _randomPhi(nx*nt)
 
-        auto = np.array(cns.Matrix(hfm.Q(phi)), copy=False) # full matrix
+        auto = np.array(isle.Matrix(hfm.Q(phi)), copy=False) # full matrix
         manual = np.empty(auto.shape, auto.dtype)
-        P = np.array(cns.Matrix(hfm.P())) # diagonal blocks
+        P = np.array(isle.Matrix(hfm.P())) # diagonal blocks
 
         manual[:nx, :nx] = P
-        manual[:nx, nx:2*nx] = cns.Matrix(hfm.Tminus(0, phi))
-        manual[:nx, 2*nx:] = cns.Matrix(hfm.Tplus(0, phi))
+        manual[:nx, nx:2*nx] = isle.Matrix(hfm.Tminus(0, phi))
+        manual[:nx, 2*nx:] = isle.Matrix(hfm.Tplus(0, phi))
 
-        manual[nx:2*nx, :nx] = cns.Matrix(hfm.Tplus(1, phi))
+        manual[nx:2*nx, :nx] = isle.Matrix(hfm.Tplus(1, phi))
         manual[nx:2*nx, nx:2*nx] = P
-        manual[nx:2*nx, 2*nx:] = cns.Matrix(hfm.Tminus(1, phi))
+        manual[nx:2*nx, 2*nx:] = isle.Matrix(hfm.Tminus(1, phi))
 
-        manual[2*nx:, :nx] = cns.Matrix(hfm.Tminus(2, phi))
-        manual[2*nx:, nx:2*nx] = cns.Matrix(hfm.Tplus(2, phi))
+        manual[2*nx:, :nx] = isle.Matrix(hfm.Tminus(2, phi))
+        manual[2*nx:, nx:2*nx] = isle.Matrix(hfm.Tplus(2, phi))
         manual[2*nx:, 2*nx:] = P
 
         self.assertTrue(core.isEqual(auto, manual),
@@ -133,12 +132,12 @@ class TestHubbardFermiMatrix(unittest.TestCase):
         for nt, mu, sigmaKappa, _ in itertools.product((4, 8, 32), MU, (-1, 1),
                                                        range(N_REP)):
             nx = kappa.rows()
-            hfm = cns.HubbardFermiMatrix(kappa/nt, mu/nt, sigmaKappa)
+            hfm = isle.HubbardFermiMatrix(kappa/nt, mu/nt, sigmaKappa)
             phi = _randomPhi(nx*nt)
 
-            q = np.array(cns.Matrix(hfm.Q(phi)), copy=False)
-            lu = cns.getQLU(hfm, phi)
-            recon = np.array(cns.Matrix(lu.reconstruct()))
+            q = np.array(isle.Matrix(hfm.Q(phi)), copy=False)
+            lu = isle.getQLU(hfm, phi)
+            recon = np.array(isle.Matrix(lu.reconstruct()))
 
             self.assertTrue(core.isEqual(q, recon, nOps=nx**2, prec=1e-13),
                             msg="Failed equality check of reconstruction from LU decomposition of hubbardFermiMatrix "\
@@ -162,19 +161,19 @@ class TestHubbardFermiMatrix(unittest.TestCase):
         nx = kappa.rows()
         self.assertRaises(RuntimeError,
                           lambda msg:
-                          cns.logdetM(cns.HubbardFermiMatrix(kappa, 1, 1), cns.CDVector(nx), cns.Species.PARTICLE),
+                          isle.logdetM(isle.HubbardFermiMatrix(kappa, 1, 1), isle.CDVector(nx), isle.Species.PARTICLE),
                           msg="logdetM must throw a RuntimeError when called with mu != 0. If this bug has been fixed, update the unit test!")
 
         for nt, mu, sigmaKappa, species, rep in itertools.product((4, 8, 32),
                                                                   [0],
                                                                   (-1, 1),
-                                                                  (cns.Species.PARTICLE, cns.Species.HOLE),
+                                                                  (isle.Species.PARTICLE, isle.Species.HOLE),
                                                                   range(N_REP)):
-            hfm = cns.HubbardFermiMatrix(kappa/nt, mu/nt, sigmaKappa)
+            hfm = isle.HubbardFermiMatrix(kappa/nt, mu/nt, sigmaKappa)
             phi = _randomPhi(nx*nt)
 
-            plain = cns.logdet(cns.Matrix(hfm.M(phi, species)))
-            viaLU = cns.logdetM(hfm, phi, species)
+            plain = isle.logdet(isle.Matrix(hfm.M(phi, species)))
+            viaLU = isle.logdetM(hfm, phi, species)
 
             self.assertAlmostEqual(plain, viaLU, places=10,
                                    msg="Failed check log(det(M)) in repetition {}".format(rep)\
@@ -188,11 +187,11 @@ class TestHubbardFermiMatrix(unittest.TestCase):
         nx = kappa.rows()
         for nt, mu, sigmaKappa, rep in itertools.product((4, 8, 32), [0],
                                                          (-1, 1), range(N_REP)):
-            hfm = cns.HubbardFermiMatrix(kappa/nt, mu/nt, sigmaKappa)
+            hfm = isle.HubbardFermiMatrix(kappa/nt, mu/nt, sigmaKappa)
             phi = _randomPhi(nx*nt)
 
-            plain = cns.logdet(cns.Matrix(hfm.Q(phi)))
-            viaLU = cns.logdetQ(hfm, phi)
+            plain = isle.logdet(isle.Matrix(hfm.Q(phi)))
+            viaLU = isle.logdetQ(hfm, phi)
 
             self.assertAlmostEqual(plain, viaLU, places=10,
                                    msg="Failed check log(det(Q)) in repetition {}".format(rep)\
@@ -218,14 +217,14 @@ class TestHubbardFermiMatrix(unittest.TestCase):
         for nt, mu, sigmaKappa, species, rep in itertools.product((4, 8, 32),
                                                                   [0],
                                                                   (-1, 1),
-                                                                  (cns.Species.PARTICLE, cns.Species.HOLE),
+                                                                  (isle.Species.PARTICLE, isle.Species.HOLE),
                                                                   range(N_REP)):
-            hfm = cns.HubbardFermiMatrix(kappa/nt, mu/nt, sigmaKappa)
+            hfm = isle.HubbardFermiMatrix(kappa/nt, mu/nt, sigmaKappa)
             phi = _randomPhi(nx*nt)
             M = hfm.M(phi, species)
             rhss = [_randomPhi(nx*nt) for _ in range(2)]
 
-            res = cns.solveM(hfm, phi, species, rhss)
+            res = isle.solveM(hfm, phi, species, rhss)
             chks = [np.max(np.abs(M*r-rhs)) for r, rhs in zip(res, rhss)]
             for chk in chks:
                 self.assertAlmostEqual(chk, 0, places=10,
@@ -244,8 +243,9 @@ class TestHubbardFermiMatrix(unittest.TestCase):
 
 
 def setUpModule():
-    "Setup the vector test module."
+    "Setup the HFM test module."
 
+    print(__file__)
     logger = core.get_logger()
     logger.info("""Parameters for RNG:
     seed: {}
@@ -253,7 +253,3 @@ def setUpModule():
     std:  {}""".format(SEED, RAND_MEAN, RAND_STD))
 
     rand.setup(SEED)
-
-
-if __name__ == "__main__":
-    unittest.main()

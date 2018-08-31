@@ -21,6 +21,3 @@ class TestCpp(unittest.TestCase):
         logger.info('Testing C++ internals')
         rc = subprocess.run([str(EXE)]).returncode
         self.assertEqual(rc, 0, 'C++ internal tests did not finish successfully')
-
-if __name__ == "__main__":
-    unittest.main()
