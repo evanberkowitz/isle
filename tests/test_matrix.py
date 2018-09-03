@@ -414,7 +414,6 @@ class TestMatrix(AbstractMatrixTest, unittest.TestCase):
 def setUpModule():
     "Setup the matrix test module."
 
-    print(__file__)
     logger = core.get_logger()
     logger.info("""Parameters for RNG:
     seed: {}

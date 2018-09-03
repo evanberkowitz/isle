@@ -246,7 +246,6 @@ class TestHubbardFermiMatrix(unittest.TestCase):
 def setUpModule():
     "Setup the HFM test module."
 
-    print(__file__)
     logger = core.get_logger()
     logger.info("""Parameters for RNG:
     seed: {}

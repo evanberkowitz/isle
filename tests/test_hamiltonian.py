@@ -163,7 +163,6 @@ class TestHamiltonian(unittest.TestCase):
 def setUpModule():
     "Setup the Hamiltonian test module."
 
-    print(__file__)
     logger = core.get_logger()
     logger.info("""Parameters for RNG:
     seed: {}
