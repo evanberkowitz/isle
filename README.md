@@ -74,9 +74,11 @@ Unfortunately neither pip nor setup.py's install or develop commands support con
 python3 setup.py build -j<n-threads>
 ```
 to compile your changes in a parallel fashion.
+However, if you are in development mode, you must compile using one of the above commands before you can use the explicit build command!
 
 ## Testing
-Unit tests are automatically compiled when using the above command (sorry for the extra compilation time, you are welcome to fix this :D).
+Unit tests are automatically compiled when using the above commands (sorry for the extra compilation time, you are welcome to fix this :D).
+They only work however, if you are in development mode!
 You can run them via
 ```
 python3 setup.py test
