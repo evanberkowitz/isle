@@ -46,7 +46,7 @@ with suitable arguments. The supported arguments are (run `python3 setup.py conf
 - *blas-vendor*: Select vendor of BLAS/LAPACK library. Supported values are:
     - `Generic` - Reference implementation (default)
     - `Intel10_32`, `Intel10_64lp`, `Intel10_64lp_seq`, `Intel` - MKL, see https://cmake.org/cmake/help/v3.0/module/FindBLAS.html
-- *parallel-blas*: Specify this flag if the BLAS/LAPACK inplementation is parallelized. Otherwise blaze might parallelize on top of it which can slow down the program.
+- *parallel-blas*: Specify this flag if the BLAS/LAPACK implementation is parallelized. Otherwise blaze might parallelize on top of it which can slow down the program.
 - *pardiso*: Select a PARDISO implementation. Can be either `STANDALONE` or `MKL`. PARDISO is currently not used by isle but if this argument is set, a wrapper around it is created in the module `isle.pardiso`.
 
 This does not actually run CMake to configure the C++ build but merely performs some rudimentary checks and saves the parameters.
@@ -69,7 +69,7 @@ pip3 install -e . [--user]
 ```
 And just re-run the command after changing the code.
 
-Unfortunately neither pip nor setupt.py's install or develop commands support concurrent builds. So the first time you compile takes some time. If you installed in development mode, you can run
+Unfortunately neither pip nor setup.py's install or develop commands support concurrent builds. So the first time you compile takes some time. If you installed in development mode, you can run
 ```
 python3 setup.py build -j<n-threads>
 ```
@@ -79,7 +79,7 @@ to compile your changes in a parallel fashion.
 Unit tests are automatically compiled when using the above command (sorry for the extra compilation time, you are welcome to fix this :D).
 You can run them via
 ```
-python3 setupt.py test
+python3 setup.py test
 ```
 Keep in mind that some tests take a long time because they need to process fairly big matrices in an inefficient way to make sure the efficient algorithms are correct.
 
