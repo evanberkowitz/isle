@@ -22,10 +22,11 @@ N_REP = 1 # number of repetitions
 
 LAT_DIR = core.TEST_PATH/"../resources/lattices"
 # lattices to test matrix with
-LATTICES = [LAT_DIR/"c60_ipr.yml",
+LATTICES = [LAT_DIR/"c20.yml",
             LAT_DIR/"tube_3-3_1.yml",
-            LAT_DIR/"tube_3-3_5.yml",
-            LAT_DIR/"tube_4-2_2.yml"]
+            LAT_DIR/"one_site.yml",
+            LAT_DIR/"two_sites.yml",
+            LAT_DIR/"triangle.yml"]
 
 # test with these values of chemical potential
 MU = [0, 1, 1.5]
