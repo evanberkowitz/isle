@@ -1,10 +1,10 @@
 \documentclass[a4paper, fleqn, twoside, notitlepage]{scrartcl}
 \input{settings}
 
-
 \begin{document}
 
 \maketitle
+\vspace{-3em}
 \tableofcontents
 
 \vfill
@@ -15,11 +15,13 @@ They are implemented by these classes:
 \begin{itemize}
 \item \texttt{HubbardFermiMatrix}
 \item \texttt{HubbardFermiAction}
+\item \texttt{HubbardFermiActionExp}
 \end{itemize}
 and can be found int the following files:
 \begin{itemize}
-\item \texttt{cnxx/hubbardFermiMatrix.[hpp/cpp]}
-\item \texttt{cnxx/hubbardFermiAction.[hpp/cpp]}
+\item \texttt{cnxx/hubbardFermiMatrix.[hpp|cpp]}
+\item \texttt{cnxx/hubbardFermiAction.[hpp|cpp]}
+\item \texttt{cnxx/hubbardFermiActionExp.[hpp|cpp]}
 \end{itemize}
 For usage information, see the source documentation of the classes.\\
 
@@ -32,7 +34,7 @@ There are two variants of the algorithms:
 Only Variant 1 is fully implemented.
 
 \clearpage
-\section{Variant 1}
+\section{Variant 1}\label{sec:variant1}
 
 This version treats the fermion matrices for particles and holes separately.
 \texttt{HubbardFermiAction} is implemented this way.
@@ -46,7 +48,7 @@ The fermionic action is
 where $\phi$ is the auxiliary field that is integrated over. In general $\sigma_{\tilde{\kappa}} = -1$ but for bipartite lattices, a particle-hole transformation can be used to get $\sigma_{\tilde{\kappa}} = +1$. Subscripts $p$ and $h$ indicate matrices for particles and holes, respectively. The fermion matrix is
 \begin{align}
   {M(\phi, \tilde{\kappa}, \tilde{\mu})}_{x't';xt}
-  &= (1+\tilde{\mu})\delta_{x'x}\delta_{t't} - \tilde{\kappa}_{x'x}\delta_{t't} - \mathcal{B}_{t'} e^{\i\phi_{xt}}\delta_{x'x}\delta_{t'(t+1)}\\
+  &= (1+\tilde{\mu})\delta_{x'x}\delta_{t't} - \tilde{\kappa}_{x'x}\delta_{t't} - \mathcal{B}_{t'} e^{\i\phi_{xt}}\delta_{x'x}\delta_{t'(t+1)}\label{eq:def_m}\\
   &\equiv {K(\tilde{\kappa}, \tilde{\mu})}_{x'x}\delta_{t't} - \mathcal{B}_{t'}{F_{t'}(\phi)}_{x'x}\delta_{t'(t+1)}.
 \end{align}
 where
@@ -83,10 +85,10 @@ The parameters are
 \end{itemize}
 
 
-\subsection{LU-Decomposition}
+\subsection{LU-Decomposition}\label{sec:lu_v1}
 
 In order to calculate the determinant of $M$ and solve systems of equations, compute the LU-decomposition of $M$. This can be done analytically in terms of spacial matrices given the specific structure in equation~\eqref{eq:ferm_mat_block_v1}.
-Use the following ansatz\footnote{This is an adaptation of the algorithm presented in \url{https://hrcak.srce.hr/100527} and is a simplified version of the algorithm presented in~\cref{sec:lu_decomposition_v2}}:
+Use the following ansatz\footnote{This is an adaptation of the algorithm presented in~\cite{zivkovic:2013} and is a simplified version of the algorithm presented in~\cref{sec:lu_decomposition_v2}}:
 \begin{align}
   L =
   \begin{pmatrix}
@@ -166,7 +168,7 @@ The action~\eqref{eq:ferm_action_v1} is the sum of contributions from particles 
   S_\text{ferm} = -N_t \log \det(K_p)  - \log \det (1 + A_p) - N_t \log \det(K_h) - \log \det (1 + A_h).
 \end{align}
 In general those contributions are not related by a simple equation meaning that both need to be computed from scratch.
-  
+
 \subsection{Force}
 
 The fermionic force at spacetime point $\mu\tau$ is given by
@@ -208,7 +210,7 @@ Combining those results gives the momentum as
 \begin{resultbox}
   \vspace{-\baselineskip}
   \begin{align}
-    {(\dot{\pi}_{\text{ferm}})}_{\mu\tau} &= \Tr \Big[{(1+A_p^{-1})}^{-1}\dpd{}{\phi_{\mu\tau}}A_p^{-1} + {(1+A_h^{-1})}^{-1}\dpd{}{\phi_{\mu\tau}}A_h^{-1}\Big],\\
+    {(\dot{\pi}_{\text{ferm}})}_{\mu\tau} &= \Tr \Big[{(1+A_p^{-1})}^{-1}\dpd{}{\phi_{\mu\tau}}A_p^{-1} + {(1+A_h^{-1})}^{-1}\dpd{}{\phi_{\mu\tau}}A_h^{-1}\Big],\label{eq:force_v1}\\
     A^{-1} &\equiv F_0^{-1}K F_1^{-1}K \cdots F_{N_t-1}^{-1}K\label{eq:def_Ainv}
   \end{align}
 \end{resultbox}
@@ -232,6 +234,26 @@ Elements near the boundary:
                                  &\quad + \i {\big(A^{-1}_{h,(N_t-1)(N_t-1)} {(1+A_h^{-1})}^{-1} A^{-1}_{h,0(N_t-2)}\big)}_{\mu\mu}
 \end{align}
 Keep in mind that $\mu$ is \emph{not} summed over, even when it appears twice in one term.
+
+\subsection{Solver}\label{sec:solver_v1}
+
+Linear systems of equations involving $M$ can be solved using an LU-decomposition and forward-/back-substitution.
+It is straight-forward to derive expressions for the result using the algorithm presented in Section~\ref{sec:lu_v1}.
+
+\paragraph{Matrix-Vector Equation}
+Solve a system of equations for a single right hand side, i.e. $M x = b$, where $x$ and $b$ are vectors.
+Start by solving the auxiliary system $L y = b$:
+\begin{align}
+  y_0 &= b_0\\
+  y_i &= b_i + F_i K^{-1}y_{i-1} \quad \text{for} \quad i > 0
+\end{align}
+And then solve the original equations by solving $U x = y$:
+\begin{align}
+  x_{N_t-1} &= {(1+A)}^{-1} K^{-1} y_{N_t-1}\\
+  x_i &= K^{-1} y_i - A_{0i}x_{N_t-1} \quad \text{for} \quad i < N_t-1,
+\end{align}
+where the definitions for $A$ and $A_{tt'}$ are given in~\eqref{eq:def_A} and~\eqref{eq:def_partial_A}, respectively.
+Note that $y$ always appears as $K^{-1}y$. Hence it is possible to reduce the number of required matrix-vector multiplications by storing $K^{-1}y$ instead of just $y$.
 
 
 \clearpage
@@ -292,7 +314,7 @@ The parameters are
 
 \subsection{LU-Decomposition}\label{sec:lu_decomposition_v2}
 
-The determinant of $Q$ can be computed via an LU-decomposition using the ansatz\footnote{This is an adaptation of the algorithm presented in \url{https://hrcak.srce.hr/100527}}
+The determinant of $Q$ can be computed via an LU-decomposition using an ansatz similar to~\cite{zivkovic:2013}.
 \begin{align}
   L =
   \begin{pmatrix}
@@ -420,9 +442,84 @@ Then solve $U X = Y$:
 Like in the LU-decomposition itself, those relations can be read off, or proven using simple induction.
 Apart from the last row, the $y$'s are independent from each other while the $x$'s have to be computed iterating over rows from $N_t-1$ though 0. However, different columns never mix.
 
+\clearpage
+\section{Exponential Hopping}
+
+The fermion action introduced in equations~\eqref{eq:ferm_action_v1} and~\eqref{eq:ferm_action_v2} is an approximation to the `real' Hubbard model action
+\begin{align}
+  S'_\text{ferm} = - \log \det M'(\phi, \tilde{\kappa}, \tilde{\mu}) M'(-\phi, \sigma_{\tilde{\kappa}}\tilde{\kappa}, -\tilde{\mu}) \equiv - \log \det M'_p M'_h,\label{eq:ferm_action_exp}
+\end{align}
+with
+\begin{align}
+  {M'(\phi, \tilde{\kappa}, \tilde{\mu})}_{x't';xt}
+  &= (1+\tilde{\mu})\delta_{x'x}\delta_{t't} - \mathcal{B}_{t'} e^{\tilde{\kappa}} e^{\i\phi_{xt}}\delta_{x'x}\delta_{t'(t+1)}\\
+  &\equiv (1+\tilde{\mu})\delta_{x'x}\delta_{t't} - \mathcal{B}_{t'}{S(\tilde{\kappa})F_{t'}(\phi)}_{x'x}\delta_{t'(t+1)}.
+\end{align}
+where
+\begin{align}
+  {S(\tilde{\kappa})}_{x'x} &= {(e^{\tilde{\kappa}})}_{x'x},\\
+  {F_{t'}(\phi)}_{x'x} &= e^{\i\phi_{x(t'-1)}}\delta_{x'x}.
+\end{align}
+Note that compared to~\eqref{eq:def_m}, the hopping matrix $\tilde{\kappa}$ is on the off-diagonal and in an exponential.
+The difference between both actions vanishes in the continuum limit.
+However, approximating $e^{\tilde{\kappa}}$ improves performance as $\tilde{\kappa}$ is sparse.
+Furthermore, moving the hopping term onto the diagonal improves the behaviour of the Hybrid Monte-Carlo evolution [{\color{rwthrot}Cite ergodicity paper}].\\ %TODO
+
+\noindent
+For simplicity, we drop the chemical potential now and \textbf{what follows is only valid for $\mu = 0$!}
+The implementation for exponential hopping is also only valid without chemical potential.
+This should not be an issue in practice since the algorithm described in Section~\ref{sec:variant1} should be preferred.
+
+\subsection{Action}
+
+The action can be computed easily via the following two substitutions:
+\begin{align}
+  K &\rightarrow \mathds{1}\label{eq:exp_subs_K}\\
+  F_{t'} &\rightarrow S F_{t'}\label{eq:exp_subs_F}
+\end{align}
+which implies $A \rightarrow B$, see~\eqref{eq:def_B}.
+Applied to~\eqref{eq:det_M}, this gives
+\begin{resultbox}
+  \vspace{-\baselineskip}
+  \begin{align}
+    \log \det M' &= \log \det (1 + B),\label{eq:det_M_exp}\\
+    B &\equiv SF_{N_t-1} S F_{N_t-2} \cdots SF_{1} SF_{0}.\label{eq:def_B}
+  \end{align}
+\end{resultbox}
+And hence the action~\eqref{eq:ferm_action_exp} is
+\begin{align}
+  S'_\text{ferm} = - \log \det (1 + B_p) - \log \det (1 + B_h).
+\end{align}
+
+\subsection{Force}
+
+The force, too, can be calculated by applying substitutions~\eqref{eq:exp_subs_K} and~\eqref{eq:exp_subs_F} to equation~\eqref{eq:force_v1}.
+\begin{resultbox}
+  \vspace{-\baselineskip}
+  \begin{align}
+    {(\dot{\pi}'_{\text{ferm}})}_{\mu\tau} &= \Tr \Big[{(1+B_p^{-1})}^{-1}\dpd{}{\phi_{\mu\tau}}B_p^{-1} + {(1+B_h^{-1})}^{-1}\dpd{}{\phi_{\mu\tau}}B_h^{-1}\Big],\\
+    B^{-1} &\equiv F_0^{-1}S F_1^{-1}S \cdots F_{N_t-1}^{-1}S
+  \end{align}
+\end{resultbox}
+\noindent
+In principle the replacement $B \leftrightarrow B'$ is not useful here because $S$ and $S^{-1}$ are both dense. We apply it nonetheless because it saves us from re-deriving the implementation.
+
+\subsection{Solver}
+
+Again, substitutions~\eqref{eq:exp_subs_K} and~\eqref{eq:exp_subs_F} can be used to transform the solver of Section~\ref{sec:solver_v1} to work for exponential hopping.
+The resulting equations are
+\begin{align}
+  y_0 &= b_0\\
+  y_i &= b_i + S F_i y_{i-1} \quad \text{for} \quad i > 0
+\end{align}
+and
+\begin{align}
+  x_{N_t-1} &= {(1+B)}^{-1} y_{N_t-1}\\
+  x_i &= y_i - B_{0i}x_{N_t-1} \quad \text{for} \quad i < N_t-1.
+\end{align}
 
 \clearpage
-\bibliographystyle{abbrv}
+\bibliographystyle{unsrt}
 \bibliography{references}
 
 \end{document}
