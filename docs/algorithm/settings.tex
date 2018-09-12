@@ -36,7 +36,7 @@
 \usepackage[pdftex, ocgcolorlinks]{hyperref}
 \usepackage{cleveref}
 
-%----------------------------------------------------------
+%---------------------------------------------------------
 % general info
 \newdateformat{isodate}{\THEYEAR-\twodigit{\THEMONTH}-\twodigit{\THEDAY}}
 
@@ -49,10 +49,10 @@
 \affil[1]{Institute for Advanced Simulation 4\\
 Forschungszentrum J\"ulich, Germany}
 
-\title{\thetitle}
-\date{\thedate|\currenttime}
+\title{\vspace{-4em}\thetitle}
+\date{\thedate\ | \currenttime}
 
-%----------------------------------------------------------
+%---------------------------------------------------------
 % colors
 \definecolor{rwthblau}     {RGB}{0,84,159}
 \definecolor{rwthbordeaux} {RGB}{161,16,53}
@@ -81,11 +81,11 @@ Forschungszentrum J\"ulich, Germany}
 \colorlet{highl1}{rwthblau}
 \colorlet{highl2}{rwthbordeaux}
 
-%----------------------------------------------------------
+%---------------------------------------------------------
 % color boxes
 \newtcolorbox{resultbox}{colback=white, sharp corners, colframe=rwthpetrol}
 
-%----------------------------------------------------------
+%---------------------------------------------------------
 % abbreviations
 \newcommand{\unit}[1]{\,\text{#1}}
 \newcommand{\ev}{\,\text{eV}}
@@ -101,7 +101,7 @@ Forschungszentrum J\"ulich, Germany}
 \renewcommand{\Im}{\text{Im}\,}
 \newcommand{\Tr}{\text{Tr}\,}
 
-%----------------------------------------------------------
+%---------------------------------------------------------
 % miscellaneous
 % remove trailing dot from number
 \renewcommand*{\figureformat}{%
