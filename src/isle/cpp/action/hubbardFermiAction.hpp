@@ -18,29 +18,36 @@ namespace cnxx {
      \f]
      * see HubbardFermiMatrix for the definition of M.
      *
-     * Both variants of the algorithm are implemented and can be chosen in the constructor.
-     * The default is variant 1. See <TT>docs/algorithm/hubbardFermiAction.pdf</TT>
+     * Both variants of the algorithm for are implemented and can be chosen in
+     * the constructor. The default is variant 1.
+     * See <TT>docs/algorithm/hubbardFermiAction.pdf</TT>
      * for description and derivation of the algorithms.
      *
      * \warning Only supports `nt > 2`.
      */
     class HubbardFermiAction : Action {
     public:
+        /// Specifies which variant of the algorithm gets used.
+        enum class Variant { ONE, TWO };
+
         /// Copy in a HubbardFermiMatrix.
-        explicit HubbardFermiAction(const HubbardFermiMatrix &hfm, const bool variant2=false)
+        explicit HubbardFermiAction(const HubbardFermiMatrix &hfm,
+                                    const Variant variant=Variant::ONE)
             : _hfm{hfm}, _kp{hfm.K(Species::PARTICLE)},
-              _kh{hfm.K(Species::HOLE)}, _variant2{variant2} { }
+              _kh{hfm.K(Species::HOLE)}, _variant{variant} { }
 
         /// Construct from individual parameters of HubbardFermiMatrix.
         HubbardFermiAction(const SparseMatrix<double> &kappa,
-                           double mu, std::int8_t sigmaKappa, const bool variant2=false)
+                           double mu, std::int8_t sigmaKappa,
+                           const Variant variant=Variant::ONE)
             : _hfm{kappa, mu, sigmaKappa}, _kp{_hfm.K(Species::PARTICLE)},
-              _kh{_hfm.K(Species::HOLE)}, _variant2{variant2} { }
+              _kh{_hfm.K(Species::HOLE)}, _variant{variant} { }
 
         HubbardFermiAction(const Lattice &lat, double beta,
-                           double mu, std::int8_t sigmaKappa, const bool variant2=false)
+                           double mu, std::int8_t sigmaKappa,
+                           const Variant variant=Variant::ONE)
             : _hfm{lat, beta, mu, sigmaKappa}, _kp{_hfm.K(Species::PARTICLE)},
-              _kh{_hfm.K(Species::HOLE)}, _variant2{variant2} { }
+              _kh{_hfm.K(Species::HOLE)}, _variant{variant} { }
 
         HubbardFermiAction(const HubbardFermiAction &other) = default;
         HubbardFermiAction &operator=(const HubbardFermiAction &other) = default;
@@ -58,7 +65,7 @@ namespace cnxx {
         const HubbardFermiMatrix _hfm;  ///< Stores all necessary parameters.
         const DSparseMatrix _kp;  ///< Matrix K for particles.
         const DSparseMatrix _kh;  ///< Matrix K for holes.
-        const bool _variant2;  ///< Use variant2 of the algorithm?
+        const Variant _variant;  ///< Pick variant of the algorithm.
     };
 }  // namespace cnxx
 

@@ -90,19 +90,20 @@ namespace cnxx {
     }
 
     std::complex<double> HFA::eval(const CDVector &phi) const {
-        if (_variant2)
-            return -logdetQ(_hfm, phi);
-        else
+        if (_variant == Variant::ONE)
             return -toFirstLogBranch(logdetM(_hfm, phi, Species::PARTICLE)
                                      + logdetM(_hfm, phi, Species::HOLE));
+        else
+            return -logdetQ(_hfm, phi);
     }
 
     CDVector HFA::force(const CDVector &phi) const {
-        if (_variant2)
-            return forceVariant2(_hfm, phi);
-        else
+        if (_variant == Variant::ONE)
             return -1.i*(forceVariant1Part(_hfm, phi, _kp, Species::PARTICLE)
                          - forceVariant1Part(_hfm, phi, _kh, Species::HOLE));
+        else
+            return forceVariant2(_hfm, phi);
+
     }
 
 }  // namespace cnxx
