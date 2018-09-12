@@ -2,12 +2,12 @@
  * \brief Fermionic part of Hubbard action.
  */
 
-#ifndef HUBBARD_FERMI_ACTION_HPP
-#define HUBBARD_FERMI_ACTION_HPP
+#ifndef ACTION_HUBBARD_FERMI_ACTION_HPP
+#define ACTION_HUBBARD_FERMI_ACTION_HPP
 
 #include "action.hpp"
-#include "hubbardFermiMatrix.hpp"
-#include "lattice.hpp"
+#include "../hubbardFermiMatrix.hpp"
+#include "../lattice.hpp"
 
 namespace cnxx {
     /// Fermion action for Hubbard model.
@@ -62,4 +62,4 @@ namespace cnxx {
     };
 }  // namespace cnxx
 
-#endif  // ndef HUBBARD_FERMI_ACTION_HPP
+#endif  // ndef ACTION_HUBBARD_FERMI_ACTION_HPP

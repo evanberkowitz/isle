@@ -7,9 +7,9 @@
 
 #include <vector>
 
-#include "core.hpp"
+#include "../core.hpp"
 #include "action.hpp"
-#include "memory.hpp"
+#include "../memory.hpp"
 
 namespace cnxx {
     /// Collection of actions.
@@ -91,7 +91,7 @@ namespace cnxx {
         /// Strip the momentum term for given pi from an action.
         std::complex<double> stripMomentum(const Vector<std::complex<double>> &pi,
                                            std::complex<double> action) const;
-        
+
     private:
         std::vector<UnObHybridPtr<Action>> _actions;  ///< Stores actions to evaluate.
     };

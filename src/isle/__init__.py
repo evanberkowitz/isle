@@ -11,7 +11,8 @@ from . import fileio
 from . import hmc
 from . import random
 from . import util
-from .hubbardFermiActionSpinBasis import HubbardFermiActionSpinBasis
+import isle.action
 
 ## Environment variables for CNS.
+# TODO remove!
 env = {}

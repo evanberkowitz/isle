@@ -2,8 +2,8 @@
  * \brief Gauge part of Hubbard action.
  */
 
-#ifndef HUBBARD_GAUGE_ACTION_HPP
-#define HUBBARD_GAUGE_ACTION_HPP
+#ifndef ACTION_HUBBARD_GAUGE_ACTION_HPP
+#define ACTION_HUBBARD_GAUGE_ACTION_HPP
 
 #include "action.hpp"
 
@@ -35,4 +35,4 @@ namespace cnxx {
     };
 }  // namespace cnxx
 
-#endif  // ndef HUBBARD_GAUGE_ACTION_HPP
+#endif  // ndef ACTION_HUBBARD_GAUGE_ACTION_HPP

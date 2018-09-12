@@ -8,7 +8,7 @@
 #include <tuple>
 
 #include "math.hpp"
-#include "hamiltonian.hpp"
+#include "action/hamiltonian.hpp"
 
 namespace cnxx {
     /// Perform leapfrog integration.

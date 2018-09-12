@@ -2,10 +2,10 @@
  * \brief Abstract base action.
  */
 
-#ifndef ACTION_HPP
-#define ACTION_HPP
+#ifndef ACTION_ACTION_HPP
+#define ACTION_ACTION_HPP
 
-#include "math.hpp"
+#include "../math.hpp"
 
 namespace cnxx {
     /// Abstract base for Actions.
@@ -20,4 +20,4 @@ namespace cnxx {
     };
 }  // namespace cnxx
 
-#endif  // ndef ACTION_HPP
+#endif  // ndef ACTION_ACTION_HPP

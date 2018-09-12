@@ -1,8 +1,9 @@
 import isle
+from . import Action
 
 # TODO adjust determinant in measurements!
 
-class HubbardFermiActionSpinBasis(isle.Action):
+class HubbardFermiActionSpinBasis(Action):
     def __init__(self, kappa, mu, sigmaKappa):
         # TODO can we call super ctor?
         isle.Action.__init__(self)

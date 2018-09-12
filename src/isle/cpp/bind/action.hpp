@@ -8,7 +8,7 @@
 #include "core.hpp"
 
 namespace bind {
-    /// Bind action classes.
+    /// Define action submodule and bind action classes.
     void bindActions(py::module &mod);
 }
 

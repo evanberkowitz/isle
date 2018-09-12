@@ -1,6 +1,6 @@
 #include "hamiltonian.hpp"
 
-#include "../hamiltonian.hpp"
+#include "../action/hamiltonian.hpp"
 
 using namespace cnxx;
 

@@ -6,10 +6,10 @@
 # sources of the base library
 set(SOURCE
   hubbardFermiMatrix.cpp
-  hubbardGaugeAction.cpp
-  hubbardFermiAction.cpp
-  hamiltonian.cpp
   integrator.cpp)
+
+# add submodules
+add_subdirectory(action)
 
 # store sources (w/o bindings) for other modules
 set(libsrc)
@@ -21,7 +21,6 @@ unset(libsrc)
 
 # add bindings code
 add_subdirectory(bind)
-
 
 # define the library
 set(LIBNAME "isle_cpp")

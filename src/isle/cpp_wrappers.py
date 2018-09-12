@@ -9,7 +9,6 @@ import numpy as np
 
 from .isle_cpp import *
 
-
 class Vector:
     """!
     Wrapper around datatype specific vectors in isle_cpp.
