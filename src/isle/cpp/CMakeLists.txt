@@ -38,6 +38,13 @@ if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
   target_compile_options(${LIBNAME} PUBLIC -Wno-c++98-compat)
 endif ()
 
+# versioning - create version.hpp file
+set(ISLE_VERSION_MAJOR "0" CACHE STRING "Major version number of Isle")
+set(ISLE_VERSION_MINOR "0" CACHE STRING "Minor version number of Isle")
+set(ISLE_VERSION_EXTRA "nullptr" CACHE STRING "Extra version info of Isle")
+configure_file(version.hpp.in version.hpp)
+target_include_directories(${LIBNAME} PUBLIC ${CMAKE_CURRENT_BINARY_DIR})
+
 # Pybind11
 set_target_properties(${LIBNAME} PROPERTIES PREFIX "" SUFFIX "${PYBIND11_LIB_SUFFIX}")
 target_include_directories(${LIBNAME} SYSTEM PUBLIC "${PYBIND11_INCLUDE_DIRS}")

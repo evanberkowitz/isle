@@ -11,6 +11,7 @@ from setuptools.command.build_ext import build_ext
 
 from . import predicate
 from .cmake_extension import CMakeExtension
+from .version import version_from_git
 
 def _in_virtualenv():
     "Detect whether Python is running in a virutal environment."
@@ -46,6 +47,7 @@ def get_cmake_builder(config_file, test_dir=None):
         def run(self):
             # make sure that cmake is installed
             if not predicate.executable("cmake"):
+                print("error: Unable to find cmake executable")
                 sys.exit(1)
 
             # read configuration file and prepare arguments for cmake
@@ -72,6 +74,15 @@ def get_cmake_builder(config_file, test_dir=None):
             # finalize arguments for cmake
             cmake_args = cmake_args \
                          + [f"-DCMAKE_LIBRARY_OUTPUT_DIRECTORY={extdir}"]
+
+            # get full version and pass it on to cmake
+            ver = version_from_git(plain=False).split("-", 1)
+            major, minor = ver[0].split(".")
+            extra = ver[1] if len(ver) > 1 else None
+            cmake_args += [f'-DISLE_VERSION_MAJOR="{major}"',
+                           f'-DISLE_VERSION_MINOR="{minor}"',
+                           f'-DISLE_VERSION_EXTRA="{extra}"' if extra \
+                           else '-DISLE_VERSION_EXTRA=nullptr']
 
             try:
                 # call cmake from ext_build_dir

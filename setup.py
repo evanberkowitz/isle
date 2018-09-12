@@ -20,6 +20,7 @@ DOXY_FILE = "docs/doxyfile.conf"
 BLAS_VENDORS = ("Generic", "Intel10_32", "Intel10_64lp", "Intel10_64lp_seq", "Intel")
 PARDISO_IMPLEMENTATIONS = ("STANDALONE", "MKL")
 
+
 @configure_command(CONFIG_FILE)
 class Configure:
     blaze = dict(help="Path to blaze. Has to contain blaze/Blaze.h",

@@ -1,0 +1,21 @@
+/** \file
+ * \brief Provide version information through macros.
+ *
+ * This file gets processed by CMake substituting ${...}
+ * with string literals of nullptr to hold the current
+ * version number.
+ */
+
+#ifndef VERSION_HPP
+#define VERSION_HPP
+
+/// Major version number of Isle.
+#define ISLE_VERSION_MAJOR ${ISLE_VERSION_MAJOR}
+
+/// Minor version number of Isle.
+#define ISLE_VERSION_MINOR ${ISLE_VERSION_MINOR}
+
+/// Extra version information of Isle.
+#define ISLE_VERSION_EXTRA ${ISLE_VERSION_EXTRA}
+
+#endif  // ndef VERSION_HPP

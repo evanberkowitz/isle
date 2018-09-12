@@ -4,6 +4,7 @@
 set(SOURCE
   ${SOURCE}
   bind/bindings.cpp
+  bind/bind_version.cpp
   bind/math.cpp
   bind/lattice.cpp
   bind/hubbardFermiMatrix.cpp
