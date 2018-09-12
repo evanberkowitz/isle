@@ -3,7 +3,7 @@
 namespace cnxx {
     std::tuple<CDVector, CDVector> leapfrog(const CDVector &phi,
                                             const CDVector &pi,
-                                            Hamiltonian &ham,
+                                            action::Hamiltonian &ham,
                                             const double length,
                                             const std::size_t nsteps,
                                             const double direction) {

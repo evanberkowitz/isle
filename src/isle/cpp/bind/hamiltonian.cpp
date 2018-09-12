@@ -3,6 +3,7 @@
 #include "../action/hamiltonian.hpp"
 
 using namespace cnxx;
+using namespace cnxx::action;
 
 namespace bind {
     void bindHamiltonian(py::module &mod) {
