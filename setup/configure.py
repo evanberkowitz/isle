@@ -25,7 +25,7 @@ _DEFAULT_OPTIONS = dict(compiler={**_DEFAULT_OPT_ARGS,
                                     "help": f"CMake build type, allowed values are {_BUILD_TYPES}",
                                     "cmake": "CMAKE_BUILD_TYPE",
                                     "long_name": "build_type=",
-                                    "default": "DEVEL",
+                                    "default": "DEBUG",
                                     "check": one_of(*_BUILD_TYPES)})
 # protected attribute names that may not be used as options
 _FORBIDDEN_OPTIONS = ("description", "user_options")
