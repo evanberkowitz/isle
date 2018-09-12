@@ -123,7 +123,7 @@ class ConstStepLeapfrog:
 
     def __init__(self, hamiltonian, length, nstep):
         r"""!
-        \param hamiltonian Instance of cnxx.Hamiltonian to use for molecular dynamics.
+        \param hamiltonian Instance of isle.Hamiltonian to use for molecular dynamics.
         \param length Length of the MD trajectory.
         \param nstep Number of MD steps per trajectory.
         """
@@ -154,7 +154,7 @@ class LinearStepLeapfrog:
 
     def __init__(self, hamiltonian, lengthRange, nstepRange, ninterp):
         r"""!
-        \param hamiltonian Instance of cnxx.Hamiltonian to use for molecular dynamics.
+        \param hamiltonian Instance of isle.Hamiltonian to use for molecular dynamics.
         \param lengthRange Tuple of initial and final trajectory lengths.
         \param nstepRange Tuple of initial and final number of steps.
         \param ninterp Number of interpolating steps.

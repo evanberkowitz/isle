@@ -27,6 +27,6 @@ constexpr bool ndebug = false;
 #endif
 
 /// C++ routines.
-namespace cnxx { }
+namespace isle { }
 
 #endif  // ndef CORE_HPP

@@ -11,7 +11,7 @@
 #include "action.hpp"
 #include "../memory.hpp"
 
-namespace cnxx {
+namespace isle {
     namespace action {
         /// Collection of actions.
         /**

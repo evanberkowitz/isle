@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 """
-Unittest for 'cnxx' vector classes.
+Unittest for wrappers around blaze vector classes.
 """
 
 import unittest

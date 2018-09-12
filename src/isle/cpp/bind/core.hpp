@@ -22,9 +22,9 @@
 namespace py = pybind11;
 
 // use a custom type
-PYBIND11_MAKE_OPAQUE(std::vector<cnxx::CDVector>)
+PYBIND11_MAKE_OPAQUE(std::vector<isle::CDVector>)
 
-/// Bindings between `cnxx` and Python.
+/// Bindings between `isle` and Python.
 namespace bind {
     /// Represents the state of an iterator (adapted from pybind11 internals).
     template <typename Iterator, typename Sentinel,

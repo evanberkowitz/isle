@@ -1,6 +1,6 @@
 r"""!
 \file
-\brief Basic helpers for scripts using cnxx.
+\brief Basic helpers for scripts using isle.
 """
 
 ## \defgroup scripts Scripts

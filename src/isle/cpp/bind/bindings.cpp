@@ -11,7 +11,7 @@
 
 #include "../math.hpp"
 
-using namespace cnxx;
+using namespace isle;
 
 namespace bind {
     namespace {

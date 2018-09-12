@@ -5,12 +5,12 @@
 #include "../action/hubbardFermiAction.hpp"
 
 using namespace pybind11::literals;
-using namespace cnxx;
-using namespace cnxx::action;
+using namespace isle;
+using namespace isle::action;
 
 namespace bind {
     namespace {
-        /// Trampoline class for cnxx::action::Action to allow Python classes to
+        /// Trampoline class for isle::action::Action to allow Python classes to
         /// override its virtual members.
         struct ActionTramp : Action {
             std::complex<double> eval(const Vector<std::complex<double>> &phi) const override {

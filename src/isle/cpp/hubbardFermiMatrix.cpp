@@ -21,7 +21,7 @@ namespace {
     /// Compute eigenvalues to check whether a matrix is invertible.
     template <typename MT>
     bool isInvertible(MT mat, const double eps=1e-15) {
-        cnxx::CDVector eigenvals;
+        isle::CDVector eigenvals;
         blaze::geev(mat, eigenvals);
 
         for (const auto x : eigenvals) {
@@ -32,7 +32,7 @@ namespace {
     }
 }
 
-namespace cnxx {
+namespace isle {
 /*
  * -------------------------- HubbardFermiMatrix --------------------------
  */
@@ -66,7 +66,7 @@ namespace cnxx {
         else
             k = (1-_mu)*IdMatrix<double>(NX) - _sigmaKappa*_kappa;
     }
-   
+
     DSparseMatrix HubbardFermiMatrix::K(const Species species) const {
         DSparseMatrix k;
         K(k, species);
@@ -535,7 +535,7 @@ namespace cnxx {
 
         // solve U*x = y
         Vector<std::complex<double>> x(nt*nx);
-    
+
         spacevec(x, nt-1, nx) = lu.dinv[nt-1]*spacevec(y, nt-1, nx);
         if (nt > 1) {
             spacevec(x, nt-2, nx) = lu.dinv[nt-2]*(spacevec(y, nt-2, nx)
@@ -599,7 +599,7 @@ namespace cnxx {
         for (std::size_t t = 1; t < NT; ++t) {
             hfm.F(f, t, phi, species, false);
             aux = aux*kinv*f;
-        }        
+        }
 
         // use kinv for first term because we already have it, otherwise would need dense K
         // gives extra minus sign
@@ -634,7 +634,7 @@ namespace cnxx {
             }
         }
         // now res ~ K^-1 y
-        
+
         // partial products of A
         std::vector<CDMatrix> partialA;
         partialA.reserve(nt-1);  // not storing the full A
@@ -665,4 +665,4 @@ namespace cnxx {
         return res;
     }
 
-}  // namespace cnxx
+}  // namespace isle

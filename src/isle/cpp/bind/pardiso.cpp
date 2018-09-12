@@ -5,10 +5,10 @@
 #include "../pardiso.hpp"
 
 using namespace py::literals;
-using namespace cnxx::Pardiso;
+using namespace isle::Pardiso;
 
 namespace {
-    /// Bind a cnxx::Pardiso::State for given elemental type.
+    /// Bind a isle::Pardiso::State for given elemental type.
     template <typename ET>
     void bindPState(py::module &mod, const char * const name) {
         using ST = State<ET>;
@@ -20,8 +20,8 @@ namespace {
                  "messageLevel"_a=0)
             .def("clear", &ST::clear)
             .def("__call__", [](ST &self,
-                                const cnxx::SparseMatrix<ET> &mat,
-                                cnxx::Vector<ET> &b,
+                                const isle::SparseMatrix<ET> &mat,
+                                isle::Vector<ET> &b,
                                 const Phase startPhase=Phase::ANALYSIS,
                                 const Phase endPhase=Phase::SOLVE) {
                      return self(mat, b, startPhase, endPhase);
@@ -29,8 +29,8 @@ namespace {
                  "mat"_a, "b"_a,
                  "startPhase"_a=Phase::ANALYSIS, "endPhase"_a=Phase::SOLVE)
             .def("__call__", [](ST &self,
-                                const cnxx::SparseMatrix<ET> &mat,
-                                cnxx::Matrix<ET> &b,
+                                const isle::SparseMatrix<ET> &mat,
+                                isle::Matrix<ET> &b,
                                 const Phase startPhase=Phase::ANALYSIS,
                                 const Phase endPhase=Phase::SOLVE) {
                      return self(mat, b, startPhase, endPhase);
@@ -43,8 +43,8 @@ namespace {
 
 namespace bind {
     void bindPARDISO(py::module &mod) {
-        using namespace cnxx::Pardiso;
-        
+        using namespace isle::Pardiso;
+
         // create a submodule for pardiso
         auto pmod = mod.def_submodule("pardiso", "PARDISO sparse solver");
 

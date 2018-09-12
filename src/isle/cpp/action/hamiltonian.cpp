@@ -2,7 +2,7 @@
 
 #include <iostream>
 
-namespace cnxx {
+namespace isle {
     namespace action {
         Action *Hamiltonian::add(Action *const action, const bool takeOwnership) {
             _actions.emplace_back(action, takeOwnership);

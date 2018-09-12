@@ -7,7 +7,7 @@
 
 #include <utility>
 
-namespace cnxx {
+namespace isle {
 
     /// Template meta programming.
     /**
@@ -137,6 +137,6 @@ namespace cnxx {
         };
 
     }  // namespace tmp
-}  // namespace cnxx
+}  // namespace isle
 
 #endif  // ndef TMP_HPP

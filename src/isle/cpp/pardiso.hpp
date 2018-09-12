@@ -48,7 +48,7 @@ extern "C" void pardiso(void *pt[64], const int *maxfct, const int *mnum, const 
 #endif
 /// \endcond
 
-namespace cnxx {
+namespace isle {
 
     /// Interface for PARDISO sparse solver.
     /**
@@ -67,7 +67,7 @@ namespace cnxx {
      blaze::Vector<double> rhs{...};
      // initialize mat and rhs
 
-     cnxx::Pardiso::State<double> pstate;
+     isle::Pardiso::State<double> pstate;
      blaze::Vector<double> x = pstate(mat, rhs);
      \endcode
      * Pardiso::State represents the internal state of PARDISO and manages all memory.
@@ -411,7 +411,7 @@ namespace cnxx {
             /**
              * PARDISO is set up for a fixed matrix type. `iparm` and `dparm` are filled
              * with default values, they can be adjusted through `operator[]`.
-             * 
+             *
              * \note Parameter solver is ignored when MKL PARDISO is used.
              */
             State(const MType mtype=MType::NON_SYM,
@@ -482,11 +482,11 @@ namespace cnxx {
                             nullptr, nullptr, nullptr, nullptr, &_nrhs,
                             _iparm.get(), &_msglvl, nullptr, nullptr, &error);
 #endif
-                
+
                     handleError(error);
                     _nrows = 0;
                     _nrhs = 0;
-                }            
+                }
             }
 
             /// Access an integer parameter.
@@ -666,7 +666,7 @@ namespace cnxx {
              *
              * \throws std::runtime_error if PARDISO reports an error or matrix and vector
              *                            sizes do not match and in debug build.
-             */        
+             */
             Vector<elementType> operator()(const SparseMatrix<elementType> &mat,
                                            Vector<elementType> &b,
                                            const Phase startPhase=Phase::ANALYSIS,
@@ -702,9 +702,9 @@ namespace cnxx {
              *
              * \todo Is there a way to do this without transposing
              *       (i.e. copying the matrices)?
-             */        
-            cnxx::Matrix<elementType> operator()(const SparseMatrix<elementType> &mat,
-                                                 cnxx::Matrix<elementType> &b,
+             */
+            isle::Matrix<elementType> operator()(const SparseMatrix<elementType> &mat,
+                                                 isle::Matrix<elementType> &b,
                                                  const Phase startPhase=Phase::ANALYSIS,
                                                  const Phase endPhase=Phase::SOLVE) {
 #ifndef NDEBUG
@@ -714,9 +714,9 @@ namespace cnxx {
                 // convert to CRS matrix
                 Pardiso::Matrix<elementType> pmat{mat};
                 // transpose to get column major order
-                cnxx::Matrix<elementType> btrans = blaze::trans(b);
+                isle::Matrix<elementType> btrans = blaze::trans(b);
                 // solve equation
-                cnxx::Matrix<elementType> x{btrans.rows(), btrans.columns()};
+                isle::Matrix<elementType> x{btrans.rows(), btrans.columns()};
                 (*this)(mat.rows(), btrans.rows(), pmat.geta(), pmat.getia(), pmat.getja(),
                         &btrans(0,0), &x(0,0), startPhase, endPhase);
                 return blaze::trans(x);
@@ -773,14 +773,14 @@ namespace cnxx {
                         return -4;
                     case MType::COMPL_SYM:
                         return 6;
-                    }                
+                    }
                 }
                 return 0;
             }
         };  // struct State
     }  // namespace Pardiso
 
-}  // namespace cnxx
+}  // namespace isle
 
 // get rid of that macro again
 #undef PARDISO_MKL_UNUSED

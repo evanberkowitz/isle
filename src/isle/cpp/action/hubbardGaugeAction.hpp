@@ -7,7 +7,7 @@
 
 #include "action.hpp"
 
-namespace cnxx {
+namespace isle {
     namespace action {
         /// Pure gauge action for Hubbard model.
         /**
@@ -35,6 +35,6 @@ namespace cnxx {
             Vector<std::complex<double>> force(const Vector<std::complex<double>> &phi) const override;
         };
     }  // namespace action
-}  // namespace cnxx
+}  // namespace isle
 
 #endif  // ndef ACTION_HUBBARD_GAUGE_ACTION_HPP

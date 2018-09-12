@@ -10,7 +10,7 @@
 #include "math.hpp"
 #include "action/hamiltonian.hpp"
 
-namespace cnxx {
+namespace isle {
     /// Perform leapfrog integration.
     /**
      * \param phi Starting configuration.
@@ -30,6 +30,6 @@ namespace cnxx {
                                             double length,
                                             std::size_t nsteps,
                                             double direction=+1);
-}
+}  // namespace isle
 
 #endif  // ndef INTEGRATOR_HPP

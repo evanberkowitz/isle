@@ -7,7 +7,8 @@
 
 #include "../math.hpp"
 
-namespace cnxx {
+namespace isle {
+    /// Contains all actions implemented in C++.
     namespace action {
         /// Abstract base for Actions.
         struct Action {
@@ -20,6 +21,6 @@ namespace cnxx {
             virtual Vector<std::complex<double>> force(const Vector<std::complex<double>> &phi) const = 0;
         };
     }  // namespace action
-}  // namespace cnxx
+}  // namespace isle
 
 #endif  // ndef ACTION_ACTION_HPP

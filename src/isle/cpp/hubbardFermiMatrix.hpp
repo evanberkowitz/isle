@@ -10,7 +10,7 @@
 #include "math.hpp"
 #include "lattice.hpp"
 
-namespace cnxx {
+namespace isle {
 
     /// Mark particles and holes.
     enum class Species {PARTICLE, HOLE};
@@ -106,7 +106,7 @@ namespace cnxx {
          * \param k Any old content is erased and the matrix is
          *          resized if need be.
          * \param species Select whether to construct for particles or holes.
-         */        
+         */
         void K(DSparseMatrix &k, Species species) const;
 
         /// Return the diagonal block matrix K of matrix M.
@@ -135,7 +135,7 @@ namespace cnxx {
          * \param phi Auxilliary field.
          * \param species Select whether to construct for particles or holes.
          * \param inv If `true` constructs the inverse of F.
-         */        
+         */
         void F(CDSparseMatrix &f, std::size_t tp, const CDVector &phi,
                Species species, bool inv=false) const;
 
@@ -374,6 +374,6 @@ namespace cnxx {
                                  const CDVector &phi,
                                  Species species,
                                  const std::vector<CDVector> &rhs);
-}  // namespace cnxx
+}  // namespace isle
 
 #endif  // ndef HUBBARD_FERMI_MATRIX_HPP

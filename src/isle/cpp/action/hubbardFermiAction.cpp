@@ -1,9 +1,9 @@
 #include "hubbardFermiAction.hpp"
 
 using namespace std::complex_literals;
-using HFA = cnxx::action::HubbardFermiAction;
+using HFA = isle::action::HubbardFermiAction;
 
-namespace cnxx {
+namespace isle {
     namespace action {
         namespace {
             /// Loop index around boundary; only works if i is at most one step across boundary.
@@ -108,4 +108,4 @@ namespace cnxx {
 
         }
     } // namespace action
-}  // namespace cnxx
+}  // namespace isle

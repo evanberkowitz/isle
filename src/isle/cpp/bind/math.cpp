@@ -8,7 +8,7 @@
 #include "../math.hpp"
 #include "../tmp.hpp"
 
-using namespace cnxx;
+using namespace isle;
 
 /// Internals for binding math routines and classes.
 namespace {
@@ -24,7 +24,7 @@ namespace {
 
     template <>
     constexpr char prefixName<std::complex<double>>[] = "CD";
-    
+
     /// Returns the name for vectors in Python.
     template <typename T>
     std::string vecName() {
@@ -46,7 +46,7 @@ namespace {
     /// Labels for all algebraic operators.
     enum class Op {
         add, sub, mul, rmul, truediv, floordiv, iadd, isub, imul, dot
-    };    
+    };
 
 
     /// Bind an operator for given left- and righ-hand-sides.
@@ -60,7 +60,7 @@ namespace {
         static void f(CT &&UNUSED(cls), const char * const UNUSED(name)) noexcept { }
     };
 
-    
+
     /// Bind operator add.
     template <typename LHS, typename RHS>
     struct bindOp<Op::add, LHS, RHS,
@@ -165,7 +165,7 @@ namespace {
         /// Perform division without conversion of rhs.
         static auto execWithoutConversion(const LHS &lhs, const RHS &rhs) {
             return blaze::evaluate(lhs / rhs);
-        }        
+        }
     };
 
     /// Bind operator floordiv.
@@ -589,7 +589,7 @@ namespace {
         }
     };
 
-    
+
     /// Bind all operators that are members of SparseMatrix.
     template <typename ET, typename MT>
     struct bindSparseMatrixOps {
@@ -711,7 +711,7 @@ namespace {
 namespace bind {
     void bindTensors(py::module &mod) {
         using ElementalTypes = tmp::Types<int, double, std::complex<double>>;
-    
+
         tmp::foreach<ElementalTypes, bindVector, ElementalTypes>::f(mod);
         tmp::foreach<ElementalTypes, bindMatrix, ElementalTypes>::f(mod);
         tmp::foreach<ElementalTypes, bindSparseMatrix, ElementalTypes>::f(mod);

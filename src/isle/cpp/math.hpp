@@ -13,7 +13,7 @@
 #include "core.hpp"
 #include "tmp.hpp"
 
-namespace cnxx {
+namespace isle {
     /**
      * \brief A generic dense vector.
      * \tparam ET Element Type
@@ -437,6 +437,6 @@ namespace cnxx {
         return ilogdet(matrix);
     }
 
-}  // namespace cnxx
+}  // namespace isle
 
 #endif  // ndef MATH_HPP

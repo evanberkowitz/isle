@@ -4,7 +4,7 @@
 #include <cstddef>
 #include <utility>
 
-namespace cnxx {
+namespace isle {
 //--------------------------------------------------------------------
 //                      PointerFlagPair
 
@@ -257,6 +257,6 @@ namespace cnxx {
         return UnObHybridPtr<ET>{new ET(std::forward<Args>(args)...), true};
     }
 
-}  // namespace cnxx
+}  // namespace isle
 
 #endif  // ndef MEMORY_HPP

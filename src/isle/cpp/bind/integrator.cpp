@@ -3,7 +3,7 @@
 #include "../integrator.hpp"
 
 using namespace pybind11::literals;
-using namespace cnxx;
+using namespace isle;
 
 namespace bind {
     void bindIntegrators(py::module &mod) {

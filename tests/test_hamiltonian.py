@@ -36,7 +36,7 @@ def _randomPhi(n):
 
 def _testConstructionPureCXX():
     logger = core.get_logger()
-    logger.info("Testing construction of Hamiltonian from cnxx actions")
+    logger.info("Testing construction of Hamiltonian from C++ actions")
 
     # anonymous variable, init method
     ham = isle.Hamiltonian(isle.HubbardGaugeAction(1))
@@ -88,7 +88,7 @@ def _testConstructionPurePy():
 
 def _testConstructionMixed():
     logger = core.get_logger()
-    logger.info("Testing construction of Hamiltonian from cnxx and Python actions")
+    logger.info("Testing construction of Hamiltonian from C++ and Python actions")
 
     # anonymous variable, init method
     ham = isle.Hamiltonian(_DummyAction(), isle.HubbardGaugeAction(1))

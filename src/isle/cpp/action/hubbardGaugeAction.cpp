@@ -1,8 +1,8 @@
 #include "hubbardGaugeAction.hpp"
 
-using HGA = cnxx::action::HubbardGaugeAction;
+using HGA = isle::action::HubbardGaugeAction;
 
-namespace cnxx {
+namespace isle {
     namespace action {
         std::complex<double> HGA::eval(const Vector<std::complex<double>> &phi) const {
             return (blaze::conj(phi), phi)/2./utilde;
@@ -12,5 +12,5 @@ namespace cnxx {
             return -phi/utilde;
         }
     }  // namespace action
-}  // namespace cnxx
+}  // namespace isle
 

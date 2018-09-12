@@ -10,7 +10,7 @@
 #include "core.hpp"
 #include "math.hpp"
 
-namespace cnxx {
+namespace isle {
 
     /// Represents a spacetime lattice.
     /**
@@ -104,7 +104,7 @@ namespace cnxx {
          * \param i `i < nx()`.
          * \param j `j < nx()`.
          * \param distance Physical distance between sites `i` and `j`.
-         */    
+         */
         void distance(const std::size_t i, const std::size_t j,
                       const double distance) noexcept(ndebug) {
 #ifndef NDEBUG
@@ -147,6 +147,6 @@ namespace cnxx {
         SymmetricMatrix<double> _distMat;  ///< matrix of physical distances (`nx() x nx()`).
     };
 
-}  // namespace cnxx
-    
+}  // namespace isle
+
 #endif  // ndef LATTICE_HPP

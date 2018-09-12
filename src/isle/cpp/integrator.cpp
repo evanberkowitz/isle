@@ -1,6 +1,6 @@
 #include "integrator.hpp"
 
-namespace cnxx {
+namespace isle {
     std::tuple<CDVector, CDVector> leapfrog(const CDVector &phi,
                                             const CDVector &pi,
                                             action::Hamiltonian &ham,
@@ -27,4 +27,4 @@ namespace cnxx {
 
         return std::tuple<CDVector, CDVector>{std::move(phiOut), std::move(piOut)};
     }
-}
+}  // namespace isle

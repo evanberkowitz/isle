@@ -9,7 +9,7 @@
 #include "../hubbardFermiMatrix.hpp"
 #include "../lattice.hpp"
 
-namespace cnxx {
+namespace isle {
     namespace action {
         /// Fermion action for Hubbard model.
         /**
@@ -69,6 +69,6 @@ namespace cnxx {
             const Variant _variant;  ///< Pick variant of the algorithm.
         };
     }  // namespace action
-}  // namespace cnxx
+}  // namespace isle
 
 #endif  // ndef ACTION_HUBBARD_FERMI_ACTION_HPP
