@@ -13,6 +13,8 @@ from . import random
 from . import util
 import isle.action
 
+__version__ = str(isleVersion)
+
 ## Environment variables for CNS.
 # TODO remove!
 env = {}
