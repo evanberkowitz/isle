@@ -18,7 +18,7 @@ It's thought that the Hubbard model approximates carbon nanostructures, such as 
 - BLAS/LAPACK
 
 ## Python
-- [Pybind11](https://github.com/pybind/pybind11)
+- [Pybind11](https://github.com/pybind/pybind11) >= 2.2.4
 - [numpy](http://www.numpy.org/)
 - [h5py](http://www.h5py.org/)
 - [scikit-learn](http://scikit-learn.org/stable/)
