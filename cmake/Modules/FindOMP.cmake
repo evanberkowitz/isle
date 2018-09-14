@@ -10,7 +10,8 @@ find_package(OpenMP REQUIRED)
 set(OMP_CXX_FLAGS "${OpenMP_CXX_FLAGS}")
 set(OMP_LINKER_FLAGS "${OpenMP_LINKER_FLAGS}")
 
-if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
+if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang"
+    OR "${CMAKE_CXX_COMPILER_ID}" STREQUAL "AppleClang")
   set(omp_lib omp)
 elseif ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
   set(omp_lib gomp)
