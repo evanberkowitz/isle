@@ -2,6 +2,9 @@
 Some general utilities.
 """
 
+from dataclasses import make_dataclass, field
+
+import yaml
 import numpy as np
 
 def hingeRange(start, end, stepSize):
@@ -38,6 +41,32 @@ def binnedArray(data, binsize):
     if len(data) % binsize != 0:
         raise RuntimeError("Size of data is not a multiple of the bin size")
     return np.reshape(data, (nbins, binsize)).mean(1)
+
+def parameters(**kwargs):
+    r"""!
+    Return a dataclass instance holding the parameters passed to this function.
+
+    Can take any arbitrary keyword arguments and makes a new dataclass
+    to store them. Every time this function gets called, it creates a new
+    class and immediately constructs an instance. The returned object is read only.
+
+    The new classes are automatically registered with YAML so they can
+    be dumped. A loaded is registered if yamlio is imported.
+    """
+
+    cls = make_dataclass("Parameters",
+                         ((key, type(value), field(default=value))
+                          for key, value in kwargs.items()),
+                         namespace={"asdict": lambda self:
+                                    {key: getattr(self, key)
+                                     for key in self.__dataclass_fields__.keys()}},
+                         frozen=True)
+
+    yaml.add_representer(cls, lambda dumper, params:
+                         dumper.represent_mapping("!parameters",
+                                                  params.asdict(),
+                                                  flow_style=False))
+    return cls()
 
 def spaceToSpacetime(vector, time, nt):
     r"""!

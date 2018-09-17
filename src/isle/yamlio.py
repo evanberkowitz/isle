@@ -1,13 +1,14 @@
 """!
 Routines for YAML IO.
 
-Registers isle.Lattice with YAML allowing automatic loading and dumping.
+Registers representable types with YAML allowing automatic loading and dumping.
 """
 
 import yaml
 import numpy as np
 
 from . import Lattice
+from .util import parameters
 
 def _parse_lattice(adjacency, hopping, positions, nt=0, name="", comment=""):
     """!
@@ -61,3 +62,9 @@ def _represent_lattice(dumper, lat):
                                     flow_style=False)
 
 yaml.add_representer(Lattice, _represent_lattice)
+
+# register parameters function
+yaml.add_constructor("!parameters",
+                     lambda loader, node: \
+                     parameters(**loader.construct_mapping(node, deep=True)),
+                     Loader=yaml.SafeLoader)
