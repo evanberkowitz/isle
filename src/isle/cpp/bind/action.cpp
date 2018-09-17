@@ -2,7 +2,7 @@
 
 #include "../action/action.hpp"
 #include "../action/hubbardGaugeAction.hpp"
-#include "../action/hubbardFermiAction.hpp"
+#include "../action/hubbardFermiActionDia.hpp"
 
 using namespace pybind11::literals;
 using namespace isle;
@@ -51,24 +51,27 @@ namespace bind {
             .def("force", &HubbardGaugeAction::force)
             ;
 
-        auto hfa = py::class_<HubbardFermiAction>{actmod, "HubbardFermiAction", action};
+        auto hfa = py::class_<HubbardFermiActionDia>{actmod, "HubbardFermiActionDia", action};
 
-        py::enum_<HubbardFermiAction::Variant>{hfa, "Variant"}
-             .value("ONE", HubbardFermiAction::Variant::ONE)
-             .value("TWO", HubbardFermiAction::Variant::TWO);
+        py::enum_<HubbardFermiActionDia::Variant>{hfa, "Variant"}
+             .value("ONE", HubbardFermiActionDia::Variant::ONE)
+             .value("TWO", HubbardFermiActionDia::Variant::TWO);
 
-        hfa.def(py::init<HubbardFermiMatrix, HubbardFermiAction::Variant>(),
-                "hfm"_a, "variant"_a=HubbardFermiAction::Variant::ONE)
-            .def(py::init<SparseMatrix<double>, double, std::int8_t,
-                          HubbardFermiAction::Variant>(),
+        hfa.def(py::init<HubbardFermiMatrix, std::int8_t, HubbardFermiActionDia::Variant>(),
+                "hfm"_a, "alpha"_a=1,
+                "variant"_a=HubbardFermiActionDia::Variant::ONE)
+            .def(py::init<SparseMatrix<double>, double, std::int8_t, std::int8_t,
+                          HubbardFermiActionDia::Variant>(),
                  "kappa"_a, "mu"_a, "sigmaKappa"_a,
-                 "variant"_a= HubbardFermiAction::Variant::ONE)
-            .def(py::init<Lattice, double, double, std::int8_t,
-                          HubbardFermiAction::Variant>(),
+                 "alpha"_a=1,
+                 "variant"_a= HubbardFermiActionDia::Variant::ONE)
+            .def(py::init<Lattice, double, double, std::int8_t, std::int8_t,
+                          HubbardFermiActionDia::Variant>(),
                  "lat"_a, "beta"_a, "mu"_a, "sigmaKappa"_a,
-                 "variant"_a= HubbardFermiAction::Variant::ONE)
-            .def("eval", &HubbardFermiAction::eval)
-            .def("force", &HubbardFermiAction::force)
+                 "alpha"_a=1,
+                 "variant"_a= HubbardFermiActionDia::Variant::ONE)
+            .def("eval", &HubbardFermiActionDia::eval)
+            .def("force", &HubbardFermiActionDia::force)
             ;
     }
 }
