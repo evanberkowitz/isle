@@ -45,7 +45,10 @@ namespace isle {
                                            const std::int8_t alpha=1,
                                            const Variant variant=Variant::ONE)
                 : _hfm{hfm}, _kp{hfm.K(Species::PARTICLE)}, _kh{hfm.K(Species::HOLE)},
-                  _alpha{alpha}, _variant{variant} { }
+                  _alpha{alpha}, _variant{variant} {
+                if (alpha != 0 and alpha != 1)
+                    throw std::invalid_argument("HubbardFermiActionExp only supports alpha=0,1.");
+            }
 
             /// Construct from individual parameters of HubbardFermiMatrix.
             HubbardFermiActionDia(const SparseMatrix<double> &kappaTilde,
@@ -54,7 +57,10 @@ namespace isle {
                                   const Variant variant=Variant::ONE)
                 : _hfm{kappaTilde, muTilde, sigmaKappa}, _kp{_hfm.K(Species::PARTICLE)},
                   _kh{_hfm.K(Species::HOLE)},
-                  _alpha{alpha}, _variant{variant} { }
+                  _alpha{alpha}, _variant{variant} {
+                if (alpha != 0 and alpha != 1)
+                    throw std::invalid_argument("HubbardFermiActionExp only supports alpha=0,1.");
+            }
 
             HubbardFermiActionDia(const Lattice &lat, double beta,
                                   double muTilde, std::int8_t sigmaKappa,
@@ -62,7 +68,10 @@ namespace isle {
                                   const Variant variant=Variant::ONE)
                 : _hfm{lat, beta, muTilde, sigmaKappa}, _kp{_hfm.K(Species::PARTICLE)},
                   _kh{_hfm.K(Species::HOLE)},
-                  _alpha{alpha}, _variant{variant} { }
+                  _alpha{alpha}, _variant{variant} {
+                if (alpha != 0 and alpha != 1)
+                    throw std::invalid_argument("HubbardFermiActionExp only supports alpha=0,1.");
+            }
 
             HubbardFermiActionDia(const HubbardFermiActionDia &other) = default;
             HubbardFermiActionDia &operator=(const HubbardFermiActionDia &other) = default;

@@ -14,6 +14,8 @@ namespace isle {
 
             if (hfm.mu() != 0.)
                 throw std::invalid_argument("HubbardFermiActionExp does not support non-zero chemical potential.");
+            if (alpha != 0 and alpha != 1)
+                throw std::invalid_argument("HubbardFermiActionExp only supports alpha=0,1.");
 
             auto ipiv = std::make_unique<int[]>(_expKappapInv.rows());
             invert(_expKappapInv, ipiv);
@@ -30,6 +32,8 @@ namespace isle {
 
             if (muTilde != 0.)
                 throw std::invalid_argument("HubbardFermiActionExp does not support non-zero chemical potential.");
+            if (alpha != 0 and alpha != 1)
+                throw std::invalid_argument("HubbardFermiActionExp only supports alpha=0,1.");
 
             auto ipiv = std::make_unique<int[]>(_expKappapInv.rows());
             invert(_expKappapInv, ipiv);
@@ -46,6 +50,8 @@ namespace isle {
 
             if (muTilde != 0.)
                 throw std::invalid_argument("HubbardFermiActionExp does not support non-zero chemical potential.");
+            if (alpha != 0 and alpha != 1)
+                throw std::invalid_argument("HubbardFermiActionExp only supports alpha=0,1.");
 
             auto ipiv = std::make_unique<int[]>(_expKappapInv.rows());
             invert(_expKappapInv, ipiv);
