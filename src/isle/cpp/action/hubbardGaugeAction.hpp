@@ -16,7 +16,8 @@ namespace isle {
          S_{\mathrm{HGA}} = \frac{1}{2\tilde{U}} \textstyle\sum_{x,t}\,\phi^2_{xt}.
          \f]
         */
-        struct HubbardGaugeAction : Action {
+        class HubbardGaugeAction : public Action {
+        public:
             double utilde;  ///< Parameter \f$\tilde{U}\f$.
 
             /// Set \f$\tilde{U}\f$.

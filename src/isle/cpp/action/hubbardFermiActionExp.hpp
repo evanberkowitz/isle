@@ -31,7 +31,7 @@ namespace isle {
          * See <TT>docs/algorithm/hubbardFermiAction.pdf</TT>
          * for description and derivation of the algorithms.
          */
-        class HubbardFermiActionExp : Action {
+        class HubbardFermiActionExp : public Action {
         public:
             /// Copy in a HubbardFermiMatrix.
             explicit HubbardFermiActionExp(const HubbardFermiMatrix &hfm,

@@ -35,7 +35,7 @@ namespace isle {
          * See <TT>docs/algorithm/hubbardFermiAction.pdf</TT>
          * for description and derivation of the algorithms.
          */
-        class HubbardFermiActionDia : Action {
+        class HubbardFermiActionDia : public Action {
         public:
             /// Specifies which variant of the algorithm gets used.
             enum class Variant { ONE, TWO };
