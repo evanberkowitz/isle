@@ -12,7 +12,7 @@ namespace isle {
              * Constructs rest on the fly ('right', contains (1+A^-1)^-1).
              */
             CDVector forceVariant1Part(const HubbardFermiMatrix &hfm, const CDVector &phi,
-                                       const CDSparseMatrix &k, const Species species) {
+                                       const DSparseMatrix &k, const Species species) {
 
                 const auto nx = hfm.nx();
                 const auto nt = getNt(phi, nx);
