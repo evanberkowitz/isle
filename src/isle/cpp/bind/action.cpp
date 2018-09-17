@@ -2,6 +2,7 @@
 
 #include "../action/action.hpp"
 #include "../action/hubbardGaugeAction.hpp"
+#include "../action/hubbardFermiAction.hpp"
 #include "../action/hubbardFermiActionDia.hpp"
 #include "../action/hubbardFermiActionExp.hpp"
 
@@ -87,5 +88,19 @@ namespace bind {
             .def("eval", &HubbardFermiActionExp::eval)
             .def("force", &HubbardFermiActionExp::force)
             ;
+
+        py::enum_<Hopping>(actmod, "Hopping")
+            .value("DIAG", Hopping::DIAG)
+            .value("EXP", Hopping::EXP);
+
+        actmod.def("makeHubbardFermiAction",
+                   py::overload_cast<const HubbardFermiMatrix &, std::int8_t,
+                   Hopping, HubbardFermiActionDia::Variant>(makeHubbardFermiAction));
+        actmod.def("makeHubbardFermiAction",
+                   py::overload_cast<const SparseMatrix<double> &, double,
+                   std::int8_t, std::int8_t, Hopping, HubbardFermiActionDia::Variant>(makeHubbardFermiAction));
+        actmod.def("makeHubbardFermiAction",
+                   py::overload_cast<const Lattice &, double, double, std::int8_t,
+                   std::int8_t, Hopping, HubbardFermiActionDia::Variant>(makeHubbardFermiAction));
     }
 }
