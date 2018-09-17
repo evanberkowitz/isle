@@ -1,5 +1,5 @@
 /** \file
- * \brief Wraps a round a math library and provides abstracted types and functions.
+ * \brief Wraps around a math library and provides abstracted types and functions.
  */
 
 #ifndef MATH_HPP
@@ -206,125 +206,6 @@ namespace isle {
 #endif
     }
 
-
-//     /// Multiply a space matrix with a space time vector.
-//     /**
-//      * Let \f$v, u\f$ be vectors in spacetime and \f$M\f$ a matrix in space.
-//      * Furthermore, let \f$(it)\f$ denote a spacetime index comprised of the spatial index
-//      * \f$i\f$ and time index \f$t\f$.<BR>
-//      * This function computes
-//      * \f[
-//      *   u_{(it)} = M_{i,j} v_{(jt)}
-//      * \f]
-//      *
-//      * \tparam MT Arbitrary matrix type.
-//      * \tparam VT Dense vector type.
-//      * \param spaceMatrix \f$M\f$
-//      * \param spacetimeVector \f$v\f$
-//      * \returns \f$u\f$
-//      *
-//      * \throws std::runtime_error
-//      *  - `spaceMatrix` is not a square matrix.
-//      *  - Length of `spacetimeVector` is not a multiple of the dimension of `spaceMatrix`.
-//      *
-//      *  Does not throw if macro `NDEBUG` is defined.
-//      */
-//     /*
-//      * Works by wrapping input and output vectors in a blaze::CustomMatrix
-//      * to treat a spacetime vector v_{(it)} as a matrix vm_{i,t}.
-//      * Then m*v can be performed as m*vm.
-//      */
-//     template <typename MT, typename VT,
-//               typename = std::enable_if_t<blaze::IsDenseVector<VT>::value, VT>>
-//     auto spaceMatSpacetimeVec(const MT &spaceMatrix,
-//                               const VT &spacetimeVector) noexcept(ndebug) {
-
-//         // get lattice size
-//         const auto nx = spaceMatrix.rows();
-//         const auto nt = spacetimeVector.size() / nx;
-
-// #ifndef NDEBUG
-//         if (nx != spaceMatrix.columns())
-//             throw std::runtime_error("Matrix is not square");
-//         if (spacetimeVector.size() % nx != 0)
-//             throw std::runtime_error("Matrix and vector size do not match");
-// #endif
-
-//         // return type, same as VT with adjusted element type
-//         using RT = typename VT::template Rebind<
-//             decltype(std::declval<typename MT::ElementType>()
-//                      * std::declval<typename VT::ElementType>())
-//             >::Other;
-
-//         // space time matrix type for input vector
-//         using STMV = blaze::CustomMatrix<std::add_const_t<typename VT::ElementType>,
-//                                          blaze::unaligned, blaze::unpadded>;
-//         // space time matrix type for returned vector
-//         using STMR = blaze::CustomMatrix<typename RT::ElementType,
-//                                          blaze::unaligned, blaze::unpadded>;
-
-//         // do computation
-//         RT result(spacetimeVector.size());
-//         STMR{&result[0], nx, nt} = spaceMatrix * STMV{&spacetimeVector[0], nx, nt};
-//         return result;
-//     }
-
-//     /// Dot a space vector into a space time vector.
-//     /**
-//      * Let \f$v\f$ be a vector in spacetime, and \f$x\f$ a vector in space, and \f$u\f$ be a vector in time.
-//      * Furthermore, let \f$(it)\f$ denote a spacetime index comprised of the spatial index
-//      * \f$i\f$ and time index \f$t\f$.<BR>
-//      * This function computes
-//      * \f[
-//      *   u_{t} = x_i v_{(it)}
-//      * \f]
-//      *
-//      * \tparam XT Arbitrary vector type.
-//      * \tparam VT Dense vector type.
-//      * \param spaceVector \f$x\f$
-//      * \param spacetimeVector \f$v\f$
-//      * \returns \f$u\f$
-//      *
-//      * \throws std::runtime_error
-//      *  - Length of `spacetimeVector` is not a multiple of the dimension of `spaceVector`.
-//      *
-//      *  Does not throw if macro `NDEBUG` is defined.
-//      */
-//     /*
-//      * Works by wrapping the input vector in a blaze::CustomMatrix
-//      * to treat a spacetime vector v_{(it)} as a matrix vm_{i,t}.
-//      * Then x*v can be performed as x*vm.
-//      */
-//     template <typename XT, typename VT,
-//               typename = std::enable_if_t<blaze::IsDenseVector<VT>::value, VT>>
-//     auto spaceVecSpacetimeVec(const XT &spaceVector,
-//                               const VT &spacetimeVector) noexcept(ndebug) {
-
-//         // get lattice size
-//         const auto nx = spaceVector.size();
-//         const auto nt = spacetimeVector.size() / nx;
-
-// #ifndef NDEBUG
-//         if (spacetimeVector.size() % nx != 0)
-//             throw std::runtime_error("Matrix and vector size do not match");
-// #endif
-
-//         // return type, same as VT with adjusted element type
-//         using RT = typename VT::template Rebind<
-//             decltype(std::declval<typename XT::ElementType>()
-//                      * std::declval<typename VT::ElementType>())
-//             >::Other;
-
-//         // space time matrix type for input vector
-//         using STMV = blaze::CustomMatrix<std::add_const_t<typename VT::ElementType>,
-//                                          blaze::unaligned, blaze::unpadded>;
-
-//         // do computation
-//         blaze::DynamicVector<RT> result;
-//         result = spaceVector * STMV{&spacetimeVector[0], nx, nt};
-//         return result;
-//     }
-
     /// Invert a matrix in place.
     /**
      * \param mat Matrix to be inverted. Is replaced by the inverse.
@@ -335,6 +216,28 @@ namespace isle {
     void invert(Matrix<ET> &mat, std::unique_ptr<int[]> &ipiv) {
         blaze::getrf(mat, ipiv.get());
         blaze::getri(mat, ipiv.get());
+    }
+
+    /// Matrix exponential of real, symmetrix matrices.
+    /**
+     * \throws std::runtime_error if `mat` has a zero eigenvalue.
+     * \param mat Real, symmetric matrix to exponentiate.
+     * \return Matrix exponential of mat.
+     */
+    inline DMatrix expmSym(const DMatrix &mat) {
+        // compute eigenvalues evals and eigenvectors U
+        DMatrix U = mat;
+        DVector evals;
+        blaze::syev(U, evals, 'V', 'U');
+
+        if (blaze::min(blaze::abs(evals)) < 1e-14)
+            throw std::runtime_error("Cannot diagonalize matrix to exponentiate: has zero eigenvalue.");
+
+        // diagonalize mat and exponentiate
+        DMatrix diag(mat.rows(), mat.columns(), 0);
+        blaze::diagonal(diag) = blaze::exp(blaze::diagonal(U * mat * blaze::trans(U)));
+        // transform back to non-diagonal matrix
+        return blaze::trans(U) * diag * U;
     }
 
     /// Compute the logarithm of the determinant of a dense matrix; overwrites the input.
