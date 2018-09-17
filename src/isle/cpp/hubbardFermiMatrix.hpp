@@ -6,9 +6,11 @@
 #define HUBBARD_FERMI_MATRIX_HPP
 
 #include <vector>
+#include <functional>
 
 #include "math.hpp"
 #include "lattice.hpp"
+#include "cache.hpp"
 
 namespace isle {
 
@@ -52,6 +54,14 @@ namespace isle {
      -1,\quad t = 0
      \end{cases}
      \f}
+     *
+     * ### Alternative
+     * The fermion matrix can also be expressed using an exponential potential as
+     \f{align}{
+     {M'(\phi, \tilde{\kappa}, \tilde{\mu})}_{x't';xt}
+     &\equiv \delta_{x'x}\delta_{t't} - \mathcal{B}_{t'}{(e^{\tilde{\kappa}})}_{x'y}{(F_{t'})}_{yx}\delta_{t'(t+1)}.
+     \f}
+     * <br>
      *
      * Derivations and descriptions of algorithms can be found
      * in `docs/algorithms/hubbardFermiAction.pdf`.
@@ -100,6 +110,8 @@ namespace isle {
         HubbardFermiMatrix &operator=(HubbardFermiMatrix &&) = default;
         ~HubbardFermiMatrix() = default;
 
+        /// Return exp(+- kappaTilde), where the sign is determined by species.
+        const DMatrix &expKappa(Species species) const;
 
         /// Store the diagonal block K of matrix M in the parameter.
         /**
@@ -164,6 +176,22 @@ namespace isle {
          * \param species Select whether to construct for particles or holes.
          */
         CDSparseMatrix M(const CDVector &phi, Species species) const;
+
+        /// Store the matrix \f$M'\f$ in the parameter.
+        /**
+         * \param m Any old content is erased and the matrix is
+         *          resized if need be.
+         * \param phi Auxilliary field.
+         * \param species Select whether to construct for particles or holes.
+         */
+        void MExp(CDSparseMatrix &m, const CDVector &phi, Species species) const;
+
+        /// Return the matrix \f$M'\f$.
+        /**
+         * \param phi Auxilliary field.
+         * \param species Select whether to construct for particles or holes.
+         */
+        CDSparseMatrix MExp(const CDVector &phi, Species species) const;
 
         /// Store the block on the diagonal \f$P\f$ in the parameter.
         /**
@@ -279,10 +307,21 @@ namespace isle {
         DSparseMatrix _kappa;  ///< Hopping matrix.
         double _mu;              ///< Chemical potential.
         std::int8_t _sigmaKappa; ///< Sign of kappa in M^dag.
-        mutable DMatrix _kinvp;  ///< K^-1 for particles, has size zero if not set.
-        mutable DMatrix _kinvh;  ///< K^-1 for holes, has size zero if not set.
-        mutable std::complex<double> _logdetKinvp;  ///< log(det(K^-1)) for particles, real part is NaN if not set.
-        mutable std::complex<double> _logdetKinvh;  ///< log(det(K^-1)) for holes, real part is NaN if not set.
+
+        /// K^-1 for particles.
+        Cache<DMatrix, std::function<DMatrix()>> _kinvp;
+        /// K^-1 for holes.
+        Cache<DMatrix, std::function<DMatrix()>> _kinvh;
+        /// log(det(K^-1)) for particles.
+        Cache<std::complex<double>, std::function<std::complex<double>()>> _logdetKinvp;
+        /// log(det(K^-1)) for holes.
+        Cache<std::complex<double>, std::function<std::complex<double>()>> _logdetKinvh;
+        /// exp(kappaTilde) for particles.
+        Cache<DMatrix, std::function<DMatrix()>> _expKappap;
+        /// exp(sigmaKappa*kappaTilde) for holes.
+        Cache<DMatrix, std::function<DMatrix()>> _expKappah;
+
+        void _invalidateKCaches() noexcept;
     };
 
 
@@ -348,7 +387,7 @@ namespace isle {
      */
     std::complex<double> ilogdetQ(HubbardFermiMatrix::QLU &lu);
 
-    /// Compute \f$\log(\det(M))\f$ by means of an LU-decomposition.
+    /// Compute \f$\log(\det(M))\f$.
     /**
      * \param hfm %HubbardFermiMatrix to compute the determinant of.
      * \param phi Auxilliary field.
@@ -358,6 +397,17 @@ namespace isle {
      */
     std::complex<double> logdetM(const HubbardFermiMatrix &hfm, const CDVector &phi,
                                  Species species);
+
+    /// Compute \f$\log(\det(M'))\f$.
+    /**
+     * \param hfm %HubbardFermiMatrix to compute the determinant of.
+     * \param phi Auxilliary field.
+     * \param species Select whether to use particles or holes.
+     * \return Value equivalent to `log(det(hfm.M'()))` and projected onto the
+     *         first branch of the logarithm.
+     */
+    std::complex<double> logdetMExp(const HubbardFermiMatrix &hfm, const CDVector &phi,
+                                    Species species);
 
     /// Solve a system of equations \f$M x = b\f$.
     /**
@@ -374,6 +424,22 @@ namespace isle {
                                  const CDVector &phi,
                                  Species species,
                                  const std::vector<CDVector> &rhs);
+
+    /// Solve a system of equations \f$M' x = b\f$.
+    /**
+     * Can be called for multiple right hand sides b in order to re-use parts of
+     * the calculation.
+     *
+     * \param hfm Represents matrix M which describes the system of equations.
+     * \param phi Gauge configuration needed to construct M.
+     * \param species Select whether to solve for particles or holes.
+     * \param rhs Right hand sides b.
+     * \returns Results x, same length as rhs.
+     */
+    std::vector<CDVector> solveMExp(const HubbardFermiMatrix &hfm,
+                                    const CDVector &phi,
+                                    Species species,
+                                    const std::vector<CDVector> &rhs);
 }  // namespace isle
 
 #endif  // ndef HUBBARD_FERMI_MATRIX_HPP

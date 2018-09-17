@@ -18,6 +18,7 @@ namespace bind {
             .def("F", py::overload_cast<std::size_t, const CDVector&,
                  Species, bool>(&HFM::F, py::const_))
             .def("M", py::overload_cast<const CDVector&, Species>(&HFM::M, py::const_))
+            .def("MExp", py::overload_cast<const CDVector&, Species>(&HFM::MExp, py::const_))
             .def("P", py::overload_cast<>(&HFM::P, py::const_))
             .def("Tplus", py::overload_cast<std::size_t, const CDVector&>(&HFM::Tplus, py::const_))
             .def("Tminus", py::overload_cast<std::size_t, const CDVector&>(&HFM::Tminus, py::const_))
@@ -52,6 +53,8 @@ namespace bind {
         mod.def("logdetQ",
                 static_cast<std::complex<double>(*)(const HubbardFermiMatrix::QLU&)>(logdetQ));
         mod.def("logdetM", logdetM);
+        mod.def("logdetMExp", logdetMExp);
         mod.def("solveM", solveM);
+        mod.def("solveMExp", solveMExp);
     }
 }

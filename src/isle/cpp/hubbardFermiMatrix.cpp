@@ -6,33 +6,48 @@
 
 using namespace std::complex_literals;
 
-namespace {
-    /// Resize a square matrix, throws away old elements.
-    template <typename MT>
-    void resizeMatrix(MT &mat, const std::size_t target) {
-#ifndef NDEBUG
-        if (mat.rows() != mat.columns())
-            throw std::invalid_argument("Matrix is not square.");
-#endif
-        if (mat.rows() != target)
-            mat.resize(target, target, false);
-    }
-
-    /// Compute eigenvalues to check whether a matrix is invertible.
-    template <typename MT>
-    bool isInvertible(MT mat, const double eps=1e-15) {
-        isle::CDVector eigenvals;
-        blaze::geev(mat, eigenvals);
-
-        for (const auto x : eigenvals) {
-            if (blaze::abs(x) > eps)
-                return false;
-        }
-        return true;
-    }
-}
-
 namespace isle {
+    namespace {
+        /// Resize a square matrix, throws away old elements.
+        template <typename MT>
+        void resizeMatrix(MT &mat, const std::size_t target) {
+#ifndef NDEBUG
+            if (mat.rows() != mat.columns())
+                throw std::invalid_argument("Matrix is not square.");
+#endif
+            if (mat.rows() != target)
+                mat.resize(target, target, false);
+        }
+
+        /// Compute eigenvalues to check whether a matrix is invertible.
+        template <typename MT>
+        bool isInvertible(MT mat, const double eps=1e-15) {
+            isle::CDVector eigenvals;
+            blaze::geev(mat, eigenvals);
+            return blaze::min(blaze::abs(eigenvals)) > eps;
+        }
+
+        /// Return matrix K^-1 for aprticles or holes.
+        DMatrix inverseK(const HubbardFermiMatrix &hfm, const Species species) {
+            DMatrix k = hfm.K(species);
+
+            // Check here in addition to LAPACKs internal check because it
+            // puts a tighter criterion than LAPACK.
+            if (!isInvertible(k))
+                throw std::runtime_error("Matrix K is not invertible, did you forget to multiply kappa by delta?");
+
+            auto ipiv = std::make_unique<int[]>(k.rows());
+            try {
+                invert(k, ipiv);
+            }
+            catch (std::runtime_error&) {
+                throw std::runtime_error("Inversion of K failed, did you forget to multiply kappa by delta?");
+            }
+
+            return k;
+        }
+    }
+
 /*
  * -------------------------- HubbardFermiMatrix --------------------------
  */
@@ -41,9 +56,12 @@ namespace isle {
                                            const double mu,
                                            const std::int8_t sigmaKappa)
         : _kappa{kappa}, _mu{mu}, _sigmaKappa{sigmaKappa},
-          _kinvp(0, 0), _kinvh(0, 0),
-          _logdetKinvp{std::numeric_limits<double>::quiet_NaN(), 0},
-          _logdetKinvh{std::numeric_limits<double>::quiet_NaN(), 0}
+          _kinvp{std::bind(inverseK, std::ref(*this), Species::PARTICLE)},
+          _kinvh{std::bind(inverseK, std::ref(*this), Species::HOLE)},
+          _logdetKinvp{[this](){ return logdet(this->Kinv(Species::PARTICLE)); }},
+          _logdetKinvh{[this](){ return logdet(this->Kinv(Species::HOLE)); }},
+          _expKappap{[this](){ return expmSym(this->kappa()); }},
+          _expKappah{[this, sigmaKappa](){ return expmSym(sigmaKappa*this->kappa()); }}
     {
 #ifndef NDEBUG
         if (kappa.rows() != kappa.columns())
@@ -56,6 +74,22 @@ namespace isle {
                                            const double mu,
                                            const std::int8_t sigmaKappa)
         : HubbardFermiMatrix{lat.hopping()*beta/lat.nt(), mu, sigmaKappa} { }
+
+    void HubbardFermiMatrix::_invalidateKCaches() noexcept {
+        _kinvp.invalidate();
+        _kinvh.invalidate();
+        _logdetKinvp.invalidate();
+        _logdetKinvh.invalidate();
+        _expKappap.invalidate();
+        _expKappah.invalidate();
+    }
+
+    const DMatrix &HubbardFermiMatrix::expKappa(const Species species) const {
+        if (species == Species::PARTICLE)
+            return _expKappap;
+        else
+            return _expKappah;
+    }
 
     void HubbardFermiMatrix::K(DSparseMatrix &k, const Species species) const {
         const std::size_t NX = nx();
@@ -73,52 +107,18 @@ namespace isle {
         return k;
     }
 
-    namespace {
-        /// Invert matrix K.
-        void invertK(DMatrix &k) {
-            // Check here in addition to LAPACKs internal check because it
-            // puts a tighter criterion than LAPACK.
-            if (!isInvertible(k))
-                throw std::runtime_error("Matrix K is not invertible, did you forget to multiply kappa by delta?");
-
-            auto ipiv = std::make_unique<int[]>(k.rows());
-            try {
-                invert(k, ipiv);
-            }
-            catch (std::runtime_error&) {
-                throw std::runtime_error("Inversion of K failed, did you forget to multiply kappa by delta?");
-            }
-        }
-    }
-
     const DMatrix &HubbardFermiMatrix::Kinv(const Species species) const {
-        if (species == Species::PARTICLE) {
-            if (_kinvp.rows() == 0) {
-                _kinvp = K(species);
-                invertK(_kinvp);
-            }
+        if (species == Species::PARTICLE)
             return _kinvp;
-        }
-        else {
-            if (_kinvh.rows() == 0) {
-                _kinvh = K(species);
-                invertK(_kinvh);
-            }
+        else
             return _kinvh;
-        }
     }
 
     std::complex<double> HubbardFermiMatrix::logdetKinv(Species species) const {
-        if (species == Species::PARTICLE) {
-            if (std::isnan(std::real(_logdetKinvp)))
-                _logdetKinvp = logdet(Kinv(species));
+        if (species == Species::PARTICLE)
             return _logdetKinvp;
-        }
-        else {
-            if (std::isnan(std::real(_logdetKinvh)))
-                _logdetKinvh = logdet(Kinv(species));
+        else
             return _logdetKinvh;
-        }
     }
 
     void HubbardFermiMatrix::F(CDSparseMatrix &f,
@@ -168,6 +168,37 @@ namespace isle {
                                          const Species species) const {
         CDSparseMatrix m;
         M(m, phi, species);
+        return m;
+    }
+
+    void HubbardFermiMatrix::MExp(CDSparseMatrix &m, const CDVector &phi,
+                                  const Species species) const {
+        if (_mu != 0)
+            throw std::runtime_error("Exponential hopping is not supported for mu != 0");
+
+        const std::size_t NX = nx();
+        const std::size_t NT = getNt(phi, NX);
+        resizeMatrix(m, NX*NT);
+
+        // zeroth row
+        const auto &ekappa = expKappa(species);
+        spacemat(m, 0, 0, NX) = IdMatrix<double>(NX);
+        // explicit boundary condition
+        auto f = F(0, phi, species);
+        spacemat(m, 0, NT-1, NX) = ekappa*f;
+
+        // other rows
+        for (std::size_t tp = 1; tp < NT; ++tp) {
+            F(f, tp, phi, species);
+            spacemat(m, tp, tp-1, NX) = -ekappa*f;
+            spacemat(m, tp, tp, NX) = IdMatrix<double>(NX);
+        }
+    }
+
+    CDSparseMatrix HubbardFermiMatrix::MExp(const CDVector &phi,
+                                            const Species species) const {
+        CDSparseMatrix m;
+        MExp(m, phi, species);
         return m;
     }
 
@@ -253,18 +284,12 @@ namespace isle {
 
 
     void HubbardFermiMatrix::updateKappa(const SparseMatrix<double> &kappa) {
-        _kinvp.clear();
-        _kinvh.clear();
-        _logdetKinvp = std::numeric_limits<double>::quiet_NaN();
-        _logdetKinvh = std::numeric_limits<double>::quiet_NaN();
+        _invalidateKCaches();
         _kappa = kappa;
     }
 
     void HubbardFermiMatrix::updateMu(const double mu) {
-        _kinvp.clear();
-        _kinvh.clear();
-        _logdetKinvp = std::numeric_limits<double>::quiet_NaN();
-        _logdetKinvh = std::numeric_limits<double>::quiet_NaN();
+        _invalidateKCaches();
         _mu = mu;
     }
 
@@ -592,21 +617,42 @@ namespace isle {
         const auto NT = getNt(phi, NX);
         const auto &kinv = hfm.Kinv(species);
 
-        // first K*F pair
+        // first K^-1 * F pair
         auto f = hfm.F(0, phi, species, false);
-        Matrix<std::complex<double>> aux = kinv*f;
+        Matrix<std::complex<double>> A = kinv*f;
         // other pairs
         for (std::size_t t = 1; t < NT; ++t) {
             hfm.F(f, t, phi, species, false);
-            aux = aux*kinv*f;
+            A = kinv*f*A;
         }
 
         // use kinv for first term because we already have it, otherwise would need dense K
         // gives extra minus sign
         return toFirstLogBranch(
             -static_cast<double>(NT)*hfm.logdetKinv(species)
-            + logdet(CDMatrix(IdMatrix<std::complex<double>>(NX) + aux))
+            + logdet(CDMatrix(IdMatrix<std::complex<double>>(NX) + A))
             );
+    }
+
+    std::complex<double> logdetMExp(const HubbardFermiMatrix &hfm, const CDVector &phi,
+                                    Species species) {
+        if (hfm.mu() != 0)
+            throw std::runtime_error("Exponential hopping is not supported for mu != 0");
+
+        const auto NX = hfm.nx();
+        const auto NT = getNt(phi, NX);
+        const auto &expKappa = hfm.expKappa(species);
+
+        // first exp(-+kappa)*F pair
+        auto f = hfm.F(0, phi, species, false);
+        Matrix<std::complex<double>> B = expKappa*f;
+        // other pairs
+        for (std::size_t t = 1; t < NT; ++t) {
+            hfm.F(f, t, phi, species, false);
+            B = expKappa*f*B;
+        }
+
+        return toFirstLogBranch(logdet(CDMatrix(IdMatrix<std::complex<double>>(NX) + B)));
     }
 
     std::vector<CDVector> solveM(const HubbardFermiMatrix &hfm,
@@ -658,6 +704,64 @@ namespace isle {
                 spacevec(res[i], nt-1, nx) = invmat*spacevec(res[i], nt-1, nx);  // t = nt-1
                 for (std::size_t t = 0; t < nt-1; ++t) {  // other t's
                     spacevec(res[i], t, nx) -= partialA[t]*spacevec(res[i], nt-1, nx);
+                }
+            }
+        }
+
+        return res;
+    }
+
+    std::vector<CDVector> solveMExp(const HubbardFermiMatrix &hfm,
+                                    const CDVector &phi,
+                                    const Species species,
+                                    const std::vector<CDVector> &rhs) {
+        if (hfm.mu() != 0)
+            throw std::runtime_error("Exponential hopping is not supported for mu != 0");
+
+        const std::size_t nx = hfm.nx();
+        const std::size_t nt = getNt(phi, nx);
+        const auto &S = hfm.expKappa(species);
+        std::vector<CDVector> res(rhs.size());  // the results
+
+        // solve Ly = rhs
+        CDSparseMatrix f;
+        BLAZE_SERIAL_SECTION {  // we don't want the puny intra vector parallelization
+#pragma omp parallel for private(f)
+            for (std::size_t i = 0; i < rhs.size(); ++i) {
+                res[i].resize(nx*nt);
+                spacevec(res[i], 0, nx) = blaze::serial(spacevec(rhs[i], 0, nx));  // t=0
+                for (std::size_t t = 1; t < nt; ++t) {  // other t's
+                    hfm.F(f, t, phi, species, false);
+                    spacevec(res[i], t, nx) = blaze::serial(spacevec(rhs[i], t, nx)
+                                                            + S*f*spacevec(res[i], t-1, nx));
+                }
+            }
+        }
+        // now res = y
+
+        // partial products of B
+        std::vector<CDMatrix> partialB;
+        partialB.reserve(nt-1);  // not storing the full B
+        hfm.F(f, 0, phi, species, false);
+        partialB.emplace_back(S*f);
+        for (std::size_t t = 1; t < nt-1; ++t) {
+            hfm.F(f, t, phi, species, false);
+            partialB.emplace_back(S * f * partialB.back());
+        }
+
+        // invmat = (1+B)^-1
+        hfm.F(f, nt-1, phi, species, false);
+        CDMatrix invmat = IdMatrix<std::complex<double>>(nx) + S*f*partialB.back();
+        auto ipiv = std::make_unique<int[]>(invmat.rows());
+        invert(invmat, ipiv);
+
+        // solve Ux = y inplace (in res)
+        BLAZE_SERIAL_SECTION {
+#pragma omp parallel for
+            for (std::size_t i = 0; i < rhs.size(); ++i) {
+                spacevec(res[i], nt-1, nx) = invmat*spacevec(res[i], nt-1, nx);  // t = nt-1
+                for (std::size_t t = 0; t < nt-1; ++t) {  // other t's
+                    spacevec(res[i], t, nx) -= partialB[t]*spacevec(res[i], nt-1, nx);
                 }
             }
         }
