@@ -147,6 +147,43 @@ namespace isle {
         SymmetricMatrix<double> _distMat;  ///< matrix of physical distances (`nx() x nx()`).
     };
 
+    /// Loop index around boundary.
+    /**
+     * \param i Index, can be static_cast<std::size_t>(-1) to represent 'one before 0'.
+     * \param n `n-1` is the maximum value for `i`.
+     *
+     * \warning Only works if i is at most one step across boundary.
+     *          That is, it requires `-1 <= i <= n`.
+     */
+    constexpr std::size_t loopIdx(const std::size_t i,
+                                  const std::size_t n) noexcept(ndebug) {
+        if (i == n)
+            return 0;
+        if (i == static_cast<std::size_t>(-1))
+            return n-1;
+
+#ifndef NDEBUG
+        if (i > n)  // i != -1 here, so we can check like this
+            throw std::runtime_error("i > n in loopIdx");
+#endif
+
+        return i;
+    }
+
+    /// Return the flat spacetime coordinate for a given pair of space and time coordinates.
+    /**
+     * \param x Spatial coordinate.
+     * \param t Temporal coordinate.
+     * \param nx Number of spatial lattice sites.
+     * \param nt Number of temporal lattice sites.
+     */
+    constexpr std::size_t spacetimeCoord(const std::size_t x,
+                                         const std::size_t t,
+                                         const std::size_t nx,
+                                         const std::size_t UNUSED(nt)) noexcept {
+        return t*nx + x;
+    }
+
 }  // namespace isle
 
 #endif  // ndef LATTICE_HPP

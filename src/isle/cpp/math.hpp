@@ -163,21 +163,6 @@ namespace isle {
         return stVec.size() / nx;
     }
 
-    /// Return the flat spacetime coordinate for a given pair of space and time coordinates.
-    /**
-     * \param x Spatial coordinate.
-     * \param t Temporal coordinate.
-     * \param nx Number of spatial lattice sites.
-     * \param nt Number of temporal lattice sites.
-     */
-    constexpr std::size_t spacetimeCoord(const std::size_t x,
-                                         const std::size_t t,
-                                         const std::size_t nx,
-                                         const std::size_t UNUSED(nt)) noexcept {
-        return t*nx + x;
-    }
-
-
     /// Project a complex number to the first branch of the logarithm (-pi, pi].
     template <typename RT>
     std::complex<RT> toFirstLogBranch(const std::complex<RT> &x) {
