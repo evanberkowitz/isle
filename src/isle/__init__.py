@@ -11,6 +11,7 @@ from . import fileio
 from . import hmc
 from . import random
 from . import util
+from . import cli
 import isle.action
 
 __version__ = str(isleVersion)
