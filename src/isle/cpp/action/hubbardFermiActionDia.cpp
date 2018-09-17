@@ -106,8 +106,8 @@ namespace isle {
                                  - forceVariant1Part(_hfm, phi, _kh, Species::HOLE));
                 // _alpha==0
                 const CDVector aux = -1.i*phi;
-                return (-forceVariant1Part(_hfm, aux, _kp, Species::PARTICLE)
-                        + forceVariant1Part(_hfm, aux, _kh, Species::HOLE));
+                return (forceVariant1Part(_hfm, aux, _kh, Species::HOLE)
+                        -forceVariant1Part(_hfm, aux, _kp, Species::PARTICLE));
             }
             else {
                 if (_alpha == 1)

@@ -7,4 +7,5 @@ set(SOURCE
   action/hubbardGaugeAction.cpp
   action/hubbardFermiAction.cpp
   action/hubbardFermiActionDia.cpp
+  action/hubbardFermiActionExp.cpp
   PARENT_SCOPE)

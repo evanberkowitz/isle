@@ -3,6 +3,7 @@
 #include "../action/action.hpp"
 #include "../action/hubbardGaugeAction.hpp"
 #include "../action/hubbardFermiActionDia.hpp"
+#include "../action/hubbardFermiActionExp.hpp"
 
 using namespace pybind11::literals;
 using namespace isle;
@@ -51,27 +52,40 @@ namespace bind {
             .def("force", &HubbardGaugeAction::force)
             ;
 
-        auto hfa = py::class_<HubbardFermiActionDia>{actmod, "HubbardFermiActionDia", action};
+        auto hfad = py::class_<HubbardFermiActionDia>{actmod, "HubbardFermiActionDia", action};
 
-        py::enum_<HubbardFermiActionDia::Variant>{hfa, "Variant"}
+        py::enum_<HubbardFermiActionDia::Variant>{hfad, "Variant"}
              .value("ONE", HubbardFermiActionDia::Variant::ONE)
              .value("TWO", HubbardFermiActionDia::Variant::TWO);
 
-        hfa.def(py::init<HubbardFermiMatrix, std::int8_t, HubbardFermiActionDia::Variant>(),
-                "hfm"_a, "alpha"_a=1,
-                "variant"_a=HubbardFermiActionDia::Variant::ONE)
+        hfad.def(py::init<HubbardFermiMatrix, std::int8_t, HubbardFermiActionDia::Variant>(),
+                 "hfm"_a, "alpha"_a=1,
+                 "variant"_a=HubbardFermiActionDia::Variant::ONE)
             .def(py::init<SparseMatrix<double>, double, std::int8_t, std::int8_t,
-                          HubbardFermiActionDia::Variant>(),
+                 HubbardFermiActionDia::Variant>(),
                  "kappa"_a, "mu"_a, "sigmaKappa"_a,
                  "alpha"_a=1,
                  "variant"_a= HubbardFermiActionDia::Variant::ONE)
             .def(py::init<Lattice, double, double, std::int8_t, std::int8_t,
-                          HubbardFermiActionDia::Variant>(),
+                 HubbardFermiActionDia::Variant>(),
                  "lat"_a, "beta"_a, "mu"_a, "sigmaKappa"_a,
                  "alpha"_a=1,
                  "variant"_a= HubbardFermiActionDia::Variant::ONE)
             .def("eval", &HubbardFermiActionDia::eval)
             .def("force", &HubbardFermiActionDia::force)
+            ;
+
+        py::class_<HubbardFermiActionExp>{actmod, "HubbardFermiActionExp", action}
+            .def(py::init<HubbardFermiMatrix, std::int8_t>(),
+                 "hfm"_a, "alpha"_a=1)
+            .def(py::init<SparseMatrix<double>, double, std::int8_t, std::int8_t>(),
+                 "kappa"_a, "mu"_a, "sigmaKappa"_a,
+                 "alpha"_a=1)
+            .def(py::init<Lattice, double, double, std::int8_t, std::int8_t>(),
+                 "lat"_a, "beta"_a, "mu"_a, "sigmaKappa"_a,
+                 "alpha"_a=1)
+            .def("eval", &HubbardFermiActionExp::eval)
+            .def("force", &HubbardFermiActionExp::force)
             ;
     }
 }

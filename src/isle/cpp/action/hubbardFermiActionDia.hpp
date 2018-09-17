@@ -31,6 +31,9 @@ namespace isle {
          * - `alpha == 1` - particle/hole basis
          *
          * \warning Only supports `nt > 2`.
+         *
+         * See <TT>docs/algorithm/hubbardFermiAction.pdf</TT>
+         * for description and derivation of the algorithms.
          */
         class HubbardFermiActionDia : Action {
         public:
@@ -45,19 +48,19 @@ namespace isle {
                   _alpha{alpha}, _variant{variant} { }
 
             /// Construct from individual parameters of HubbardFermiMatrix.
-            HubbardFermiActionDia(const SparseMatrix<double> &kappa,
-                                  double mu, std::int8_t sigmaKappa,
+            HubbardFermiActionDia(const SparseMatrix<double> &kappaTilde,
+                                  double muTilde, std::int8_t sigmaKappa,
                                   const std::int8_t alpha=1,
                                   const Variant variant=Variant::ONE)
-                : _hfm{kappa, mu, sigmaKappa}, _kp{_hfm.K(Species::PARTICLE)},
+                : _hfm{kappaTilde, muTilde, sigmaKappa}, _kp{_hfm.K(Species::PARTICLE)},
                   _kh{_hfm.K(Species::HOLE)},
                   _alpha{alpha}, _variant{variant} { }
 
             HubbardFermiActionDia(const Lattice &lat, double beta,
-                                  double mu, std::int8_t sigmaKappa,
+                                  double muTilde, std::int8_t sigmaKappa,
                                   const std::int8_t alpha=1,
                                   const Variant variant=Variant::ONE)
-                : _hfm{lat, beta, mu, sigmaKappa}, _kp{_hfm.K(Species::PARTICLE)},
+                : _hfm{lat, beta, muTilde, sigmaKappa}, _kp{_hfm.K(Species::PARTICLE)},
                   _kh{_hfm.K(Species::HOLE)},
                   _alpha{alpha}, _variant{variant} { }
 
