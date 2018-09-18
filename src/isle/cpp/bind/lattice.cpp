@@ -34,5 +34,7 @@ namespace bind {
             .def("nx", &Lattice::nx)
             .def("lattSize", &Lattice::lattSize)
             ;
+
+        mod.def("isBipartite", isBipartite);
     }
 }

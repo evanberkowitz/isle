@@ -184,6 +184,9 @@ namespace isle {
         return t*nx + x;
     }
 
+    /// Return true if hopping matrix of lat is bipartite, false otherwise.
+    bool isBipartite(const Lattice &lat);
+
 }  // namespace isle
 
 #endif  // ndef LATTICE_HPP

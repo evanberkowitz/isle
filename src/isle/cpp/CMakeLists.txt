@@ -6,7 +6,8 @@
 # sources of the base library
 set(SOURCE
   hubbardFermiMatrix.cpp
-  integrator.cpp)
+  integrator.cpp
+  lattice.cpp)
 
 # add submodules
 add_subdirectory(action)
