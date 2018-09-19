@@ -9,6 +9,7 @@ import numpy as np
 
 from . import Lattice
 from .util import parameters
+from .action import Hopping
 
 def _parse_lattice(adjacency, hopping, positions, nt=0, name="", comment=""):
     """!
@@ -67,4 +68,13 @@ yaml.add_representer(Lattice, _represent_lattice)
 yaml.add_constructor("!parameters",
                      lambda loader, node: \
                      parameters(**loader.construct_mapping(node, deep=True)),
+                     Loader=yaml.SafeLoader)
+
+# register isle.action.Hopping
+yaml.add_representer(Hopping,
+                     lambda dumper, hop: \
+                     dumper.represent_scalar("!hopping", str(hop).rsplit(".")[-1]))
+yaml.add_constructor("!hopping",
+                     lambda loader, node: \
+                     Hopping.DIAG if loader.construct_scalar(node) == "DIAG" else "EXP",
                      Loader=yaml.SafeLoader)
