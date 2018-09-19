@@ -230,9 +230,6 @@ namespace isle {
         DVector evals;
         blaze::syev(U, evals, 'V', 'U');
 
-        if (blaze::min(blaze::abs(evals)) < 1e-14)
-            throw std::runtime_error("Cannot diagonalize matrix to exponentiate: has zero eigenvalue.");
-
         // diagonalize mat and exponentiate
         DMatrix diag(mat.rows(), mat.columns(), 0);
         blaze::diagonal(diag) = blaze::exp(blaze::diagonal(U * mat * blaze::trans(U)));
