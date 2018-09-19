@@ -1,6 +1,7 @@
 from pathlib import Path
 
 import numpy as np
+import yaml
 import h5py as h5
 
 from .. import Vector
@@ -16,9 +17,70 @@ class HMC:
 
         self._trajIdx = startIdx
 
-def _isValidOutfileByException(outfile, overwrite, startIdx):
+
+    # def __call__(self, phi, proposer)
+
+def readMetadata(fname):
+    """!
+    Read metadata on ensemble from HDF5 file.
+
+    \returns Lattice, parameters, makeAction (source code of function)
+    """
+    with h5.File(str(fname), "r") as inf:
+        lat = yaml.safe_load(inf["lattice"][()])
+        params = yaml.safe_load(inf["params"][()])
+        makeActionSrc = inf["action"][()]
+    return lat, params, makeActionSrc
+
+
+def init(lat, params, rng, makeAction, outfile,
+         overwrite, startIdx=0):
+
+    _ensureIsValidOutfile(outfile, overwrite, startIdx, lat, params)
+
+    makeActionSrc = fileio.sourceOfFunction(makeAction)
+    if not outfile[0].exists():
+        _prepareOutfile(outfile[0], lat, params, makeActionSrc)
+
+    driver = HMC(lat, params, rng,
+                 fileio.callFunctionFromSource(makeActionSrc, lat, params), outfile[0], startIdx)
+    return driver
+
+
+def _prepareOutfile(outfname, lat, params, makeActionSrc):
+    with h5.File(str(outfname), "w") as outf:
+        outf["lattice"] = yaml.dump(lat)
+        outf["params"] = yaml.dump(params)
+        outf["action"] = makeActionSrc
+        fileio.h5.createH5Group(outf, "configuration")
+
+def _latestConfig(fname):
+    "!Get greatest index of stored configs."
+    with h5.File(str(fname), "r") as h5f:
+        return max(map(int, h5f["configuration"].keys()), default=0)
+
+def _verifyConfigsByException(outfname, startIdx):
+    lastStored = _latestConfig(outfname)
+    if lastStored > startIdx:
+        print(f"Error: Output file '{outfname}' exists and has entries with higher index than HMC start index."
+              f"Greates index in file: {lastStored}, user set start index: {startIdx}")
+        raise RuntimeError("Cannot write into output file, contains newer data")
+
+def _verifyMetadataByException(outfname, lat, params):
+    storedLat, storedParams, _ = readMetadata(outfname)
+
+    if storedLat.name != lat.name:
+        print(f"Error: Name of lattice in output file is {storedLat.name} but new lattice has name {lat.name}. Cannot write into existing output file.")
+        raise RuntimeError("Lattice name inconsistent")
+
+    if storedParams.asdict() != params.asdict():
+        print(f"Error: Stored parameters do not match new parameters. Cannot write into existing output file.")
+        raise RuntimeError("Parameters inconsistent")
+
+def _ensureIsValidOutfile(outfile, overwrite, startIdx, lat, params):
     """!
     Check if the output file is a valid parameter and if it is possible to write to it.
+    Deletes the file if `overwrite == True`.
 
     Writing is not possible if the file exists and `overwrite == False` and
     it contains configurations with an index greater than `startIdx`.
@@ -41,26 +103,9 @@ def _isValidOutfileByException(outfile, overwrite, startIdx):
             outfname.unlink()
 
         else:
-            with h5.File(str(outfname), "r") as outf:
-                # get greatest index of stored config
-                lastStored = max(map(int, outf["configuration"].keys()))
-                if lastStored > startIdx:
-                    print(f"Error: Output file '{outfname}' exists and has entries with higher index than HMC start index.")
-                    raise RuntimeError("Cannot write into output file, contains newer data")
-
-                print(f"Output file '{outfname}' exists -- appending")
-
-def init(lat, params, rng, makeAction, outfile,
-         overwrite, startIdx=0):
-
-    _isValidOutfileByException(outfile, overwrite, startIdx)
-
-    makeActionSrc = fileio.sourceOfFunction(makeAction)
-    driver = HMC(lat, params, rng,
-                 fileio.callFunctionFromSource(makeActionSrc, lat, params), outfile[0], startIdx)
-    return driver
-
-
+            _verifyConfigsByException(outfname, startIdx)
+            _verifyMetadataByException(outfname, lat, params)
+            print(f"Output file '{outfname}' exists -- appending")
 
 
 def _initialConditions(ham, oldPhi, oldAct, rng):
