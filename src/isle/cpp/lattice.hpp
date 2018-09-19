@@ -6,6 +6,7 @@
 #define LATTICE_HPP
 
 #include <stdexcept>
+#include <string>
 
 #include "core.hpp"
 #include "math.hpp"
@@ -23,9 +24,11 @@ namespace isle {
     class Lattice {
     public:
         /// Construct with given numbers of sites and neighbors per site.
-        Lattice(std::size_t const nt, std::size_t const nx)
+        Lattice(const std::size_t nt, const std::size_t nx,
+                const std::string &name_={}, const std::string &comment_={})
             : _nTslice{nt}, _nSpatial{nx},
-              _hoppingMat(nx, nx), _distMat(nx) { }
+              _hoppingMat(nx, nx), _distMat(nx),
+              name(name_), comment(comment_) { }
 
         /// Get the hopping strengths from a given site to all others.
         /**
@@ -145,6 +148,10 @@ namespace isle {
         const std::size_t _nSpatial;  ///< Number of spatial lattice sites.
         SparseMatrix<double> _hoppingMat;  ///< Matrix of hopping strengths (`nx() x nx()`).
         SymmetricMatrix<double> _distMat;  ///< matrix of physical distances (`nx() x nx()`).
+
+    public:
+        const std::string name;  ///< Name of the lattice for identification.
+        const std::string comment;  ///< Short text describing the lattice.
     };
 
     /// Loop index around boundary.

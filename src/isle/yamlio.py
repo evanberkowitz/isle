@@ -22,7 +22,7 @@ def _parse_lattice(adjacency, hopping, positions, nt=0, name="", comment=""):
         raise RuntimeError("Lengths of adjacency matrix and list of hopping strengths do not match")
 
     # construct lattice
-    lat = Lattice(nt, len(positions))
+    lat = Lattice(nt, len(positions), name, comment)
 
     # set neighbors and hopping strengths
     for (i, j), hop in zip(adjacency, hopping):
@@ -53,8 +53,8 @@ def _represent_lattice(dumper, lat):
                          if neigh[0] > i])
     pos = [0]*lat.nx()
     return dumper.represent_mapping("!lattice",
-                                    {"name": "",
-                                     "comment": "",
+                                    {"name": lat.name,
+                                     "comment": lat.comment,
                                      "nt": lat.nt(),
                                      "adjacency": list(adj),
                                      "hopping": list(hopping),

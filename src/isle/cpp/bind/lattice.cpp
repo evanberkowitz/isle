@@ -2,6 +2,8 @@
 
 #include "../lattice.hpp"
 
+using namespace pybind11::literals;
+
 namespace bind {
 
     void bindLattice(py::module &mod) {
@@ -9,6 +11,7 @@ namespace bind {
 
         py::class_<Lattice>{mod, "Lattice"}
             .def(py::init<std::size_t, std::size_t>())
+            .def(py::init<std::size_t, std::size_t, const std::string&, const std::string&>())
             .def("hopping", py::overload_cast<>(&Lattice::hopping),
                  py::return_value_policy::reference_internal)
             .def("areNeighbors", &Lattice::areNeighbors)
@@ -33,6 +36,9 @@ namespace bind {
                 })
             .def("nx", &Lattice::nx)
             .def("lattSize", &Lattice::lattSize)
+
+            .def_readonly("name", &Lattice::name)
+            .def_readonly("comment", &Lattice::comment)
             ;
 
         mod.def("isBipartite", isBipartite);
