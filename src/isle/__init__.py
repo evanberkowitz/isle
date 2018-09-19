@@ -8,7 +8,7 @@ from .cpp_wrappers import *
 from . import checks
 from . import ensemble
 from . import fileio
-from . import hmc
+from . import proposers
 from . import random
 from . import util
 from . import cli

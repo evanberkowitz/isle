@@ -8,17 +8,101 @@ from .. import Vector
 from .. import fileio
 
 class HMC:
-    def __init__(self, lat, params, rng, action, outfname, startIdx):
+    def __init__(self, lat, params, rng, action, outfname, startIdx,
+                 saveFreq, checkpointFreq):
+        if checkpointFreq != 0 and checkpointFreq % saveFreq != 0:
+            raise ValueError("checkpointFreq must be a multiple of saveFreq."
+                             f" Got {checkpointFreq} and {saveFreq}, resp.")
+
         self.lat = lat
         self.params = params
         self.rng = rng
-        self.action = action
-        self.outfname = outfname
+        self.ham = action  # TODO rewrite for pure action
+        self.outfname = str(outfname)
+        self.saveFreq = saveFreq
+        self.checkpointFreq = checkpointFreq
 
         self._trajIdx = startIdx
 
 
-    # def __call__(self, phi, proposer)
+    def __call__(self, phi, proposer, ntr):
+        acc = True  # was last trajectory accepted?
+        act = None  # running action (without pi)
+        for _ in range(ntr):
+            # get initial conditions for proposer
+            startPhi, startPi, startEnergy = _initialConditions(self.ham, phi, act, self.rng)
+
+            # evolve fields using proposer
+            endPhi, endPi = proposer(startPhi, startPi, acc)
+            # get new energy
+            endEnergy = self.ham.eval(endPhi, endPi)
+
+            # TODO consistency checks
+
+            # accept-reject
+            deltaE = np.real(endEnergy - startEnergy)
+            if deltaE < 0 or np.exp(-deltaE) > self.rng.uniform(0, 1):
+                acc = True
+                phi = endPhi
+                act = self.ham.stripMomentum(endPi, endEnergy)
+            else:
+                acc = False
+                phi = startPhi
+                act = self.ham.stripMomentum(startPi, startEnergy)
+
+            if self.checkpointFreq != 0 and self._trajIdx % self.checkpointFreq == 0:
+                self.saveFieldAndCheckpoint(phi, act, acc)
+            elif self.saveFreq != 0 and self._trajIdx % self.saveFreq == 0:
+                self.save(phi, act, acc)
+            else:
+                self.advance()
+
+        return phi
+
+    def saveFieldAndCheckpoint(self, phi, act, acc):
+        "!Write a trajectory (endpoint) and checkpoint to file and advance internal counter."
+        with h5.File(self.outfname, "a") as outf:
+            cfgGrp = self._writeTrajectory(outf, phi, act, acc)
+            self._writeCheckpoint(outf, cfgGrp)
+        self._trajIdx += 1
+
+    def save(self, phi, act, acc):
+        "!Write a trajectory (endpoint) to file and advance internal counter."
+        with h5.File(self.outfname, "a") as outf:
+            self._writeTrajectory(outf, phi, act, acc)
+        self._trajIdx += 1
+
+    def advance(self, amount=1):
+        "!Advance the internal trajectory counter by amount without saving."
+        self._trajIdx += amount
+
+    def _writeTrajectory(self, group, phi, act, acc):
+        "!Write a trajectory (endpoint) to a HDF5 group."
+        print(self._trajIdx)
+        try:
+            grp = group.create_group(f"/configuration/{self._trajIdx}")
+            grp["phi"] = np.array(phi, copy=False)
+            grp["action"] = act
+            grp["acceptance"] = acc
+            return grp
+        except (ValueError, RuntimeError) as err:
+            if "name already exists" in err.args[0]:
+                raise RuntimeError(f"Cannot write trajectory {self._trajIdx} to file '{self.outfname}'."
+                                   " A dataset with the same name already exists.") from None
+            raise
+
+    def _writeCheckpoint(self, group, cfgGrp):
+        "!Write a checkpoint to a HDF5 group."
+        try:
+            grp = group.create_group(f"/checkpoint/{self._trajIdx}")
+            self.rng.writeH5(grp.create_group("rng_state"))
+            grp["cfg"] = h5.SoftLink(cfgGrp.name)
+        except (ValueError, RuntimeError) as err:
+            if "name already exists" in err.args[0]:
+                raise RuntimeError(f"Cannot write checkpoint for trajectory {self._trajIdx} to file '{self.outfile}'."
+                                   " A dataset with the same name already exists.") from None
+            raise
+
 
 def readMetadata(fname):
     """!
@@ -34,7 +118,7 @@ def readMetadata(fname):
 
 
 def init(lat, params, rng, makeAction, outfile,
-         overwrite, startIdx=0):
+         overwrite, startIdx=0, saveFreq=1, checkpointFreq=0):
 
     _ensureIsValidOutfile(outfile, overwrite, startIdx, lat, params)
 
@@ -42,12 +126,14 @@ def init(lat, params, rng, makeAction, outfile,
     if not outfile[0].exists():
         _prepareOutfile(outfile[0], lat, params, makeActionSrc)
 
-    driver = HMC(lat, params, rng,
-                 fileio.callFunctionFromSource(makeActionSrc, lat, params), outfile[0], startIdx)
+    driver = HMC(lat, params, rng, fileio.callFunctionFromSource(makeActionSrc, lat, params),
+                 outfile[0], startIdx, saveFreq, checkpointFreq)
     return driver
 
 
 def _prepareOutfile(outfname, lat, params, makeActionSrc):
+    # TODO write Version(s)  -  write function in h5io
+
     with h5.File(str(outfname), "w") as outf:
         outf["lattice"] = yaml.dump(lat)
         outf["params"] = yaml.dump(params)
@@ -60,6 +146,8 @@ def _latestConfig(fname):
         return max(map(int, h5f["configuration"].keys()), default=0)
 
 def _verifyConfigsByException(outfname, startIdx):
+    # TODO what about checkpoints?
+
     lastStored = _latestConfig(outfname)
     if lastStored > startIdx:
         print(f"Error: Output file '{outfname}' exists and has entries with higher index than HMC start index."
@@ -105,6 +193,7 @@ def _ensureIsValidOutfile(outfile, overwrite, startIdx, lat, params):
         else:
             _verifyConfigsByException(outfname, startIdx)
             _verifyMetadataByException(outfname, lat, params)
+            # TODO verify version(s)
             print(f"Output file '{outfname}' exists -- appending")
 
 
@@ -129,83 +218,3 @@ def _initialConditions(ham, oldPhi, oldAct, rng):
         # use old action for energy
         energy = ham.addMomentum(pi, oldAct)
     return oldPhi, pi, energy
-
-def run_hmc(phi, ham, proposer, ntr, rng, measurements=[], checks=[], itrOffset=0):
-    r"""!
-    Compute Hybrid Monte-Carlo trajectories.
-
-    Evolves a configuration using a proposer and an accept-reject step.
-    Optionally performs measurements and consistency checks on the fly.
-    Note that no results are saved, use measurements to store configurations on disk.
-
-    \param phi Initial configuration.
-
-    \param ham Hamiltonian describing the model.
-
-    \param proposer Callable that proposes a new configuration which can be accepted
-                    or rejected. The proposer shall return a new phi and a new pi.
-                    It is called with arguments `startPhi, startPi, acc`, where:
-                      - `startPhi`: Initial configuration.
-                      - `startPi`: Initial momentum.
-                      - `acc`: `True` if previous trajectory was accepted, `False` otherwise.
-
-    \param ntr Number of trajectories to compute.
-
-    \param rng Randum number generator that implements isle.random.RNGWrapper.
-
-    \param measurements List of tuples `(freq, meas)`, where `freq` is the measurement
-                        frequency: 1 means measure every trajectory, 2 means
-                        measure every second trajectory, etc. The requirements on meas
-                        are listed under \ref measdoc.
-
-     \param checks List of tuples `(freq, check)`, where `freq` is the check
-                   frequency: 1 means check every trajectory, 2 means check every
-                   second trajectory, etc.<BR>
-                   `check` is a callable with arguments `startPhi`, `startPi`, `startEnergy`,
-                   `endPhi`, `endPi`, `endEnergy` which shall not return a value but
-                   raise an exception in case of failure. Arguments are:
-                     - `startPhi`/`endPhi`: Configuration before and after the proposer.
-                     - `startPi`/`endPi`: Momentum before and after the proposer.
-                     - `startEnergy`/`endEnergy`: Energy before and after the proposer,
-                                                  includes the momentum.
-
-    \param itrOffset Is added to the trajectory index when calling measurements.
-                     Also affects when the measurement gets called.
-
-    \returns Result configuration after all trajectories.
-    """
-
-    acc = True  # was last trajectory accepted?
-    act = None  # running action (without pi)
-    for itr in range(ntr):
-        # get initial conditions for proposer
-        startPhi, startPi, startEnergy = _initialConditions(ham, phi, act, rng)
-
-        # evolve fields using proposer
-        endPhi, endPi = proposer(startPhi, startPi, acc)
-        # get new energy
-        endEnergy = ham.eval(endPhi, endPi)
-
-        # perform consistency checks
-        for (freq, check) in checks:
-            if freq > 0 and itr % freq == 0:
-                check(startPhi, startPi, startEnergy,
-                      endPhi, endPi, endEnergy)
-
-        # accept-reject
-        deltaE = np.real(endEnergy - startEnergy)
-        if deltaE < 0 or np.exp(-deltaE) > rng.uniform(0, 1):
-            acc = True
-            phi = endPhi
-            act = ham.stripMomentum(endPi, endEnergy)
-        else:
-            acc = False
-            phi = startPhi
-            act = ham.stripMomentum(startPi, startEnergy)
-
-        # perform measurements
-        for (freq, meas) in measurements:
-            if freq > 0 and (itr+itrOffset) % freq == 0:
-                meas(phi, True, itr=itr+itrOffset, act=act, acc=acc, rng=rng)
-
-    return phi
