@@ -46,11 +46,11 @@ def sourceOfFunction(func):
     \see functionFromSource for the inverse.
     """
 
-    if not inspect.isfunction(fn) or inspect.ismethod(fn):
+    if not inspect.isfunction(func) or inspect.ismethod(func):
         raise RuntimeError("Not a function, methods not allowed")
     # missing a check for class methods!
 
-    src = inspect.getsource(fn)
+    src = inspect.getsource(func)
 
     # lambdas are weird, need do make sure this is a normal function definition
     if not src.lstrip().startswith("def"):
