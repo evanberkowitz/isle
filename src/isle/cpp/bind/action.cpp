@@ -95,12 +95,20 @@ namespace bind {
 
         actmod.def("makeHubbardFermiAction",
                    py::overload_cast<const HubbardFermiMatrix &, std::int8_t,
-                   Hopping, HubbardFermiActionDia::Variant>(makeHubbardFermiAction));
+                   Hopping, HubbardFermiActionDia::Variant>(makeHubbardFermiAction),
+                   "hfm"_a, "alpha"_a=1, "hopping"_a=Hopping::DIAG,
+                   "variant"_a=HubbardFermiActionDia::Variant::ONE);
         actmod.def("makeHubbardFermiAction",
                    py::overload_cast<const SparseMatrix<double> &, double,
-                   std::int8_t, std::int8_t, Hopping, HubbardFermiActionDia::Variant>(makeHubbardFermiAction));
+                   std::int8_t, std::int8_t, Hopping, HubbardFermiActionDia::Variant>(makeHubbardFermiAction),
+                   "kappa"_a, "mu"_a, "sigmaKappa"_a,
+                   "alpha"_a=1, "hopping"_a=Hopping::DIAG,
+                   "variant"_a= HubbardFermiActionDia::Variant::ONE);
         actmod.def("makeHubbardFermiAction",
                    py::overload_cast<const Lattice &, double, double, std::int8_t,
-                   std::int8_t, Hopping, HubbardFermiActionDia::Variant>(makeHubbardFermiAction));
+                   std::int8_t, Hopping, HubbardFermiActionDia::Variant>(makeHubbardFermiAction),
+                   "lat"_a, "beta"_a, "mu"_a, "sigmaKappa"_a,
+                   "alpha"_a=1, "hopping"_a=Hopping::DIAG,
+                   "variant"_a= HubbardFermiActionDia::Variant::ONE);
     }
 }
