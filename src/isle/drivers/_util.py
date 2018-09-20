@@ -23,8 +23,9 @@ def prepareOutfile(outfname, lattice, params, makeActionSrc,
     # TODO write Version(s)  -  write function in h5io
 
     with h5.File(str(outfname), "w") as outf:
-        outf["latticetice"] = yaml.dump(lattice)
-        outf["params"] = yaml.dump(params)
-        outf["action"] = makeActionSrc
+        metaGrp = fileio.h5.createH5Group(outf, "meta")
+        metaGrp["lattice"] = yaml.dump(lattice)
+        metaGrp["params"] = yaml.dump(params)
+        metaGrp["action"] = makeActionSrc
         for group in extraGroups:
             fileio.h5.createH5Group(outf, group)

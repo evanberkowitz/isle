@@ -31,9 +31,10 @@ def readMetadata(fname):
     if isinstance(fname, (tuple, list)):
         fname = fname[0]
     with h5.File(str(fname), "r") as inf:
-        lattice = yaml.safe_load(inf["latticetice"][()])
-        params = yaml.safe_load(inf["params"][()])
-        makeActionSrc = inf["action"][()]
+        metaGrp = inf["meta"]
+        lattice = yaml.safe_load(metaGrp["lattice"][()])
+        params = yaml.safe_load(metaGrp["params"][()])
+        makeActionSrc = metaGrp["action"][()]
     return lattice, params, makeActionSrc
 
 def writeTrajectory(group, label, phi, act, trajPoint):
