@@ -6,6 +6,7 @@
 #define LATTICE_HPP
 
 #include <stdexcept>
+#include <vector>
 #include <string>
 
 #include "core.hpp"
@@ -27,7 +28,7 @@ namespace isle {
         Lattice(const std::size_t nt, const std::size_t nx,
                 const std::string &name_={}, const std::string &comment_={})
             : _nTslice{nt}, _nSpatial{nx},
-              _hoppingMat(nx, nx), _distMat(nx),
+              _hoppingMat(nx, nx), _positions(nx),
               name(name_), comment(comment_) { }
 
         /// Get the hopping strengths from a given site to all others.
@@ -99,24 +100,23 @@ namespace isle {
             if (!(j < nx()))
                 throw std::out_of_range("Second index out of range");
 #endif
-            return _distMat(i, j);
+            return blaze::norm(_positions[i]-_positions[j]);
         }
 
-        /// Set the physical distance between two spatial sites.
-        /**
-         * \param i `i < nx()`.
-         * \param j `j < nx()`.
-         * \param distance Physical distance between sites `i` and `j`.
-         */
-        void distance(const std::size_t i, const std::size_t j,
-                      const double distance) noexcept(ndebug) {
+        const Vec3<double> &position(const std::size_t i) const noexcept(ndebug) {
 #ifndef NDEBUG
-            if (!(i < nx()))
-                throw std::out_of_range("First index out of range");
-            if (!(j < nx()))
-                throw std::out_of_range("Second index out of range");
+            if (i > nx())
+                throw std::out_of_range("Index out of range");
 #endif
-            _distMat(i, j) = distance;
+            return _positions[i];
+        }
+
+        void position(const std::size_t i, const Vec3<double> &pos) {
+#ifndef NDEBUG
+            if (i > nx())
+                throw std::out_of_range("Index out of range");
+#endif
+            _positions[i] = pos;
         }
 
         /// Returns the number of time slices.
@@ -138,16 +138,16 @@ namespace isle {
             return _nSpatial*_nTslice;
         }
 
-        /// Returns the matrix of physical distances between spatial sites.
-        const SymmetricMatrix<double> &distances() const noexcept {
-            return _distMat;
+        /// Returns all site positions.
+        const std::vector<Vec3<double>> &positions() const noexcept {
+            return _positions;
         }
 
     private:
         std::size_t _nTslice;  ///< Number of time slices.
         const std::size_t _nSpatial;  ///< Number of spatial lattice sites.
         SparseMatrix<double> _hoppingMat;  ///< Matrix of hopping strengths (`nx() x nx()`).
-        SymmetricMatrix<double> _distMat;  ///< matrix of physical distances (`nx() x nx()`).
+        std::vector<Vec3<double>> _positions;  ///< 3D positions of all spatial lattice sites.
 
     public:
         const std::string name;  ///< Name of the lattice for identification.

@@ -26,10 +26,15 @@ namespace bind {
             .def("getNeighbors", [](const Lattice &self, const std::size_t i) {
                     return makeIndexValueIterator(self.hopping().begin(i), self.hopping().end(i));
                 }, py::keep_alive<0, 1>())
-            .def("distance", static_cast<
-                 double (Lattice::*)(std::size_t, std::size_t) const>(&Lattice::distance))
-            .def("distance", static_cast<
-                 void (Lattice::*)(std::size_t, std::size_t, double)>(&Lattice::distance))
+            .def("distance", &Lattice::distance)
+            .def("position", [](Lattice &lat, const std::size_t i,
+                                const double x, const double y, const double z) {
+                                 lat.position(i, Vec3<double>{x, y, z});
+                             })
+            .def("position", [](const Lattice &lat, const std::size_t i) {
+                                 const Vec3<double> &pos = lat.position(i);
+                                 return std::make_tuple(pos[0], pos[1], pos[2]);
+                             })
             .def("nt", py::overload_cast<>(&Lattice::nt))
             .def("nt", [](Lattice &lat, const std::size_t nt) {
                     lat.nt() = nt;

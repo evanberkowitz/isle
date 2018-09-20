@@ -20,6 +20,7 @@ def _parse_lattice(adjacency, hopping, positions, nt=0, name="", comment=""):
     if not isinstance(hopping, list):
         hopping = [hopping]*len(adjacency)
     elif len(adjacency) != len(hopping):
+        print("Lengths of adjacency matrix and list of hopping strengths do not match")
         raise RuntimeError("Lengths of adjacency matrix and list of hopping strengths do not match")
 
     # construct lattice
@@ -30,10 +31,8 @@ def _parse_lattice(adjacency, hopping, positions, nt=0, name="", comment=""):
         lat.setNeighbor(i, j, hop)
 
     # set positions
-    for i, pos1 in enumerate(positions):
-        lat.distance(i, i, 0.)
-        for j, pos2 in enumerate(positions[i+1:]):
-            lat.distance(i, j+i+1, np.linalg.norm(np.array(pos1)-np.array(pos2)))
+    for i, pos in enumerate(positions):
+        lat.position(i, *pos)
 
     print("Read lattice '{}': {}".format(name, comment))
     return lat
@@ -52,14 +51,14 @@ def _represent_lattice(dumper, lat):
     adj, hopping = zip(*[([i, neigh[0]], neigh[1]) for i in range(lat.nx())
                          for neigh in lat.getNeighbors(i)
                          if neigh[0] > i])
-    pos = [0]*lat.nx()
+    positions = [list(lat.position(i)) for i in range(lat.nx())]
     return dumper.represent_mapping("!lattice",
                                     {"name": lat.name,
                                      "comment": lat.comment,
                                      "nt": lat.nt(),
                                      "adjacency": list(adj),
                                      "hopping": list(hopping),
-                                     "positions": pos},
+                                     "positions": positions},
                                     flow_style=False)
 
 yaml.add_representer(Lattice, _represent_lattice)
