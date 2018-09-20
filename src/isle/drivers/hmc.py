@@ -115,9 +115,8 @@ def init(lattice, params, rng, makeAction, outfile,
     if not outfile[0].exists():
         _prepareOutfile(outfile[0], lattice, params, makeActionSrc)
 
-    driver = HMC(lattice, params, rng, fileio.callFunctionFromSource(makeActionSrc, lattice, params),
-                 outfile[0], startIdx)
-    return driver
+    return HMC(lattice, params, rng, fileio.callFunctionFromSource(makeActionSrc, lattice, params),
+               outfile[0], startIdx)
 
 
 def _prepareOutfile(outfname, lattice, params, makeActionSrc):
@@ -130,7 +129,7 @@ def _prepareOutfile(outfname, lattice, params, makeActionSrc):
         fileio.h5.createH5Group(outf, "configuration")
         fileio.h5.createH5Group(outf, "checkpoint")
 
-def _latticeestConfig(fname):
+def _latestConfig(fname):
     "!Get greatest index of stored configs."
     with h5.File(str(fname), "r") as h5f:
         return max(map(int, h5f["configuration"].keys()), default=0)
@@ -138,7 +137,7 @@ def _latticeestConfig(fname):
 def _verifyConfigsByException(outfname, startIdx):
     # TODO what about checkpoints?
 
-    lastStored = _latticeestConfig(outfname)
+    lastStored = _latestConfig(outfname)
     if lastStored > startIdx:
         print(f"Error: Output file '{outfname}' exists and has entries with higher index than HMC start index."
               f"Greates index in file: {lastStored}, user set start index: {startIdx}")
