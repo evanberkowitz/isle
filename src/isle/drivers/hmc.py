@@ -103,19 +103,6 @@ class HMC:
             raise
 
 
-def readMetadata(fname):
-    """!
-    Read metadata on ensemble from HDF5 file.
-
-    \returns Latticetice, parameters, makeAction (source code of function)
-    """
-    with h5.File(str(fname), "r") as inf:
-        lattice = yaml.safe_load(inf["latticetice"][()])
-        params = yaml.safe_load(inf["params"][()])
-        makeActionSrc = inf["action"][()]
-    return lattice, params, makeActionSrc
-
-
 def init(lattice, params, rng, makeAction, outfile,
          overwrite, startIdx=0):
 
@@ -155,7 +142,7 @@ def _verifyConfigsByException(outfname, startIdx):
         raise RuntimeError("Cannot write into output file, contains newer data")
 
 def _verifyMetadataByException(outfname, lattice, params):
-    storedLattice, storedParams, _ = readMetadata(outfname)
+    storedLattice, storedParams, _ = fileio.h5.readMetadata(outfname)
 
     if storedLattice.name != lattice.name:
         print(f"Error: Name of latticetice in output file is {storedLattice.name} but new latticetice has name {lattice.name}. Cannot write into existing output file.")

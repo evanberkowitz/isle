@@ -2,6 +2,7 @@
 Routines for working with HDF5.
 """
 
+import yaml
 import h5py as h5
 
 def createH5Group(base, name):
@@ -21,6 +22,17 @@ def createH5Group(base, name):
     # does not exists yet
     return base.create_group(name)
 
+def readMetadata(fname):
+    """!
+    Read metadata on ensemble from HDF5 file.
+
+    \returns Lattice, parameters, makeAction (source code of function)
+    """
+    with h5.File(str(fname), "r") as inf:
+        lattice = yaml.safe_load(inf["latticetice"][()])
+        params = yaml.safe_load(inf["params"][()])
+        makeActionSrc = inf["action"][()]
+    return lattice, params, makeActionSrc
 
 def writeTrajectory(group, label, phi, act, trajPoint):
     """!
@@ -41,7 +53,7 @@ def writeTrajectory(group, label, phi, act, trajPoint):
     """
 
     grp = group.create_group(str(label))
-    grp["phi"] = phi#np.array(phi, copy=False)
+    grp["phi"] = phi
     grp["action"] = act
     grp["trajPoint"] = trajPoint
     return grp
