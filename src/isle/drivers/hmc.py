@@ -6,7 +6,7 @@ import h5py as h5
 
 from .. import Vector
 from .. import fileio
-from ._util import verifyMetadataByException
+from ._util import verifyMetadataByException, prepareOutfile
 
 class HMC:
     def __init__(self, lattice, params, rng, action, outfname, startIdx):
@@ -114,21 +114,12 @@ def init(lattice, params, rng, makeAction, outfile,
 
     makeActionSrc = fileio.sourceOfFunction(makeAction)
     if not outfile[0].exists():
-        _prepareOutfile(outfile[0], lattice, params, makeActionSrc)
+        prepareOutfile(outfile[0], lattice, params, makeActionSrc,
+                       ["/configuration", "/checkpoint"])
 
     return HMC(lattice, params, rng, fileio.callFunctionFromSource(makeActionSrc, lattice, params),
                outfile[0], startIdx)
 
-
-def _prepareOutfile(outfname, lattice, params, makeActionSrc):
-    # TODO write Version(s)  -  write function in h5io
-
-    with h5.File(str(outfname), "w") as outf:
-        outf["latticetice"] = yaml.dump(lattice)
-        outf["params"] = yaml.dump(params)
-        outf["action"] = makeActionSrc
-        fileio.h5.createH5Group(outf, "configuration")
-        fileio.h5.createH5Group(outf, "checkpoint")
 
 def _latestConfig(fname):
     "!Get greatest index of stored configs."

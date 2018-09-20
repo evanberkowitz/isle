@@ -1,3 +1,6 @@
+import yaml
+import h5py as h5
+
 from .. import fileio
 
 def verifyMetadataByException(outfname, lattice, params):
@@ -12,3 +15,16 @@ def verifyMetadataByException(outfname, lattice, params):
     if storedParams.asdict() != params.asdict():
         print(f"Error: Stored parameters do not match new parameters. Cannot write into existing output file.")
         raise RuntimeError("Parameters inconsistent")
+
+def prepareOutfile(outfname, lattice, params, makeActionSrc,
+                    extraGroups=[]):
+    "!Prepare the output file by storing program versions, metadata, and creating groups."
+
+    # TODO write Version(s)  -  write function in h5io
+
+    with h5.File(str(outfname), "w") as outf:
+        outf["latticetice"] = yaml.dump(lattice)
+        outf["params"] = yaml.dump(params)
+        outf["action"] = makeActionSrc
+        for group in extraGroups:
+            fileio.h5.createH5Group(outf, group)
