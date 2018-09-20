@@ -8,8 +8,8 @@ from .. import Vector
 from .. import fileio
 
 class HMC:
-    def __init__(self, lat, params, rng, action, outfname, startIdx):
-        self.lat = lat
+    def __init__(self, lattice, params, rng, action, outfname, startIdx):
+        self.lattice = lattice
         self.params = params
         self.rng = rng
         self.ham = action  # TODO rewrite for pure action
@@ -107,40 +107,40 @@ def readMetadata(fname):
     """!
     Read metadata on ensemble from HDF5 file.
 
-    \returns Lattice, parameters, makeAction (source code of function)
+    \returns Latticetice, parameters, makeAction (source code of function)
     """
     with h5.File(str(fname), "r") as inf:
-        lat = yaml.safe_load(inf["lattice"][()])
+        lattice = yaml.safe_load(inf["latticetice"][()])
         params = yaml.safe_load(inf["params"][()])
         makeActionSrc = inf["action"][()]
-    return lat, params, makeActionSrc
+    return lattice, params, makeActionSrc
 
 
-def init(lat, params, rng, makeAction, outfile,
+def init(lattice, params, rng, makeAction, outfile,
          overwrite, startIdx=0):
 
-    _ensureIsValidOutfile(outfile, overwrite, startIdx, lat, params)
+    _ensureIsValidOutfile(outfile, overwrite, startIdx, lattice, params)
 
     makeActionSrc = fileio.sourceOfFunction(makeAction)
     if not outfile[0].exists():
-        _prepareOutfile(outfile[0], lat, params, makeActionSrc)
+        _prepareOutfile(outfile[0], lattice, params, makeActionSrc)
 
-    driver = HMC(lat, params, rng, fileio.callFunctionFromSource(makeActionSrc, lat, params),
+    driver = HMC(lattice, params, rng, fileio.callFunctionFromSource(makeActionSrc, lattice, params),
                  outfile[0], startIdx)
     return driver
 
 
-def _prepareOutfile(outfname, lat, params, makeActionSrc):
+def _prepareOutfile(outfname, lattice, params, makeActionSrc):
     # TODO write Version(s)  -  write function in h5io
 
     with h5.File(str(outfname), "w") as outf:
-        outf["lattice"] = yaml.dump(lat)
+        outf["latticetice"] = yaml.dump(lattice)
         outf["params"] = yaml.dump(params)
         outf["action"] = makeActionSrc
         fileio.h5.createH5Group(outf, "configuration")
         fileio.h5.createH5Group(outf, "checkpoint")
 
-def _latestConfig(fname):
+def _latticeestConfig(fname):
     "!Get greatest index of stored configs."
     with h5.File(str(fname), "r") as h5f:
         return max(map(int, h5f["configuration"].keys()), default=0)
@@ -148,24 +148,24 @@ def _latestConfig(fname):
 def _verifyConfigsByException(outfname, startIdx):
     # TODO what about checkpoints?
 
-    lastStored = _latestConfig(outfname)
+    lastStored = _latticeestConfig(outfname)
     if lastStored > startIdx:
         print(f"Error: Output file '{outfname}' exists and has entries with higher index than HMC start index."
               f"Greates index in file: {lastStored}, user set start index: {startIdx}")
         raise RuntimeError("Cannot write into output file, contains newer data")
 
-def _verifyMetadataByException(outfname, lat, params):
-    storedLat, storedParams, _ = readMetadata(outfname)
+def _verifyMetadataByException(outfname, lattice, params):
+    storedLattice, storedParams, _ = readMetadata(outfname)
 
-    if storedLat.name != lat.name:
-        print(f"Error: Name of lattice in output file is {storedLat.name} but new lattice has name {lat.name}. Cannot write into existing output file.")
-        raise RuntimeError("Lattice name inconsistent")
+    if storedLattice.name != lattice.name:
+        print(f"Error: Name of latticetice in output file is {storedLattice.name} but new latticetice has name {lattice.name}. Cannot write into existing output file.")
+        raise RuntimeError("Latticetice name inconsistent")
 
     if storedParams.asdict() != params.asdict():
         print(f"Error: Stored parameters do not match new parameters. Cannot write into existing output file.")
         raise RuntimeError("Parameters inconsistent")
 
-def _ensureIsValidOutfile(outfile, overwrite, startIdx, lat, params):
+def _ensureIsValidOutfile(outfile, overwrite, startIdx, lattice, params):
     """!
     Check if the output file is a valid parameter and if it is possible to write to it.
     Deletes the file if `overwrite == True`.
@@ -192,7 +192,7 @@ def _ensureIsValidOutfile(outfile, overwrite, startIdx, lat, params):
 
         else:
             _verifyConfigsByException(outfname, startIdx)
-            _verifyMetadataByException(outfname, lat, params)
+            _verifyMetadataByException(outfname, lattice, params)
             # TODO verify version(s)
             print(f"Output file '{outfname}' exists -- appending")
 
