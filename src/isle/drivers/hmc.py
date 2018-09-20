@@ -6,6 +6,7 @@ import h5py as h5
 
 from .. import Vector
 from .. import fileio
+from ._util import verifyMetadataByException
 
 class HMC:
     def __init__(self, lattice, params, rng, action, outfname, startIdx):
@@ -143,17 +144,6 @@ def _verifyConfigsByException(outfname, startIdx):
               f"Greates index in file: {lastStored}, user set start index: {startIdx}")
         raise RuntimeError("Cannot write into output file, contains newer data")
 
-def _verifyMetadataByException(outfname, lattice, params):
-    storedLattice, storedParams, _ = fileio.h5.readMetadata(outfname)
-
-    if storedLattice.name != lattice.name:
-        print(f"Error: Name of latticetice in output file is {storedLattice.name} but new latticetice has name {lattice.name}. Cannot write into existing output file.")
-        raise RuntimeError("Latticetice name inconsistent")
-
-    if storedParams.asdict() != params.asdict():
-        print(f"Error: Stored parameters do not match new parameters. Cannot write into existing output file.")
-        raise RuntimeError("Parameters inconsistent")
-
 def _ensureIsValidOutfile(outfile, overwrite, startIdx, lattice, params):
     """!
     Check if the output file is a valid parameter and if it is possible to write to it.
@@ -181,7 +171,7 @@ def _ensureIsValidOutfile(outfile, overwrite, startIdx, lattice, params):
 
         else:
             _verifyConfigsByException(outfname, startIdx)
-            _verifyMetadataByException(outfname, lattice, params)
+            verifyMetadataByException(outfname, lattice, params)
             # TODO verify version(s)
             print(f"Output file '{outfname}' exists -- appending")
 
