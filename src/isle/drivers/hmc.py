@@ -76,6 +76,10 @@ class HMC:
         "!Advance the internal trajectory counter by amount without saving."
         self._trajIdx += amount
 
+    def resetIndex(self, idx=0):
+        "!Reset the internal trajectory index to idx."
+        self._trajIdx = idx
+
     def _writeTrajectory(self, h5file, phi, act, trajPoint):
         "!Write a trajectory (endpoint) to a HDF5 group."
         try:
