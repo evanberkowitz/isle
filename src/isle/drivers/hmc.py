@@ -106,6 +106,9 @@ class HMC:
 def init(lattice, params, rng, makeAction, outfile,
          overwrite, startIdx=0):
 
+    if not isinstance(outfile, (tuple, list)):
+        outfile = fileio.pathAndType(outfile)
+
     _ensureIsValidOutfile(outfile, overwrite, startIdx, lattice, params)
 
     makeActionSrc = fileio.sourceOfFunction(makeAction)
