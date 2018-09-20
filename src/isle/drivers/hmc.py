@@ -8,25 +8,22 @@ from .. import Vector
 from .. import fileio
 
 class HMC:
-    def __init__(self, lat, params, rng, action, outfname, startIdx,
-                 saveFreq, checkpointFreq):
-        if checkpointFreq != 0 and checkpointFreq % saveFreq != 0:
-            raise ValueError("checkpointFreq must be a multiple of saveFreq."
-                             f" Got {checkpointFreq} and {saveFreq}, resp.")
-
+    def __init__(self, lat, params, rng, action, outfname, startIdx):
         self.lat = lat
         self.params = params
         self.rng = rng
         self.ham = action  # TODO rewrite for pure action
         self.outfname = str(outfname)
-        self.saveFreq = saveFreq
-        self.checkpointFreq = checkpointFreq
 
         self._trajIdx = startIdx
 
 
-    def __call__(self, phi, proposer, ntr):
-        acc = True  # was last trajectory accepted?
+    def __call__(self, phi, proposer, ntr,  saveFreq, checkpointFreq):
+        if checkpointFreq != 0 and checkpointFreq % saveFreq != 0:
+            raise ValueError("checkpointFreq must be a multiple of saveFreq."
+                             f" Got {checkpointFreq} and {saveFreq}, resp.")
+
+        acc = 1  # was last trajectory accepted? (int so it can be written as trajPoint)
         act = None  # running action (without pi)
         for _ in range(ntr):
             # get initial conditions for proposer
@@ -42,18 +39,21 @@ class HMC:
             # accept-reject
             deltaE = np.real(endEnergy - startEnergy)
             if deltaE < 0 or np.exp(-deltaE) > self.rng.uniform(0, 1):
-                acc = True
+                acc = 1
                 phi = endPhi
                 act = self.ham.stripMomentum(endPi, endEnergy)
             else:
-                acc = False
+                acc = 0
                 phi = startPhi
                 act = self.ham.stripMomentum(startPi, startEnergy)
 
-            if self.checkpointFreq != 0 and self._trajIdx % self.checkpointFreq == 0:
-                self.saveFieldAndCheckpoint(phi, act, acc)
-            elif self.saveFreq != 0 and self._trajIdx % self.saveFreq == 0:
-                self.save(phi, act, acc)
+            # TODO inline meas
+
+            if saveFreq != 0 and self._trajIdx % saveFreq == 0:
+                if checkpointFreq != 0 and self._trajIdx % checkpointFreq == 0:
+                    self.saveFieldAndCheckpoint(phi, act, acc)
+                else:
+                    self.save(phi, act, acc)
             else:
                 self.advance()
 
@@ -76,30 +76,25 @@ class HMC:
         "!Advance the internal trajectory counter by amount without saving."
         self._trajIdx += amount
 
-    def _writeTrajectory(self, group, phi, act, acc):
+    def _writeTrajectory(self, h5file, phi, act, trajPoint):
         "!Write a trajectory (endpoint) to a HDF5 group."
-        print(self._trajIdx)
         try:
-            grp = group.create_group(f"/configuration/{self._trajIdx}")
-            grp["phi"] = np.array(phi, copy=False)
-            grp["action"] = act
-            grp["acceptance"] = acc
-            return grp
+            return fileio.h5.writeTrajectory(h5file["configuration"], self._trajIdx,
+                                             phi, act, trajPoint)
         except (ValueError, RuntimeError) as err:
             if "name already exists" in err.args[0]:
                 raise RuntimeError(f"Cannot write trajectory {self._trajIdx} to file '{self.outfname}'."
                                    " A dataset with the same name already exists.") from None
             raise
 
-    def _writeCheckpoint(self, group, cfgGrp):
+    def _writeCheckpoint(self, h5file, trajGrp):
         "!Write a checkpoint to a HDF5 group."
         try:
-            grp = group.create_group(f"/checkpoint/{self._trajIdx}")
-            self.rng.writeH5(grp.create_group("rng_state"))
-            grp["cfg"] = h5.SoftLink(cfgGrp.name)
+            return fileio.h5.writeCheckpoint(h5file["checkpoint"], self._trajIdx,
+                                             self.rng, trajGrp.name)
         except (ValueError, RuntimeError) as err:
             if "name already exists" in err.args[0]:
-                raise RuntimeError(f"Cannot write checkpoint for trajectory {self._trajIdx} to file '{self.outfile}'."
+                raise RuntimeError(f"Cannot write checkpoint for trajectory {self._trajIdx} to file '{self.outfname}'."
                                    " A dataset with the same name already exists.") from None
             raise
 
@@ -118,7 +113,7 @@ def readMetadata(fname):
 
 
 def init(lat, params, rng, makeAction, outfile,
-         overwrite, startIdx=0, saveFreq=1, checkpointFreq=0):
+         overwrite, startIdx=0):
 
     _ensureIsValidOutfile(outfile, overwrite, startIdx, lat, params)
 
@@ -127,7 +122,7 @@ def init(lat, params, rng, makeAction, outfile,
         _prepareOutfile(outfile[0], lat, params, makeActionSrc)
 
     driver = HMC(lat, params, rng, fileio.callFunctionFromSource(makeActionSrc, lat, params),
-                 outfile[0], startIdx, saveFreq, checkpointFreq)
+                 outfile[0], startIdx)
     return driver
 
 
@@ -139,6 +134,7 @@ def _prepareOutfile(outfname, lat, params, makeActionSrc):
         outf["params"] = yaml.dump(params)
         outf["action"] = makeActionSrc
         fileio.h5.createH5Group(outf, "configuration")
+        fileio.h5.createH5Group(outf, "checkpoint")
 
 def _latestConfig(fname):
     "!Get greatest index of stored configs."

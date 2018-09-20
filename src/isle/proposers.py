@@ -33,7 +33,7 @@ class ConstStepLeapfrog:
         Run leapfrog integrator.
         \param phi Starting configuration.
         \param pi Starting momentum.
-        \param acc `True` if last trajectory was accepted, `False` otherwise.
+        \param acc \e Ignored
         """
         return leapfrog(phi, pi, self.hamiltonian, self.length, self.nstep)
 
@@ -65,7 +65,7 @@ class LinearStepLeapfrog:
         Run leapfrog integrator.
         \param phi Starting configuration.
         \param pi Starting momentum.
-        \param acc `True` if last trajectory was accepted, `False` otherwise.
+        \param acc \e Ignored
         """
         return leapfrog(phi, pi, self.hamiltonian,
-                            next(self._lengthIter), int(next(self._nstepIter)))
+                        next(self._lengthIter), int(next(self._nstepIter)))
