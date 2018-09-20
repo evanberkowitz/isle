@@ -28,6 +28,8 @@ def readMetadata(fname):
 
     \returns Lattice, parameters, makeAction (source code of function)
     """
+    if isinstance(fname, (tuple, list)):
+        fname = fname[0]
     with h5.File(str(fname), "r") as inf:
         lattice = yaml.safe_load(inf["latticetice"][()])
         params = yaml.safe_load(inf["params"][()])
