@@ -1,5 +1,7 @@
 \page measdoc Measurements
 
+\todo Needs to be completely rewritten!
+
 Measurements are a uniform mechanism to extract information from gauge configurations.
 They can be called both during HMC as 'inline' measurements or afterwards as
 'out-of-line' measurements.
@@ -56,7 +58,7 @@ As an example, look at the following:
 class AcceptanceRate:
     def __call__(self, phi, inline=False, **kwargs):
         # ...
-        
+
     # ...
 ```
 This allows for the class to be found by the import script and it can be used as
