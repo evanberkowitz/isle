@@ -39,7 +39,7 @@ def pathAndType(fname):
     return Path(fname), fileType(fname)
 
 def sourceOfFunction(func):
-    """!
+    r"""!
     Return the source code of a function.
     Works only on free functions, not methods or lambdas.
 
@@ -59,7 +59,7 @@ def sourceOfFunction(func):
     return src
 
 def functionFromSource(src):
-    """!
+    r"""!
     Return a function defined by a piece of source code.
 
     \see sourceOfFunction for the inverse.
@@ -86,7 +86,7 @@ def functionFromSource(src):
     return obj
 
 def callFunctionFromSource(src, *args, **kwargs):
-    """!
+    r"""!
     Extract a function from source code and call it.
 
     `args` and `kwargs` are passed on to the function and its result is returned.

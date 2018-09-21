@@ -23,7 +23,7 @@ def createH5Group(base, name):
     return base.create_group(name)
 
 def readMetadata(fname):
-    """!
+    r"""!
     Read metadata on ensemble from HDF5 file.
 
     \returns Lattice, parameters, makeAction (source code of function)
@@ -38,7 +38,7 @@ def readMetadata(fname):
     return lattice, params, makeActionSrc
 
 def writeTrajectory(group, label, phi, act, trajPoint):
-    """!
+    r"""!
     Write a trajectory (endpoint) to a HDF5 group.
     Creates a new group with name 'label' and stores
     Configuration, action, and whenther the trajectory was accepted.
@@ -62,7 +62,7 @@ def writeTrajectory(group, label, phi, act, trajPoint):
     return grp
 
 def writeCheckpoint(group, label, rng, trajGrpName):
-    """!
+    r"""!
     Write a checkpoint to a HDF5 group.
     Creates a new group with name 'label' and stores RNG state
     and a soft link to the trajectory for this checkpoint.

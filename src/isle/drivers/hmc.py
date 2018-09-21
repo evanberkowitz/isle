@@ -136,7 +136,7 @@ def _verifyConfigsByException(outfname, startIdx):
         raise RuntimeError("Cannot write into output file, contains newer data")
 
 def _ensureIsValidOutfile(outfile, overwrite, startIdx, lattice, params):
-    """!
+    r"""!
     Check if the output file is a valid parameter and if it is possible to write to it.
     Deletes the file if `overwrite == True`.
 

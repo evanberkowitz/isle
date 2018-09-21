@@ -65,7 +65,7 @@ def init(infile, outfile, overwrite):
                    infile[0], outfile[0])
 
 def _ensureIsValidOutfile(outfile, overwrite, lattice, params):
-    """!
+    r"""!
     Check if the output file is a valid parameter and if it is possible to write to it.
     Deletes the file if `overwrite == True`.
 
