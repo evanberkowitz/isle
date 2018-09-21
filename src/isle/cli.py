@@ -6,7 +6,6 @@ More control is available through the lower level functions.
 """
 
 import argparse
-from pathlib import Path
 
 import isle
 from . import fileio
@@ -57,6 +56,11 @@ def addMeasArgs(parser):
     parser.add_argument("-n", type=_sliceArgType, default=slice(-1),
                         help="Select which trajectories to process. In slice notation without spaces.")
 
+def addReportArgs(parser):
+    "!Add arguments for measurements to parser."
+    parser.add_argument("input", help="Input file",
+                        type=fileio.pathAndType)
+
 def parseArguments(cmd, name, description):
     """!
     Parse command line arguments.
@@ -72,7 +76,8 @@ def parseArguments(cmd, name, description):
     """
 
     cmdArgMap = {"hmc": addHMCArgs,
-                 "meas": addMeasArgs}
+                 "meas": addMeasArgs,
+                 "report": addReportArgs}
 
     if cmd is not None:
         if isinstance(cmd, str):
