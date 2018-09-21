@@ -80,9 +80,9 @@ def spaceToSpacetime(vector, time, nt):
     spacetimeVector[time*nx:(time+1)*nx] = vector
     return spacetimeVector
 
-def rotateTemporally(timeVector, time, fermionic=True):
+def rollTemporally(timeVector, time, fermionic=True):
     r"""!
-    Rotate a time vector, accounting for anti/periodic boundary conditions.
+    Roll a time vector, accounting for anti/periodic boundary conditions.
     \param timeVector The vector to rotate.
     \param time The zero entry of `timeVector` will wind up as as time entry of the result.
     \param fermionic Account for antisymmetry in time.
