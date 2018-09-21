@@ -25,6 +25,7 @@ namespace bind {
             .def("Q", py::overload_cast<const CDVector&>(&HFM::Q, py::const_))
             .def("updateKappa", py::overload_cast<const DSparseMatrix&>(&HFM::updateKappa))
             .def("nx", &HFM::nx)
+            .def("kappa", &HFM::kappa)
             ;
 
         py::class_<HFM::QLU>{hfm, "QLU"}
