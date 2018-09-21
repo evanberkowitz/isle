@@ -161,8 +161,8 @@ def _ensureIsValidOutfile(outfile, overwrite, startIdx, lattice, params):
             outfname.unlink()
 
         else:
-            _verifyConfigsByException(outfname, startIdx)
             verifyMetadataByException(outfname, lattice, params)
+            _verifyConfigsByException(outfname, startIdx)
             # TODO verify version(s)
             print(f"Output file '{outfname}' exists -- appending")
 
