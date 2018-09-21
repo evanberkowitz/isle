@@ -2,9 +2,7 @@
 General measurements that can be useful in various contexts.
 
 Canonically, a measurement is a class with a name in UpperCamelCase in a module
-of the same name but in lowerCamelCase. Such a class is imported into the <TT>isle.meas</TT>
-namespace. In other cases, the measurements have to be addressed by using the module name
-in addition to the class or function name.
+of the same name but in lowerCamelCase.
 
 More details can be found under \ref measdoc "Measurements".
 """
@@ -12,34 +10,8 @@ More details can be found under \ref measdoc "Measurements".
 ## \defgroup meas Measurements
 # Perform measurements on configurations.
 
-## \cond DO_NOT_DOCUMENT
-
-# do not import these modules
-IGNORED = ("common")
-
-# function to hide variables
-def _importAll():
-    from importlib import import_module
-    from pathlib import Path
-    measPath = Path(__file__).resolve().parent  # path to meas module
-
-    # look at all files in directory
-    for filename in Path(measPath).iterdir():
-        if filename.suffix != ".py":
-            continue # not a module
-
-        modname = filename.stem  # name without path and suffix
-        if not modname.startswith("__") and modname not in IGNORED:
-            # import the module and its main class
-            classname = modname[0].capitalize()+modname[1:] # capitalize first letter
-            mod = import_module("."+modname, "isle.meas")
-            try:
-                globals()[classname] = mod.__dict__[classname]
-            except KeyError:
-                pass # do not import class
-
-_importAll()
-del _importAll
-del IGNORED
-
-## \endcond
+from .action import Action  # (unused import) pylint: disable=W0611
+from .chiralCondensate import ChiralCondensate  # (unused import) pylint: disable=W0611
+from .logdet import Logdet  # (unused import) pylint: disable=W0611
+from .singleParticleCorrelator import SingleParticleCorrelator  # (unused import) pylint: disable=W0611
+from .totalPhi import TotalPhi  # (unused import) pylint: disable=W0611
