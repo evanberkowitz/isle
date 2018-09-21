@@ -1,70 +1,41 @@
 """!
-Measurement of single-particle correlator.
+Measurement of the chiral condensate.
 """
 
 import numpy as np
-import matplotlib.pyplot as plt
-from matplotlib.ticker import NullFormatter
 
 import isle
-from .common import newAxes
-from ..util import spaceToSpacetime, rotateTemporally
 from ..h5io import createH5Group
 
 
 class ChiralCondensate:
     r"""!
     \ingroup meas
-    Tabulate single-particle correlator
+    Tabulate the chiral condensate.
     """
 
-    def __init__(self, seed, samples, nt, kappaTilde, mu, SIGMA_KAPPA, species=isle.Species.PARTICLE):
-        self.samples = samples
-        self.seed = seed
+    def __init__(self, seed, nsamples, hfm, species):
+        self.nsamples = nsamples
         self.rng = isle.random.NumpyRNG(seed)
-        self.nt = nt           # number of timeslices of the problem
-        self.hfm = isle.HubbardFermiMatrix(kappaTilde, mu, SIGMA_KAPPA)
-        self.nx = len(np.array(isle.Matrix(kappaTilde)))
+        self.hfm = hfm
         self.species = species
-        self.cc = []
+        self.chiCon = []
 
-    def __call__(self, phi, inline=False, **kwargs):
-        """!Record the single-particle correlators."""
+    def __call__(self, phi, action, itr):
+        """!Record the chiral condensate."""
+
+        nx = self.hfm.nx()
+        nt = len(phi) / nx
 
         # Create a large set of sources:
-        rhss = [isle.Vector(self.rng.normal(0,1,self.nt*self.nx)+0j) for s in range(self.samples)]
+        rhss = [isle.Vector(self.rng.normal(0, 1, nt*nx)+0j)
+                for _ in range(self.nsamples)]
 
-        # Solve M.x = b for different right-hand sides,
+        # Solve M*x = b for different right-hand sides,
         # Normalize by spacetime volume
-        res = np.array(isle.solveM(self.hfm, phi, self.species, rhss), copy=False) / (self.nx * self.nt)
+        res = np.array(isle.solveM(self.hfm, phi, self.species, rhss), copy=False) / (nx*nt)
 
-        self.cc.append(np.mean([ np.dot(rhss[s], res[s]) for s in range(self.samples)]))
-
-    def report(self, ax=None):
-        spacer = 0.05
-        left, width = 0.1, 0.65
-        bottom, height = 0.1, 0.8
-        
-        fig = plt.figure()
-        nullfmt = NullFormatter()
-        
-        history = plt.axes([left, bottom, width, height])
-        dist    = plt.axes([left+width+spacer, bottom, 1-left-width-2*spacer, height])
-        
-        history.set_title(r"Monte Carlo History of Chiral Condensate")
-        history.set_xlabel(r"$N_{\mathrm{tr}}$")
-        history.set_ylabel(r"$\Phi$")
-        history.plot(np.arange(len(self.cc)), np.real(self.cc), color='magenta', alpha=0.75)
-        
-        ylimits = history.get_ylim()
-        
-        dist.set_title(r"PDF")
-        dist.set_xlabel(r"Freq.")
-        dist.hist(np.real(self.cc), 50, normed=1, facecolor='magenta', alpha=0.75, orientation="horizontal")
-        dist.yaxis.set_major_formatter(nullfmt)
-        dist.set_ylim(ylimits)
-
-        return fig
+        self.chiCon.append(np.mean([np.dot(rhs, r) for rhs, r in zip(rhss, res)]))
 
     def save(self, base, name):
         r"""!
@@ -73,11 +44,11 @@ class ChiralCondensate:
         \param name Name of the subgroup ob base for this measurement.
         """
         group = createH5Group(base, name)
-        group["chiralCondensate"] = self.cc
+        group["chiralCondensate"] = self.chiCon
 
     def read(self, group):
         r"""!
-        Read the irreps and their correlators from a file.
+        Read the chiral condensate from HDF5.
         \param group HDF5 group which contains the data of this measurement.
         """
-        self.cc = group["chiralCondensate"][()]
+        self.chiCon = group["chiralCondensate"][()]
