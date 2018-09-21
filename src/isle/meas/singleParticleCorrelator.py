@@ -5,70 +5,51 @@ Measurement of single-particle correlator.
 import numpy as np
 
 import isle
-from .common import newAxes
-from ..util import spaceToSpacetime, rotateTemporally
+from ..util import spaceToSpacetime, rollTemporally
 from ..h5io import createH5Group
 
 class SingleParticleCorrelator:
     r"""!
     \ingroup meas
-    Tabulate single-particle correlator
+    Tabulate single-particle correlator.
     """
 
-    def __init__(self, nt, kappaTilde, mu, SIGMA_KAPPA, species=isle.Species.PARTICLE):
-        self.hfm = isle.HubbardFermiMatrix(kappaTilde, mu, SIGMA_KAPPA)
-        self.nt = nt           # number of timeslices of the problem
+    def __init__(self, hfm, species):
+        self.hfm = hfm
         self.corr = []
-        self.irreps = np.transpose(np.linalg.eig(isle.Matrix(kappaTilde))[1])
+        self.irreps = np.transpose(np.linalg.eig(isle.Matrix(hfm.kappa()))[1])
         self.species = species
 
-    def __call__(self, phi, inline=False, **kwargs):
+    def __call__(self, phi, action, itr):
         """!Record the single-particle correlators."""
 
-        # Create a large set of sources:
-        rhss = [isle.Vector(spaceToSpacetime(irrep, time, self.nt)) for irrep in self.irreps for time in range(self.nt)]
-        # For the j^th spacetime vector of the i^th state, go to self.rhss[i * nt + j]
-        # In other words, time is faster.
+        nt = int(len(phi) / self.hfm.nx())
 
-        # Solve M.x = b for different right-hand sides:
+        # Create a large set of sources:
+        rhss = [isle.Vector(spaceToSpacetime(irrep, time, nt))
+                for irrep in self.irreps for time in range(nt)]
+        # For the j^th spacetime vector of the i^th state, go to self.rhss[i * nt + j]
+        # In other words, time is the faster running index.
+
+        # Solve M*x = b for all right-hand sides:
         res = np.array(isle.solveM(self.hfm, phi, self.species, rhss), copy=False)
 
-        propagators = res.reshape([len(self.irreps), self.nt, self.nt, len(self.irreps)])
+        propagators = res.reshape([len(self.irreps), nt, nt, len(self.irreps)])
         # The logic for the one-liner goes as:
-        # For each source irrep we need to apply a sink for every irrep.  This produces a big cross-correlator.
-        # For each source time we need to rotate so that the source lives on timeslice 0.
-        # Finally, we need to average over all the source correlators with the same source irrep but different timeslices.
+        # For each source irrep we need to apply a sink for every irrep.
+        #     This produces a big cross-correlator.
+        # For each source time we need to roll the vector such that the
+        #     source lives on timeslice 0.
+        # Finally, we need to average over all the source correlators with
+        #     the same source irrep but different timeslices.
         self.corr.append(np.mean(
-            np.array([[[
-                rotateTemporally(np.dot(propagators[i, src], np.conj(self.irreps[j])), -src)
-                for src in range(self.nt)]
-                for i in range(len(self.irreps))]
-                for j in range(len(self.irreps))]), axis=2))
-
-    def report(self, ax=None):
-        r"""!
-        Produce a log-scale plot of the correlation functions.
-        """
-
-        if ax is None:
-            fig, ax = newAxes(str(self.species)+" Correlator", r"t", r"C")
-            doTightLayout = True
-
-        correlator = np.array(self.corr)
-
-        timeSlice = range(self.nt)
-        avg = np.mean(np.real(correlator), axis=0)
-        err = np.std(np.real(correlator), axis=0)
-
-        ax.set_yscale("log")
-
-        for i in range(len(self.irreps)):
-            ax.errorbar(timeSlice, avg[i], yerr=err[i])
-
-        if doTightLayout:
-            fig.tight_layout()
-
-        return ax
+            np.array([
+                [
+                    [rollTemporally(np.dot(propagators[i, src], np.conj(irrepj)), -src)
+                     for src in range(nt)]
+                    for i in range(len(self.irreps))]
+                for irrepj in self.irreps]),
+            axis=2))
 
     def save(self, base, name):
         r"""!
