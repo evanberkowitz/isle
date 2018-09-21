@@ -31,10 +31,9 @@ class Measure:
                 phi = cfgf["configuration"][configName]["phi"][()]
                 action = cfgf["configuration"][configName]["action"][()]
                 # measure
-                for frequency, measurement, _ in measurements \
-                    +[(100, meas.Progress("Measurement", len(configNames)), "")]:
+                for frequency, measurement, _ in measurements:
                     if i % frequency == 0:
-                        measurement(phi, act=action, itr=i)
+                        measurement(phi, action, i)
 
         print("Saving measurements...")
         with h5.File(self.outfname, "a") as measFile:
