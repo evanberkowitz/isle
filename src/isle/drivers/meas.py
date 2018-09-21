@@ -1,11 +1,10 @@
-from pathlib import Path
+r"""!
 
-import numpy as np
-import yaml
+"""
+
 import h5py as h5
 
 from .. import fileio
-from .. import meas
 from ._util import verifyMetadataByException, prepareOutfile
 
 
@@ -17,14 +16,17 @@ class Measure:
         self.infname = str(infname)
         self.outfname = str(outfname)
 
-
     def __call__(self, measurements):
-        # Keep configuration h5 file closed as much as possible during measurements
-        # First find find out all the configurations.
+        print("Performing measurements...")
+        self.mapOverConfigs(measurements)
+        print("Saving measurements...")
+        self.save(measurements)
+
+    def mapOverConfigs(self, measurements):
+        # TODO maybe keep file open (benchmark)
         with h5.File(self.infname, "r") as cfgf:
             configNames = sorted(cfgf["/configuration"], key=int)
 
-        print("Performing measurements...")
         for i, configName in enumerate(configNames):
             # read config and action
             with h5.File(self.infname, "r") as cfgf:
@@ -35,11 +37,10 @@ class Measure:
                     if i % frequency == 0:
                         measurement(phi, action, i)
 
-        print("Saving measurements...")
+    def save(self, measurements):
         with h5.File(self.outfname, "a") as measFile:
             for _, measurement, path in measurements:
                 measurement.save(measFile, path)
-
 
 
 def init(infile, outfile, overwrite):
