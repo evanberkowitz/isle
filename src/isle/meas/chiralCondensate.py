@@ -25,7 +25,7 @@ class ChiralCondensate:
         """!Record the chiral condensate."""
 
         nx = self.hfm.nx()
-        nt = len(phi) / nx
+        nt = int(len(phi) / nx)
 
         # Create a large set of sources:
         rhss = [isle.Vector(self.rng.normal(0, 1, nt*nx)+0j)
