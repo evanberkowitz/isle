@@ -4,7 +4,6 @@ Measurement of total phi and norm of phi.
 
 import numpy as np
 
-from ..util import binnedArray
 from ..h5io import createH5Group
 
 class TotalPhi:
