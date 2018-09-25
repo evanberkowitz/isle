@@ -112,7 +112,7 @@ def parseArguments(cmd, name, description, epilog, subdescriptions):
         else:
             # multiple commands
             parser = makeDefaultParser(name, description, epilog)
-            subp = parser.add_subparsers(title="Commands")
+            subp = parser.add_subparsers(title="Commands", dest="cmd")
             for i, subcmd in enumerate(cmd):
                 cmdArgMap[subcmd](subp.add_parser(subcmd, epilog=epilog,
                                                   description=subdescriptions[i] if subdescriptions else None))
