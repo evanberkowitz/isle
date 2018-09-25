@@ -32,7 +32,13 @@ def _parseLattice(adjacency, hopping, positions, nt=0, name="", comment=""):
 
     # set positions
     for i, pos in enumerate(positions):
-        lat.position(i, *pos)
+        if len(pos) == 3:
+            lat.position(i, *pos)
+        elif len(pos) == 2:
+            lat.position(i, *pos, 0)
+        else:
+            raise RuntimeError(f"Lattice site positions given with {len(pos)} coorddinates."
+                               +"only supports 2D and 3D positions.")
 
     print("Read lattice '{}': {}".format(name, comment))
     return lat
