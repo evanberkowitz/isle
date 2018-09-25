@@ -3,18 +3,23 @@ import sys
 try:
     import matplotlib.pyplot as plt
     import matplotlib.gridspec as gridspec
+    from mpl_toolkits.mplot3d import Axes3D  # (unused import) pylint: disable=W0611
+    from matplotlib import cm
 
 except ImportError:
     print("Error: Cannot import matplotlib, show command is not available.")
     raise
 
+import numpy as np
 import h5py as h5
 
 import isle
 import isle.plotting
 from isle.drivers.meas import Measure
 
-def _figure():
+def _overview_figure():
+    """!Open a new figure and construct a GridSpec to lay out subplots."""
+
     fig = plt.figure(figsize=(11, 7))
     gspec = gridspec.GridSpec(3, 4, height_ratios=[5,5,3])
 
@@ -66,24 +71,31 @@ def _formatParams(params):
     return "\n".join(lines)
 
 def _overview(infname, lattice, params, makeActionSrc):
+    """!
+    Show an overview of a HDF5 file.
+    """
+
     if lattice is None or params is None or makeActionSrc is None:
         print("Error: Could not find all required information in the input file to generate an overview.")
         sys.exit(1)
 
+    # use this to bundle information and perform simple measurements if needed
     measState = Measure(lattice, params,
                         isle.fileio.callFunctionFromSource(makeActionSrc, lattice, params),
                         infname, None)
 
-    isle.plotting.setupMPL()
-    fig, (axTP, axAct, axPhase, axPhase2D, axPhi, axPhiHist, axText) = _figure()
+    # set up the figure
+    fig, (axTP, axAct, axPhase, axPhase2D, axPhi, axPhiHist, axText) = _overview_figure()
     fig.canvas.set_window_title(f"Isle Overview - {infname}")
 
+    # plot a bunch of stuff
     isle.plotting.plotTotalPhi(measState, axPhi, axPhiHist)
     isle.plotting.plotTrajPoints(measState, axTP)
     action = _loadAction(measState)
     isle.plotting.plotAction(action, axAct)
     isle.plotting.plotPhase(action, axPhase, axPhase2D)
 
+    # show metadata at bottom of figure
     axText.axis("off")
     axText.text(0, 0, fontsize=13, linespacing=2, verticalalignment="bottom",
                 s=rf"""Ensemble: $N_{{\mathrm{{config}}}}={_nconfig(infname)}$ in {infname}
@@ -91,6 +103,42 @@ def _overview(infname, lattice, params, makeActionSrc):
       Model: {_formatParams(measState.params)}""")
 
     fig.tight_layout()
+
+def _lattice(infname, lattice):
+    """!
+    Show the hopping matrix as a 3D grid.
+    """
+
+    fig = plt.figure(figsize=(10, 10))
+    fig.canvas.set_window_title(f"Isle Lattice - {infname}")
+
+    ax = fig.add_subplot(111, projection="3d")
+    ax.set_title(lattice.name)
+    ax.axis("equal")
+
+    # draw edges
+    hopping = lattice.hopping()
+    maxHopping = np.max(isle.Matrix(hopping))
+    for i in range(lattice.nx()-1):
+        for j in range(i+1, lattice.nx()):
+            if lattice.areNeighbors(i, j):
+                ax.plot(*zip(lattice.position(i), lattice.position(j)),
+                        color=cm.viridis_r(hopping[i, j]/maxHopping))
+
+    # an x marks the center
+    center = sum(np.array(lattice.position(i)) for i in range(lattice.nx()))/lattice.nx()
+    ax.scatter((center[0], ), (center[1], ), marker="x", c="k")
+
+    # make background white
+    ax.w_xaxis.set_pane_color((1.0, 1.0, 1.0, 1.0))
+    ax.w_yaxis.set_pane_color((1.0, 1.0, 1.0, 1.0))
+    ax.w_zaxis.set_pane_color((1.0, 1.0, 1.0, 1.0))
+
+    ax.set_xlabel("x")
+    ax.set_ylabel("y")
+    ax.set_zlabel("z")
+    fig.tight_layout()
+
 
 
 def main(args):
@@ -104,7 +152,12 @@ def main(args):
         print(f"Error: Cannot load file '{args.input[0]}', unsupported file type.")
         sys.exit(1)
 
+    # set up matplotlib once for all reporters
+    isle.plotting.setupMPL()
+
     if "overview" in args.report:
         _overview(args.input[0], lattice, params, makeActionSrc)
+    if "lattice" in args.report:
+        _lattice(args.input[0], lattice)
 
     plt.show()
