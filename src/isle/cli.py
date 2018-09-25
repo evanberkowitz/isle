@@ -59,7 +59,7 @@ def addMeasArgs(parser):
     parser.add_argument("-n", type=_sliceArgType, default=slice(-1),
                         help="Select which trajectories to process. In slice notation without spaces.")
 
-def addReportArgs(parser):
+def addShowArgs(parser):
     """!Add arguments for reporting to parser."""
 
     reporters = ["overview", "lattice", "correlator"]
@@ -97,7 +97,7 @@ def parseArguments(cmd, name, description, epilog):
 
     cmdArgMap = {"hmc": addHMCArgs,
                  "meas": addMeasArgs,
-                 "report": addReportArgs}
+                 "show": addShowArgs}
 
     if cmd is not None:
         if isinstance(cmd, str):
