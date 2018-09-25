@@ -667,8 +667,10 @@ namespace isle {
 
         // solve Ly = rhs (including a factor of K^-1)
         CDSparseMatrix f;
-        BLAZE_SERIAL_SECTION {  // we don't want the puny intra vector parallelization
-#pragma omp parallel for private(f)
+
+        // TODO causes nested parallel statement error
+        // BLAZE_SERIAL_SECTION {  // we don't want the puny intra vector parallelization
+// #pragma omp parallel for private(f)
             for (std::size_t i = 0; i < rhs.size(); ++i) {
                 res[i].resize(nx*nt);
                 spacevec(res[i], 0, nx) = blaze::serial(kinv*spacevec(rhs[i], 0, nx));  // t=0
@@ -678,7 +680,7 @@ namespace isle {
                                                                   + f*spacevec(res[i], t-1, nx)));
                 }
             }
-        }
+        // }
         // now res ~ K^-1 y
 
         // partial products of A
@@ -698,15 +700,15 @@ namespace isle {
         invert(invmat, ipiv);
 
         // solve Ux = y inplace (in res)
-        BLAZE_SERIAL_SECTION {
-#pragma omp parallel for
+        // BLAZE_SERIAL_SECTION {
+// #pragma omp parallel for
             for (std::size_t i = 0; i < rhs.size(); ++i) {
                 spacevec(res[i], nt-1, nx) = invmat*spacevec(res[i], nt-1, nx);  // t = nt-1
                 for (std::size_t t = 0; t < nt-1; ++t) {  // other t's
                     spacevec(res[i], t, nx) -= partialA[t]*spacevec(res[i], nt-1, nx);
                 }
             }
-        }
+        // }
 
         return res;
     }
@@ -725,8 +727,10 @@ namespace isle {
 
         // solve Ly = rhs
         CDSparseMatrix f;
-        BLAZE_SERIAL_SECTION {  // we don't want the puny intra vector parallelization
-#pragma omp parallel for private(f)
+
+        // TODO causes nested parallel statement error
+        // BLAZE_SERIAL_SECTION {  // we don't want the puny intra vector parallelization
+// #pragma omp parallel for private(f)
             for (std::size_t i = 0; i < rhs.size(); ++i) {
                 res[i].resize(nx*nt);
                 spacevec(res[i], 0, nx) = blaze::serial(spacevec(rhs[i], 0, nx));  // t=0
@@ -736,7 +740,7 @@ namespace isle {
                                                             + S*f*spacevec(res[i], t-1, nx));
                 }
             }
-        }
+        // }
         // now res = y
 
         // partial products of B
@@ -756,15 +760,15 @@ namespace isle {
         invert(invmat, ipiv);
 
         // solve Ux = y inplace (in res)
-        BLAZE_SERIAL_SECTION {
-#pragma omp parallel for
+        // BLAZE_SERIAL_SECTION {
+// #pragma omp parallel for
             for (std::size_t i = 0; i < rhs.size(); ++i) {
                 spacevec(res[i], nt-1, nx) = invmat*spacevec(res[i], nt-1, nx);  // t = nt-1
                 for (std::size_t t = 0; t < nt-1; ++t) {  // other t's
                     spacevec(res[i], t, nx) -= partialB[t]*spacevec(res[i], nt-1, nx);
                 }
             }
-        }
+        // }
 
         return res;
     }
