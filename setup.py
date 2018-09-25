@@ -50,7 +50,7 @@ setup(
     long_description="",
     # add all packages under 'src'
     packages=find_packages("src"),
-    # don't add any outside of 'src' packages -> hide setup and test
+    # don't add any packages outside of 'src' -> hide setup and test
     package_dir={"": "src"},
     # add an extension module named 'isle_cpp' to package 'isle'
     ext_modules=[CMakeExtension("isle/isle_cpp")],
@@ -62,5 +62,6 @@ setup(
     zip_safe=False,
     python_requires=">=3.6.5",
     entry_points={
+        "console_scripts": ["isle=isle.scripts.base_command:main"]
     },
 )
