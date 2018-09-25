@@ -1,4 +1,4 @@
-"""!
+"""! \file
 Utilities for command line interfaces.
 
 The default interface can be set up using isle.cli.init().
@@ -11,11 +11,11 @@ import isle
 from . import fileio
 
 def _sliceArgType(arg):
-    "!Parse an argument in slice notation"
+    """!Parse an argument in slice notation"""
     return slice(*map(lambda x: int(x) if x else None, arg.split(":")))
 
 def makeDefaultParser(name, description):
-    "!Return a new default parser object."
+    """!Return a new default parser object."""
     parser = argparse.ArgumentParser(prog=name,
                                      description=description)
     parser.add_argument("--version", action="version",
@@ -23,7 +23,9 @@ def makeDefaultParser(name, description):
     return parser
 
 def addHMCArgs(parser):
-    "!Add arguments for HMC to parser."
+    """!Add arguments for HMC to parser."""
+    parser.add_argument("-v", "--verbose", action="count", default=0,
+                        help="Make output more verbose, stacks.")
     parser.add_argument("-i", "--input", help="Input file.",
                         type=fileio.pathAndType, dest="infile")
     parser.add_argument("-o", "--output", help="Output file",
@@ -42,11 +44,11 @@ def addHMCArgs(parser):
                         help="Checkpoint frequency relative to measurement frequency. Defaults to 0.")
     parser.add_argument("--no-checks", action="store_true",
                         help="Disable consistency checks")
-    parser.add_argument("-v", "--verbose", action="count", default=0,
-                        help="Make output more verbose, stacks.")
 
 def addMeasArgs(parser):
-    "!Add arguments for measurements to parser."
+    """!Add arguments for measurements to parser."""
+    parser.add_argument("-v", "--verbose", action="count", default=0,
+                        help="Make output more verbose, stacks.")
     parser.add_argument("-i", "--input", help="Input file",
                         type=fileio.pathAndType, dest="infile")
     parser.add_argument("-o", "--output", help="Output file",
@@ -57,12 +59,29 @@ def addMeasArgs(parser):
                         help="Select which trajectories to process. In slice notation without spaces.")
 
 def addReportArgs(parser):
-    "!Add arguments for measurements to parser."
+    """!Add arguments for reporting to parser."""
+
+    reporters = ["overview", "lattice", "correlator"]
+
+    class _ReportAction(argparse.Action):
+        """!custom action to parse reporters."""
+        def __call__(self, parser, namespace, values, option_string=None):
+            if "all" in values:
+                setattr(namespace, self.dest, reporters)
+            else:
+                setattr(namespace, self.dest, values.split(","))
+
+    parser.add_argument("-v", "--verbose", action="count", default=0,
+                        help="Make output more verbose, stacks.")
     parser.add_argument("input", help="Input file",
                         type=fileio.pathAndType)
+    parser.add_argument("-r", "--report", action=_ReportAction, metavar="", default=["overview"],
+                        help="Comma separated list of reporters to use. Allowed values are ["
+                        +",".join(reporters)+",all] Defaults to overview.")
+
 
 def parseArguments(cmd, name, description):
-    """!
+    r"""!
     Parse command line arguments.
 
     \param cmd Command(s) to parse arguments for.
@@ -99,7 +118,7 @@ def parseArguments(cmd, name, description):
 
 
 def init(cmd=None, name=None, description=None):
-    """!
+    r"""!
     Initialize command line interface.
 
     \param cmd See isle.cli.parseArguments().
