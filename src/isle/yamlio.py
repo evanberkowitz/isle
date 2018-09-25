@@ -11,7 +11,7 @@ from . import Lattice
 from .util import parameters
 from .action import Hopping
 
-def _parse_lattice(adjacency, hopping, positions, nt=0, name="", comment=""):
+def _parseLattice(adjacency, hopping, positions, nt=0, name="", comment=""):
     """!
     Parse a `!lattice` YAML node.
     """
@@ -39,11 +39,11 @@ def _parse_lattice(adjacency, hopping, positions, nt=0, name="", comment=""):
 
 yaml.add_constructor("!lattice",
                      lambda loader, node: \
-                     _parse_lattice(**loader.construct_mapping(node, deep=True)),
+                     _parseLattice(**loader.construct_mapping(node, deep=True)),
                      Loader=yaml.SafeLoader)
 
 
-def _represent_lattice(dumper, lat):
+def _representLattice(dumper, lat):
     """!
     Create a YAML representation of a Lattice using a `!lattice` node.
     """
@@ -61,7 +61,13 @@ def _represent_lattice(dumper, lat):
                                      "positions": positions},
                                     flow_style=False)
 
-yaml.add_representer(Lattice, _represent_lattice)
+yaml.add_representer(Lattice, _representLattice)
+
+def loadLattice(fname):
+    """!Load a Lattice from a YAML file."""
+    with open(str(fname), "r") as yamlf:
+        return yaml.safe_load(yamlf.read())
+
 
 # register parameters function
 yaml.add_constructor("!parameters",
