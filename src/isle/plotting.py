@@ -86,7 +86,7 @@ def runningAverage(data, binsize):
 def plotTotalPhi(measState, axPhi, axPhiHist):
     """!Plot MC history and histogram of total Phi."""
 
-    # load data from previous measurement of compute from configurations
+    # load data from previous measurement or compute from configurations
     with h5.File(str(measState.infname), "r") as h5f:
         if "field" in h5f:
             totalPhi = h5f["field"]["totalPhi"][()]
@@ -230,3 +230,38 @@ def plotPhase(action, axPhase, axPhase2D):
         axPhase2D.text(0.5, 0.5, r"$\theta = 0$", transform=axPhase2D.transAxes,
                        horizontalalignment='center', verticalalignment='center',
                        size=20, bbox=dict(facecolor="white", alpha=0.5, edgecolor='0.35'))
+
+def plotCorrelators(measState, axP, axH):
+    r"""!
+    Plot particle and hole Correlators.
+    \returns True if successful, False if no data was found.
+    """
+
+    # load data from previous measurement
+    with h5.File(str(measState.infname), "r") as h5f:
+        if "correlation_functions" in h5f:
+            corrP = h5f["correlation_functions"]["single_particle"]["correlators"][()]
+            corrH = h5f["correlation_functions"]["single_hole"]["correlators"][()]
+        else:
+            print("Error: No correlation functions found.")
+            return False
+
+    # ensemble averages
+    corrP = np.mean(corrP, axis=0)
+    corrH = np.mean(corrH, axis=0)
+
+    # plot all correlators
+    nx = corrP.shape[0]
+    for i, j in zip(range(nx), range(nx)):
+        axP.plot(np.real(corrP[i, j, :]), color="C0", alpha=0.6)
+    for i, j in zip(range(nx), range(nx)):
+        axH.plot(np.real(corrH[i, j, :]), color="C0", alpha=0.6)
+
+    axP.set_title("Particles")
+    axH.set_title("Holes")
+    axP.set_xlabel(r"$N_t$")
+    axH.set_xlabel(r"$N_t$")
+    axP.set_yscale("log")
+    axH.set_yscale("log")
+
+    return True
