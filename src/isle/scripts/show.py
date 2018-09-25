@@ -17,7 +17,7 @@ import isle
 import isle.plotting
 from isle.drivers.meas import Measure
 
-def _overview_figure():
+def _overviewFigure():
     """!Open a new figure and construct a GridSpec to lay out subplots."""
 
     fig = plt.figure(figsize=(11, 7))
@@ -75,9 +75,12 @@ def _overview(infname, lattice, params, makeActionSrc):
     Show an overview of a HDF5 file.
     """
 
+    print(f"Info: showing overview of file {infname}")
+
     if lattice is None or params is None or makeActionSrc is None:
-        print("Error: Could not find all required information in the input file to generate an overview.")
-        sys.exit(1)
+        print("Error: Could not find all required information in the input file to generate an overview."
+              "Need HDF5 files.")
+        return
 
     # use this to bundle information and perform simple measurements if needed
     measState = Measure(lattice, params,
@@ -85,7 +88,7 @@ def _overview(infname, lattice, params, makeActionSrc):
                         infname, None)
 
     # set up the figure
-    fig, (axTP, axAct, axPhase, axPhase2D, axPhi, axPhiHist, axText) = _overview_figure()
+    fig, (axTP, axAct, axPhase, axPhase2D, axPhi, axPhiHist, axText) = _overviewFigure()
     fig.canvas.set_window_title(f"Isle Overview - {infname}")
 
     # plot a bunch of stuff
@@ -108,6 +111,8 @@ def _lattice(infname, lattice):
     """!
     Show the hopping matrix as a 3D grid.
     """
+
+    print(f"Info: Showing lattice in file {infname}")
 
     fig = plt.figure(figsize=(10, 10))
     fig.canvas.set_window_title(f"Isle Lattice - {infname}")
@@ -139,9 +144,40 @@ def _lattice(infname, lattice):
     ax.set_zlabel("z")
     fig.tight_layout()
 
+def _correlator(infname, lattice, params, makeActionSrc):
+    """!
+    Show all-to-all correlators.
+    """
+
+    print(f"Info: Showing correlators in file {infname}")
+
+    if lattice is None or params is None or makeActionSrc is None:
+        print("Error: Could not find all required information in the input file to show correlators."
+              "Need HDF5 files.")
+        return
+
+    # use this to bundle information and perform simple measurements if needed
+    measState = Measure(lattice, params,
+                        isle.fileio.callFunctionFromSource(makeActionSrc, lattice, params),
+                        infname, None)
+
+    fig = plt.figure(figsize=(11, 5))
+    fig.canvas.set_window_title(f"Isle Correlators - {infname}")
+
+    if isle.plotting.plotCorrelators(measState, fig.add_subplot(121), fig.add_subplot(122)):
+        fig.tight_layout()
+    else:
+        # failed -> do not show the figure
+        plt.close(fig)
+
 
 
 def main(args):
+    """!
+    Run the show script to report on contents of Isle files.
+    """
+
+    # load metadata to abstract away file type
     if args.input[1] == isle.fileio.FileType.HDF5:
         lattice, params, makeActionSrc = isle.fileio.h5.readMetadata(args.input)
     elif args.input[1] == isle.fileio.FileType.YAML:
@@ -155,9 +191,12 @@ def main(args):
     # set up matplotlib once for all reporters
     isle.plotting.setupMPL()
 
+    # call individual reporters
     if "overview" in args.report:
         _overview(args.input[0], lattice, params, makeActionSrc)
     if "lattice" in args.report:
         _lattice(args.input[0], lattice)
+    if "correlator" in args.report:
+        _correlator(args.input[0], lattice, params, makeActionSrc)
 
     plt.show()
