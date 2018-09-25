@@ -81,7 +81,7 @@ def addShowArgs(parser):
                         +",".join(reporters)+",all] Defaults to overview.")
 
 
-def parseArguments(cmd, name, description, epilog):
+def parseArguments(cmd, name, description, epilog, subdescriptions):
     r"""!
     Parse command line arguments.
 
@@ -93,6 +93,9 @@ def parseArguments(cmd, name, description, epilog):
                In case of a list, a subcommand is added for each element of the list.
     \param name Name of the program for the help message.
     \param description Short description of the program for the help message.
+    \param epilog Argparse epilog message to show below other help messages.
+    \param subdescriptions List of descriptions for subparsers in case cmd contains
+                           more than one command.
     """
 
     cmdArgMap = {"hmc": addHMCArgs,
@@ -110,8 +113,9 @@ def parseArguments(cmd, name, description, epilog):
             # multiple commands
             parser = makeDefaultParser(name, description, epilog)
             subp = parser.add_subparsers(title="Commands")
-            for subcmd in cmd:
-                cmdArgMap[subcmd](subp.add_parser(subcmd))
+            for i, subcmd in enumerate(cmd):
+                cmdArgMap[subcmd](subp.add_parser(subcmd, epilog=epilog,
+                                                  description=subdescriptions[i] if subdescriptions else None))
         args = parser.parse_args()
 
     else:
@@ -120,15 +124,17 @@ def parseArguments(cmd, name, description, epilog):
     return args
 
 
-def init(cmd=None, name=None, description=None, epilog=None):
+def init(cmd=None, name=None, description=None, epilog=None, subdescriptions=None):
     r"""!
     Initialize command line interface.
 
     \param cmd See isle.cli.parseArguments().
     \param name See isle.cli.parseArguments().
     \param description See isle.cli.parseArguments().
+    \param epilog See isle.cli.parseArguments().
+    \param subdescriptions See isle.cli.parseArguments().
     """
 
-    args = parseArguments(cmd, name, description, epilog)
+    args = parseArguments(cmd, name, description, epilog, subdescriptions)
 
     return args
