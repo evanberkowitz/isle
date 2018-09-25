@@ -14,10 +14,11 @@ def _sliceArgType(arg):
     """!Parse an argument in slice notation"""
     return slice(*map(lambda x: int(x) if x else None, arg.split(":")))
 
-def makeDefaultParser(name, description):
+def makeDefaultParser(name, description, epilog):
     """!Return a new default parser object."""
     parser = argparse.ArgumentParser(prog=name,
-                                     description=description)
+                                     description=description,
+                                     epilog=epilog)
     parser.add_argument("--version", action="version",
                         version=isle.__version__)
     return parser
@@ -80,7 +81,7 @@ def addReportArgs(parser):
                         +",".join(reporters)+",all] Defaults to overview.")
 
 
-def parseArguments(cmd, name, description):
+def parseArguments(cmd, name, description, epilog):
     r"""!
     Parse command line arguments.
 
@@ -100,12 +101,14 @@ def parseArguments(cmd, name, description):
 
     if cmd is not None:
         if isinstance(cmd, str):
+            # just one command
             parser = makeDefaultParser(cmd if name is None else name,
-                                       description)
+                                       description, epilog)
             cmdArgMap[cmd](parser)
 
         else:
-            parser = makeDefaultParser(name, description)
+            # multiple commands
+            parser = makeDefaultParser(name, description, epilog)
             subp = parser.add_subparsers(title="Commands")
             for subcmd in cmd:
                 cmdArgMap[subcmd](subp.add_parser(subcmd))
@@ -117,7 +120,7 @@ def parseArguments(cmd, name, description):
     return args
 
 
-def init(cmd=None, name=None, description=None):
+def init(cmd=None, name=None, description=None, epilog=None):
     r"""!
     Initialize command line interface.
 
@@ -126,6 +129,6 @@ def init(cmd=None, name=None, description=None):
     \param description See isle.cli.parseArguments().
     """
 
-    args = parseArguments(cmd, name, description)
+    args = parseArguments(cmd, name, description, epilog)
 
     return args
