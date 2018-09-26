@@ -218,6 +218,14 @@ namespace isle {
         blaze::getri(mat, ipiv.get());
     }
 
+    /// Compute eigenvalues to check whether a matrix is invertible.
+    template <typename MT>
+    bool isInvertible(MT mat, const double eps=1e-15) {
+        isle::CDVector eigenvals;
+        blaze::geev(mat, eigenvals);
+        return blaze::min(blaze::abs(eigenvals)) > eps;
+    }
+
     /// Matrix exponential of real, symmetrix matrices.
     /**
      * \throws std::runtime_error if `mat` has a zero eigenvalue.
