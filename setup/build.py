@@ -15,7 +15,8 @@ from .version import version_from_git
 
 def _in_virtualenv():
     "Detect whether Python is running in a virutal environment."
-    return sys.prefix == sys.base_prefix
+    return (hasattr(sys, 'real_prefix') or
+            (hasattr(sys, 'base_prefix') and sys.base_prefix != sys.prefix))
 
 def _python_config():
     "Return name of the python-config script."
