@@ -1,3 +1,7 @@
+r"""! \file
+\todo
+"""
+
 import sys
 
 try:
@@ -142,7 +146,6 @@ def _lattice(infname, lattice):
     ax.set_xlabel("x")
     ax.set_ylabel("y")
     ax.set_zlabel("z")
-    fig.tight_layout()
 
 def _correlator(infname, lattice, params, makeActionSrc):
     """!
