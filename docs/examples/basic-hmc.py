@@ -47,7 +47,7 @@ def main():
     # random initial condition
     phi = isle.Vector(rng.normal(0, (params.U * params.beta / lat.nt())**(1/2), lat.lattSize())+0j)
 
-    print("termalizing")
+    print("thermalizing")
     # a proposer to linearly decrease the number of MD steps
     proposer = isle.proposers.LinearStepLeapfrog(hmcState.ham, (1, 1), (20, 5), 99)
     # thermalize configuration without saving anything
