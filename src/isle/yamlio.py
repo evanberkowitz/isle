@@ -54,9 +54,13 @@ def _representLattice(dumper, lat):
     Create a YAML representation of a Lattice using a `!lattice` node.
     """
 
-    adj, hopping = zip(*[([i, neigh[0]], neigh[1]) for i in range(lat.nx())
-                         for neigh in lat.getNeighbors(i)
-                         if neigh[0] > i])
+    if lat.nx() > 1:
+        adj, hopping = zip(*[([i, neigh[0]], neigh[1]) for i in range(lat.nx())
+                             for neigh in lat.getNeighbors(i)
+                             if neigh[0] > i])
+    else:
+        adj, hopping = [], []
+
     positions = [list(lat.position(i)) for i in range(lat.nx())]
     return dumper.represent_mapping("!lattice",
                                     {"name": lat.name,
