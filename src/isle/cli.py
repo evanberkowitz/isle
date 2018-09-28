@@ -112,10 +112,11 @@ def parseArguments(cmd, name, description, epilog, subdescriptions):
         else:
             # multiple commands
             parser = makeDefaultParser(name, description, epilog)
-            subp = parser.add_subparsers(title="Commands", dest="cmd")
+            subp = parser.add_subparsers(title="Commands", dest="cmd", required=True)
             for i, subcmd in enumerate(cmd):
                 cmdArgMap[subcmd](subp.add_parser(subcmd, epilog=epilog,
-                                                  description=subdescriptions[i] if subdescriptions else None))
+                                                  description=subdescriptions[i]
+                                                  if subdescriptions else None))
         args = parser.parse_args()
 
     else:
@@ -136,5 +137,8 @@ def init(cmd=None, name=None, description=None, epilog=None, subdescriptions=Non
     """
 
     args = parseArguments(cmd, name, description, epilog, subdescriptions)
+
+    # TODO logging
+    #        allow to suppress file output (for show)
 
     return args
