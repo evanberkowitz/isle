@@ -13,39 +13,45 @@
 This document describes the algorithms used for the fermionic action in the Hubbard model.
 They are implemented by these classes:
 \begin{itemize}
-\item \texttt{HubbardFermiMatrix}
-\item \texttt{HubbardFermiActionDia}
-\item \texttt{HubbardFermiActionExp}
+\item \texttt{HubbardFermiMatrix[Dia|Exp]}
+\item \texttt{HubbardFermiAction<\ldots>}
 \end{itemize}
 and can be found int the following files:
 \begin{itemize}
-\item \texttt{src/isle/cpp/action/hubbardFermiMatrix.[hpp|cpp]}
-\item \texttt{src/isle/cpp/action/hubbardFermiActionDia.[hpp|cpp]}
-\item \texttt{src/isle/cpp/action/hubbardFermiActionExp.[hpp|cpp]}
+\item \texttt{src/isle/cpp/action/hubbardFermiMatrix[Dia|Exp].[hpp|cpp]}
+\item \texttt{src/isle/cpp/action/hubbardFermiAction.[hpp|cpp]}
 \end{itemize}
 For usage information, see the source documentation of the classes.\\
 
 \noindent
-There are two variants of the algorithms:
-\begin{enumerate}
-\item Treat particle $M_p$ and hole $M_h$ matrices separately.
-\item Use $Q = M_p M_h^T$.
-\end{enumerate}
-Only Variant 1 is fully implemented.
+There are several different ways to formulate a field theory for the Hubbard Model.
+This document covers two different discretizations of the fermion action, see Sections~\ref{sec:dia_disc} and~\ref{sec:exp_disc}.
+In addition, the operators can be expressed in the particle/hole (labelled by $\alpha=1$) or spin (labelled by $\alpha=0$) basis.
+The former gives an imaginary Hubbard-Stratonovich transformation and a contribution of auxiliary fields of $e^{\i\phi}$.
+This is used in this documentation.
+A calculation in the spin basis yields $e^\phi$.
+All expressions for this basis can be obtained from the ones quoted here via a simple substitution.
 
 \clearpage
-\section{Variant 1}\label{sec:variant1}
-
-This version treats the fermion matrices for particles and holes separately.
-\texttt{HubbardFermiAction} is implemented this way.
-
-\subsection{Definitions}
+\section{Definitions}
 
 The fermionic action is
 \begin{align}
-  S_\text{ferm} = - \log \det M(\phi, \tilde{\kappa}, \tilde{\mu}) M(-\phi, \sigma_{\tilde{\kappa}}\tilde{\kappa}, -\tilde{\mu}) \equiv - \log \det M_p M_h.\label{eq:ferm_action_v1}
+  S_\text{ferm} &= - \log \det M(\phi, \tilde{\kappa}, \tilde{\mu}) M^T(-\phi, \sigma_{\tilde{\kappa}}\tilde{\kappa}, -\tilde{\mu}) \equiv - \log \det M_p M_h^T\label{eq:ferm_action_v1}\\
+  &\equiv - \log \det Q(\phi, \tilde{\kappa}, \tilde{\mu}, \sigma_{\tilde{\kappa}}).\label{eq:ferm_action_v2}
 \end{align}
-where $\phi$ is the auxiliary field that is integrated over. In general $\sigma_{\tilde{\kappa}} = -1$ but for bipartite lattices, a particle-hole transformation can be used to get $\sigma_{\tilde{\kappa}} = +1$. Subscripts $p$ and $h$ indicate matrices for particles and holes, respectively. The fermion matrix is
+where $\phi$ is the auxiliary field that is integrated over. In general $\sigma_{\tilde{\kappa}} = -1$ but for bipartite lattices, a particle-hole transformation can be used to get $\sigma_{\tilde{\kappa}} = +1$. Subscripts $p$ and $h$ indicate matrices for particles and holes, respectively.
+The parameters are
+\begin{itemize}
+\item $\delta = \beta / N_t$ and $\beta$ the inverse temperature,
+\item $\tilde{\kappa} = \delta\kappa$ and $\kappa$ the hopping matrix,
+\item $\tilde{\mu} = \delta\mu$ and $\mu$ the chemical potential.
+\end{itemize}
+
+\subsection{Diagonal Discretization}\label{sec:dia_disc}
+
+The main discretization of the fermion action used in Isle puts the hopping matrix on the diagonal and approximates the exponential used in Section~\ref{sec:exp_disc}.
+In this case, the fermion matrix is
 \begin{align}
   {M(\phi, \tilde{\kappa}, \tilde{\mu})}_{x't';xt}
   &= (1+\tilde{\mu})\delta_{x'x}\delta_{t't} - \tilde{\kappa}_{x'x}\delta_{t't} - \mathcal{B}_{t'} e^{\i\phi_{xt}}\delta_{x'x}\delta_{t'(t+1)}\label{eq:def_m}\\
@@ -77,13 +83,67 @@ In time-major layout (time index is slowest) $M$ is a cyclic lower block bidiago
          &      &        &-F_{N_t-1}&K   \\
   \end{pmatrix}.\label{eq:ferm_mat_block_v1}
 \end{align}
-The parameters are
-\begin{itemize}
-\item $\delta = \beta / N_t$ and $\beta$ the inverse temperature
-\item $\tilde{\kappa} = \delta\kappa$ and $\kappa$ the hopping matrix
-\item $\tilde{\mu} = \delta\mu$ and $\mu$ the chemical potential
-\end{itemize}
 
+\noindent
+The matrix $Q$ in eq.~\eqref{eq:ferm_action_v2} is easy to calculate and can be expressed as
+\begin{align}
+  {Q(\phi, \tilde{\kappa}, \tilde{\mu}, \sigma_{\tilde{\kappa}})}_{x't',xt}
+  &= {M(\phi, \tilde{\kappa}, \tilde{\mu})}_{x't',x''t''} {M^T(-\phi, \sigma_{\tilde{\kappa}}\tilde{\kappa}, -\tilde{\mu})}_{x''t'',xt}\\
+  &= \big[(1+\tilde{\mu})\delta_{x'x''}\delta_{t't''} - \tilde{\kappa}_{x'x''}\delta_{t't''} - \mathcal{B}_{t'}e^{\i\phi_{x''t''}}\delta_{x'x''}\delta_{t'(t''+1)}\big] \nonumber\\
+  &\quad\times \big[(1-\tilde{\mu})\delta_{x'' x}\delta_{t'' t} - \sigma_{\tilde{\kappa}}\tilde{\kappa}_{x'' x'}\delta_{t'' t} - \mathcal{B}_{t}e^{-\i\phi_{x''t''}}\delta_{x'' x}\delta_{t(t''+1)}\big]\\
+  &\equiv \delta_{t't}{(P)}_{x'x} + \delta_{t'(t+1)}{(T^+_{t'})}_{x'x} + \delta_{t(t'+1)}{(T^-_{t'})}_{x'x}
+\end{align}
+with
+\begin{align}
+  {P(\phi, \tilde{\kappa}, \tilde{\mu}, \sigma_{\tilde{\kappa}})}_{x'x} &= (2-\tilde{\mu}^2)\delta_{x'x} - (\sigma_{\tilde{\kappa}}(1+\tilde{\mu}) + (1-\tilde{\mu}))\tilde{\kappa}_{x'x} + \sigma_{\tilde{\kappa}}{(\tilde{\kappa}^2)}_{x'x}\\
+  {T^+_{t'}(\phi, \tilde{\kappa}, \tilde{\mu}, \sigma_{\tilde{\kappa}})}_{x'x} &= \mathcal{B}_{t'}e^{\i\phi_{x'(t'-1)}}[\sigma_{\tilde{\kappa}}\tilde{\kappa}_{x'x} - (1-\tilde{\mu})\delta_{x'x}]\\
+  {T^-_{t'}(\phi, \tilde{\kappa}, \tilde{\mu}, \sigma_{\tilde{\kappa}})}_{x'x} &= \mathcal{B}_{t'+1}e^{-\i\phi_{xt'}}[\tilde{\kappa}_{x'x} - (1+\tilde{\mu})\delta_{x'x}]
+\end{align}
+In time major layout (time is slowest running index) $Q$ assumes a cyclic block tridiagonal form:
+\begin{align}
+  Q(\phi, \tilde{\kappa}, \tilde{\mu}, \sigma_{\tilde{\kappa}}) =
+  \begin{pmatrix}
+    P         & T^-_0 &       &         &           &              & T^+_0    \\
+    T^+_1     & P     & T^-_1 &         &           &              &          \\
+              & T^+_2 & P     & T^-_2   &           &              &          \\
+              &       & T^+_3 & P      & \ddots         &              &          \\
+              &       &       & \ddots     & \ddots         & T^-_{N_t-3}    &          \\
+              &       &       &        & T^+_{N_t-2} & P            & T^-_{N_t-2}\\
+    T^-_{N_t-1} &       &       &        &           & T^+_{N_t-1}    & P
+  \end{pmatrix}
+\end{align}
+
+\subsection{Exponential Discretization}\label{sec:exp_disc}
+
+The fermion matrix discussed in the previous section is an approximation of
+\begin{align}
+  {\hat{M}(\phi, \tilde{\kappa}, \tilde{\mu})}_{x't';xt}
+  &\equiv {\hat{K}}_{x'x}\delta_{t't} - \mathcal{B}_{t'}{\hat{F}_{t'}(\phi, \tilde{\kappa}, \tilde{\mu})}_{x'x}\delta_{t'(t+1)},\label{eq:def_m_exp}
+\end{align}
+with
+\begin{align}
+  {\hat{K}}_{x'x} &\equiv \delta_{x'x}\\
+  {\hat{F}_{t'}(\phi, \tilde{\kappa}, \tilde{\mu})}_{x'x} &\equiv {(e^{-\tilde{\kappa}+\tilde{\mu}})}_{x'x} e^{\i \phi_{x(t'-1)}} = {(e^{-\tilde{\kappa}+\tilde{\mu}} F_{t'}(\phi) )}_{x'x}.
+\end{align}
+And the combination
+\begin{align}
+  {\hat{Q}(\phi, \tilde{\kappa}, \tilde{\mu}, \sigma_{\tilde{\kappa}})}_{x't',xt}
+  \equiv \delta_{t't}{(\hat{P})}_{x'x} + \delta_{t'(t+1)}{(\hat{T}^+_{t'})}_{x'x} + \delta_{t(t'+1)}{(\hat{T}^-_{t'})}_{x'x}
+\end{align}
+with
+\begin{align}
+  {\hat{P}(\tilde{\kappa}, \tilde{\mu}, \sigma_{\tilde{\kappa}})}_{x'x} &= \delta_{x'x} + {(e^{-\tilde{\kappa}+\tilde{\mu}} e^{-\sigma_{\tilde{\kappa}}\tilde{\kappa} - \tilde{\mu}})}_{x'x}\\
+  {\hat{T}^+_{t'}(\phi, \tilde{\kappa}, \tilde{\mu}, \sigma_{\tilde{\kappa}})}_{x'x} &= - \mathcal{B}_{t'} {\hat{F}_{t'}(\phi, \tilde{\kappa}, \tilde{\mu})}_{x'x} = - \mathcal{B}_{t'} {(e^{-\tilde{\kappa}+\tilde{\mu}})}_{x'x} e^{\i \phi_{x(t'-1)}}\\
+  {\hat{T}^-_{t'}(\phi, \tilde{\kappa}, \tilde{\mu}, \sigma_{\tilde{\kappa}})}_{x'x} &= - \mathcal{B}_{t'+1} {\hat{F}^T_{t'+1}(-\phi, \sigma_{\tilde{\kappa}}\tilde{\kappa}, -\tilde{\mu})}_{x'x} = - \mathcal{B}_{t'+1} e^{-\i \phi_{x't'}} {(e^{-\sigma_{\tilde{\kappa}}\tilde{\kappa}-\tilde{\mu}})}_{x'x}
+\end{align}
+Since both $\hat{M}$ and $\hat{Q}$ have the same block structure as $M$ and $Q$, most of the following derivations treat only the diagonal discretization from Section~\ref{sec:dia_disc}.
+Based on those, results for the exponential discretization are derived where they differ.
+
+
+\section{Variant 1}\label{sec:variant1}
+
+This is the main version of the algorithm implemented in Isle.
+It treats the fermion matrices for particles $M_p$ and holes $M_h$ separately.
 
 \subsection{LU-Decomposition}\label{sec:lu_v1}
 
@@ -145,7 +205,7 @@ Given the LU-decomposition of the previous section, we can write
 \begin{align}
   \det M = \det L \det U = (\prod_{i=0}^{N_t-1}\,1) (\prod_{i=0}^{N_t-1}\,d_i)
 \end{align}
-Resumming ('remultiplying'?) the equations for the non-trivial $d$ gives
+Remultiplying the equations for the non-trivial $d$ gives
 \begin{align}
   d_{N_t-1} = K + F_{N_t-1}K^{-1} F_{N_t-2}K^{-1} \cdots F_{1}K^{-1} F_{0}.
 \end{align}
@@ -167,7 +227,21 @@ The action~\eqref{eq:ferm_action_v1} is the sum of contributions from particles 
 \begin{align}
   S_\text{ferm} = -N_t \log \det(K_p)  - \log \det (1 + A_p) - N_t \log \det(K_h) - \log \det (1 + A_h).
 \end{align}
-In general those contributions are not related by a simple equation meaning that both need to be computed from scratch.
+In general those contributions are not related by a simple equation meaning that both need to be computed from scratch.\\
+
+\noindent
+The result for the exponential discretization, Section~\ref{sec:exp_disc}, can be obtained via the substitutions
+\begin{align}
+  K &\mapsto \hat{K} = \mathds{1}\label{eq:exp_subs_K}\\
+  F_{t'} &\mapsto \hat{F}_{t'}\label{eq:exp_subs_F}
+\end{align}
+\begin{resultbox}
+  \vspace{-\baselineskip}
+  \begin{align}
+    \log \det \hat{M} &= \log \det (1 + \hat{A}),\label{eq:det_M_exp}\\
+    \hat{A} &\equiv \hat{F}_{N_t-1} \hat{F}_{N_t-2} \cdots \hat{F}_{1} \hat{F}_{0}.\label{eq:def_B}
+  \end{align}
+\end{resultbox}
 
 \subsection{Force}
 
@@ -233,7 +307,20 @@ Elements near the boundary:
   {(\dot{\pi}_{\text{ferm}})}_{\mu(N_t-2)} &= -\i {\big(A^{-1}_{p,(N_t-1)(N_t-1)} {(1+A_p^{-1})}^{-1} A^{-1}_{p,0(N_t-2)}\big)}_{\mu\mu} \nonumber\\
                                  &\quad + \i {\big(A^{-1}_{h,(N_t-1)(N_t-1)} {(1+A_h^{-1})}^{-1} A^{-1}_{h,0(N_t-2)}\big)}_{\mu\mu}
 \end{align}
-Keep in mind that $\mu$ is \emph{not} summed over, even when it appears twice in one term.
+Keep in mind that $\mu$ is \emph{not} summed over, even when it appears twice in one term.\\
+
+\noindent
+The force in the exponential discretization can be calculated by applying the same substitutions as for the action itself, Eqs.~\eqref{eq:exp_subs_K} and~\eqref{eq:exp_subs_F}.
+\begin{resultbox}
+  \vspace{-\baselineskip}
+  \begin{align}
+    {(\dot{\hat{\pi}}'_{\text{ferm}})}_{\mu\tau} &= \Tr \Big[{(1+\hat{A}_p^{-1})}^{-1}\dpd{}{\phi_{\mu\tau}}\hat{A}_p^{-1} + {(1+\hat{A}_h^{-1})}^{-1}\dpd{}{\phi_{\mu\tau}}\hat{A}_h^{-1}\Big],\\
+    \hat{A}^{-1} &\equiv \hat{F}_0^{-1} \hat{F}_1^{-1} \cdots \hat{F}_{N_t-1}^{-1}
+  \end{align}
+\end{resultbox}
+\noindent
+This form is essentially identical to~\eqref{eq:force_v1} and thus the same algorithm can be used.
+
 
 \subsection{Solver}\label{sec:solver_v1}
 
@@ -259,58 +346,9 @@ Note that $y$ always appears as $K^{-1}y$. Hence it is possible to reduce the nu
 \clearpage
 \section{Variant 2}
 
-This version uses the combined matrix $Q = M(\phi, \tilde{\kappa}, \tilde{\mu}) {M(-\phi, \sigma_{\tilde{\kappa}}\tilde{\kappa}, -\tilde{\mu})}^T$ to treat particles and holes together.
-Part of this variant is implemented by \texttt{HubbardFermiMatrix} and associated free functions. But a full implementation is not available.
-
-\subsection{Definitions}
-
-The fermionic action can be written as
-\begin{align}
-  S_\text{ferm} = - \log \det(M(\phi, \tilde{\kappa}, \tilde{\mu})) \det ({M(-\phi, \sigma_{\tilde{\kappa}}\tilde{\kappa}, -\tilde{\mu})}^T) \equiv - \log \det Q(\phi, \tilde{\kappa}, \tilde{\mu}, \sigma_{\tilde{\kappa}}).\label{eq:ferm_action_v2}
-\end{align}
-Note that the second $M$ can not be expressed as $M^\dagger(\phi)$ even for bipartite lattices and $\mu=0$ because $\phi$ is potentially complex valued. We apply the transpose only to cast $Q$ into a structurally symmetric tridiagonal form. Otherwise it would contain terms $~\delta_{t'(t+2)}$.
-Now calculate $Q$ and express it in terms of blocks on the diagonal and off diagonals:
-\begin{align}
-  {Q(\phi, \tilde{\kappa}, \tilde{\mu}, \sigma_{\tilde{\kappa}})}_{x't',xt}
-  &= {M(\phi, \tilde{\kappa}, \tilde{\mu})}_{x't',x''t''} {M^T(-\phi, \sigma_{\tilde{\kappa}}\tilde{\kappa}, -\tilde{\mu})}_{x''t'',xt}\\
-  &= \big[(1+\tilde{\mu})\delta_{x'x''}\delta_{t't''} - \tilde{\kappa}_{x'x''}\delta_{t't''} - \mathcal{B}_{t'}e^{\i\phi_{x''t''}}\delta_{x'x''}\delta_{t'(t''+1)}\big] \nonumber\\
-  &\quad\times \big[(1-\tilde{\mu})\delta_{x'' x}\delta_{t'' t} - \sigma_{\tilde{\kappa}}\tilde{\kappa}_{x'' x'}\delta_{t'' t} - \mathcal{B}_{t}e^{-\i\phi_{x''t''}}\delta_{x'' x}\delta_{t(t''+1)}\big]\\
-  &= \delta_{t't}{(P)}_{x'x} + \delta_{t'(t+1)}{(T^+_{t'})}_{x'x} + \delta_{t(t'+1)}{(T^-_{t'})}_{x'x}
-\end{align}
-with
-\begin{align}
-  {P(\phi, \tilde{\kappa}, \tilde{\mu}, \sigma_{\tilde{\kappa}})}_{x'x} &\equiv (2-\tilde{\mu}^2)\delta_{x'x} - (\sigma_{\tilde{\kappa}}(1+\tilde{\mu}) + (1-\tilde{\mu}))\tilde{\kappa}_{x'x} + \sigma_{\tilde{\kappa}}{(\tilde{\kappa}^2)}_{x'x}\\
-  {T^+_{t'}(\phi, \tilde{\kappa}, \tilde{\mu}, \sigma_{\tilde{\kappa}})}_{x'x} &\equiv \mathcal{B}_{t'}e^{\i\phi_{x'(t'-1)}}[\sigma_{\tilde{\kappa}}\tilde{\kappa}_{x'x} - (1-\tilde{\mu})\delta_{x'x}]\\
-  {T^-_{t'}(\phi, \tilde{\kappa}, \tilde{\mu}, \sigma_{\tilde{\kappa}})}_{x'x} &\equiv \mathcal{B}_{t'+1}e^{-\i\phi_{xt'}}[\tilde{\kappa}_{x'x} - (1+\tilde{\mu})\delta_{x'x}]
-\end{align}
-and
-\begin{align}
-  \mathcal{B}_t =
-  \begin{cases}
-    +1,\quad 0 < t < N_t\\
-    -1,\quad t = 0
-  \end{cases}
-\end{align}
-together with periodicity in the Kronecker deltas handles anti-periodic temporal boundary conditions.\\
-In time major layout (time is slowest running index) $Q$ assumes a cyclic block tridiagonal form:
-\begin{align}
-  Q(\phi, \tilde{\kappa}, \tilde{\mu}, \sigma_{\tilde{\kappa}}) =
-  \begin{pmatrix}
-    P         & T^-_0 &       &         &           &              & T^+_0    \\
-    T^+_1     & P     & T^-_1 &         &           &              &          \\
-              & T^+_2 & P     & T^-_2   &           &              &          \\
-              &       & T^+_3 & P      & \ddots         &              &          \\
-              &       &       & \ddots     & \ddots         & T^-_{N_t-3}    &          \\
-              &       &       &        & T^+_{N_t-2} & P            & T^-_{N_t-2}\\
-    T^-_{N_t-1} &       &       &        &           & T^+_{N_t-1}    & P
-  \end{pmatrix}
-\end{align}
-The parameters are
-\begin{itemize}
-\item $\delta = \beta / N_t$ and $\beta$ the inverse temperature
-\item $\tilde{\kappa} = \delta\kappa$ and $\kappa$ the hopping matrix
-\item $\tilde{\mu} = \delta\mu$ and $\mu$ the chemical potential
-\end{itemize}
+This version uses the combined matrix $Q = M(\phi, \tilde{\kappa}, \tilde{\mu}) M^T(-\phi, \sigma_{\tilde{\kappa}}\tilde{\kappa}, -\tilde{\mu})$ to treat particles and holes together.
+This variant is implemented as well because it is more stable in the spin basis ($\alpha=0$).
+It is however much slower than variant 1.
 
 \subsection{LU-Decomposition}\label{sec:lu_decomposition_v2}
 
@@ -392,7 +430,7 @@ The derivative acts only on $T^\pm$, thus
 \begin{align}
   {(\dot{\pi}_{\text{ferm}})}_{\mu\tau}
   &= Q^{-1}_{xt,x't'} \dpd{}{\phi_{\mu\tau}} Q_{x't',xt}\\
-  &= \i \big[\delta_{t'(t+1)}\delta_{\tau(t'-1)}\delta_{x'\mu} Q^{-1}_{xt,x't'} {(T^+_{t'})}_{x'x} - \delta_{t(t'+1)}\delta_{\tau t}\delta_{x\mu} Q^{-1}_{xt,x't'} {(T^-_{t'})}_{x'x}\big]
+  &= \i Q^{-1}_{xt,x't'} \big[\delta_{t'(t+1)}\delta_{\tau(t'-1)}\delta_{x'\mu}  {(T^+_{t'})}_{x'x} - \delta_{t(t'+1)}\delta_{\tau t}\delta_{x\mu} {(T^-_{t'})}_{x'x}\big]
 \end{align}
 and finally
 \begin{resultbox}
@@ -402,7 +440,21 @@ and finally
   \end{align}
 \end{resultbox}
 \noindent
-Note that $\mu$ and $\tau$ are \emph{not} summed over even though they are repeated on the right hand sides.
+Note that $\mu$ and $\tau$ are \emph{not} summed over even though they are repeated on the right hand sides.\\
+
+\noindent
+The internal structure of the $\hat{T}^{\pm}$ for the exponential discretization is different from $T^\pm$ such that the derivative acts in a different way.
+Here, the force is
+\begin{align}
+  {(\dot{\hat{\pi}}_{\text{ferm}})}_{\mu\tau} = \i \hat{Q}^{-1}_{xt,x't'} \big[{(\hat{T}^+_{\tau+1})}_{x'x} \delta_{x\mu} \delta_{t\tau} \delta_{t'(\tau+1)} - {(\hat{T}^-_\tau)}_{x'x} \delta_{x'\mu} \delta_{t'\tau} \delta_{t(t'+1)}\big]
+\end{align}
+And thus
+\begin{resultbox}
+  \vspace{-\baselineskip}
+  \begin{align}
+    {(\dot{\hat{\pi}}_{\text{ferm}})}_{\mu\tau} = \i \left[\hat{Q}^{-1}_{\mu\tau,x'(\tau+1)} {(\hat{T}^+_{\tau+1})}_{x'\mu} - {(\hat{T}^-_\tau)}_{\mu x} \hat{Q}^{-1}_{x(\tau+1),\mu\tau}\right].
+  \end{align}
+\end{resultbox}
 
 \subsection{Solver}
 
@@ -441,82 +493,6 @@ Then solve $U X = Y$:
 \end{align}
 Like in the LU-decomposition itself, those relations can be read off, or proven using simple induction.
 Apart from the last row, the $y$'s are independent from each other while the $x$'s have to be computed iterating over rows from $N_t-1$ though 0. However, different columns never mix.
-
-\clearpage
-\section{Exponential Hopping}
-
-The fermion action introduced in equations~\eqref{eq:ferm_action_v1} and~\eqref{eq:ferm_action_v2} is an approximation to the `real' Hubbard model action
-\begin{align}
-  S'_\text{ferm} = - \log \det M'(\phi, \tilde{\kappa}, \tilde{\mu}) M'(-\phi, \sigma_{\tilde{\kappa}}\tilde{\kappa}, -\tilde{\mu}) \equiv - \log \det M'_p M'_h,\label{eq:ferm_action_exp}
-\end{align}
-with
-\begin{align}
-  {M'(\phi, \tilde{\kappa}, \tilde{\mu})}_{x't';xt}
-  &= (1+\tilde{\mu})\delta_{x'x}\delta_{t't} - \mathcal{B}_{t'} e^{\tilde{\kappa}} e^{\i\phi_{xt}}\delta_{x'x}\delta_{t'(t+1)}\\
-  &\equiv (1+\tilde{\mu})\delta_{x'x}\delta_{t't} - \mathcal{B}_{t'}{S(\tilde{\kappa})F_{t'}(\phi)}_{x'x}\delta_{t'(t+1)}.
-\end{align}
-where
-\begin{align}
-  {S(\tilde{\kappa})}_{x'x} &= {(e^{\tilde{\kappa}})}_{x'x},\\
-  {F_{t'}(\phi)}_{x'x} &= e^{\i\phi_{x(t'-1)}}\delta_{x'x}.
-\end{align}
-Note that compared to~\eqref{eq:def_m}, the hopping matrix $\tilde{\kappa}$ is on the off-diagonal and in an exponential.
-The difference between both actions vanishes in the continuum limit.
-However, approximating $e^{\tilde{\kappa}}$ improves performance as $\tilde{\kappa}$ is sparse.
-Furthermore, moving the hopping term onto the diagonal improves the behaviour of the Hybrid Monte-Carlo evolution [{\color{rwthrot}Cite ergodicity paper}].\\ %TODO
-
-\noindent
-For simplicity, we drop the chemical potential now and \textbf{what follows is only valid for $\mu = 0$!}
-The implementation for exponential hopping is also only valid without chemical potential.
-This should not be an issue in practice since the algorithm described in Section~\ref{sec:variant1} should be preferred.
-
-\subsection{Action}
-
-The action can be computed easily via the following two substitutions:
-\begin{align}
-  K &\rightarrow \mathds{1}\label{eq:exp_subs_K}\\
-  F_{t'} &\rightarrow S F_{t'}\label{eq:exp_subs_F}
-\end{align}
-which implies $A \rightarrow B$, see~\eqref{eq:def_B}.
-Applied to~\eqref{eq:det_M}, this gives
-\begin{resultbox}
-  \vspace{-\baselineskip}
-  \begin{align}
-    \log \det M' &= \log \det (1 + B),\label{eq:det_M_exp}\\
-    B &\equiv SF_{N_t-1} S F_{N_t-2} \cdots SF_{1} SF_{0}.\label{eq:def_B}
-  \end{align}
-\end{resultbox}
-And hence the action~\eqref{eq:ferm_action_exp} is
-\begin{align}
-  S'_\text{ferm} = - \log \det (1 + B_p) - \log \det (1 + B_h).
-\end{align}
-
-\subsection{Force}
-
-The force, too, can be calculated by applying substitutions~\eqref{eq:exp_subs_K} and~\eqref{eq:exp_subs_F} to equation~\eqref{eq:force_v1}.
-\begin{resultbox}
-  \vspace{-\baselineskip}
-  \begin{align}
-    {(\dot{\pi}'_{\text{ferm}})}_{\mu\tau} &= \Tr \Big[{(1+B_p^{-1})}^{-1}\dpd{}{\phi_{\mu\tau}}B_p^{-1} + {(1+B_h^{-1})}^{-1}\dpd{}{\phi_{\mu\tau}}B_h^{-1}\Big],\\
-    B^{-1} &\equiv F_0^{-1}S F_1^{-1}S \cdots F_{N_t-1}^{-1}S
-  \end{align}
-\end{resultbox}
-\noindent
-In principle the replacement $B \leftrightarrow B'$ is not useful here because $S$ and $S^{-1}$ are both dense. We apply it nonetheless because it saves us from re-deriving the implementation.
-
-\subsection{Solver}
-
-Again, substitutions~\eqref{eq:exp_subs_K} and~\eqref{eq:exp_subs_F} can be used to transform the solver of Section~\ref{sec:solver_v1} to work for exponential hopping.
-The resulting equations are
-\begin{align}
-  y_0 &= b_0\\
-  y_i &= b_i + S F_i y_{i-1} \quad \text{for} \quad i > 0
-\end{align}
-and
-\begin{align}
-  x_{N_t-1} &= {(1+B)}^{-1} y_{N_t-1}\\
-  x_i &= y_i - B_{0i}x_{N_t-1} \quad \text{for} \quad i < N_t-1.
-\end{align}
 
 \clearpage
 \bibliographystyle{unsrt}
