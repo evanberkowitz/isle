@@ -5,7 +5,8 @@
 
 # sources of the base library
 set(SOURCE
-  hubbardFermiMatrix.cpp
+  hubbardFermiMatrixDia.cpp
+  hubbardFermiMatrixExp.cpp
   integrator.cpp
   lattice.cpp)
 

@@ -245,6 +245,8 @@ namespace isle {
         return blaze::trans(U) * diag * U;
     }
 
+    // TODO ilogdet for rvalues? optim for logdetM
+
     /// Compute the logarithm of the determinant of a dense matrix; overwrites the input.
     /**
      * \warning This version overwrites the input matrix. See logdet() for a version that

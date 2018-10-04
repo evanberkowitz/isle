@@ -3,8 +3,6 @@
 #include "../action/action.hpp"
 #include "../action/hubbardGaugeAction.hpp"
 #include "../action/hubbardFermiAction.hpp"
-#include "../action/hubbardFermiActionDia.hpp"
-#include "../action/hubbardFermiActionExp.hpp"
 
 using namespace pybind11::literals;
 using namespace isle;
@@ -35,6 +33,121 @@ namespace bind {
                 );
             }
         };
+
+        template <HFAHopping HOPPING, HFAVariant VARIANT, std::int8_t ALPHA,
+                  typename A>
+        void bindSpecificHFA(py::module &mod, const char * const name, A &action) {
+            using HFA = HubbardFermiAction<HOPPING, VARIANT, ALPHA>;
+
+            py::class_<HFA>(mod, name, action)
+                .def(py::init<SparseMatrix<double>, double, std::int8_t>(),
+                     "kappa"_a, "mu"_a, "sigmaKappa"_a)
+                .def("eval", &HFA::eval)
+                .def("force", &HFA::force)
+                ;
+        }
+
+        /// Make a specific HubbardFermiAction controlled through run-time parameters.
+        py::object makeHubbardFermiAction(const SparseMatrix<double> &kappaTilde,
+                                          const double muTilde,
+                                          const std::int8_t sigmaKappa,
+                                          const std::int8_t alpha,
+                                          const HFAHopping hopping,
+                                          const HFAVariant variant) {
+
+            if (alpha == 1) {
+                if (hopping == HFAHopping::DIA) {
+                    if (variant == HFAVariant::ONE) {
+                        return py::cast(HubbardFermiAction<HFAHopping::DIA,
+                                        HFAVariant::ONE,
+                                        1>(kappaTilde, muTilde, sigmaKappa));
+                    } else {  // HFAVariant::TWO
+                        return py::cast(HubbardFermiAction<HFAHopping::DIA,
+                                        HFAVariant::TWO,
+                                        1>(kappaTilde, muTilde, sigmaKappa));
+                    }
+                } else {  // HFAHopping::EXP
+                    if (variant == HFAVariant::ONE) {
+                        return py::cast(HubbardFermiAction<HFAHopping::EXP,
+                                        HFAVariant::ONE,
+                                        1>(kappaTilde, muTilde, sigmaKappa));
+                    } else {  // HFAVariant::TWO
+                        return py::cast(HubbardFermiAction<HFAHopping::EXP,
+                                        HFAVariant::TWO,
+                                        1>(kappaTilde, muTilde, sigmaKappa));
+                    }
+                }
+            }
+
+            else {  // alpha = 0
+                if (hopping == HFAHopping::DIA) {
+                    if (variant == HFAVariant::ONE) {
+                        return py::cast(HubbardFermiAction<HFAHopping::DIA,
+                                        HFAVariant::ONE,
+                                        0>(kappaTilde, muTilde, sigmaKappa));
+                    } else {  // HFAVariant::TWO
+                        return py::cast(HubbardFermiAction<HFAHopping::DIA,
+                                        HFAVariant::TWO,
+                                        0>(kappaTilde, muTilde, sigmaKappa));
+                    }
+                } else {  // HFAHopping::EXP
+                    if (variant == HFAVariant::ONE) {
+                        return py::cast(HubbardFermiAction<HFAHopping::EXP,
+                                        HFAVariant::ONE,
+                                        0>(kappaTilde, muTilde, sigmaKappa));
+                    } else {  // HFAVariant::TWO
+                        return py::cast(HubbardFermiAction<HFAHopping::EXP,
+                                        HFAVariant::TWO,
+                                        0>(kappaTilde, muTilde, sigmaKappa));
+                    }
+                }
+            }
+        }
+
+        /// Bind everything related to HubbardFermiActions.
+        template <typename A>
+        void bindHubbardFermiAction(py::module &mod, A &action) {
+            // bind enums
+            py::enum_<HFAVariant>(mod, "HFAVariant")
+                .value("ONE", HFAVariant::ONE)
+                .value("TWO", HFAVariant::TWO);
+
+            py::enum_<HFAHopping>(mod, "HFAHopping")
+                .value("DIA", HFAHopping::DIA)
+                .value("EXP", HFAHopping::EXP);
+
+            // bind all specific actions
+            bindSpecificHFA<HFAHopping::DIA, HFAVariant::ONE, 1>(mod, "HubbardFermiActionDiaOneOne", action);
+            bindSpecificHFA<HFAHopping::DIA, HFAVariant::ONE, 0>(mod, "HubbardFermiActionDiaOneZero", action);
+            bindSpecificHFA<HFAHopping::DIA, HFAVariant::TWO, 1>(mod, "HubbardFermiActionDiaTwoOne", action);
+            bindSpecificHFA<HFAHopping::DIA, HFAVariant::TWO, 0>(mod, "HubbardFermiActionDiaTwoZero", action);
+
+            bindSpecificHFA<HFAHopping::EXP, HFAVariant::ONE, 1>(mod, "HubbardFermiActionExpOneOne", action);
+            bindSpecificHFA<HFAHopping::EXP, HFAVariant::ONE, 0>(mod, "HubbardFermiActionExpOneZero", action);
+            bindSpecificHFA<HFAHopping::EXP, HFAVariant::TWO, 1>(mod, "HubbardFermiActionExpTwoOne", action);
+            bindSpecificHFA<HFAHopping::EXP, HFAVariant::TWO, 0>(mod, "HubbardFermiActionExpTwoZero", action);
+
+            mod.def("makeHubbardFermiAction",
+                    makeHubbardFermiAction,
+                    "kappaTilde"_a, "muTilde"_a, "sigmaKappa"_a,
+                    "alpha"_a=1, "hopping"_a=HFAHopping::DIA,
+                    "variant"_a= HFAVariant::ONE);
+
+            mod.def("makeHubbardFermiAction",
+                    [] (const Lattice &lattice, const double beta,
+                        const double muTilde, const std::int8_t sigmaKappa,
+                        const std::int8_t alpha,
+                        const HFAHopping hopping, const HFAVariant variant) {
+
+                        return makeHubbardFermiAction(
+                            lattice.hopping()*beta/lattice.nt(),
+                            muTilde, sigmaKappa, alpha,
+                            hopping, variant);
+                    },
+                    "lat"_a, "beta"_a, "muTilde"_a, "sigmaKappa"_a,
+                    "alpha"_a=1, "hopping"_a=HFAHopping::DIA,
+                    "variant"_a= HFAVariant::ONE);
+        }
     }
 
     void bindActions(py::module &mod) {
@@ -53,62 +166,6 @@ namespace bind {
             .def("force", &HubbardGaugeAction::force)
             ;
 
-        auto hfad = py::class_<HubbardFermiActionDia>{actmod, "HubbardFermiActionDia", action};
-
-        py::enum_<HubbardFermiActionDia::Variant>{hfad, "Variant"}
-             .value("ONE", HubbardFermiActionDia::Variant::ONE)
-             .value("TWO", HubbardFermiActionDia::Variant::TWO);
-
-        hfad.def(py::init<HubbardFermiMatrix, std::int8_t, HubbardFermiActionDia::Variant>(),
-                 "hfm"_a, "alpha"_a=1,
-                 "variant"_a=HubbardFermiActionDia::Variant::ONE)
-            .def(py::init<SparseMatrix<double>, double, std::int8_t, std::int8_t,
-                 HubbardFermiActionDia::Variant>(),
-                 "kappa"_a, "mu"_a, "sigmaKappa"_a,
-                 "alpha"_a=1,
-                 "variant"_a= HubbardFermiActionDia::Variant::ONE)
-            .def(py::init<Lattice, double, double, std::int8_t, std::int8_t,
-                 HubbardFermiActionDia::Variant>(),
-                 "lat"_a, "beta"_a, "mu"_a, "sigmaKappa"_a,
-                 "alpha"_a=1,
-                 "variant"_a= HubbardFermiActionDia::Variant::ONE)
-            .def("eval", &HubbardFermiActionDia::eval)
-            .def("force", &HubbardFermiActionDia::force)
-            ;
-
-        py::class_<HubbardFermiActionExp>{actmod, "HubbardFermiActionExp", action}
-            .def(py::init<HubbardFermiMatrix, std::int8_t>(),
-                 "hfm"_a, "alpha"_a=1)
-            .def(py::init<SparseMatrix<double>, double, std::int8_t, std::int8_t>(),
-                 "kappa"_a, "mu"_a, "sigmaKappa"_a,
-                 "alpha"_a=1)
-            .def(py::init<Lattice, double, double, std::int8_t, std::int8_t>(),
-                 "lat"_a, "beta"_a, "mu"_a, "sigmaKappa"_a,
-                 "alpha"_a=1)
-            .def("eval", &HubbardFermiActionExp::eval)
-            .def("force", &HubbardFermiActionExp::force)
-            ;
-
-        py::enum_<Hopping>(actmod, "Hopping")
-            .value("DIAG", Hopping::DIAG)
-            .value("EXP", Hopping::EXP);
-
-        actmod.def("makeHubbardFermiAction",
-                   py::overload_cast<const HubbardFermiMatrix &, std::int8_t,
-                   Hopping, HubbardFermiActionDia::Variant>(makeHubbardFermiAction),
-                   "hfm"_a, "alpha"_a=1, "hopping"_a=Hopping::DIAG,
-                   "variant"_a=HubbardFermiActionDia::Variant::ONE);
-        actmod.def("makeHubbardFermiAction",
-                   py::overload_cast<const SparseMatrix<double> &, double,
-                   std::int8_t, std::int8_t, Hopping, HubbardFermiActionDia::Variant>(makeHubbardFermiAction),
-                   "kappa"_a, "mu"_a, "sigmaKappa"_a,
-                   "alpha"_a=1, "hopping"_a=Hopping::DIAG,
-                   "variant"_a= HubbardFermiActionDia::Variant::ONE);
-        actmod.def("makeHubbardFermiAction",
-                   py::overload_cast<const Lattice &, double, double, std::int8_t,
-                   std::int8_t, Hopping, HubbardFermiActionDia::Variant>(makeHubbardFermiAction),
-                   "lat"_a, "beta"_a, "mu"_a, "sigmaKappa"_a,
-                   "alpha"_a=1, "hopping"_a=Hopping::DIAG,
-                   "variant"_a= HubbardFermiActionDia::Variant::ONE);
+        bindHubbardFermiAction(actmod, action);
     }
 }

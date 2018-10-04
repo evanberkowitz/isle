@@ -9,7 +9,7 @@ import numpy as np
 
 from . import Lattice
 from .util import parameters
-from .action import Hopping
+from .action import HFAHopping, HFAVariant
 
 def _parseLattice(adjacency, hopping, positions, nt=0, name="", comment=""):
     """!
@@ -85,11 +85,22 @@ yaml.add_constructor("!parameters",
                      parameters(**loader.construct_mapping(node, deep=True)),
                      Loader=yaml.SafeLoader)
 
-# register isle.action.Hopping
-yaml.add_representer(Hopping,
+# register isle.action.HFAHopping
+yaml.add_representer(HFAHopping,
                      lambda dumper, hop: \
-                     dumper.represent_scalar("!hopping", str(hop).rsplit(".")[-1]))
-yaml.add_constructor("!hopping",
+                     dumper.represent_scalar("!HFAHopping", str(hop).rsplit(".")[-1]))
+yaml.add_constructor("!HFAHopping",
                      lambda loader, node: \
-                     Hopping.DIAG if loader.construct_scalar(node) == "DIAG" else "EXP",
+                     HFAHopping.DIA if loader.construct_scalar(node) == "DIA"
+                     else HFAHopping.EXP,
+                     Loader=yaml.SafeLoader)
+
+# register isle.action.HFAVariant
+yaml.add_representer(HFAVariant,
+                     lambda dumper, var: \
+                     dumper.represent_scalar("!HFAVariant", str(var).rsplit(".")[-1]))
+yaml.add_constructor("!HFAVariant",
+                     lambda loader, node: \
+                     HFAVariant.ONE if loader.construct_scalar(node) == "ONE"
+                     else HFAVariant.TWO,
                      Loader=yaml.SafeLoader)
