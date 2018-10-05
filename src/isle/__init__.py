@@ -6,7 +6,6 @@ Contains Python modules and imports everything from C++ extension into the isle 
 
 from .cpp_wrappers import *
 from . import checks
-from . import ensemble
 from . import fileio
 from . import proposers
 from . import random
