@@ -82,7 +82,7 @@ namespace isle {
 
             /// Calculate force using variant 2 algorithm for EXP discretization.
             CDVector forceVariant2(const HubbardFermiMatrixExp &hfm,
-                                      const CDVector &phi) {
+                                   const CDVector &phi) {
                 const auto nx = hfm.nx();
                 const auto nt = getNt(phi, nx);
 
