@@ -14,11 +14,12 @@ class SingleParticleCorrelator:
     Tabulate single-particle correlator.
     """
 
-    def __init__(self, hfm, species):
+    def __init__(self, hfm, species, alpha):
         self.hfm = hfm
         self.corr = []
         self.irreps = np.transpose(np.linalg.eig(isle.Matrix(hfm.kappa()))[1])
         self.species = species
+        self._alpha = alpha
 
     def __call__(self, phi, action, itr):
         """!Record the single-particle correlators."""
@@ -32,7 +33,10 @@ class SingleParticleCorrelator:
         # In other words, time is the faster running index.
 
         # Solve M*x = b for all right-hand sides:
-        res = np.array(isle.solveM(self.hfm, phi, self.species, rhss), copy=False)
+        if self._alpha == 1:
+            res = np.array(isle.solveM(self.hfm, phi, self.species, rhss), copy=False)
+        else:
+            res = np.linalg.solve(isle.Matrix(self.hfm.M(-1j*phi, self.species)), np.array(rhss).T).T
 
         propagators = res.reshape([len(self.irreps), nt, nt, len(self.irreps)])
         # The logic for the one-liner goes as:
