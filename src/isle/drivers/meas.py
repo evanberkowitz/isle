@@ -23,15 +23,20 @@ class Measure:
         self.save(measurements)
 
     def mapOverConfigs(self, measurements):
-        # TODO maybe keep file open (benchmark)
-        with h5.File(self.infname, "r") as cfgf:
-            configNames = sorted(cfgf["/configuration"], key=int)
+        """!
+        Apply measurements to all configurations in the input file
+        of this driver.
+        """
 
-        for i, configName in enumerate(configNames):
-            # read config and action
-            with h5.File(self.infname, "r") as cfgf:
-                phi = cfgf["configuration"][configName]["phi"][()]
-                action = cfgf["configuration"][configName]["action"][()]
+        with h5.File(self.infname, "r") as cfgf:
+            # iterate over all configs sorted by their number
+            for i, grp in map(lambda p: (int(p[0]), p[1]),
+                              sorted(cfgf["/configuration"].items(),
+                                     key=lambda item: int(item[0]))):
+
+                # read config and action
+                phi = grp["phi"][()]
+                action = grp["action"][()]
                 # measure
                 for frequency, measurement, _ in measurements:
                     if i % frequency == 0:
