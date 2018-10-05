@@ -54,12 +54,14 @@ def _loadAction(measState):
     with h5.File(str(measState.infname), "r") as h5f:
         if "action" in h5f:
             return h5f["action"][()]
-        if "configuration" in h5f:
-            meas = isle.meas.Action()
-            measState.mapOverConfigs([(1, meas, None)])
-            return meas.action
-    print("no configurations or action found")
-    return None
+        if "configuration" not in h5f:
+            print("no configurations or action found")
+            return None
+
+    # do this here so the file is closed when the meas driver reads from it
+    meas = isle.meas.Action()
+    measState.mapOverConfigs([(1, meas, None)])
+    return meas.action
 
 def _formatParams(params):
     """!Format parameters as a multi line string."""
