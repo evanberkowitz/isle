@@ -58,6 +58,9 @@ class HMC:
             else:
                 self.advance()
 
+            if self._trajIdx % (ntr//100) == 0:
+                print(f"HMC traj {self._trajIdx} of {ntr}")
+
         return phi
 
     def saveFieldAndCheckpoint(self, phi, act, acc):
