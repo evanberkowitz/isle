@@ -11,15 +11,21 @@ class Logdet:
     Measure the log determinant of particles and holes.
     """
 
-    def __init__(self, hfm):
+    def __init__(self, hfm, alpha=1):
         self.hfm = hfm
         self.logdet = {isle.Species.PARTICLE: [],
                        isle.Species.HOLE: []}
+        assert alpha in [0, 1]
+        self._alpha = alpha
 
     def __call__(self, phi, action, itr):
         """!Record logdet."""
-        for species, logdet in self.logdet.items():
-            logdet.append(isle.logdetM(self.hfm, phi, species))
+        if self._alpha == 1:
+            for species, logdet in self.logdet.items():
+                logdet.append(isle.logdetM(self.hfm, phi, species))
+        else:
+            for species, logdet in self.logdet.items():
+                logdet.append(isle.logdetM(self.hfm, -1j*phi, species))
 
     def save(self, base, name):
         r"""!
