@@ -18,7 +18,7 @@ def main():
     sigmaKappa = params.sigmaKappa
     kappaTilde = measState.lattice.hopping()*delta
 
-    hfm = isle.HubbardFermiMatrix(kappaTilde, muTilde, sigmaKappa)
+    hfm = isle.HubbardFermiMatrixDia(kappaTilde, muTilde, sigmaKappa)
 
     measurements = [
         (1, isle.meas.Logdet(hfm), "/logdet"),
