@@ -22,7 +22,8 @@ def makeAction(lat, params):
                                                                muTilde,
                                                                params.sigmaKappa,
                                                                params.alpha,
-                                                               params.hopping))
+                                                               params.hopping,
+                                                               params.variant))
 
 def main():
     # initialize command line interface and parse command line arguments
@@ -35,7 +36,8 @@ def main():
 
     # specify model parameters
     params = isle.util.parameters(beta=3, U=2, mu=0, sigmaKappa=-1,
-                                  alpha=1, hopping=isle.action.Hopping.DIAG)
+                                  alpha=1, hopping=isle.action.HFAHopping.DIAG,
+                                  variant=isle.action.HFAVariant.ONE)
 
     # set up a random number generator
     rng = isle.random.NumpyRNG(1075)
