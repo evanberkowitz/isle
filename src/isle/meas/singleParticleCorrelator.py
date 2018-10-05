@@ -17,7 +17,7 @@ class SingleParticleCorrelator:
     def __init__(self, hfm, species, alpha):
         self.hfm = hfm
         self.corr = []
-        self.irreps = np.transpose(np.linalg.eig(isle.Matrix(hfm.kappa()))[1])
+        self.irreps = np.transpose(np.linalg.eig(isle.Matrix(hfm.kappaTilde()))[1])
         self.species = species
         self._alpha = alpha
 
