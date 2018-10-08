@@ -346,7 +346,7 @@ namespace {
                             if (binfo.format != py::format_descriptor<ET>::format())
                                 throw std::runtime_error("Incompatible buffer format: mismatched elemental data type");
                             if (binfo.ndim != 1)
-                                throw std::runtime_error("Wrong buffer dimention to construct vector");
+                                throw std::runtime_error("Wrong buffer dimension to construct vector");
 
                             if (binfo.strides[0] == sizeof(ET))
                                 // copy as is (w/o stride)
@@ -484,7 +484,7 @@ namespace {
                             if (binfo.format != py::format_descriptor<ET>::format())
                                 throw std::runtime_error("Incompatible buffer format: mismatched elemental data type");
                             if (binfo.ndim != 2)
-                                throw std::runtime_error("Wrong buffer dimention to construct matrix");
+                                throw std::runtime_error("Wrong buffer dimension to construct matrix");
 
                             if (binfo.strides[0] == static_cast<py::ssize_t>(sizeof(ET))*binfo.shape[1]
                                 && binfo.strides[1] == sizeof(ET))
