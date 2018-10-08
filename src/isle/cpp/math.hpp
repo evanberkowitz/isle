@@ -326,12 +326,6 @@ namespace isle {
         return toFirstLogBranch(res + (detP == 1 ? 0 : std::complex<ET>{0, pi<ET>}));
     }
 
-    /// Compute the logarithm of the determinant of a dense matrix.
-    template <typename MT>
-    auto logdet(MT &&matrix) {
-        return ilogdet(matrix);
-    }
-
 }  // namespace isle
 
 #endif  // ndef MATH_HPP
