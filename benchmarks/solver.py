@@ -24,10 +24,8 @@ def main():
     nts = (4, 8, 16, 32)
     timeLU = []
     timeSolve = []
-    timePardiso = []
     solveQ = isle.solveQ
     getQLU = isle.getQLU
-    # solvePardiso = isle.solvePardiso
     for nt in nts:
         # make random auxilliary field and HFM
         phi = isle.Vector(np.random.randn(lat.nx()*nt)
@@ -44,8 +42,6 @@ def main():
         lu = getQLU(hfm,phi)
         timeSolve.append(timeit.timeit("solveQ(lu, rhs)", globals=locals(), number=1)/1)
 
-        # timePardiso.append(timeit.timeit("solvePardiso(hfm, rhs)", globals=locals(), number=1)/1)
-
     # save benchmark to file
     pickle.dump({"xlabel": "Nt",
                  "ylabel": "time / s",
@@ -53,7 +49,7 @@ def main():
                  "results": {"custom lu": timeLU,
                              "custom solve": timeSolve,
                              "custom total": [tlu+ts for tlu, ts in zip(timeLU, timeSolve)],
-                             }}, # "PARDISO": timePardiso}},
+                             }},
                 open("solver.ben", "wb"))
 
 if __name__ == "__main__":

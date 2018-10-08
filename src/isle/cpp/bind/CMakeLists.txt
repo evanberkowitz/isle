@@ -11,5 +11,4 @@ set(SOURCE
   bind/action.cpp
   bind/hamiltonian.cpp
   bind/integrator.cpp
-  bind/pardiso.cpp
   PARENT_SCOPE)

@@ -7,7 +7,6 @@
 #include "action.hpp"
 #include "hamiltonian.hpp"
 #include "integrator.hpp"
-#include "pardiso.hpp"
 
 #include "../math.hpp"
 
@@ -34,7 +33,6 @@ PYBIND11_MODULE(ISLE_LIBNAME, mod) {
     bind::bindActions(mod);
     bind::bindHamiltonian(mod);
     bind::bindIntegrators(mod);
-    bind::bindPARDISO(mod);
 
     bind::bindSTLContainers(mod);
 }

@@ -33,7 +33,6 @@ project(isle CXX)
 find_package(Pybind11 REQUIRED)
 find_package(blaze REQUIRED)
 find_package(OMP REQUIRED)
-find_package(PARDISO)
 
 get_filename_component(SOURCE_DIR "src/isle/cpp"
   REALPATH BASE_DIR "${CMAKE_SOURCE_DIR}")

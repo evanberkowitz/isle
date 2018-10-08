@@ -65,9 +65,3 @@ if (NOT "${BLAZE_PARALLELISM}" STREQUAL "OMP")
   target_link_libraries(${LIBNAME} ${OMP_LIBRARIES})
   target_linker_flags(${LIBNAME} "${OMP_LINKER_FLAGS}")
 endif ()
-
-# PARDISO
-if (${PARDISO_FOUND})
-  target_compile_options(${LIBNAME} PUBLIC ${PARDISO_CXX_FLAGS})
-  target_link_libraries(${LIBNAME} ${PARDISO_LIBRARIES})
-endif ()

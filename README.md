@@ -47,7 +47,6 @@ with suitable arguments. The supported arguments are (run `python3 setup.py conf
     - `Generic` - Reference implementation (default)
     - `Intel10_32`, `Intel10_64lp`, `Intel10_64lp_seq`, `Intel` - MKL, see https://cmake.org/cmake/help/v3.0/module/FindBLAS.html
 - *parallel-blas*: Specify this flag if the BLAS/LAPACK implementation is parallelized. Otherwise blaze might parallelize on top of it which can slow down the program.
-- *pardiso*: Select a PARDISO implementation. Can be either `STANDALONE` or `MKL`. PARDISO is currently not used by isle but if this argument is set, a wrapper around it is created in the module `isle.pardiso`.
 
 This does not actually run CMake to configure the C++ build but merely performs some rudimentary checks and saves the parameters.
 
