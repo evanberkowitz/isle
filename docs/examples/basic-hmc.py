@@ -36,7 +36,7 @@ def main():
 
     # specify model parameters
     params = isle.util.parameters(beta=3, U=2, mu=0, sigmaKappa=-1,
-                                  alpha=1, hopping=isle.action.HFAHopping.DIAG,
+                                  alpha=1, hopping=isle.action.HFAHopping.DIA,
                                   variant=isle.action.HFAVariant.ONE)
 
     # set up a random number generator
