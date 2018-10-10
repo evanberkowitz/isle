@@ -1,4 +1,4 @@
-"""!
+"""! \file
 Some general utilities.
 """
 
@@ -6,6 +6,8 @@ from dataclasses import make_dataclass, field
 
 import yaml
 import numpy as np
+
+from . import Lattice
 
 def hingeRange(start, end, stepSize):
     r"""!
@@ -50,16 +52,43 @@ def parameters(**kwargs):
     to store them. Every time this function gets called, it creates a new
     class and immediately constructs an instance. The returned object is read only.
 
+    The returned object has additional methods on top of the usual
+    dataclass members:
+     - <B>asdict</B>():
+           Returns a dict mapping attribute names to values.
+     - <B>tilde</B>(value, nt, beta):
+           Return `value*beta/nt`.
+           Parameters:
+            - `value`: If `str`, read attribute with that name from dataclass,
+                       else use argument directly.
+            - `nt`: Number of time slices or isle.Lattice.
+            - `beta`: Inverse temperature. Read from dataclass attribute 'beta'
+                      if argument set to `None` (default).
+
     The new classes are automatically registered with YAML so they can
-    be dumped. A loaded is registered if yamlio is imported.
+    be dumped. A loader is registered if yamlio is imported.
     """
+
+    def _tilde(self, value, nt, beta=None):
+        if beta is None:
+            if not hasattr(self, "beta"):
+                raise RuntimeError("No parameter 'beta' stored. Cannot compute tilde parameter.")
+            beta = self.beta
+
+        if isinstance(value, str):
+            value = getattr(self, value)
+        if isinstance(nt, Lattice):
+            nt = nt.nt()
+
+        return value*beta/nt
 
     cls = make_dataclass("Parameters",
                          ((key, type(value), field(default=value))
                           for key, value in kwargs.items()),
                          namespace={"asdict": lambda self:
-                                    {key: getattr(self, key)
-                                     for key in self.__dataclass_fields__.keys()}},
+                                              {key: getattr(self, key)
+                                               for key in self.__dataclass_fields__.keys()},
+                                    "tilde": _tilde},
                          frozen=True)
 
     yaml.add_representer(cls, lambda dumper, params:
