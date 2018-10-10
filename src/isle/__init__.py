@@ -14,7 +14,3 @@ from . import cli
 import isle.action
 
 __version__ = str(isleVersion)
-
-## Environment variables for CNS.
-# TODO remove!
-env = {}
