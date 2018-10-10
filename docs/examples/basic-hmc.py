@@ -12,14 +12,10 @@ def makeAction(lat, params):
     import isle
     import isle.action
 
-    delta = params.beta / lat.nt()
-    UTilde = params.U * delta
-    muTilde = params.mu * delta
-
-    return isle.Hamiltonian(isle.action.HubbardGaugeAction(UTilde),
+    return isle.Hamiltonian(isle.action.HubbardGaugeAction(params.tilde("U", lat)),
                             isle.action.makeHubbardFermiAction(lat,
                                                                params.beta,
-                                                               muTilde,
+                                                               params.tilde("mu", lat),
                                                                params.sigmaKappa,
                                                                params.alpha,
                                                                params.hopping,

@@ -1,5 +1,5 @@
 """!
-
+Example script to perform measurements on configurations generated with basic-hmc.py.
 """
 
 import isle
@@ -13,12 +13,10 @@ def main():
     params = measState.params
     nt = measState.lattice.nt()
 
-    delta = params.beta / nt
-    muTilde = params.mu * delta
-    sigmaKappa = params.sigmaKappa
-    kappaTilde = measState.lattice.hopping()*delta
+    muTilde = params.tilde("mu", nt)
+    kappaTilde = params.tilde(measState.lattice.hopping(), nt)
 
-    hfm = isle.HubbardFermiMatrixDia(kappaTilde, muTilde, sigmaKappa)
+    hfm = isle.HubbardFermiMatrixDia(kappaTilde, muTilde, params.sigmaKappa)
 
     measurements = [
         (1, isle.meas.Logdet(hfm), "/logdet"),
