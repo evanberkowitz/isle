@@ -33,6 +33,8 @@ class Measure:
             for i, grp in map(lambda p: (int(p[0]), p[1]),
                               sorted(cfgf["/configuration"].items(),
                                      key=lambda item: int(item[0]))):
+                if i % 1000 == 0:
+                    print(f"Measurement: Processing configuration {i}")
 
                 # read config and action
                 phi = grp["phi"][()]
