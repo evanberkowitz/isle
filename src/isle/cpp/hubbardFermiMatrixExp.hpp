@@ -15,9 +15,33 @@
 
 namespace isle {
 
-    /// Represents a fermion matrix for the Hubbard model with hopping matrix in an exponential.
+    /// Represents a fermion matrix \f$\hat{M}\f$ for the Hubbard model with hopping matrix in an exponential.
     /**
-       \todo write
+     * See <B>`docs/algorithms/hubbardFermiAction.pdf`</B> for definitions.
+     * All member functions of this class are named after the corresponting matrices (sans the hat).
+     *
+     * `%HubbardFermiMatrixExp` needs \f$\tilde{\kappa}, \phi, \tilde{\mu}, \mathrm{and}\, \sigma_\tilde{\kappa}\f$
+     * as inputs and can construct the individual blocks \f$\hat{K}, \hat{F}, \hat{P}, \hat{T}^{+}, \mathrm{and}\, \hat{T}^{-}\f$
+     * or the full matrices \f$\hat{M}, \hat{Q}\f$ from them.
+     *
+     * Neither the full matrices nor any of their blocks are stored explicitly. Instead,
+     * each block is to be constructed when needed which might be expensive.
+     * The only exception is \f$e^{-\tilde{\kappa}+\tilde{\mu}}\f$ which is cached
+     * after it has been requested through HubbardFermiMatrixExp::expKappa() for the first time.
+     *
+     * The result of an LU-decomposition of \f$\hat{Q}\f$ is stored in HubbardFermiMatrixExp::LU
+     * to save memory and give easier access to the components compared to a `blaze::Matrix`.
+     *
+     * \sa
+     * Free functions operating on `%HubbardFermimatrixExp`:
+     *  - std::complex<double> logdetM(const HubbardFermiMatrixExp &hfm, const CDVector &phi, Species species)
+     *  - HubbardFermiMatrixExp::LU getQLU(const HubbardFermiMatrixExp &hfm, const CDVector &phi)
+     *  - std::complex<double> logdetQ(const HubbardFermiMatrixExp &hfm, const CDVector &phi)
+     *  - std::complex<double> logdetQ(const HubbardFermiMatrixExp::QLU &lu)
+     *  - Vector<std::complex<double>> solveQ(const HubbardFermiMatrixExp &hfm, const CDVector &phi, const Vector<std::complex<double>> &rhs);
+     *  - Vector<std::complex<double>> solveQ(const HubbardFermiMatrixExp::QLU &lu, const Vector<std::complex<double>> &rhs);
+     *
+     * See HubbardFermiMatrixDia for an alternative discretization.
      */
     class HubbardFermiMatrixExp {
     public:

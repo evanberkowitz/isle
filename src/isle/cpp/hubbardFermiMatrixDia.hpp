@@ -15,66 +15,31 @@
 
 namespace isle {
 
-    /// Represents a fermion matrix for the Hubbard model with hopping matrix on the diagonal.
+    /// Represents a fermion matrix \f$M\f$ for the Hubbard model with hopping matrix on the diagonal.
     /**
-     * ## Definitions
-     * The fermion matrix is defined as
-     \f{align}{
-     {M(\phi, \tilde{\kappa}, \tilde{\mu})}_{x't';xt}
-     &\equiv K_{x'x}\delta_{t't} - \mathcal{B}_{t'}{(F_{t'})}_{x'x}\delta_{t'(t+1)}.
-     \f}
-     * with
-     \f{align}{
-     K_{x'x} &= (1+\tilde{\mu})\delta_{x'x} - \kappa_{x'x}\\
-     {(F_{t'})}_{x'x} &= e^{i\phi_{xt}}\delta_{x'x}
-     \f}
-     * These relations hold for particles, for holes, replace
-     *  \f$\phi \rightarrow -\phi,\, \tilde{\kappa} \rightarrow \sigma_{\tilde{\kappa}}\tilde{\kappa},\, \tilde{\mu}\rightarrow -\tilde{\mu}\f$.
+     * See <B>`docs/algorithms/hubbardFermiAction.pdf`</B> for definitions.
+     * All member functions of this class are named after the corresponting matrices.
      *
-     * The combined matrix is
-     \f{align}{
-     {Q(\phi, \tilde{\kappa}, \tilde{\mu}, \sigma_{\tilde{\kappa}})}_{x't',xt}
-     &= {M(\phi, \tilde{\kappa}, \tilde{\mu})}_{x't',x''t''} {M^T(-\phi, \sigma_{\tilde{\kappa}}\tilde{\kappa}, -\tilde{\mu})}_{x''t'',xt}\\
-     &= \delta_{t't}{(P)}_{x'x} + \delta_{t'(t+1)}{(T^+_{t'})}_{x'x} + \delta_{t(t'+1)}{(T^-_{t'})}_{x'x}
-     \f}
-     * with
-     \f{align}{
-     {P(\phi, \tilde{\kappa}, \tilde{\mu}, \sigma_{\tilde{\kappa}})}_{x'x} &\equiv (2-\tilde{\mu}^2)\delta_{x'x} - (\sigma_{\tilde{\kappa}}(1+\tilde{\mu}) + (1-\tilde{\mu}))\tilde{\kappa}_{x'x} + \sigma_{\tilde{\kappa}}{(\tilde{\kappa}^2)}_{x'x}\\
-     {T^+_{t'}(\phi, \tilde{\kappa}, \tilde{\mu}, \sigma_{\tilde{\kappa}})}_{x'x} &\equiv \mathcal{B}_{t'}e^{i\phi_{x'(t'-1)}}[\sigma_{\tilde{\kappa}}\tilde{\kappa}_{x'x} - (1-\tilde{\mu})\delta_{x'x}]\\
-     {T^-_{t'}(\phi, \tilde{\kappa}, \tilde{\mu}, \sigma_{\tilde{\kappa}})}_{x'x} &\equiv \mathcal{B}_{t'+1}e^{-i\phi_{xt'}}[\tilde{\kappa}_{x'x} - (1+\tilde{\mu})\delta_{x'x}]
-     \f}
-     *
-     * Anti-periodic boundary conditions are encoded by
-     \f{align}{
-     \mathcal{B}_t =
-     \begin{cases}
-     +1,\quad 0 < t < N_t\\
-     -1,\quad t = 0
-     \end{cases}
-     \f}
-     *
-     * Derivations and descriptions of algorithms can be found
-     * in `docs/algorithms/hubbardFermiAction.pdf`.
-     *
-     * ## Usage
      * `%HubbardFermiMatrixDia` needs \f$\tilde{\kappa}, \phi, \tilde{\mu}, \mathrm{and}\, \sigma_\tilde{\kappa}\f$
      * as inputs and can construct the individual blocks \f$K, F, P, T^{+}, \mathrm{and}\, T^{-}\f$
      * or the full matrices \f$M, Q\f$ from them.
      *
      * Neither the full matrix nor any of its blocks are stored explicitly. Instead,
-     * each block needs to be constructed when needed. For this, `%HubbardFermiMatrixDia`
-     * provides member functions with the same names as the matrices.
+     * each block needs to be constructed when needed which might be expensive.
      *
-     * The result of an LU-decomposition is stored in HubbardFermiMatrixDia::LU to save memory
+     * The result of an LU-decomposition of \f$Q\f$ is stored in HubbardFermiMatrixDia::LU to save memory
      * and give easier access to the components compared to a `blaze::Matrix`.
+     * The only exception are the inversed of \f$K\f$ which are cached after when the function
+     * HubbardFermiMatrixDia::Kinv() is first called.
+     * The same goes for the results of HubbardFermiMatrixDia::logdetKinv().
      *
      * \sa
-     * Free functions operating on `%HubbardFermimatrix`:
-     *  - std::complex<double> logdetM(const HubbardFermiMatrixDia &hfm)
-     *  - HubbardFermiMatrixDia::LU getQLU(const HubbardFermiMatrixDia &hfm)
-     *  - std::complex<double> logdetQ(const HubbardFermiMatrixDia &hfm)
+     * Free functions operating on `%HubbardFermimatrixDia`:
+     *  - std::complex<double> logdetM(const HubbardFermiMatrixDia &hfm, const CDVector &phi, Species species)
+     *  - HubbardFermiMatrixDia::LU getQLU(const HubbardFermiMatrixDia &hfm, const CDVector &phi)
+     *  - std::complex<double> logdetQ(const HubbardFermiMatrixDia &hfm, const CDVector &phi)
      *  - std::complex<double> logdetQ(const HubbardFermiMatrixDia::QLU &lu)
-     *  - Vector<std::complex<double>> solveQ(const HubbardFermiMatrixDia &hfm, const Vector<std::complex<double>> &rhs);
+     *  - Vector<std::complex<double>> solveQ(const HubbardFermiMatrixDia &hfm, const CDVector &phi, const Vector<std::complex<double>> &rhs);
      *  - Vector<std::complex<double>> solveQ(const HubbardFermiMatrixDia::QLU &lu, const Vector<std::complex<double>> &rhs);
      *
      * See HubbardFermiMatrixExp for an alternative discretization.
