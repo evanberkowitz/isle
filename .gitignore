@@ -15,3 +15,6 @@ dist
 
 # build directory
 build
+
+# Pyhton virtual environments
+Pipfile
