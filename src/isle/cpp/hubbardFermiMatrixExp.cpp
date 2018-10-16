@@ -183,7 +183,6 @@ namespace isle {
         for (std::size_t tp = 0; tp < NT; ++tp) {
             spacemat(q, tp, tp, NX) = p;
 
-            // TODO use loopIdx but introduce two variants for + and - direction
             Tplus(aux, tp, phi);
             spacemat(q, tp, (tp+NT-1)%NT, NX) += aux;
 
