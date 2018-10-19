@@ -25,9 +25,7 @@ class Action:
         \param name Name of the subgroup of base for this measurement.
         """
         group = createH5Group(base, name)
-        if not "action" in group and not "configuration" in group \
-           and not "configuration" in base:
-            group["action"] = self.action
+        group["action"] = self.action
 
     def read(self, group):
         r"""!
