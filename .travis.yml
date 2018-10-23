@@ -1,0 +1,25 @@
+sudo: false
+
+language: python
+python:
+  - "3.7-dev"
+
+branches:
+  only:
+    - master
+
+addons:
+  apt:
+    packages:
+      - doxygen
+
+script:
+  - python setup.py doc
+
+deploy:
+  provider: pages
+  skip_cleanup: true
+  local_dir: docs/html
+  github_token: $GH_REPO_TOKEN
+  on:
+    branch: master
