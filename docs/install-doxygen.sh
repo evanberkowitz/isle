@@ -25,4 +25,4 @@ echo "Compiling doxygen"
 cmake --build .
 
 echo "Installing doxygen"
-cmake --build . --target install
+sudo cmake --build . --target install
