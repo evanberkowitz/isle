@@ -7,22 +7,20 @@
 
 set -ex
 
+cd $TRAVIS_BUILD_DIR
+
 mkdir doxygen
 cd doxygen
 
 echo "Downloading doxygen"
 wget https://github.com/doxygen/doxygen/archive/Release_1_8_13.tar.gz
 tar -xzvf Release_1_8_13.tar.gz
-cd doxygen-Release_1_8_13
 
 mkdir build
 cd build
 
 echo "Configuring doxygen"
-cmake .. -DCMAKE_INSTALL_PREFIX=/usr
+cmake ../doxygen-Release_1_8_13 -DCMAKE_INSTALL_PREFIX=/usr
 
 echo "Compiling doxygen"
 cmake --build .
-
-echo "Installing doxygen"
-sudo env "PATH=$PATH" cmake --build . --target install

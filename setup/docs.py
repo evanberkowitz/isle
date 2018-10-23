@@ -32,10 +32,10 @@ def doxygen_command(doxyfile, version):
     "Return a command class to run doxygen."
     class _Doxygen(distutils.cmd.Command):
         description = "run Doxygen"
-        user_options = []
+        user_options = [("doxygen=", None, "Doxygen executable to generate documentation")]
 
         def initialize_options(self):
-            pass
+            self.doxygen = "doxygen"
 
         def finalize_options(self):
             pass
@@ -58,7 +58,7 @@ def doxygen_command(doxyfile, version):
 
                 # run doxygen
                 try:
-                    subprocess.check_call(["doxygen", inputfile.name],
+                    subprocess.check_call([self.doxygen, inputfile.name],
                                           cwd=docsdir)
                 except subprocess.CalledProcessError:
                     print("error: Could not run doxygen")

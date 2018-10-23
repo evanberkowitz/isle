@@ -20,7 +20,7 @@ before_install:
   - ./docs/install-doxygen.sh
 
 script:
-  - python setup.py doc
+  - python setup.py doc --doxygen=$TRAVIS_BUILD_DIR/doxygen/build/bin/doxygen
 
 deploy:
   provider: pages
