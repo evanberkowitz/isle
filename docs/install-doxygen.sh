@@ -25,4 +25,4 @@ echo "Compiling doxygen"
 cmake --build .
 
 echo "Installing doxygen"
-sudo cmake --build . --target install
+sudo env "PATH=$PATH" cmake --build . --target install
