@@ -1,4 +1,5 @@
-sudo: false
+sudo: yes
+dist: xenial
 
 language: python
 python:
@@ -12,6 +13,7 @@ addons:
   apt:
     packages:
       - doxygen
+      - graphviz
 
 script:
   - python setup.py doc
