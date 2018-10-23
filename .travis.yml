@@ -12,8 +12,12 @@ branches:
 addons:
   apt:
     packages:
-      - doxygen
+      # needed by Doxygen to make graphs
       - graphviz
+
+# Install Doxygen manually to get a specific version that works with that_style.
+before_install:
+  - ./docs/install-doxygen.sh
 
 script:
   - python setup.py doc
