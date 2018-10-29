@@ -24,7 +24,7 @@ before_install:
 
 install:
   - mkdir lib
-  - git clone --depth=1 https://jl-wynen@bitbucket.org/blaze-lib/blaze.git lib/blaze
+  - git clone --depth=1 https://bitbucket.org/blaze-lib/blaze.git
   - pip install -r requirements.txt
 
 script:
