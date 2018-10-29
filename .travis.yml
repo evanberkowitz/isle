@@ -1,31 +1,31 @@
-sudo: yes
-dist: xenial
-
+sudo: false
 language: python
-python:
-  - "3.7"
 
-branches:
-  only:
-    - master
+matrix:
+  include:
 
-addons:
-  apt:
-    packages:
-      # needed by Doxygen to make graphs
-      - graphviz
+    - os: linux
+      python: "3.6"
+      addons:
+        apt:
+          sources:
+            - ubuntu-toolchain-r-test
+          packages:
+            - g++-7
+            - libblas-dev
+            - liblapack-dev
+      env: MATRIX_EVAL="CXX=g++-7"
 
-# Install Doxygen manually to get a specific version that works with that_style.
 before_install:
-  - ./docs/install-doxygen.sh
+  - eval "${MATRIX_EVAL}"
+  - export "LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/use/local/lib"
+  - export "DYLD_LIBRARY_PATH=$DYLD_LIBRARY_PATH:/use/local/lib"
+
+install:
+  - mkdir lib
+  - git clone --depth=1 https://jl-wynen@bitbucket.org/blaze-lib/blaze.git lib/blaze
+  - pip install -r requirements.txt
 
 script:
-  - python setup.py doc --doxygen=$TRAVIS_BUILD_DIR/doxygen/build/bin/doxygen
-
-deploy:
-  provider: pages
-  skip_cleanup: true
-  local_dir: docs/html
-  github_token: $GH_REPO_TOKEN
-  on:
-    branch: master
+  - python setup.py configure --compiler="$CXX" --build-type=DEBUG --blaze=./lib/blaze
+  - python setup.py build
