@@ -16,6 +16,7 @@ matrix:
        #     - libblas-dev
        #     - liblapack-dev
             - apt-file
+            - python3-dev
       env: MATRIX_EVAL="CXX=g++-7"
 
 before_install:
@@ -34,3 +35,5 @@ script:
  - apt-file update
  - apt-file list python-dev
  - apt-file list pyhton3-dev
+ - python3-config --ldflags
+ - python3-config --libs
