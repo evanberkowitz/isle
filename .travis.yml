@@ -12,10 +12,9 @@ matrix:
           sources:
             - ubuntu-toolchain-r-test
           packages:
-       #     - g++-7
-       #     - libblas-dev
-       #     - liblapack-dev
-            - apt-file
+            - g++-7
+            - libblas-dev
+            - liblapack-dev
             - python3-dev
       env: MATRIX_EVAL="CXX=g++-7"
 
@@ -24,16 +23,11 @@ before_install:
   - export "LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/use/local/lib"
   - export "DYLD_LIBRARY_PATH=$DYLD_LIBRARY_PATH:/use/local/lib"
 
-#install:
- # - mkdir lib
- # - git clone --depth=1 https://bitbucket.org/blaze-lib/blaze.git ./lib/blaze
- # - pip install -r requirements.txt
+install:
+  - mkdir lib
+  - git clone --depth=1 https://bitbucket.org/blaze-lib/blaze.git ./lib/blaze
+  - pip install -r requirements.txt
 
 script:
- # - python setup.py configure --compiler="$CXX" --build-type=DEBUG --blaze=./lib/blaze
- # - python setup.py build
- - apt-file update
- - apt-file list python-dev
- - apt-file list pyhton3-dev
- - python3-config --ldflags
- - python3-config --libs
+  - python setup.py configure --compiler="${CXX}" --build-type=DEBUG --blaze=./lib/blaze
+  - python setup.py build
