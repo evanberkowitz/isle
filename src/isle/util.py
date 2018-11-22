@@ -116,16 +116,11 @@ def rollTemporally(timeVector, time, fermionic=True):
     \param time The zero entry of `timeVector` will wind up as as time entry of the result.
     \param fermionic Account for antisymmetry in time.
     """
-    nt = len(timeVector)
     result = np.roll(timeVector, time, axis=0)
     if fermionic:
         if time > 0:
-            mask = np.array([-1 if t < time else +1 for t in range(nt)])
+            result[:time, ...] *= -1
         elif time < 0:
-            mask = np.array([-1 if t > nt+time-1 else +1 for t in range(nt)])
-        else:
-            mask = np.array([+1 for t in range(nt)])
-    else:
-        mask = np.array([+1 for t in range(nt)])
-    result *= mask
+            nt = len(timeVector)
+            result[nt+time:] *= -1
     return result
