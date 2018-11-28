@@ -18,7 +18,7 @@ BENCH_PATH = Path(__file__).resolve().parent
 def main():
     np.random.seed(1)
 
-    with open(str(BENCH_PATH/"../lattices/c60_ipr.yml"), "r") as yamlf:
+    with open(str(BENCH_PATH/"../resources/lattices/c60_ipr.yml"), "r") as yamlf:
         lat = yaml.safe_load(yamlf)
 
     nts = (4, 8, 16, 32)
@@ -30,7 +30,7 @@ def main():
         # make random auxilliary field and HFM
         phi = isle.Vector(np.random.randn(lat.nx()*nt)
                          + 1j*np.random.randn(lat.nx()*nt), dtype=complex)
-        hfm = isle.HubbardFermiMatrix(lat.hopping(), 0, -1)
+        hfm = isle.HubbardFermiMatrixDia(lat.hopping(), 0, -1)
 
         # make random right hand side
         rhs = isle.Vector(np.random.randn(lat.nx()*nt)
