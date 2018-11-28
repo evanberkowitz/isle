@@ -20,7 +20,7 @@ RAND_STD = 0.2
 N_REP = 10 # number of repetitions
 
 
-class _DummyAction(isle.Action):
+class _DummyAction(isle.action.Action):
     def eval(self, phi):
         return np.sum(phi)
 
@@ -39,23 +39,23 @@ def _testConstructionPureCXX():
     logger.info("Testing construction of Hamiltonian from C++ actions")
 
     # anonymous variable, init method
-    ham = isle.Hamiltonian(isle.HubbardGaugeAction(1))
+    ham = isle.Hamiltonian(isle.action.HubbardGaugeAction(1))
     del ham
 
     # named variable
-    act = isle.HubbardGaugeAction(1)
+    act = isle.action.HubbardGaugeAction(1)
     ham = isle.Hamiltonian(act)
     del act
     del ham
 
     # via add method
     ham = isle.Hamiltonian()
-    ham.add(isle.HubbardGaugeAction(1))
+    ham.add(isle.action.HubbardGaugeAction(1))
     del ham
 
     # via both methods
-    act = isle.HubbardGaugeAction(1)
-    ham = isle.Hamiltonian(isle.HubbardGaugeAction(2))
+    act = isle.action.HubbardGaugeAction(1)
+    ham = isle.Hamiltonian(isle.action.HubbardGaugeAction(2))
     ham.add(act)
     del ham
     del act
@@ -91,19 +91,19 @@ def _testConstructionMixed():
     logger.info("Testing construction of Hamiltonian from C++ and Python actions")
 
     # anonymous variable, init method
-    ham = isle.Hamiltonian(_DummyAction(), isle.HubbardGaugeAction(1))
+    ham = isle.Hamiltonian(_DummyAction(), isle.action.HubbardGaugeAction(1))
     del ham
 
     # named variable
     act = _DummyAction()
-    ham = isle.Hamiltonian(isle.HubbardGaugeAction(1), act)
+    ham = isle.Hamiltonian(isle.action.HubbardGaugeAction(1), act)
     del act
     del ham
 
     # via add method
     ham = isle.Hamiltonian()
     ham.add(_DummyAction())
-    ham.add(isle.HubbardGaugeAction(1))
+    ham.add(isle.action.HubbardGaugeAction(1))
     del ham
 
     # via both methods
@@ -111,8 +111,8 @@ def _testConstructionMixed():
     ham = isle.Hamiltonian(_DummyAction())
     ham.add(act)
     del act
-    ham.add(isle.HubbardGaugeAction(1))
-    act = isle.HubbardGaugeAction(1)
+    ham.add(isle.action.HubbardGaugeAction(1))
+    act = isle.action.HubbardGaugeAction(1)
     ham.add(act)
     del ham
     del act
@@ -131,7 +131,7 @@ class TestHamiltonian(unittest.TestCase):
         logger = core.get_logger()
         logger.info("Testing Hamiltonian.eval()")
         for rep in range(N_REP):
-            ham = isle.Hamiltonian(_DummyAction(), isle.HubbardGaugeAction(1))
+            ham = isle.Hamiltonian(_DummyAction(), isle.action.HubbardGaugeAction(1))
             phi = np.random.normal(RAND_MEAN, RAND_STD, 1000) \
                   + 1j*np.random.normal(RAND_MEAN, RAND_STD, 1000)
             pi = np.random.normal(RAND_MEAN, RAND_STD, 1000) \
@@ -149,7 +149,8 @@ class TestHamiltonian(unittest.TestCase):
         logger = core.get_logger()
         logger.info("Testing Hamiltonian.force()")
         for rep in range(N_REP):
-            ham = isle.Hamiltonian(_DummyAction(), isle.HubbardGaugeAction(1))
+            ham = isle.Hamiltonian(_DummyAction(),
+                                   isle.action.HubbardGaugeAction(1))
             phi = np.random.normal(RAND_MEAN, RAND_STD, 1000) \
                   + 1j*np.random.normal(RAND_MEAN, RAND_STD, 1000)
 

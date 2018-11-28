@@ -1,7 +1,8 @@
 #!/usr/bin/env python
 
-"""
+r"""!
 Unittest for HubbardFermiMatrix.
+\todo Implement tests for HubbardFermiMatrixExp.
 """
 
 import unittest
@@ -44,13 +45,13 @@ class TestHubbardFermiMatrix(unittest.TestCase):
 
         nt = 1
         nx = kappa.rows()
-        hfm = isle.HubbardFermiMatrix(kappa, mu, sigmaKappa)
+        hfm = isle.HubbardFermiMatrixDia(kappa, mu, sigmaKappa)
         phi = _randomPhi(nx*nt)
 
         auto = np.array(isle.Matrix(hfm.Q(phi)), copy=False)
         manual = np.array(isle.Matrix(hfm.P()+hfm.Tplus(0, phi)+hfm.Tminus(0, phi)), copy=False)
         self.assertTrue(core.isEqual(auto, manual),
-                        msg="Failed equality check for construction of hubbardFermiMatrix "\
+                        msg="Failed equality check for construction of HubbardFermiMatrixDia "\
                         + "for nt={}, mu={}, sigmaKappa={}".format(nt, mu, sigmaKappa)\
                         + "\nhfm.Q() = {}".format(auto) \
                         + "\nhfm.P() + hfm.Tplus(0) + hfm.Tminus(0) = {}".format(manual))
@@ -60,7 +61,7 @@ class TestHubbardFermiMatrix(unittest.TestCase):
 
         nt = 2
         nx = kappa.rows()
-        hfm = isle.HubbardFermiMatrix(kappa, mu, sigmaKappa)
+        hfm = isle.HubbardFermiMatrixDia(kappa, mu, sigmaKappa)
         phi = _randomPhi(nx*nt)
 
         auto = np.array(isle.Matrix(hfm.Q(phi)), copy=False) # full matrix
@@ -74,7 +75,7 @@ class TestHubbardFermiMatrix(unittest.TestCase):
         manual[nx:, :nx] = isle.Matrix(hfm.Tminus(1, phi) + hfm.Tplus(1, phi))
 
         self.assertTrue(core.isEqual(auto, manual),
-                        msg="Failed equality check for construction of hubbardFermiMatrix "\
+                        msg="Failed equality check for construction of HubbardFermiMatrixDia "\
                         + "for nt={}, mu={}, sigmaKappa={}".format(nt, mu, sigmaKappa)\
                         + "\nauto = {}".format(auto) \
                         + "\nmanual {}".format(manual))
@@ -84,7 +85,7 @@ class TestHubbardFermiMatrix(unittest.TestCase):
 
         nt = 3
         nx = kappa.rows()
-        hfm = isle.HubbardFermiMatrix(kappa, mu, sigmaKappa)
+        hfm = isle.HubbardFermiMatrixDia(kappa, mu, sigmaKappa)
         phi = _randomPhi(nx*nt)
 
         auto = np.array(isle.Matrix(hfm.Q(phi)), copy=False) # full matrix
@@ -104,7 +105,7 @@ class TestHubbardFermiMatrix(unittest.TestCase):
         manual[2*nx:, 2*nx:] = P
 
         self.assertTrue(core.isEqual(auto, manual),
-                        msg="Failed equality check for construction of hubbardFermiMatrix "\
+                        msg="Failed equality check for construction of HubbardFermiMatrixDia "\
                         + "for nt={}, mu={}, sigmaKappa={}".format(nt, mu, sigmaKappa)\
                         + "\nauto = {}".format(auto) \
                         + "\nmanual {}".format(manual))
@@ -123,39 +124,10 @@ class TestHubbardFermiMatrix(unittest.TestCase):
 
         logger = core.get_logger()
         for latfile in LATTICES:
-            logger.info("Testing constructor of HubbardFermiMatrix for lattice %s", latfile)
+            logger.info("Testing constructor of HubbardFermiMatrixDia for lattice %s", latfile)
             with open(latfile, "r") as f:
                 lat = yaml.safe_load(f)
                 self._testConstruction(lat.hopping())
-
-
-    def _testQLUFact(self, kappa):
-        "Check whether a matrix reconstructed from an LU decomposition of Q is equal to the original."
-        for nt, mu, sigmaKappa, _ in itertools.product((4, 8, 32), MU, (-1, 1),
-                                                       range(N_REP)):
-            nx = kappa.rows()
-            hfm = isle.HubbardFermiMatrix(kappa/nt, mu/nt, sigmaKappa)
-            phi = _randomPhi(nx*nt)
-
-            q = np.array(isle.Matrix(hfm.Q(phi)), copy=False)
-            lu = isle.getQLU(hfm, phi)
-            recon = np.array(isle.Matrix(lu.reconstruct()))
-
-            self.assertTrue(core.isEqual(q, recon, nOps=nx**2, prec=1e-13),
-                            msg="Failed equality check of reconstruction from LU decomposition of hubbardFermiMatrix "\
-                            + "for nt={}, mu={}, sigmaKappa={}".format(nt, mu, sigmaKappa)\
-                            + "\noriginal = {}".format(q) \
-                            + "\nreconstructed {}".format(recon))
-
-    def test_2_lu_factorization(self):
-        "Test LU factorization."
-        logger = core.get_logger()
-        for latfile in LATTICES:
-            logger.info("Testing LU factorization of HubbardFermiMatrix for lattice %s", latfile)
-            with open(latfile, "r") as f:
-                lat = yaml.safe_load(f)
-                self._testQLUFact(lat.hopping())
-
 
     def _test_logdetM(self, kappa):
         "Test log(det(M))."
@@ -163,7 +135,7 @@ class TestHubbardFermiMatrix(unittest.TestCase):
         nx = kappa.rows()
         self.assertRaises(RuntimeError,
                           lambda msg:
-                          isle.logdetM(isle.HubbardFermiMatrix(kappa, 1, 1), isle.CDVector(nx), isle.Species.PARTICLE),
+                          isle.logdetM(isle.HubbardFermiMatrixDia(kappa, 1, 1), isle.CDVector(nx), isle.Species.PARTICLE),
                           msg="logdetM must throw a RuntimeError when called with mu != 0. If this bug has been fixed, update the unit test!")
 
         for nt, mu, sigmaKappa, species, rep in itertools.product((4, 8, 32),
@@ -171,7 +143,7 @@ class TestHubbardFermiMatrix(unittest.TestCase):
                                                                   (-1, 1),
                                                                   (isle.Species.PARTICLE, isle.Species.HOLE),
                                                                   range(N_REP)):
-            hfm = isle.HubbardFermiMatrix(kappa/nt, mu/nt, sigmaKappa)
+            hfm = isle.HubbardFermiMatrixDia(kappa/nt, mu/nt, sigmaKappa)
             phi = _randomPhi(nx*nt)
 
             plain = isle.logdet(isle.Matrix(hfm.M(phi, species)))
@@ -189,7 +161,7 @@ class TestHubbardFermiMatrix(unittest.TestCase):
         nx = kappa.rows()
         for nt, mu, sigmaKappa, rep in itertools.product((4, 8, 32), [0],
                                                          (-1, 1), range(N_REP)):
-            hfm = isle.HubbardFermiMatrix(kappa/nt, mu/nt, sigmaKappa)
+            hfm = isle.HubbardFermiMatrixDia(kappa/nt, mu/nt, sigmaKappa)
             phi = _randomPhi(nx*nt)
 
             plain = isle.logdet(isle.Matrix(hfm.Q(phi)))
@@ -221,7 +193,7 @@ class TestHubbardFermiMatrix(unittest.TestCase):
                                                                   (-1, 1),
                                                                   (isle.Species.PARTICLE, isle.Species.HOLE),
                                                                   range(N_REP)):
-            hfm = isle.HubbardFermiMatrix(kappa/nt, mu/nt, sigmaKappa)
+            hfm = isle.HubbardFermiMatrixDia(kappa/nt, mu/nt, sigmaKappa)
             phi = _randomPhi(nx*nt)
             M = hfm.M(phi, species)
             rhss = [_randomPhi(nx*nt) for _ in range(2)]
