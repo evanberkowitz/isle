@@ -580,7 +580,6 @@ namespace isle {
         return toFirstLogBranch(ldet);
     }
 
-
     std::complex<double> logdetM(const HubbardFermiMatrixDia &hfm,
                                  const CDVector &phi, const Species species) {
         if (hfm.muTilde() != 0)
@@ -588,23 +587,28 @@ namespace isle {
 
         const auto NX = hfm.nx();
         const auto NT = getNt(phi, NX);
-        const auto &kinv = hfm.Kinv(species);
+        const auto &k = hfm.K(species);
 
-        // first K^-1 * F pair
-        auto f = hfm.F(0, phi, species, false);
-        Matrix<std::complex<double>> A = kinv*f;
+        // first K * F^{-1} pair
+        auto f = hfm.F(0, phi, species, true);
+        CDMatrix aux = f*k;  // the matrix under the determinant
         // other pairs
         for (std::size_t t = 1; t < NT; ++t) {
-            hfm.F(f, t, phi, species, false);
-            A = kinv*f*A;
+            hfm.F(f, t, phi, species, true);
+            aux = aux*f*k;
+        }
+        aux += IdMatrix<std::complex<double>>(NX);
+
+        // add Phi and return
+        switch (species) {
+        case Species::PARTICLE:
+            return toFirstLogBranch(1.0i*blaze::sum(phi) + logdet(aux));
+        case Species::HOLE:
+            return toFirstLogBranch(-1.0i*blaze::sum(phi) + logdet(aux));
         }
 
-        // use kinv for first term because we already have it, otherwise would need dense K
-        // gives extra minus sign
-        return toFirstLogBranch(
-            -static_cast<double>(NT)*hfm.logdetKinv(species)
-            + logdet(CDMatrix(IdMatrix<std::complex<double>>(NX) + A))
-            );
+        // We should never get here unless someone fucks up with the enum!
+        throw std::runtime_error("Wrong value for species.");
     }
 
     std::vector<CDVector> solveM(const HubbardFermiMatrixDia &hfm,

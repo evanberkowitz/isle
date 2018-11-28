@@ -1,5 +1,7 @@
 /** \file
  * \brief Hubbard model fermion matrices with hopping matrix on the diagonal.
+ *
+ * \todo Derive force and solver based on new form of algorithm.
  */
 
 #ifndef HUBBARD_FERMI_MATRIX_DIA_HPP
@@ -322,6 +324,8 @@ namespace isle {
 
     /// Compute \f$\log(\det(M))\f$.
     /**
+     * \todo Is the new form stable for mu != 0?
+     *       What about complex phi?
      * \param hfm %HubbardFermiMatrixDia to compute the determinant of.
      * \param phi Auxilliary field.
      * \param species Select whether to use particles or holes.
