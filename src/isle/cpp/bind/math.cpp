@@ -350,14 +350,14 @@ namespace {
 
                             if (binfo.strides[0] == sizeof(ET))
                                 // copy as is (w/o stride)
-                                return VT(binfo.shape[0],
+                                return VT(static_cast<std::size_t>(binfo.shape[0]),
                                           static_cast<const ET *>(binfo.ptr));
                             else {
                                 // copy with specific stride
-                                VT vec(binfo.shape[0]);
-                                const py::ssize_t stride = binfo.strides[0]/sizeof(ET);
+                                VT vec(static_cast<std::size_t>(binfo.shape[0]));
+                                const py::ssize_t stride = binfo.strides[0]/static_cast<py::ssize_t>(sizeof(ET));
                                 for (py::ssize_t i = 0; i < binfo.shape[0]; ++i)
-                                    vec[i] = static_cast<const ET*>(binfo.ptr)[i*stride];
+                                    vec[static_cast<std::size_t>(i)] = static_cast<const ET*>(binfo.ptr)[i*stride];
                                 return vec;
                             }
                         }))
@@ -489,13 +489,15 @@ namespace {
                             if (binfo.strides[0] == static_cast<py::ssize_t>(sizeof(ET))*binfo.shape[1]
                                 && binfo.strides[1] == sizeof(ET))
                                 // buffer in row-major format => copy as is
-                                return MT(binfo.shape[0], binfo.shape[1],
+                                return MT(static_cast<std::size_t>(binfo.shape[0]),
+                                          static_cast<std::size_t>(binfo.shape[1]),
                                           static_cast<const ET *>(binfo.ptr));
                             else {
                                 // copy taking strides into account
-                                MT mat(binfo.shape[0], binfo.shape[1]);
-                                const py::ssize_t stride0 = binfo.strides[0]/sizeof(ET);
-                                const py::ssize_t stride1 = binfo.strides[1]/sizeof(ET);
+                                MT mat(static_cast<std::size_t>(binfo.shape[0]),
+                                       static_cast<std::size_t>(binfo.shape[1]));
+                                const py::ssize_t stride0 = binfo.strides[0]/static_cast<py::ssize_t>(sizeof(ET));
+                                const py::ssize_t stride1 = binfo.strides[1]/static_cast<py::ssize_t>(sizeof(ET));
                                 for (py::ssize_t i = 0; i < binfo.shape[0]; ++i) {
                                     for (py::ssize_t j = 0; j < binfo.shape[1]; ++j) {
                                         mat(i, j) = static_cast<const ET*>(binfo.ptr)[i*stride0 + j*stride1];

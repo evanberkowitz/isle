@@ -1,7 +1,7 @@
 #include "lattice.hpp"
 
 /// Type to color graph with.
-using color = std::int8_t;
+using color = int;
 
 constexpr color unspecified = 0;  ///< No color set.
 constexpr color latA = 1;  ///< On sub graph A, graph B is marked by ~latB.

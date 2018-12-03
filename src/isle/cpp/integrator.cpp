@@ -8,7 +8,7 @@ namespace isle {
                                             const std::size_t nsteps,
                                             const double direction) {
 
-        const double eps = direction*length/nsteps;
+        const double eps = direction*length/static_cast<double>(nsteps);
 
         // initial half step
         CDVector piOut = pi + blaze::real(ham.force(phi))*(eps/2);
