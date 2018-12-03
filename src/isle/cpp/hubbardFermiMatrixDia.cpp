@@ -49,9 +49,7 @@ namespace isle {
                                                  const std::int8_t sigmaKappa)
         : _kappa{kappaTilde}, _mu{muTilde}, _sigmaKappa{sigmaKappa},
           _kinvp{std::bind(inverseK, std::ref(*this), Species::PARTICLE)},
-          _kinvh{std::bind(inverseK, std::ref(*this), Species::HOLE)},
-          _logdetKinvp{[this](){ return logdet(this->Kinv(Species::PARTICLE)); }},
-          _logdetKinvh{[this](){ return logdet(this->Kinv(Species::HOLE)); }}
+          _kinvh{std::bind(inverseK, std::ref(*this), Species::HOLE)}
     {
 #ifndef NDEBUG
         if (kappaTilde.rows() != kappaTilde.columns())
@@ -69,9 +67,7 @@ namespace isle {
     HubbardFermiMatrixDia::HubbardFermiMatrixDia(const HubbardFermiMatrixDia &other)
         : _kappa{other._kappa}, _mu{other._mu}, _sigmaKappa{other._sigmaKappa},
           _kinvp{std::bind(inverseK, std::ref(*this), Species::PARTICLE)},
-          _kinvh{std::bind(inverseK, std::ref(*this), Species::HOLE)},
-          _logdetKinvp{[this](){ return logdet(this->Kinv(Species::PARTICLE)); }},
-          _logdetKinvh{[this](){ return logdet(this->Kinv(Species::HOLE)); }}
+          _kinvh{std::bind(inverseK, std::ref(*this), Species::HOLE)}
         { }
 
     HubbardFermiMatrixDia &HubbardFermiMatrixDia::operator=(
@@ -84,10 +80,6 @@ namespace isle {
                                             Species::PARTICLE));
         _kinvh = decltype(_kinvh)(std::bind(inverseK, std::ref(*this),
                                             Species::HOLE));
-        _logdetKinvp = decltype(_logdetKinvp)(
-            [this](){ return logdet(this->Kinv(Species::PARTICLE)); });
-        _logdetKinvh = decltype(_logdetKinvh)(
-            [this](){ return logdet(this->Kinv(Species::HOLE)); });
 
         return *this;
     }
@@ -95,8 +87,6 @@ namespace isle {
     void HubbardFermiMatrixDia::_invalidateKCaches() noexcept {
         _kinvp.invalidate();
         _kinvh.invalidate();
-        _logdetKinvp.invalidate();
-        _logdetKinvh.invalidate();
     }
 
     void HubbardFermiMatrixDia::K(DSparseMatrix &k, const Species species) const {
@@ -119,13 +109,6 @@ namespace isle {
             return _kinvp;
         else
             return _kinvh;
-    }
-
-    std::complex<double> HubbardFermiMatrixDia::logdetKinv(Species species) const {
-        if (species == Species::PARTICLE)
-            return _logdetKinvp;
-        else
-            return _logdetKinvh;
     }
 
     void HubbardFermiMatrixDia::F(CDSparseMatrix &f,

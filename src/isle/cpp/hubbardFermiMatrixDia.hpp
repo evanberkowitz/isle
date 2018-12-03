@@ -33,7 +33,6 @@ namespace isle {
      * and give easier access to the components compared to a `blaze::Matrix`.
      * The only exception are the inversed of \f$K\f$ which are cached after when the function
      * HubbardFermiMatrixDia::Kinv() is first called.
-     * The same goes for the results of HubbardFermiMatrixDia::logdetKinv().
      *
      * \sa
      * Free functions operating on `%HubbardFermimatrixDia`:
@@ -86,12 +85,6 @@ namespace isle {
          * \param species Select whether to construct for particles or holes.
          */
         const DMatrix &Kinv(Species species) const;
-
-        /// Return log(det(K^-1)).
-        /**
-         * \param species Select whether to construct for particles or holes.
-         */
-        std::complex<double> logdetKinv(Species species) const;
 
         /// Store an off-diagonal block F of matrix M in the parameter.
         /**
@@ -250,10 +243,6 @@ namespace isle {
         Cache<DMatrix, std::function<DMatrix()>> _kinvp;
         /// K^-1 for holes.
         Cache<DMatrix, std::function<DMatrix()>> _kinvh;
-        /// log(det(K^-1)) for particles.
-        Cache<std::complex<double>, std::function<std::complex<double>()>> _logdetKinvp;
-        /// log(det(K^-1)) for holes.
-        Cache<std::complex<double>, std::function<std::complex<double>()>> _logdetKinvh;
 
         void _invalidateKCaches() noexcept;
     };
