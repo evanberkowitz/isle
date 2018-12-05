@@ -2,6 +2,8 @@
 Measurement of logdet.
 """
 
+import numpy as np
+
 import isle
 from ..h5io import createH5Group
 
@@ -25,7 +27,9 @@ class Logdet:
                 logdet.append(isle.logdetM(self.hfm, phi, species))
         else:
             for species, logdet in self.logdet.items():
-                logdet.append(isle.logdetM(self.hfm, -1j*phi, species))
+                # use dense, slow numpy routine to get stable result
+                ld = np.linalg.slogdet(isle.Matrix(self.hfm.M(-1j*phi, species)))
+                logdet.append(np.log(ld[0]) + ld[1])
 
     def save(self, base, name):
         r"""!
