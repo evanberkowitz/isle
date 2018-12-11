@@ -500,7 +500,8 @@ namespace {
                                 const py::ssize_t stride1 = binfo.strides[1]/static_cast<py::ssize_t>(sizeof(ET));
                                 for (py::ssize_t i = 0; i < binfo.shape[0]; ++i) {
                                     for (py::ssize_t j = 0; j < binfo.shape[1]; ++j) {
-                                        mat(i, j) = static_cast<const ET*>(binfo.ptr)[i*stride0 + j*stride1];
+                                        mat(static_cast<std::size_t>(i), static_cast<std::size_t>(j))
+                                            = static_cast<const ET*>(binfo.ptr)[i*stride0 + j*stride1];
                                     }
                                 }
                                 return mat;
@@ -563,8 +564,8 @@ namespace {
                 .def_buffer([](MT &mat) {
                         // alignment adjusted number of columns
                         const std::size_t adjColumns = mat.rows()>1 ?
-                                                         (&mat(1,0)-&mat(0,0)) :
-                                                         mat.columns();
+                            static_cast<std::size_t>(&mat(1,0)-&mat(0,0)) :
+                            mat.columns();
                         return py::buffer_info{
                             &mat(0, 0), sizeof(ET), py::format_descriptor<ET>::format(),
                             2, {mat.rows(), mat.columns()},
