@@ -78,7 +78,9 @@ python3 setup.py test
 Keep in mind that some tests take a long time because they need to process fairly big matrices in an inefficient way to make sure the efficient algorithms are correct.
 
 # Documentation
-Run
+The documentation is available online at https://jl-wynen.github.io/isle/
+
+You can generate it locally by running
 ```
 python3 setup.py doc
 ```
