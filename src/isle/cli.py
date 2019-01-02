@@ -494,7 +494,7 @@ def makeProgressbar(target, message="", updateRate=1):
 
 
 @contextlib.contextmanager
-def trackProgress(target, message=""):
+def trackProgress(target, message="", updateRate=1):
     r"""!
     A context manager to track progress of an operation via a progress bar.
 
@@ -516,7 +516,7 @@ def trackProgress(target, message=""):
         raise RuntimeError("A progress bar is already active.")
 
     try:
-        _activeBar = makeProgressbar(target, message)
+        _activeBar = makeProgressbar(target, message, updateRate)
         yield activeBar
         _activeBar.finalize()  # success => clean up
 
@@ -529,7 +529,7 @@ def trackProgress(target, message=""):
         # in any case the bar is now done
         _activeBar = None
 
-def progressRange(start, stop=None, step=1, message=""):
+def progressRange(start, stop=None, step=1, message="", updateRate=1):
     r"""!
     Like built in `range()` but indicates progress using a Progressbar.
 
@@ -543,7 +543,7 @@ def progressRange(start, stop=None, step=1, message=""):
         stop = start
         start = 0
 
-    with trackProgress(stop-start, message) as pbar:
+    with trackProgress(stop-start, message, updateRate) as pbar:
         for cur in range(start, stop, step):
             yield cur
             # advance only up to stop
