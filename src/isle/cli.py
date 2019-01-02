@@ -517,7 +517,7 @@ def trackProgress(target, message="", updateRate=1):
 
     try:
         _activeBar = makeProgressbar(target, message, updateRate)
-        yield activeBar
+        yield _activeBar
         _activeBar.finalize()  # success => clean up
 
     except:
