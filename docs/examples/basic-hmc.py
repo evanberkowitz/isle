@@ -2,6 +2,8 @@
 Example script to produce configurations with HMC.
 """
 
+from logging import getLogger
+
 import yaml
 
 import isle
@@ -24,6 +26,7 @@ def makeAction(lat, params):
 def main():
     # initialize command line interface and parse command line arguments
     args = isle.cli.init("hmc", name="basic-hmc")
+    log = getLogger("HMC")
 
     # load lattice
     with open("resources/lattices/four_sites.yml", "r") as latfile:
@@ -45,7 +48,7 @@ def main():
     # random initial condition
     phi = isle.Vector(rng.normal(0, (params.U * params.beta / lat.nt())**(1/2), lat.lattSize())+0j)
 
-    print("thermalizing")
+    log.info("Thermalizing")
     # a proposer to linearly decrease the number of MD steps
     proposer = isle.proposers.LinearStepLeapfrog(hmcState.ham, (1, 1), (20, 5), 99)
     # thermalize configuration without saving anything
@@ -53,7 +56,7 @@ def main():
     # reset the internal counter so we start saving configs at index 0
     hmcState.resetIndex()
 
-    print("producing")
+    log.info("Producing")
     # new proposer with a constant number of steps
     proposer = isle.proposers.ConstStepLeapfrog(hmcState.ham, 1, 5)
     # produce configurations and save in intervals
