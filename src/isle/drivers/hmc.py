@@ -5,7 +5,9 @@ import h5py as h5
 
 from .. import Vector
 from .. import fileio
+from .. import cli
 from ._util import verifyMetadataByException, prepareOutfile
+
 
 class HMC:
     def __init__(self, lattice, params, rng, action, outfname, startIdx):
@@ -25,7 +27,8 @@ class HMC:
 
         acc = 1  # was last trajectory accepted? (int so it can be written as trajPoint)
         act = None  # running action (without pi)
-        for _ in range(ntr):
+        for _ in cli.progressRange(ntr, message="HMC evolution",
+                                   updateRate=max(ntr//100, 1)):
             # get initial conditions for proposer
             startPhi, startPi, startEnergy = _initialConditions(self.ham, phi, act, self.rng)
 
@@ -56,10 +59,6 @@ class HMC:
                     self.save(phi, act, acc)
             else:
                 self.advance()
-
-            if self._trajIdx % (ntr//100) == 0:
-                # TODO use rogressbar
-                print(f"HMC traj {self._trajIdx} of {ntr}")
 
         return phi
 
