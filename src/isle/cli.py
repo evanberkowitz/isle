@@ -684,7 +684,7 @@ def addDefaultArgs(parser):
                         help="Make output more verbose, stacks.")
     parser.add_argument("--log",
                         default="islelog."
-                        + time.strftime('%Y-%M-%S.%H-%M-%S', time.localtime())
+                        + time.strftime('%Y-%m-%d.%H-%M-%S', time.localtime())
                         + ".log",
                         help="Specify log file name. Set to none to not write log file.")
     return parser
