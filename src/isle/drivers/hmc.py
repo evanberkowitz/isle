@@ -1,4 +1,5 @@
 from pathlib import Path
+from logging import getLogger
 
 import numpy as np
 import yaml
@@ -107,12 +108,14 @@ class HMC:
             raise
 
 
-def init(lattice, params, rng, makeAction, outfile,
-         overwrite, startIdx=0):
+def init(lattice, params, rng, makeAction, outfile, overwrite, startIdx=0):
+    if outfile is None:
+        getLogger(__name__).critical("No output file given for HMC driver.")
+        raise ValueError("No output file")
 
     if not isinstance(outfile, (tuple, list)):
+        # convert to name, type tuple is necessary
         outfile = fileio.pathAndType(outfile)
-
     _ensureIsValidOutfile(outfile, overwrite, startIdx, lattice, params)
 
     makeActionSrc = fileio.sourceOfFunction(makeAction)
