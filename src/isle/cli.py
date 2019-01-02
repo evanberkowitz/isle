@@ -804,6 +804,6 @@ def init(cmd=None, name=None, description=None, epilog=None, subdescriptions=Non
     """
 
     args = parseArguments(cmd, name, description, epilog, subdescriptions)
-    setupLogging("isle.log", verbosity=2)
+    setupLogging("isle.log", verbosity=args.verbose)
 
     return args
