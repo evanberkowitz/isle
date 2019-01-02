@@ -7,6 +7,7 @@ from logging import getLogger
 import h5py as h5
 
 from .. import fileio
+from .. import cli
 from ._util import verifyMetadataByException, prepareOutfile
 
 
@@ -32,20 +33,21 @@ class Measure:
 
         with h5.File(self.infname, "r") as cfgf:
             # iterate over all configs sorted by their number
-            for i, grp in map(lambda p: (int(p[0]), p[1]),
-                              sorted(cfgf["/configuration"].items(),
-                                     key=lambda item: int(item[0]))):
-                if i % 1000 == 0:
-                    # TODO use progressbar
-                    print(f"Measurement: Processing configuration {i}")
+            # TODO find out how many configs there are
+            with cli.trackProgress(None, "Measurements", updateRate=1000) as pbar:
+                for i, grp in map(lambda p: (int(p[0]), p[1]),
+                                  sorted(cfgf["/configuration"].items(),
+                                         key=lambda item: int(item[0]))):
 
-                # read config and action
-                phi = grp["phi"][()]
-                action = grp["action"][()]
-                # measure
-                for frequency, measurement, _ in measurements:
-                    if i % frequency == 0:
-                        measurement(phi, action, i)
+                    # read config and action
+                    phi = grp["phi"][()]
+                    action = grp["action"][()]
+                    # measure
+                    for frequency, measurement, _ in measurements:
+                        if i % frequency == 0:
+                            measurement(phi, action, i)
+
+                    pbar.advance()
 
     def save(self, measurements):
         with h5.File(self.outfname, "a") as measFile:
