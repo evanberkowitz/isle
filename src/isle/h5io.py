@@ -78,6 +78,6 @@ def writeCheckpoint(group, label, rng, trajGrpName):
     """
 
     grp = group.create_group(str(label))
-    rng.writeH5(grp.create_group("rng_state"))
+    rng.writeH5(grp.create_group("rngState"))
     grp["cfg"] = h5.SoftLink(trajGrpName)
     return grp
