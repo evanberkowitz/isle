@@ -676,19 +676,21 @@ def _sliceArgType(arg):
     """!Parse an argument in slice notation"""
     return slice(*map(lambda x: int(x) if x else None, arg.split(":")))
 
-def makeDefaultParser(name, description, epilog):
-    """!Return a new default parser object."""
-    parser = argparse.ArgumentParser(prog=name,
-                                     description=description,
-                                     epilog=epilog)
+def addDefaultArgs(parser):
+    """!Add default arguments common to all commands."""
     parser.add_argument("--version", action="version",
-                        version=isle.__version__)
+                        version=f"Isle {isle.__version__}")
+    parser.add_argument("-v", "--verbose", action="count", default=0,
+                        help="Make output more verbose, stacks.")
+    parser.add_argument("--log",
+                        default="islelog."
+                        + time.strftime('%Y-%M-%S.%H-%M-%S', time.localtime())
+                        + ".log",
+                        help="Specify log file name. Set to none to not write log file.")
     return parser
 
 def addHMCArgs(parser):
     """!Add arguments for HMC to parser."""
-    parser.add_argument("-v", "--verbose", action="count", default=0,
-                        help="Make output more verbose, stacks.")
     parser.add_argument("-i", "--input", help="Input file.",
                         type=fileio.pathAndType, dest="infile")
     parser.add_argument("-o", "--output", help="Output file",
@@ -704,14 +706,14 @@ def addHMCArgs(parser):
     parser.add_argument("-s", "--save-freq", type=int, default=1,
                         help="Frequency with which configurations are saved. Defaults to 1.")
     parser.add_argument("--checkpoint-freq", type=int, default=0,
-                        help="Checkpoint frequency relative to measurement frequency. Defaults to 0.")
+                        help="Checkpoint frequency relative to measurement frequency. "
+                        "Defaults to 0.")
     parser.add_argument("--no-checks", action="store_true",
                         help="Disable consistency checks")
+    return parser
 
 def addMeasArgs(parser):
     """!Add arguments for measurements to parser."""
-    parser.add_argument("-v", "--verbose", action="count", default=0,
-                        help="Make output more verbose, stacks.")
     parser.add_argument("-i", "--input", help="Input file",
                         type=fileio.pathAndType, dest="infile")
     parser.add_argument("-o", "--output", help="Output file",
@@ -719,7 +721,9 @@ def addMeasArgs(parser):
     parser.add_argument("--overwrite", action="store_true",
                         help="Overwrite existing output file.")
     parser.add_argument("-n", type=_sliceArgType, default=slice(-1),
-                        help="Select which trajectories to process. In slice notation without spaces.")
+                        help="Select which trajectories to process. "
+                        "In slice notation without spaces.")
+    return parser
 
 def addShowArgs(parser):
     """!Add arguments for reporting to parser."""
@@ -734,14 +738,12 @@ def addShowArgs(parser):
             else:
                 setattr(namespace, self.dest, values.split(","))
 
-    parser.add_argument("-v", "--verbose", action="count", default=0,
-                        help="Make output more verbose, stacks.")
     parser.add_argument("input", help="Input file",
                         type=fileio.pathAndType)
     parser.add_argument("-r", "--report", action=_ReportAction, metavar="", default=["overview"],
                         help="Comma separated list of reporters to use. Allowed values are ["
                         +",".join(reporters)+",all] Defaults to overview.")
-
+    return parser
 
 def parseArguments(cmd, name, description, epilog, subdescriptions):
     r"""!
@@ -767,18 +769,22 @@ def parseArguments(cmd, name, description, epilog, subdescriptions):
     if cmd is not None:
         if isinstance(cmd, str):
             # just one command
-            parser = makeDefaultParser(cmd if name is None else name,
-                                       description, epilog)
-            cmdArgMap[cmd](parser)
+            parser = argparse.ArgumentParser(prog=cmd if name is None else name,
+                                             description=description,
+                                             epilog=epilog)
+            cmdArgMap[cmd](addDefaultArgs(parser))
 
         else:
             # multiple commands
-            parser = makeDefaultParser(name, description, epilog)
+            parser = argparse.ArgumentParser(prog=name,
+                                             description=description,
+                                             epilog=epilog)
+            addDefaultArgs(parser)
             subp = parser.add_subparsers(title="Commands", dest="cmd", required=True)
             for i, subcmd in enumerate(cmd):
-                cmdArgMap[subcmd](subp.add_parser(subcmd, epilog=epilog,
-                                                  description=subdescriptions[i]
-                                                  if subdescriptions else None))
+                cmdArgMap[subcmd](addDefaultArgs(subp.add_parser(subcmd, epilog=epilog,
+                                                                 description=subdescriptions[i]
+                                                                 if subdescriptions else None)))
         args = parser.parse_args()
 
     else:
@@ -804,6 +810,7 @@ def init(cmd=None, name=None, description=None, epilog=None, subdescriptions=Non
     """
 
     args = parseArguments(cmd, name, description, epilog, subdescriptions)
-    setupLogging("isle.log", verbosity=args.verbose)
+    setupLogging(None if args.log.lower() == "none" else args.log,
+                 verbosity=args.verbose)
 
     return args
