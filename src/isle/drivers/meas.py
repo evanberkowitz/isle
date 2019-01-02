@@ -2,6 +2,8 @@ r"""!
 
 """
 
+from logging import getLogger
+
 import h5py as h5
 
 from .. import fileio
@@ -17,9 +19,9 @@ class Measure:
         self.outfname = str(outfname)
 
     def __call__(self, measurements):
-        print("Performing measurements...")
+        getLogger(__name__).info("Performing measurements")
         self.mapOverConfigs(measurements)
-        print("Saving measurements...")
+        getLogger(__name__).info("Saving measurements")
         self.save(measurements)
 
     def mapOverConfigs(self, measurements):
@@ -34,6 +36,7 @@ class Measure:
                               sorted(cfgf["/configuration"].items(),
                                      key=lambda item: int(item[0]))):
                 if i % 1000 == 0:
+                    # TODO use progressbar
                     print(f"Measurement: Processing configuration {i}")
 
                 # read config and action
@@ -52,8 +55,13 @@ class Measure:
 
 def init(infile, outfile, overwrite):
     if infile is None:
-        print("Error: no input file given")
-        raise RuntimeError("No input file given to Meas driver.")
+        getLogger(__name__).critical("No input file given to meas driver.")
+        raise RuntimeError("No input file")
+
+    if outfile is None:
+        getLogger(__name__).infor("No output file given to meas driver. "
+                          "Writing to input file.")
+        outfile = infile
 
     if not isinstance(infile, (tuple, list)):
         infile = fileio.pathAndType(infile)
@@ -83,21 +91,16 @@ def _ensureIsValidOutfile(outfile, overwrite, lattice, params):
     # TODO if outfile exists, check if there is data for all configs and if not,
     #      we can continue (how to check given that every meas has its own format?)
 
-    if outfile is None:
-        print("Error: no output file given")
-        raise RuntimeError("No output file given to Meas driver.")
-
     if outfile[1] != fileio.FileType.HDF5:
         raise ValueError(f"Output file type no supported by Meas driver. Output file is '{outfile[0]}'")
 
     outfname = outfile[0]
     if outfname.exists():
         if overwrite:
-            print(f"Output file '{outfname}' exists -- overwriting")
+            getLogger(__name__).info("Output file '%s' exists -- erasing", outfname)
             outfname.unlink()
 
         else:
             verifyMetadataByException(outfname, lattice, params)
             # TODO verify version(s)
-            print(f"Output file '{outfname}' exists -- appending")
-
+            getLogger(__name__).info("Output file '%s' exists -- appending", outfname)
