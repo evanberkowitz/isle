@@ -59,8 +59,8 @@ def init(infile, outfile, overwrite):
         raise RuntimeError("No input file")
 
     if outfile is None:
-        getLogger(__name__).infor("No output file given to meas driver. "
-                          "Writing to input file.")
+        getLogger(__name__).info("No output file given to meas driver. "
+                                 "Writing to input file.")
         outfile = infile
 
     if not isinstance(infile, (tuple, list)):
