@@ -627,6 +627,10 @@ def setupLogging(logfile=None, verbosity=0):
                                           "This function must be called *exactly* once.")
         raise RuntimeError("Logging already set up")
 
+    if verbosity > 2:
+        # can't be any noisier than that
+        verbosity = 2
+
     # need at least this level so all messages get out
     minLoglevel = logging.DEBUG if verbosity == 2 else logging.INFO
 
