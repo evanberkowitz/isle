@@ -1,8 +1,6 @@
-from pathlib import Path
 from logging import getLogger
 
 import numpy as np
-import yaml
 import h5py as h5
 
 from .. import Vector
@@ -60,6 +58,7 @@ class HMC:
                 self.advance()
 
             if self._trajIdx % (ntr//100) == 0:
+                # TODO use rogressbar
                 print(f"HMC traj {self._trajIdx} of {ntr}")
 
         return phi
@@ -137,8 +136,10 @@ def _verifyConfigsByException(outfname, startIdx):
 
     lastStored = _latestConfig(outfname)
     if lastStored > startIdx:
-        print(f"Error: Output file '{outfname}' exists and has entries with higher index than HMC start index."
-              f"Greates index in file: {lastStored}, user set start index: {startIdx}")
+        getLogger(__name__).error(
+            f"Error: Output file '%s' exists and has entries with higher index than HMC start index.\n"
+            f"Greatest index in file: %d, user set start index: %d",
+            outfname, lastStored, startIdx)
         raise RuntimeError("Cannot write into output file, contains newer data")
 
 def _ensureIsValidOutfile(outfile, overwrite, startIdx, lattice, params):
@@ -153,25 +154,20 @@ def _ensureIsValidOutfile(outfile, overwrite, startIdx, lattice, params):
     \throws RuntimeError if the file is not valid.
     """
 
-    if outfile is None:
-        print("Error: no output file given")
-        raise RuntimeError("No output file given to HMC driver.")
-
     if outfile[1] != fileio.FileType.HDF5:
         raise ValueError(f"Output file type no supported by HMC driver. Output file is '{outfile[0]}'")
 
     outfname = outfile[0]
     if outfname.exists():
         if overwrite:
-            print(f"Output file '{outfname}' exists -- overwriting")
+            getLogger(__name__).info("Output file '%s' exists -- overwriting", outfname)
             outfname.unlink()
 
         else:
             verifyMetadataByException(outfname, lattice, params)
             _verifyConfigsByException(outfname, startIdx)
             # TODO verify version(s)
-            print(f"Output file '{outfname}' exists -- appending")
-
+            getLogger(__name__).info("Output file '%s' exists -- appending", outfname)
 
 def _initialConditions(ham, oldPhi, oldAct, rng):
     r"""!
