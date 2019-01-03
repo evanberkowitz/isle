@@ -1,7 +1,5 @@
 #include "hamiltonian.hpp"
 
-#include <iostream>
-
 namespace isle {
     namespace action {
         Action *Hamiltonian::add(Action *const action, const bool takeOwnership) {
