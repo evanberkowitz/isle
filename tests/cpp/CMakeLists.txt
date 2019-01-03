@@ -22,6 +22,13 @@ endif ()
 # use a system include because we get all the warnings from the library compilation already
 target_include_directories(${TEST_EXE} SYSTEM PUBLIC ${SOURCE_DIR})
 
+# Pybind11
+set_target_properties(${TEST_EXE} PROPERTIES PREFIX "" SUFFIX "${PYBIND11_LIB_SUFFIX}")
+target_include_directories(${TEST_EXE} SYSTEM PUBLIC "${PYBIND11_INCLUDE_DIRS}")
+target_compile_options(${TEST_EXE} PUBLIC ${PYBIND11_CXX_FLAGS})
+target_link_libraries(${TEST_EXE} ${PYBIND11_LIBRARIES})
+target_linker_flags(${TEST_EXE} "${PYBIND11_LINKER_FLAGS}")
+
 # blaze
 target_include_directories(${TEST_EXE} SYSTEM PUBLIC ${blaze_INCLUDE_DIRS})
 target_compile_options(${TEST_EXE} PUBLIC "${blaze_CXX_FLAGS}")

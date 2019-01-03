@@ -8,7 +8,9 @@ set(SOURCE
   hubbardFermiMatrixDia.cpp
   hubbardFermiMatrixExp.cpp
   integrator.cpp
-  lattice.cpp)
+  lattice.cpp
+  # unusual but logging must be linked against by the unit tests as well
+  bind/logging.cpp)
 
 # add submodules
 add_subdirectory(action)
