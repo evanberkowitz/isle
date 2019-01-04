@@ -31,9 +31,7 @@ class HMC:
             startPhi, startPi, startEnergy = _initialConditions(self.ham, phi, act, self.rng)
 
             # evolve fields using proposer
-            endPhi, endPi = proposer(startPhi, startPi, acc)
-            # get new energy
-            endEnergy = self.ham.eval(endPhi, endPi)
+            endPhi, endPi, endEnergy = proposer(startPhi, startPi, acc)
 
             # TODO consistency checks
 

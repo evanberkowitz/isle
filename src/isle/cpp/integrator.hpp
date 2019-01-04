@@ -23,13 +23,15 @@ namespace isle {
      * \returns Tuple of (in order)
      *           - final configuration phi
      *           - final momentum pi
+     *           - final energy
      */
-    std::tuple<CDVector, CDVector> leapfrog(const CDVector &phi,
-                                            const CDVector &pi,
-                                            action::Hamiltonian &ham,
-                                            double length,
-                                            std::size_t nsteps,
-                                            double direction=+1);
+    std::tuple<CDVector, CDVector, std::complex<double>>
+    leapfrog(const CDVector &phi,
+             const CDVector &pi,
+             action::Hamiltonian &ham,
+             double length,
+             std::size_t nsteps,
+             double direction=+1);
 }  // namespace isle
 
 #endif  // ndef INTEGRATOR_HPP
