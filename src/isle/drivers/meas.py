@@ -32,13 +32,14 @@ class Measure:
         """
 
         with h5.File(self.infname, "r") as cfgf:
-            # iterate over all configs sorted by their number
-            # TODO find out how many configs there are
-            with cli.trackProgress(None, "Measurements", updateRate=1000) as pbar:
-                for i, grp in map(lambda p: (int(p[0]), p[1]),
-                                  sorted(cfgf["/configuration"].items(),
-                                         key=lambda item: int(item[0]))):
+            # sorted list of configurations
+            # each entry is a pair (index: int, config: H5group)
+            configurations = sorted(map(lambda p: (int(p[0]), p[1]), cfgf["/configuration"].items()),
+                                    key=lambda item: item[0])
 
+            # apply measurements to all configs
+            with cli.trackProgress(len(configurations), "Measurements", updateRate=1000) as pbar:
+                for i, grp in configurations:
                     # read config and action
                     phi = grp["phi"][()]
                     action = grp["action"][()]
