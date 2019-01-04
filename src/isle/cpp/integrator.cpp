@@ -1,12 +1,13 @@
 #include "integrator.hpp"
 
 namespace isle {
-    std::tuple<CDVector, CDVector> leapfrog(const CDVector &phi,
-                                            const CDVector &pi,
-                                            action::Hamiltonian &ham,
-                                            const double length,
-                                            const std::size_t nsteps,
-                                            const double direction) {
+    std::tuple<CDVector, CDVector, std::complex<double>>
+    leapfrog(const CDVector &phi,
+             const CDVector &pi,
+             action::Hamiltonian &ham,
+             const double length,
+             const std::size_t nsteps,
+             const double direction) {
 
         const double eps = direction*length/static_cast<double>(nsteps);
 
@@ -25,6 +26,7 @@ namespace isle {
         // last half step
         piOut += blaze::real(ham.force(phiOut))*(eps/2);
 
-        return std::tuple<CDVector, CDVector>{std::move(phiOut), std::move(piOut)};
+        const std::complex<double> energy = ham.eval(phiOut, piOut);
+        return std::make_tuple(std::move(phiOut), std::move(piOut), energy);
     }
 }  // namespace isle
