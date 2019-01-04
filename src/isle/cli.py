@@ -676,8 +676,7 @@ def _sliceArgType(arg):
     """!Parse an argument in slice notation"""
     return slice(*map(lambda x: int(x) if x else None, arg.split(":")))
 
-def addDefaultArgs(parser,
-                   log="islelog."+time.strftime('%Y-%m-%d.%H-%M-%S', time.localtime())+".log"):
+def addDefaultArgs(parser, log="none"):
     """!Add default arguments common to all commands."""
     parser.add_argument("--version", action="version",
                         version=f"Isle {isle.__version__}")
@@ -763,6 +762,9 @@ def parseArguments(cmd, name, description, epilog, subdescriptions):
     cmdArgMap = {"hmc": addHMCArgs,
                  "meas": addMeasArgs,
                  "show": addShowArgs}
+    defaultLog = {"hmc": "isle.hmc.log",
+                  "meas": "isle.meas.log",
+                  "show": "none"}
 
     if cmd is not None:
         if isinstance(cmd, str):
@@ -770,7 +772,7 @@ def parseArguments(cmd, name, description, epilog, subdescriptions):
             parser = argparse.ArgumentParser(prog=cmd if name is None else name,
                                              description=description,
                                              epilog=epilog)
-            cmdArgMap[cmd](addDefaultArgs(parser))
+            cmdArgMap[cmd](addDefaultArgs(parser, log=defaultLog[cmd]))
 
         else:
             # multiple commands
@@ -783,11 +785,7 @@ def parseArguments(cmd, name, description, epilog, subdescriptions):
                 subParser = subp.add_parser(subcmd, epilog=epilog,
                                             description=subdescriptions[i]
                                             if subdescriptions else None)
-                if subcmd == "show":
-                    addDefaultArgs(subParser, log="None")
-                else:
-                    addDefaultArgs(subParser)
-                cmdArgMap[subcmd](subParser)
+                cmdArgMap[subcmd](addDefaultArgs(subParser, log=defaultLog[subcmd]))
         args = parser.parse_args()
 
     else:
