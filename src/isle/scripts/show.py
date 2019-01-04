@@ -3,6 +3,7 @@ r"""! \file
 """
 
 import sys
+from logging import getLogger
 
 try:
     import matplotlib.pyplot as plt
@@ -11,7 +12,7 @@ try:
     from matplotlib import cm
 
 except ImportError:
-    print("Error: Cannot import matplotlib, show command is not available.")
+    getLogger(__name__).error("Cannot import matplotlib, show command is not available.")
     raise
 
 import numpy as np
@@ -55,7 +56,7 @@ def _loadAction(measState):
         if "action" in h5f:
             return h5f["action"][()]
         if "configuration" not in h5f:
-            print("no configurations or action found")
+            getLogger(__name__).info("No configurations or action found.")
             return None
 
     # do this here so the file is closed when the meas driver reads from it
@@ -81,11 +82,12 @@ def _overview(infname, lattice, params, makeActionSrc):
     Show an overview of a HDF5 file.
     """
 
-    print(f"Info: showing overview of file {infname}")
+    log = getLogger(__name__)
+    log.info("Showing overview of file %s", infname)
 
     if lattice is None or params is None or makeActionSrc is None:
-        print("Error: Could not find all required information in the input file to generate an overview."
-              "Need HDF5 files.")
+        log.error("Could not find all required information in the input file to generate an overview."
+                  "Need HDF5 files.")
         return
 
     # use this to bundle information and perform simple measurements if needed
@@ -118,7 +120,7 @@ def _lattice(infname, lattice):
     Show the hopping matrix as a 3D grid.
     """
 
-    print(f"Info: Showing lattice in file {infname}")
+    getLogger(__name__).info("Showing lattice in file %s", infname)
 
     fig = plt.figure(figsize=(10, 10))
     fig.canvas.set_window_title(f"Isle Lattice - {infname}")
@@ -154,11 +156,12 @@ def _correlator(infname, lattice, params, makeActionSrc):
     Show all-to-all correlators.
     """
 
-    print(f"Info: Showing correlators in file {infname}")
+    log = getLogger(__name__)
+    log.info("Showing correlators in file %s", infname)
 
     if lattice is None or params is None or makeActionSrc is None:
-        print("Error: Could not find all required information in the input file to show correlators."
-              "Need HDF5 files.")
+        log.error("Could not find all required information in the input file to show correlators."
+                  "Need HDF5 files.")
         return
 
     # use this to bundle information and perform simple measurements if needed
@@ -190,18 +193,22 @@ def main(args):
         params = None
         makeActionSrc = None
     else:
-        print(f"Error: Cannot load file '{args.input[0]}', unsupported file type.")
+        getLogger(__name__).critical("Cannot load file '%s', unsupported file type.",
+                                     args.input[0])
         sys.exit(1)
 
     # set up matplotlib once for all reporters
     isle.plotting.setupMPL()
 
-    # call individual reporters
-    if "overview" in args.report:
-        _overview(args.input[0], lattice, params, makeActionSrc)
-    if "lattice" in args.report:
-        _lattice(args.input[0], lattice)
-    if "correlator" in args.report:
-        _correlator(args.input[0], lattice, params, makeActionSrc)
+    try:
+        # call individual reporters
+        if "overview" in args.report:
+            _overview(args.input[0], lattice, params, makeActionSrc)
+        if "lattice" in args.report:
+            _lattice(args.input[0], lattice)
+        if "correlator" in args.report:
+            _correlator(args.input[0], lattice, params, makeActionSrc)
+    except:
+        getLogger(__name__).exception("Show command failed.")
 
     plt.show()

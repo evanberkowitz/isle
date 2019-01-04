@@ -1,3 +1,5 @@
+from logging import getLogger
+
 import yaml
 import h5py as h5
 
@@ -9,11 +11,14 @@ def verifyMetadataByException(outfname, lattice, params):
     storedLattice, storedParams, _ = fileio.h5.readMetadata(outfname)
 
     if storedLattice.name != lattice.name:
-        print(f"Error: Name of lattice in output file is {storedLattice.name} but new lattice has name {lattice.name}. Cannot write into existing output file.")
+        getLogger(__name__).error("Name of lattice in output file is %s but new lattice has name %s. "
+                                  "Cannot write into existing output file.",
+                                  storedLattice.name, lattice.name)
         raise RuntimeError("Lattice name inconsistent")
 
     if storedParams.asdict() != params.asdict():
-        print(f"Error: Stored parameters do not match new parameters. Cannot write into existing output file.")
+        getLogger(__name__).error("Stored parameters do not match new parameters. "
+                                  "Cannot write into existing output file.")
         raise RuntimeError("Parameters inconsistent")
 
 def prepareOutfile(outfname, lattice, params, makeActionSrc,

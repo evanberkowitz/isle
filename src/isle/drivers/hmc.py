@@ -1,12 +1,13 @@
-from pathlib import Path
+from logging import getLogger
 
 import numpy as np
-import yaml
 import h5py as h5
 
 from .. import Vector
 from .. import fileio
+from .. import cli
 from ._util import verifyMetadataByException, prepareOutfile
+
 
 class HMC:
     def __init__(self, lattice, params, rng, action, outfname, startIdx):
@@ -26,7 +27,8 @@ class HMC:
 
         acc = 1  # was last trajectory accepted? (int so it can be written as trajPoint)
         act = None  # running action (without pi)
-        for _ in range(ntr):
+        for _ in cli.progressRange(ntr, message="HMC evolution",
+                                   updateRate=max(ntr//100, 1)):
             # get initial conditions for proposer
             startPhi, startPi, startEnergy = _initialConditions(self.ham, phi, act, self.rng)
 
@@ -55,9 +57,6 @@ class HMC:
                     self.save(phi, act, acc)
             else:
                 self.advance()
-
-            if self._trajIdx % (ntr//100) == 0:
-                print(f"HMC traj {self._trajIdx} of {ntr}")
 
         return phi
 
@@ -105,12 +104,14 @@ class HMC:
             raise
 
 
-def init(lattice, params, rng, makeAction, outfile,
-         overwrite, startIdx=0):
+def init(lattice, params, rng, makeAction, outfile, overwrite, startIdx=0):
+    if outfile is None:
+        getLogger(__name__).critical("No output file given for HMC driver.")
+        raise ValueError("No output file")
 
     if not isinstance(outfile, (tuple, list)):
+        # convert to name, type tuple is necessary
         outfile = fileio.pathAndType(outfile)
-
     _ensureIsValidOutfile(outfile, overwrite, startIdx, lattice, params)
 
     makeActionSrc = fileio.sourceOfFunction(makeAction)
@@ -132,8 +133,10 @@ def _verifyConfigsByException(outfname, startIdx):
 
     lastStored = _latestConfig(outfname)
     if lastStored > startIdx:
-        print(f"Error: Output file '{outfname}' exists and has entries with higher index than HMC start index."
-              f"Greates index in file: {lastStored}, user set start index: {startIdx}")
+        getLogger(__name__).error(
+            f"Error: Output file '%s' exists and has entries with higher index than HMC start index.\n"
+            f"Greatest index in file: %d, user set start index: %d",
+            outfname, lastStored, startIdx)
         raise RuntimeError("Cannot write into output file, contains newer data")
 
 def _ensureIsValidOutfile(outfile, overwrite, startIdx, lattice, params):
@@ -148,25 +151,20 @@ def _ensureIsValidOutfile(outfile, overwrite, startIdx, lattice, params):
     \throws RuntimeError if the file is not valid.
     """
 
-    if outfile is None:
-        print("Error: no output file given")
-        raise RuntimeError("No output file given to HMC driver.")
-
     if outfile[1] != fileio.FileType.HDF5:
         raise ValueError(f"Output file type no supported by HMC driver. Output file is '{outfile[0]}'")
 
     outfname = outfile[0]
     if outfname.exists():
         if overwrite:
-            print(f"Output file '{outfname}' exists -- overwriting")
+            getLogger(__name__).info("Output file '%s' exists -- overwriting", outfname)
             outfname.unlink()
 
         else:
             verifyMetadataByException(outfname, lattice, params)
             _verifyConfigsByException(outfname, startIdx)
             # TODO verify version(s)
-            print(f"Output file '{outfname}' exists -- appending")
-
+            getLogger(__name__).info("Output file '%s' exists -- appending", outfname)
 
 def _initialConditions(ham, oldPhi, oldAct, rng):
     r"""!

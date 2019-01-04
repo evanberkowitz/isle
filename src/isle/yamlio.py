@@ -4,6 +4,8 @@ Routines for YAML IO.
 Registers representable types with YAML allowing automatic loading and dumping.
 """
 
+from logging import getLogger
+
 import yaml
 import numpy as np
 
@@ -15,12 +17,13 @@ def _parseLattice(adjacency, hopping, positions, nt=0, name="", comment=""):
     """!
     Parse a `!lattice` YAML node.
     """
+    log = getLogger(__name__)
 
     # turn hopping into a list if it isn't already
     if not isinstance(hopping, list):
         hopping = [hopping]*len(adjacency)
     elif len(adjacency) != len(hopping):
-        print("Lengths of adjacency matrix and list of hopping strengths do not match")
+        log.error("Lengths of adjacency matrix and list of hopping strengths do not match")
         raise RuntimeError("Lengths of adjacency matrix and list of hopping strengths do not match")
 
     # construct lattice
@@ -40,7 +43,7 @@ def _parseLattice(adjacency, hopping, positions, nt=0, name="", comment=""):
             raise RuntimeError(f"Lattice site positions given with {len(pos)} coorddinates."
                                +"only supports 2D and 3D positions.")
 
-    print("Read lattice '{}': {}".format(name, comment))
+    log.info("Read lattice '%s': %s", name, comment)
     return lat
 
 yaml.add_constructor("!lattice",

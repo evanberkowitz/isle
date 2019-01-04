@@ -2,6 +2,8 @@
 Measurement of action.
 """
 
+from logging import getLogger
+
 from ..h5io import createH5Group
 
 class Action:
@@ -38,5 +40,7 @@ class Action:
             cfgGrp = group["configuration"]
             self.action = [cfgGrp[cfg]["action"][()] for cfg in cfgGrp]
         else:
-            print(f"Error: no action found in HDF5 group '{group}'."
-                  " Did not find subgroups 'action' or 'configuration'.")
+            getLogger(__name__).error("No action found in HDF5 group '%s'. "
+                                      "Did not find subgroups 'action' or 'configuration'.",
+                                      group)
+            raise RuntimeError("No action found in HDF5")

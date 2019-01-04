@@ -5,6 +5,8 @@ This module requires matplotlib which is not needed for the core operation of is
 Thus, plotting is not imported automatically when isle is imported.
 """
 
+from logging import getLogger
+
 ## \cond DO_NOT_DOCUMENT
 try:
     import matplotlib as mpl
@@ -12,7 +14,7 @@ try:
     from matplotlib.ticker import MultipleLocator
 
 except ImportError:
-    print("Error: Cannot import matplotlib, plotting functionality is not available.")
+    getLogger(__name__).error("Cannot import matplotlib, plotting functionality is not available.")
     raise
 
 try:
@@ -95,7 +97,7 @@ def plotTotalPhi(measState, axPhi, axPhiHist):
             measState.mapOverConfigs([(1, meas, None)])
             totalPhi = meas.Phi
         else:
-            print("no configurations or total Phi found")
+            getLogger(__name__).info("No configurations or total Phi found.")
             totalPhi = None
 
     # need those in any case
@@ -145,7 +147,7 @@ def plotTrajPoints(measState, ax):
             for configName in sorted(h5f["configuration"], key=int):
                 trajPoints.append(h5f["configuration"][configName]["trajPoint"][()])
         else:
-            print("No traj points found")
+            getLogger(__name__).info("No traj points found.")
             trajPoints = None
 
     if trajPoints is None:
@@ -243,7 +245,7 @@ def plotCorrelators(measState, axP, axH):
             corrP = h5f["correlation_functions"]["single_particle"]["correlators"][()]
             corrH = h5f["correlation_functions"]["single_hole"]["correlators"][()]
         else:
-            print("Error: No correlation functions found.")
+            getLogger(__name__).error("No correlation functions found.")
             return False
 
     # ensemble averages

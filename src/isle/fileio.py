@@ -3,8 +3,9 @@ General file input / output.
 """
 
 from enum import Enum, auto
-from pathlib import Path
 import inspect
+from logging import getLogger
+from pathlib import Path
 
 # import those to make them available outside of the package
 from . import yamlio as yaml  # (unused import) pylint: disable=W0611
@@ -98,7 +99,8 @@ def callFunctionFromSource(src, *args, **kwargs):
     try:
         return func(*args, **kwargs)
     except NameError as e:
-        print(f"Undefined symbol in function constructed from source: {e}")
+        getLogger(__name__).error("Undefined symbol in function constructed from source: %s",
+                                  str(e))
         raise
     except:
         # must re-raise it so things like keyboard interrupts get processed properly
