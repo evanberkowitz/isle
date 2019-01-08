@@ -72,7 +72,7 @@ target_linker_flags(${LIBNAME} "${blaze_LINKER_FLAGS}")
 
 # OpenMP if blaze does not use it
 if (NOT "${BLAZE_PARALLELISM}" STREQUAL "OMP")
-  target_compile_options(${LIBNAME} PUBLIC "${OMP_CXX_FLAGS}")
-  target_link_libraries(${LIBNAME} ${OMP_LIBRARIES})
-  target_linker_flags(${LIBNAME} "${OMP_LINKER_FLAGS}")
+  target_compile_options(${LIBNAME} PUBLIC "${OpenMP_CXX_FLAGS}")
+  target_link_libraries(${LIBNAME} "${OpenMP_CXX_LIBRARIES}")
+  target_linker_flags(${LIBNAME} "${OpenMP_LINKER_FLAGS}")
 endif ()
