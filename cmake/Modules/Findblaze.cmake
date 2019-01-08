@@ -1,10 +1,13 @@
 # Find blaze and BLAS/LAPACK of specified vendor
 #
-#  blaze_FOUND         - True if blaze was found
-#  blaze_INCLUDE_DIRS  - Include directories for blaze
-#  blaze_CXX_FLAGS     - Flags for CXX compiler
-#  blaze_LIBRARIES     - Libraries to link against
-#  blaze_LINKER_FLAGS  - Flags for linker
+#  blaze_FOUND          - True if blaze was found
+#  blaze_VERSION_STRING - The version of blaze
+#  blaze_VERSION_MAJOR  - The major version of blaze
+#  blaze_VERSION_MINOR  - The minor version of blaze
+#  blaze_INCLUDE_DIRS   - Include directories for blaze
+#  blaze_CXX_FLAGS      - Flags for CXX compiler
+#  blaze_LIBRARIES      - Libraries to link against
+#  blaze_LINKER_FLAGS   - Flags for linker
 #
 
 
@@ -15,6 +18,21 @@ set(BLAZE_PARALLELISM "NONE" CACHE STRING "Kind of parallelism used by blaze. Ca
 ### search for blaze itself ###
 find_path(BLAZE_INCLUDE_DIR blaze/Blaze.h PATHS ${BLAZE} NO_DEFAULT_PATH)
 find_path(BLAZE_INCLUDE_DIR blaze/Blaze.h)
+
+if (BLAZE_INCLUDE_DIR)
+  # detect version
+  file(READ ${BLAZE_INCLUDE_DIR}/blaze/system/Version.h BLAZE_VERSION_FILE)
+
+  string(REGEX MATCH "#define BLAZE_MAJOR_VERSION ([0-9]*)" dummy ${BLAZE_VERSION_FILE})
+  unset(dummy)
+  set(blaze_VERSION_MAJOR ${CMAKE_MATCH_1})
+
+  string(REGEX MATCH "#define BLAZE_MINOR_VERSION ([0-9]*)" dummy ${BLAZE_VERSION_FILE})
+  unset(dummy)
+  set(blaze_VERSION_MINOR ${CMAKE_MATCH_1})
+
+  set(blaze_VERSION_STRING "${blaze_VERSION_MAJOR}.${blaze_VERSION_MINOR}")
+endif ()
 
 
 ### search for BLAS and LAPACK ###
@@ -58,7 +76,7 @@ endif ()
 if ("${BLAZE_PARALLELISM}" STREQUAL "NONE")
   set(blaze_CXX_FLAGS "${blaze_CXX_FLAGS};-DBLAZE_USE_SHARED_MEMORY_PARALLELIZATION=0")
 elseif ("${BLAZE_PARALLELISM}" STREQUAL "OMP")
-  if (NOT DEFINED ${OpenMP_FOUND})
+  if (NOT DEFINED OpenMP_FOUND)
     find_package(OpenMP REQUIRED)  # search for OMP if not already done
   endif ()
   set(blaze_CXX_FLAGS "${blaze_CXX_FLAGS};${OpenMP_CXX_FLAGS}")
@@ -72,7 +90,9 @@ endif ()
 
 
 include(FindPackageHandleStandardArgs)
-find_package_handle_standard_args(blaze DEFAULT_MSG BLAZE_INCLUDE_DIR BLAZE_CXX_FLAGS)
+find_package_handle_standard_args(blaze
+  REQUIRED_VARS BLAZE_INCLUDE_DIR
+  VERSION_VAR blaze_VERSION_STRING)
 mark_as_advanced(BLAZE_INCLUDE_DIR)
 
 set(blaze_INCLUDE_DIRS ${BLAZE_INCLUDE_DIR})
