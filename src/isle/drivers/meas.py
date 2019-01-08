@@ -66,6 +66,7 @@ def init(infile, outfile, overwrite):
                                  "Writing to input file.")
         outfile = infile
 
+    # convert to (name, type) tuples if necessary
     if not isinstance(infile, (tuple, list)):
         infile = fileio.pathAndType(infile)
     if not isinstance(outfile, (tuple, list)):
@@ -95,6 +96,7 @@ def _ensureIsValidOutfile(outfile, overwrite, lattice, params):
     #      we can continue (how to check given that every meas has its own format?)
 
     if outfile[1] != fileio.FileType.HDF5:
+        getLogger(__name__).error("Output file type not supported by Meas driver: %s", outfile[1])
         raise ValueError(f"Output file type no supported by Meas driver. Output file is '{outfile[0]}'")
 
     outfname = outfile[0]
