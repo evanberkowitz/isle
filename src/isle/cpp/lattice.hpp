@@ -191,6 +191,9 @@ namespace isle {
         return t*nx + x;
     }
 
+    /// Return true if hopping matrix is bipartite, false otherwise.
+    bool isBipartite(const SparseMatrix<double> &hoppingMatrix);
+
     /// Return true if hopping matrix of lat is bipartite, false otherwise.
     bool isBipartite(const Lattice &lat);
 

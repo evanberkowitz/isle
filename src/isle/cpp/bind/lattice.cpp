@@ -46,6 +46,7 @@ namespace bind {
             .def_readonly("comment", &Lattice::comment)
             ;
 
-        mod.def("isBipartite", isBipartite);
+        mod.def("isBipartite", py::overload_cast<const SparseMatrix<double> &>(isBipartite));
+        mod.def("isBipartite", py::overload_cast<const Lattice &>(isBipartite));
     }
 }
