@@ -51,10 +51,8 @@ namespace isle {
           _kinvp{std::bind(inverseK, std::ref(*this), Species::PARTICLE)},
           _kinvh{std::bind(inverseK, std::ref(*this), Species::HOLE)}
     {
-#ifndef NDEBUG
         if (kappaTilde.rows() != kappaTilde.columns())
             throw std::invalid_argument("Hopping matrix is not square.");
-#endif
     }
 
     HubbardFermiMatrixDia::HubbardFermiMatrixDia(const Lattice &lat,

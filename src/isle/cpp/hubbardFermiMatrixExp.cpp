@@ -41,10 +41,8 @@ namespace isle {
           _expKappap{computeExponential(kappaTilde, muTilde, sigmaKappa, Species::PARTICLE)},
           _expKappah{computeExponential(kappaTilde, muTilde, sigmaKappa, Species::HOLE)}
     {
-#ifndef NDEBUG
         if (kappaTilde.rows() != kappaTilde.columns())
             throw std::invalid_argument("Hopping matrix is not square.");
-#endif
     }
 
     HubbardFermiMatrixExp::HubbardFermiMatrixExp(const Lattice &lat,
