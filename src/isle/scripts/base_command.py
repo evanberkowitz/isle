@@ -28,8 +28,8 @@ def main():
                          "Use -h for a sub-command to get more information.",
                          epilog="See https://github.com/jl-wynen/isle",
                          subdescriptions=[
-                             "Pulls all data in can from a file in a format supported by Isle, "
-                             "prints, and visualizes that data. Supported file types are HDF5 and YAML."
+                             "Pulls all data it can from a file in a format supported by Isle, "
+                             "prints, and visualizes that data. Supported file types are HDF5 and YAML. "
                              "Select a reporter via -r to choose which information to show.",
                              "",
                              ""
