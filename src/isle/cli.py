@@ -272,11 +272,10 @@ class TerminalProgressbar(Progressbar):
         \param emptyChar Single character to use for the not yet filled portion of the bar.
         """
 
+        super().__init__(message)
         self._target = target
-        self._message = message
 
         self._current = 0
-        self._startTime = time.time()
         # ETA's __init__ makes sure that target > 0
         self._eta = ETA(target) if target else None
         self._bar = self._FillingBar(barLength, barChar, emptyChar) \
@@ -400,13 +399,13 @@ class FileProgressbar(Progressbar):
         \param updateRate The bar is only redrawn after updateRate number of steps.
         """
 
+        super().__init__(message)
+
         self._target = target
-        self._message = message
         self._updateRate = updateRate
 
         self._current = 0
         self._lastUpdated = -updateRate
-        self._startTime = time.time()
         # ETA's __init__ makes sure that target > 0
         self._eta = ETA(target) if target else None
 
