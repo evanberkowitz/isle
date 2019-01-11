@@ -25,7 +25,7 @@ def makeAction(lat, params):
 
 def main():
     # initialize command line interface and parse command line arguments
-    args = isle.cli.init("hmc", name="basic-hmc")
+    args = isle.initialize("hmc", name="basic-hmc")
     log = getLogger("HMC")
 
     # load lattice

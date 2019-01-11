@@ -7,7 +7,7 @@ import isle.drivers
 import isle.meas
 
 def main():
-    args = isle.cli.init("meas", name="my-meas")
+    args = isle.initialize("meas", name="my-meas")
 
     measState = isle.drivers.meas.init(args.infile, args.outfile, args.overwrite)
     params = measState.params
