@@ -22,15 +22,13 @@ def verifyMetadataByException(outfname, lattice, params):
         raise RuntimeError("Parameters inconsistent")
 
 def prepareOutfile(outfname, lattice, params, makeActionSrc,
-                    extraGroups=[]):
-    "!Prepare the output file by storing program versions, metadata, and creating groups."
+                   extraGroups=[]):
+    """!
+    Prepare the output file by storing program versions, metadata, and creating groups.
+    """
 
-    # TODO write Version(s)  -  write function in h5io
+    fileio.h5.writeMetadata(outfname, lattice, params, makeActionSrc)
 
     with h5.File(str(outfname), "w") as outf:
-        metaGrp = fileio.h5.createH5Group(outf, "meta")
-        metaGrp["lattice"] = yaml.dump(lattice)
-        metaGrp["params"] = yaml.dump(params)
-        metaGrp["action"] = makeActionSrc
         for group in extraGroups:
             fileio.h5.createH5Group(outf, group)

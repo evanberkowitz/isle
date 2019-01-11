@@ -22,6 +22,20 @@ def createH5Group(base, name):
     # does not exists yet
     return base.create_group(name)
 
+def writeMetadata(fname, lattice, params, makeActionSrc):
+    """!
+    Write metadata to HDF5 file.
+    Overwrites any existing datasets.
+    """
+
+    # TODO write Version(s)  -  write function in h5io
+
+    with h5.File(str(fname), "w") as outf:
+        metaGrp = createH5Group(outf, "meta")
+        metaGrp["lattice"] = yaml.dump(lattice)
+        metaGrp["params"] = yaml.dump(params)
+        metaGrp["action"] = makeActionSrc
+
 def readMetadata(fname):
     r"""!
     Read metadata on ensemble from HDF5 file.
