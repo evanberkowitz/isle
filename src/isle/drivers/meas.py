@@ -8,7 +8,7 @@ import h5py as h5
 
 from .. import fileio
 from .. import cli
-from ._util import verifyMetadataByException, prepareOutfile
+from ._util import verifyMetadataByException, verifyVersionsByException, prepareOutfile
 
 
 class Measure:
@@ -72,9 +72,9 @@ def init(infile, outfile, overwrite):
     if not isinstance(outfile, (tuple, list)):
         outfile = fileio.pathAndType(outfile)
 
-    # TODO check versions
-    lattice, params, makeActionSrc, _ = fileio.h5.readMetadata(infile)
+    lattice, params, makeActionSrc, versions = fileio.h5.readMetadata(infile)
 
+    verifyVersionsByException(versions, outfile)
     _ensureIsValidOutfile(outfile, overwrite, lattice, params)
 
     if not outfile[0].exists():

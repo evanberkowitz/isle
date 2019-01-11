@@ -187,7 +187,8 @@ def main(args):
 
     # load metadata to abstract away file type
     if args.input[1] == isle.fileio.FileType.HDF5:
-        lattice, params, makeActionSrc = isle.fileio.h5.readMetadata(args.input)
+        lattice, params, makeActionSrc, _ = isle.fileio.h5.readMetadata(args.input)
+        # TODO verify versions
     elif args.input[1] == isle.fileio.FileType.YAML:
         lattice = isle.fileio.yaml.loadLattice(args.input[0])
         params = None
