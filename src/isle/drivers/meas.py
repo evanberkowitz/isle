@@ -72,7 +72,8 @@ def init(infile, outfile, overwrite):
     if not isinstance(outfile, (tuple, list)):
         outfile = fileio.pathAndType(outfile)
 
-    lattice, params, makeActionSrc = fileio.h5.readMetadata(infile)
+    # TODO check versions
+    lattice, params, makeActionSrc, _ = fileio.h5.readMetadata(infile)
 
     _ensureIsValidOutfile(outfile, overwrite, lattice, params)
 
@@ -107,5 +108,4 @@ def _ensureIsValidOutfile(outfile, overwrite, lattice, params):
 
         else:
             verifyMetadataByException(outfname, lattice, params)
-            # TODO verify version(s)
             getLogger(__name__).info("Output file '%s' exists -- appending", outfname)

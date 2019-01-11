@@ -131,6 +131,8 @@ def _latestConfig(fname):
 def _verifyConfigsByException(outfname, startIdx):
     # TODO what about checkpoints?
 
+    # TODO if there are no configs -> ok but warn
+
     lastStored = _latestConfig(outfname)
     if lastStored > startIdx:
         getLogger(__name__).error(
@@ -164,7 +166,6 @@ def _ensureIsValidOutfile(outfile, overwrite, startIdx, lattice, params):
         else:
             verifyMetadataByException(outfname, lattice, params)
             _verifyConfigsByException(outfname, startIdx)
-            # TODO verify version(s)
             getLogger(__name__).info("Output file '%s' exists -- appending", outfname)
 
 def _initialConditions(ham, oldPhi, oldAct, rng):
