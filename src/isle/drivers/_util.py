@@ -1,6 +1,5 @@
 from logging import getLogger
 
-import yaml
 import h5py as h5
 
 from .. import fileio, isleVersion, pythonVersion, blazeVersion, pybind11Version
