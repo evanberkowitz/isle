@@ -734,7 +734,7 @@ def addShowArgs(parser):
             else:
                 setattr(namespace, self.dest, values.split(","))
 
-    parser.add_argument("input", help="Input file",
+    parser.add_argument("input", help="Input file", nargs="+",
                         type=fileio.pathAndType)
     parser.add_argument("-r", "--report", action=_ReportAction, metavar="", default=["overview"],
                         help="Comma separated list of reporters to use. Allowed values are ["
