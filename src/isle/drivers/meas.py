@@ -59,7 +59,7 @@ class Measure:
 def init(infile, outfile, overwrite):
     if infile is None:
         getLogger(__name__).critical("No input file given to meas driver.")
-        exit(1)
+        raise ValueError("No output file")
 
     if outfile is None:
         getLogger(__name__).info("No output file given to meas driver. "

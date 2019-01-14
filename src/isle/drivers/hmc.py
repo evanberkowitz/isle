@@ -106,8 +106,8 @@ class HMC:
 
 def init(lattice, params, rng, makeAction, outfile, overwrite, startIdx=0):
     if outfile is None:
-        getLogger(__name__).critical("No output file given for HMC driver.")
-        exit(1)
+        getLogger(__name__).error("No output file given for HMC driver.")
+        raise ValueError("No output file")
 
     # convert to (name, type) tuple if necessary
     if not isinstance(outfile, (tuple, list)):
