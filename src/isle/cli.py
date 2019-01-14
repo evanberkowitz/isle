@@ -583,10 +583,10 @@ class ColorFormatter(logging.Formatter):
 
     ## Colorized level names.
     LEVELNAMES = {
-        logging.DEBUG: "[94mDEBUG[0m   ",
-        logging.INFO: "INFO    ",
-        logging.WARNING: "[33mWARNING[0m ",
-        logging.ERROR: "[31mERROR[0m   ",
+        logging.DEBUG: "[94mDEBUG[0m",
+        logging.INFO: "INFO",
+        logging.WARNING: "[33mWARNING[0m",
+        logging.ERROR: "[31mERROR[0m",
         logging.CRITICAL: "[91mCRITICAL[0m",
     }
 
@@ -645,7 +645,7 @@ def setupLogging(logfile=None, verbosity=0):
         # output to file at least at level INFO and w/o colors
         fh = logging.FileHandler(logfile, "w")
         fh.setLevel(minLoglevel)
-        fh.setFormatter(logging.Formatter("[%(asctime)s] %(levelname)-8s in %(name)s: %(message)s",
+        fh.setFormatter(logging.Formatter("[%(asctime)s] %(levelname)s in %(name)s: %(message)s",
                                           "%Y-%m-%d %H:%M:%S"))
         logger.addHandler(fh)
 
@@ -656,7 +656,7 @@ def setupLogging(logfile=None, verbosity=0):
         ch.setFormatter(ColorFormatter("[%(asctime)s] %(levelname)s in %(name)s: %(message)s",
                                        "%H:%M:%S"))
     else:
-        ch.setFormatter(logging.Formatter("[%(asctime)s] %(levelname)-8s in %(name)s: %(message)s",
+        ch.setFormatter(logging.Formatter("[%(asctime)s] %(levelname)s in %(name)s: %(message)s",
                                           "%H:%M:%S"))
     logger.addHandler(ch)
 
