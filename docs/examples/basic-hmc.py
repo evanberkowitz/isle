@@ -9,6 +9,22 @@ import yaml
 import isle
 import isle.drivers
 
+
+### Specify parameters.
+# isle.util.parameters takes arbitrary keyword arguments, constructs a new dataclass,
+# and stores the function arguments in an instance of it.
+# The object is written to the output file and read back in by all subsequent processes.
+# Use this to store all physical and model parameters and make them accessible later.
+PARAMS = isle.util.parameters(
+    beta=3,
+    U=2,
+    mu=0,
+    sigmaKappa=-1,
+    alpha=1,
+    hopping=isle.action.HFAHopping.DIA,
+    variant=isle.action.HFAVariant.ONE
+)
+
 # define an action
 def makeAction(lat, params):
     import isle
@@ -33,20 +49,15 @@ def main():
         lat = yaml.safe_load(latfile.read())
     lat.nt(16)  # lattice files usually only contain information on spatial lattice
 
-    # specify model parameters
-    params = isle.util.parameters(beta=3, U=2, mu=0, sigmaKappa=-1,
-                                  alpha=1, hopping=isle.action.HFAHopping.DIA,
-                                  variant=isle.action.HFAVariant.ONE)
-
     # set up a random number generator
     rng = isle.random.NumpyRNG(1075)
 
     # set up a fresh HMC driver to control HMC evolution
-    hmcState = isle.drivers.hmc.init(lat, params, rng, makeAction, args.outfile,
+    hmcState = isle.drivers.hmc.init(lat, PARAMS, rng, makeAction, args.outfile,
                                      args.overwrite, startIdx=0)
 
     # random initial condition
-    phi = isle.Vector(rng.normal(0, (params.U * params.beta / lat.nt())**(1/2), lat.lattSize())+0j)
+    phi = isle.Vector(rng.normal(0, (PARAMS.U * PARAMS.beta / lat.nt())**(1/2), lat.lattSize())+0j)
 
     log.info("Thermalizing")
     # a proposer to linearly decrease the number of MD steps
