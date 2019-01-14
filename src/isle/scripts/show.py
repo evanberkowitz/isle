@@ -1,5 +1,7 @@
 r"""! \file
-\todo
+Script to report on input and output files of Isle.
+
+Run the script via show.main().
 """
 
 from logging import getLogger
@@ -216,8 +218,10 @@ def _loadMetadata(fname, ftype):
 
 
 def main(args):
-    """!
+    r"""!
     Run the show script to report on contents of Isle files.
+
+    \param args Parsed command line arguments.
     """
 
     # set up matplotlib once for all reporters
