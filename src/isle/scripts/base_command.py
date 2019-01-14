@@ -3,6 +3,8 @@ The base command line script for Isle.
 Dispatches calls to other, specific scripts.
 """
 
+from logging import getLogger
+
 import isle
 
 def _run_show(args):
@@ -34,4 +36,10 @@ def main():
                                "",
                                ""
                            ])
-    commands[args.cmd](args)
+
+    try:
+        commands[args.cmd](args)
+    except:
+        getLogger("isle").exception("Failed to execute commad %s",
+                                    args.cmd)
+        exit(1)
