@@ -20,8 +20,11 @@ PARAMS = isle.util.parameters(
     U=2,
     mu=0,
     sigmaKappa=-1,
-    alpha=1,
+
+    # Those three control which implementation of the action gets used.
+    # The values given here are the defaults.
     hopping=isle.action.HFAHopping.DIA,
+    basis=isle.action.HFABasis.PARTICLE_HOLE,
     variant=isle.action.HFAVariant.ONE
 )
 
@@ -35,8 +38,8 @@ def makeAction(lat, params):
                                                                params.beta,
                                                                params.tilde("mu", lat),
                                                                params.sigmaKappa,
-                                                               params.alpha,
                                                                params.hopping,
+                                                               params.basis,
                                                                params.variant))
 
 def main():
