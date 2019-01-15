@@ -106,11 +106,11 @@ class HMC:
 
 def init(lattice, params, rng, makeAction, outfile, overwrite, startIdx=0):
     if outfile is None:
-        getLogger(__name__).critical("No output file given for HMC driver.")
+        getLogger(__name__).error("No output file given for HMC driver.")
         raise ValueError("No output file")
 
+    # convert to (name, type) tuple if necessary
     if not isinstance(outfile, (tuple, list)):
-        # convert to name, type tuple is necessary
         outfile = fileio.pathAndType(outfile)
     _ensureIsValidOutfile(outfile, overwrite, startIdx, lattice, params)
 
@@ -131,11 +131,13 @@ def _latestConfig(fname):
 def _verifyConfigsByException(outfname, startIdx):
     # TODO what about checkpoints?
 
+    # TODO if there are no configs -> ok but warn
+
     lastStored = _latestConfig(outfname)
     if lastStored > startIdx:
         getLogger(__name__).error(
-            f"Error: Output file '%s' exists and has entries with higher index than HMC start index.\n"
-            f"Greatest index in file: %d, user set start index: %d",
+            "Error: Output file '%s' exists and has entries with higher index than HMC start index.\n"
+            "Greatest index in file: %d, user set start index: %d",
             outfname, lastStored, startIdx)
         raise RuntimeError("Cannot write into output file, contains newer data")
 
@@ -152,6 +154,7 @@ def _ensureIsValidOutfile(outfile, overwrite, startIdx, lattice, params):
     """
 
     if outfile[1] != fileio.FileType.HDF5:
+        getLogger(__name__).error("Output file type not supported by HMC driver: %s", outfile[1])
         raise ValueError(f"Output file type no supported by HMC driver. Output file is '{outfile[0]}'")
 
     outfname = outfile[0]
@@ -163,7 +166,6 @@ def _ensureIsValidOutfile(outfile, overwrite, startIdx, lattice, params):
         else:
             verifyMetadataByException(outfname, lattice, params)
             _verifyConfigsByException(outfname, startIdx)
-            # TODO verify version(s)
             getLogger(__name__).info("Output file '%s' exists -- appending", outfname)
 
 def _initialConditions(ham, oldPhi, oldAct, rng):

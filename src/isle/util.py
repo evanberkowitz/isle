@@ -31,6 +31,46 @@ def hingeRange(start, end, stepSize):
     while True:
         yield end
 
+def _splitVersionStr(ver):
+    """!Split a version string into its components major, minor, and extra."""
+    major, rest = ver.split(".", 1)
+    try:
+        minor, extra = rest.split("-", 1)
+    except ValueError:
+        minor, extra = rest, ""
+    return int(major), int(minor), extra
+
+def compareVersions(version0, version1):
+    """!
+    Compare to versions.
+
+    \returns - "newer" if version0 is newer than version1
+             - "older" if version0 is older than version1
+             - "equal" if both are exactly equal
+             - "none" if both major and minor versions are equal but the extra fields are different
+    """
+
+    v0major, v0minor, v0extra = _splitVersionStr(str(version0))
+    v1major, v1minor, v1extra = _splitVersionStr(str(version1))
+
+    diffMajor = v0major - v1major
+    if diffMajor > 0:
+        return "newer"
+    if diffMajor < 0:
+        return "older"
+    # diffMajor == 0 here
+
+    diffMinor = v0minor - v1minor
+    if diffMinor > 0:
+        return "newer"
+    if diffMinor < 0:
+        return "older"
+    # diffMinor == 0 here
+
+    if v0extra == v1extra:
+        return "equal"
+    return "none"  # no further comparison possible
+
 def binnedArray(data, binsize):
     r"""!
     Return a binned array by averaging over subarrays of the input.

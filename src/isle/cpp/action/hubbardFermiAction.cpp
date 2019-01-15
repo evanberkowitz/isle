@@ -108,14 +108,14 @@ namespace isle {
 
 
         template <> std::complex<double>
-        HubbardFermiAction<HFAHopping::DIA, HFAVariant::ONE, 1>::eval(
+        HubbardFermiAction<HFAHopping::DIA, HFAVariant::ONE, HFABasis::PARTICLE_HOLE>::eval(
             const CDVector &phi) const {
 
             return -toFirstLogBranch(logdetM(_hfm, phi, Species::PARTICLE)
                                      + logdetM(_hfm, phi, Species::HOLE));
         }
         template <> CDVector
-        HubbardFermiAction<HFAHopping::DIA, HFAVariant::ONE, 1>::force(
+        HubbardFermiAction<HFAHopping::DIA, HFAVariant::ONE, HFABasis::PARTICLE_HOLE>::force(
             const CDVector &phi) const {
 
             return -1.i*(forceVariant1Part(_hfm, phi, _kp, Species::PARTICLE)
@@ -123,7 +123,7 @@ namespace isle {
         }
 
         template <> std::complex<double>
-        HubbardFermiAction<HFAHopping::DIA, HFAVariant::ONE, 0>::eval(
+        HubbardFermiAction<HFAHopping::DIA, HFAVariant::ONE, HFABasis::SPIN>::eval(
             const CDVector &phi) const {
 
             const CDVector aux = -1.i*phi;
@@ -131,7 +131,7 @@ namespace isle {
                                      + logdetM(_hfm, aux, Species::HOLE));
         }
         template <> CDVector
-        HubbardFermiAction<HFAHopping::DIA, HFAVariant::ONE, 0>::force(
+        HubbardFermiAction<HFAHopping::DIA, HFAVariant::ONE, HFABasis::SPIN>::force(
             const CDVector &phi) const {
 
             const CDVector aux = -1.i*phi;
@@ -140,26 +140,26 @@ namespace isle {
         }
 
         template <> std::complex<double>
-        HubbardFermiAction<HFAHopping::DIA, HFAVariant::TWO, 1>::eval(
+        HubbardFermiAction<HFAHopping::DIA, HFAVariant::TWO, HFABasis::PARTICLE_HOLE>::eval(
             const CDVector &phi) const {
 
             return -logdetQ(_hfm, phi);
         }
         template <> CDVector
-        HubbardFermiAction<HFAHopping::DIA, HFAVariant::TWO, 1>::force(
+        HubbardFermiAction<HFAHopping::DIA, HFAVariant::TWO, HFABasis::PARTICLE_HOLE>::force(
             const CDVector &phi) const {
 
             return forceVariant2(_hfm, phi);
         }
 
         template <> std::complex<double>
-        HubbardFermiAction<HFAHopping::DIA, HFAVariant::TWO, 0>::eval(
+        HubbardFermiAction<HFAHopping::DIA, HFAVariant::TWO, HFABasis::SPIN>::eval(
             const CDVector &phi) const {
 
             return -logdetQ(_hfm, -1.i*phi);
         }
         template <> CDVector
-        HubbardFermiAction<HFAHopping::DIA, HFAVariant::TWO, 0>::force(
+        HubbardFermiAction<HFAHopping::DIA, HFAVariant::TWO, HFABasis::SPIN>::force(
             const CDVector &phi) const {
 
             return -1.i*forceVariant2(_hfm, -1.i*phi);
@@ -167,14 +167,14 @@ namespace isle {
 
 
         template <> std::complex<double>
-        HubbardFermiAction<HFAHopping::EXP, HFAVariant::ONE, 1>::eval(
+        HubbardFermiAction<HFAHopping::EXP, HFAVariant::ONE, HFABasis::PARTICLE_HOLE>::eval(
             const CDVector &phi) const {
 
             return -toFirstLogBranch(logdetM(_hfm, phi, Species::PARTICLE)
                                      + logdetM(_hfm, phi, Species::HOLE));
         }
         template <> CDVector
-        HubbardFermiAction<HFAHopping::EXP, HFAVariant::ONE, 1>::force(
+        HubbardFermiAction<HFAHopping::EXP, HFAVariant::ONE, HFABasis::PARTICLE_HOLE>::force(
             const CDVector &phi) const {
 
             return -1.i*(forceVariant1Part(_hfm, phi, _kp, Species::PARTICLE)
@@ -182,7 +182,7 @@ namespace isle {
         }
 
         template <> std::complex<double>
-        HubbardFermiAction<HFAHopping::EXP, HFAVariant::ONE, 0>::eval(
+        HubbardFermiAction<HFAHopping::EXP, HFAVariant::ONE, HFABasis::SPIN>::eval(
             const CDVector &phi) const {
 
             const CDVector aux = -1.i*phi;
@@ -190,7 +190,7 @@ namespace isle {
                                      + logdetM(_hfm, aux, Species::HOLE));
         }
         template <> CDVector
-        HubbardFermiAction<HFAHopping::EXP, HFAVariant::ONE, 0>::force(
+        HubbardFermiAction<HFAHopping::EXP, HFAVariant::ONE, HFABasis::SPIN>::force(
             const CDVector &phi) const {
 
             const CDVector aux = -1.i*phi;
@@ -199,41 +199,41 @@ namespace isle {
         }
 
         template <> std::complex<double>
-        HubbardFermiAction<HFAHopping::EXP, HFAVariant::TWO, 1>::eval(
+        HubbardFermiAction<HFAHopping::EXP, HFAVariant::TWO, HFABasis::PARTICLE_HOLE>::eval(
             const CDVector &phi) const {
 
             return -logdetQ(_hfm, phi);
         }
         template <> CDVector
-        HubbardFermiAction<HFAHopping::EXP, HFAVariant::TWO, 1>::force(
+        HubbardFermiAction<HFAHopping::EXP, HFAVariant::TWO, HFABasis::PARTICLE_HOLE>::force(
             const CDVector &phi) const {
 
             return forceVariant2(_hfm, phi);
         }
 
         template <> std::complex<double>
-        HubbardFermiAction<HFAHopping::EXP, HFAVariant::TWO, 0>::eval(
+        HubbardFermiAction<HFAHopping::EXP, HFAVariant::TWO, HFABasis::SPIN>::eval(
             const CDVector &phi) const {
 
             return -logdetQ(_hfm, -1.i*phi);
         }
         template <> CDVector
-        HubbardFermiAction<HFAHopping::EXP, HFAVariant::TWO, 0>::force(
+        HubbardFermiAction<HFAHopping::EXP, HFAVariant::TWO, HFABasis::SPIN>::force(
             const CDVector &phi) const {
 
             return -1.i*forceVariant2(_hfm, -1.i*phi);
         }
 
         // instantiate all the templates we need right here
-        template class HubbardFermiAction<HFAHopping::DIA, HFAVariant::ONE, 1>;
-        template class HubbardFermiAction<HFAHopping::DIA, HFAVariant::ONE, 0>;
-        template class HubbardFermiAction<HFAHopping::DIA, HFAVariant::TWO, 1>;
-        template class HubbardFermiAction<HFAHopping::DIA, HFAVariant::TWO, 0>;
+        template class HubbardFermiAction<HFAHopping::DIA, HFAVariant::ONE, HFABasis::PARTICLE_HOLE>;
+        template class HubbardFermiAction<HFAHopping::DIA, HFAVariant::ONE, HFABasis::SPIN>;
+        template class HubbardFermiAction<HFAHopping::DIA, HFAVariant::TWO, HFABasis::PARTICLE_HOLE>;
+        template class HubbardFermiAction<HFAHopping::DIA, HFAVariant::TWO, HFABasis::SPIN>;
 
-        template class HubbardFermiAction<HFAHopping::EXP, HFAVariant::ONE, 1>;
-        template class HubbardFermiAction<HFAHopping::EXP, HFAVariant::ONE, 0>;
-        template class HubbardFermiAction<HFAHopping::EXP, HFAVariant::TWO, 1>;
-        template class HubbardFermiAction<HFAHopping::EXP, HFAVariant::TWO, 0>;
+        template class HubbardFermiAction<HFAHopping::EXP, HFAVariant::ONE, HFABasis::PARTICLE_HOLE>;
+        template class HubbardFermiAction<HFAHopping::EXP, HFAVariant::ONE, HFABasis::SPIN>;
+        template class HubbardFermiAction<HFAHopping::EXP, HFAVariant::TWO, HFABasis::PARTICLE_HOLE>;
+        template class HubbardFermiAction<HFAHopping::EXP, HFAVariant::TWO, HFABasis::SPIN>;
 
     } // namespace action
 }  // namespace isle

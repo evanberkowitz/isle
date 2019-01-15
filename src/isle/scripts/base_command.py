@@ -3,6 +3,8 @@ The base command line script for Isle.
 Dispatches calls to other, specific scripts.
 """
 
+from logging import getLogger
+
 import isle
 
 def _run_show(args):
@@ -23,15 +25,21 @@ def main():
                 "hmc": _run_hmc,
                 "meas": _run_meas}
 
-    args = isle.cli.init(list(commands.keys()), name="isle",
-                         description="Base utility program of Isle. Dispatches to sub-commands. "
-                         "Use -h for a sub-command to get more information.",
-                         epilog="See https://github.com/jl-wynen/isle",
-                         subdescriptions=[
-                             "Pulls all data in can from a file in a format supported by Isle, "
-                             "prints, and visualizes that data. Supported file types are HDF5 and YAML."
-                             "Select a reporter via -r to choose which information to show.",
-                             "",
-                             ""
-                         ])
-    commands[args.cmd](args)
+    args = isle.initialize(list(commands.keys()), name="isle",
+                           description="Base utility program of Isle. Dispatches to sub-commands. "
+                           "Use -h for a sub-command to get more information.",
+                           epilog="See https://github.com/jl-wynen/isle",
+                           subdescriptions=[
+                               "Pulls all data it can from a file in a format supported by Isle, "
+                               "prints, and visualizes that data. Supported file types are HDF5 and YAML. "
+                               "Select a reporter via -r to choose which information to show.",
+                               "",
+                               ""
+                           ])
+
+    try:
+        commands[args.cmd](args)
+    except:
+        getLogger("isle").exception("Failed to execute commad %s",
+                                    args.cmd)
+        exit(1)

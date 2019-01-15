@@ -8,7 +8,7 @@ import h5py as h5
 
 from .. import fileio
 from .. import cli
-from ._util import verifyMetadataByException, prepareOutfile
+from ._util import verifyMetadataByException, verifyVersionsByException, prepareOutfile
 
 
 class Measure:
@@ -59,20 +59,22 @@ class Measure:
 def init(infile, outfile, overwrite):
     if infile is None:
         getLogger(__name__).critical("No input file given to meas driver.")
-        raise RuntimeError("No input file")
+        raise ValueError("No output file")
 
     if outfile is None:
         getLogger(__name__).info("No output file given to meas driver. "
                                  "Writing to input file.")
         outfile = infile
 
+    # convert to (name, type) tuples if necessary
     if not isinstance(infile, (tuple, list)):
         infile = fileio.pathAndType(infile)
     if not isinstance(outfile, (tuple, list)):
         outfile = fileio.pathAndType(outfile)
 
-    lattice, params, makeActionSrc = fileio.h5.readMetadata(infile)
+    lattice, params, makeActionSrc, versions = fileio.h5.readMetadata(infile)
 
+    verifyVersionsByException(versions, outfile)
     _ensureIsValidOutfile(outfile, overwrite, lattice, params)
 
     if not outfile[0].exists():
@@ -95,6 +97,7 @@ def _ensureIsValidOutfile(outfile, overwrite, lattice, params):
     #      we can continue (how to check given that every meas has its own format?)
 
     if outfile[1] != fileio.FileType.HDF5:
+        getLogger(__name__).error("Output file type not supported by Meas driver: %s", outfile[1])
         raise ValueError(f"Output file type no supported by Meas driver. Output file is '{outfile[0]}'")
 
     outfname = outfile[0]
@@ -105,5 +108,4 @@ def _ensureIsValidOutfile(outfile, overwrite, lattice, params):
 
         else:
             verifyMetadataByException(outfname, lattice, params)
-            # TODO verify version(s)
             getLogger(__name__).info("Output file '%s' exists -- appending", outfname)

@@ -2,7 +2,8 @@
 #
 
 set(TEST_SOURCE
-  ${ISLE_CPP_SOURCE}
+  # TODO activate
+  # ${ISLE_CPP_SOURCE}
   main.cpp
   )
 
