@@ -18,20 +18,40 @@ from .meta import classFromSource, sourceOfClass
 
 class Proposer(metaclass=ABCMeta):
     r"""! \ingroup proposers
+    Abstract base class for proposers.
     """
 
     @abstractmethod
-    def propose(self, phi, pi, accepted):
-        pass
+    def propose(self, phi, pi, energy, trajPoint):
+        r"""!
+        Propose a new configuration and momentum.
+        \param phi Input configuration.
+        \param pi Input Momentum.
+        \param energy Energy computed on phi and pi.
+        \param trajPoint 0 if previous trajectory was rejected, 1 if it was accepted.
+        \returns In order:
+          - New configuration
+          - New momentum
+          - New energy
+        """
 
     @abstractmethod
     def save(self, h5group):
-        pass
+        r"""!
+        Save the proposer to HDF5.
+        Has to be the inverse of Proposer.fromH5().
+        \param h5group HDF5 group to save to.
+        """
 
     @classmethod
     @abstractmethod
-    def fromH5(self, h5group):
-        pass
+    def fromH5(cls, h5group):
+        r"""!
+        Construct a proposer from HDF5.
+        Create and initialize a new instance from parameters stored via Proposer.save().
+        \param h5group HDF5 group to load parameters from.
+        \returns A newly constructed proposer.
+        """
 
 class ConstStepLeapfrog:
     r"""! \ingroup proposers
