@@ -55,32 +55,56 @@ class Proposer(metaclass=ABCMeta):
         \returns A newly constructed proposer.
         """
 
-class ConstStepLeapfrog:
+class ConstStepLeapfrog(Proposer):
     r"""! \ingroup proposers
     A leapfrog proposer with constant parameters.
     """
 
-    def __init__(self, hamiltonian, length, nstep):
+    def __init__(self, action, length, nstep):
         r"""!
-        \param hamiltonian Instance of isle.Hamiltonian to use for molecular dynamics.
+        \param action Instance of isle.Action to use for molecular dynamics.
         \param length Length of the MD trajectory.
         \param nstep Number of MD steps per trajectory.
         """
-        self.hamiltonian = hamiltonian
+        self.action = action
         self.length = length
         self.nstep = nstep
 
-    def __call__(self, phi, pi, acc):
+    def propose(self, phi, pi, _energy, _trajPoint):
         r"""!
         Run leapfrog integrator.
-        \param phi Starting configuration.
-        \param pi Starting momentum.
-        \param acc \e Ignored
+        \param phi Input configuration.
+        \param pi Input Momentum.
+        \param _energy \e ignored.
+        \param _trajPoint \e ignored.
+        \returns In order:
+          - New configuration
+          - New momentum
+          - New energy
         """
-        return leapfrog(phi, pi, self.hamiltonian, self.length, self.nstep)
+        return leapfrog(phi, pi, self.action, self.length, self.nstep)
+
+    def save(self, h5group):
+        r"""!
+        Save the proposer to HDF5.
+        \param h5group HDF5 group to save to.
+        """
+        h5group["length"] = self.length
+        h5group["nstep"] = self.nstep
+
+    @classmethod
+    def fromH5(cls, h5group, action, _lattice):
+        r"""!
+        Construct from HDF5.
+        \param h5group HDF5 group to load parameters from.
+        \param action Action to use.
+        \param _lattice \e ignored.
+        \returns A newly constructed leapfrog proposer.
+        """
+        return cls(action, h5group["length"][()], h5group["nstep"][()])
 
 
-class LinearStepLeapfrog:
+class LinearStepLeapfrog(Proposer):
     r"""! \ingroup proposers
     A leapfrog proposer with linearly changing parameters.
 
@@ -90,26 +114,75 @@ class LinearStepLeapfrog:
     values.
     """
 
-    def __init__(self, hamiltonian, lengthRange, nstepRange, ninterp):
+    def __init__(self, action, lengthRange, nstepRange, ninterp, startPoint=0):
         r"""!
-        \param hamiltonian Instance of isle.Hamiltonian to use for molecular dynamics.
+        \param action Instance of isle.Action to use for molecular dynamics.
         \param lengthRange Tuple of initial and final trajectory lengths.
         \param nstepRange Tuple of initial and final number of steps.
         \param ninterp Number of interpolating steps.
+        \param startPoint Iteration number to start at.
         """
-        self.hamiltonian = hamiltonian
+
+        self.action = action
+        self.lengthRange = lengthRange
+        self.nstepRange = nstepRange
+        self.ninterp = ninterp
+
         self._lengthIter = hingeRange(*lengthRange, (lengthRange[1]-lengthRange[0])/ninterp)
         self._nstepIter = hingeRange(*nstepRange, (nstepRange[1]-nstepRange[0])/ninterp)
+        # Keep track of where the interpolation currently is at.
+        # Allows it to be resumed when using fromH5.
+        self._current = 0
 
-    def __call__(self, phi, pi, acc):
+        self._advanceTo(startPoint)
+
+    def _advanceTo(self, idx):
+        for _ in range(idx):
+            next(self._lengthIter)
+            next(self._nstepIter)
+
+    def propose(self, phi, pi, _energy, _trajPoint):
         r"""!
         Run leapfrog integrator.
-        \param phi Starting configuration.
-        \param pi Starting momentum.
-        \param acc \e Ignored
+        \param phi Input configuration.
+        \param pi Input Momentum.
+        \param _energy \e ignored.
+        \param _trajPoint \e ignored.
+        \returns In order:
+          - New configuration
+          - New momentum
+          - New energy
         """
-        return leapfrog(phi, pi, self.hamiltonian,
+        self._current += 1
+        return leapfrog(phi, pi, self.action,
                         next(self._lengthIter), int(next(self._nstepIter)))
+
+    def save(self, h5group):
+        r"""!
+        Save the proposer to HDF5.
+        \param h5group HDF5 group to save to.
+        """
+        h5group["minLength"] = self.lengthRange[0]
+        h5group["maxLength"] = self.lengthRange[1]
+        h5group["minNstep"] = self.nstepRange[0]
+        h5group["maxNstep"] = self.nstepRange[1]
+        h5group["ninterp"] = self.ninterp
+        h5group["current"] = self._current
+
+    @classmethod
+    def fromH5(cls, h5group, action, _lattice):
+        r"""!
+        Construct from HDF5.
+        \param h5group HDF5 group to load parameters from.
+        \param action Action to use.
+        \param _lattice \e ignored.
+        \returns A newly constructed leapfrog proposer.
+        """
+        return cls(action,
+                   (h5group["minLength"][()], h5group["maxLength"][()]),
+                   (h5group["minLength"][()], h5group["maxLength"][()]),
+                   h5group["ninterp"][()],
+                   h5group["current"][()])
 
 
 def saveProposer(proposer, h5group, definitions={}):
