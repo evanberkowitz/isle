@@ -6,10 +6,9 @@ from logging import getLogger
 
 import h5py as h5
 
-from .. import fileio
-from .. import cli
+from .. import fileio, cli
 from ..meta import callFunctionFromSource
-from ._util import verifyMetadataByException, verifyVersionsByException, prepareOutfile
+from ..util import verifyMetadataByException, verifyVersionsByException
 
 
 class Measure:
@@ -79,7 +78,7 @@ def init(infile, outfile, overwrite):
     _ensureIsValidOutfile(outfile, overwrite, lattice, params)
 
     if not outfile[0].exists():
-        prepareOutfile(outfile[0], lattice, params, makeActionSrc)
+        fileio.h5.initializeFile(outfile[0], lattice, params, makeActionSrc)
 
     return Measure(lattice, params,
                    callFunctionFromSource(makeActionSrc, lattice, params),

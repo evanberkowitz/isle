@@ -65,6 +65,18 @@ def readMetadata(fname):
             raise
     return lattice, params, makeActionSrc, versions
 
+def initializeFile(fname, lattice, params, makeActionSrc, extraGroups=[]):
+    """!
+    Prepare the output file by storing program versions, metadata, and creating groups.
+    The file is not allowed to exist yet.
+    """
+
+    with h5.File(str(fname), "w-") as h5f:
+        for group in extraGroups:
+            createH5Group(h5f, group)
+
+    writeMetadata(fname, lattice, params, makeActionSrc)
+
 def writeTrajectory(group, label, phi, act, trajPoint):
     r"""!
     Write a trajectory (endpoint) to a HDF5 group.

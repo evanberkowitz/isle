@@ -3,11 +3,12 @@ Some general utilities.
 """
 
 from dataclasses import make_dataclass, field
+from logging import getLogger
 
 import yaml
 import numpy as np
 
-from . import Lattice
+from . import Lattice, isleVersion, pythonVersion, blazeVersion, pybind11Version, fileio
 
 def hingeRange(start, end, stepSize):
     r"""!
@@ -30,6 +31,7 @@ def hingeRange(start, end, stepSize):
     # stay at end value forever
     while True:
         yield end
+
 
 def _splitVersionStr(ver):
     """!Split a version string into its components major, minor, and extra."""
@@ -71,6 +73,53 @@ def compareVersions(version0, version1):
         return "equal"
     return "none"  # no further comparison possible
 
+def _verifyVersion(current, other, name, fname, permissive):
+    comp = compareVersions(current, other)
+    if comp == "none":
+        getLogger(__name__).info("Extra version string of %s (%s) different "
+                                 "from version in file %s (%s)",
+                                 name, current, fname, other)
+    if comp != "equal":
+        message = f"Version of {name} ({current}) is {comp} than in file {fname} ({other})."
+        if permissive:
+            getLogger(__name__).warning(message)
+        else:
+            getLogger(__name__).error(message)
+            raise RuntimeError(f"Version mismatch for {name}")
+
+def verifyVersionsByException(versions, fname, permissive=False):
+    r"""!
+    Compare versions of Isle and Python with current versions.
+    Raise RuntimeError if the versions of Isle do not match.
+    \param versions Dict of versions. Must contain 'isle' and 'python'.
+    \param fname Name of the file `versions` have been read from.
+    \param permissve If `True`, a mismatch only triggers a warning not an error.
+    """
+    _verifyVersion(isleVersion, versions["isle"], "isle", fname, permissive=permissive)
+    _verifyVersion(pythonVersion, versions["python"], "Python", fname, permissive=True)
+
+def verifyMetadataByException(fname, lattice, params):
+    """!
+    Make sure that metadata in file agrees with function parameters.
+    Raises RuntimeError if there is a mismatch.
+    """
+
+    storedLattice, storedParams, _, versions = fileio.h5.readMetadata(fname)
+
+    if storedLattice.name != lattice.name:
+        getLogger(__name__).error("Name of lattice in output file is %s but new lattice has name %s. "
+                                  "Cannot write into existing output file.",
+                                  storedLattice.name, lattice.name)
+        raise RuntimeError("Lattice name inconsistent")
+
+    if storedParams.asdict() != params.asdict():
+        getLogger(__name__).error("Stored parameters do not match new parameters. "
+                                  "Cannot write into existing output file.")
+        raise RuntimeError("Parameters inconsistent")
+
+    verifyVersionsByException(versions, fname)
+
+
 def binnedArray(data, binsize):
     r"""!
     Return a binned array by averaging over subarrays of the input.
@@ -83,6 +132,7 @@ def binnedArray(data, binsize):
     if len(data) % binsize != 0:
         raise RuntimeError("Size of data is not a multiple of the bin size")
     return np.reshape(data, (nbins, binsize)).mean(1)
+
 
 def parameters(**kwargs):
     r"""!
