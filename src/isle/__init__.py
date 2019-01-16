@@ -11,6 +11,7 @@ from . import proposers
 from . import random
 from . import util
 from . import cli
+from . import meta
 import isle.action
 
 __version__ = str(isleVersion)
