@@ -6,6 +6,7 @@ import h5py as h5
 from .. import Vector
 from .. import fileio
 from .. import cli
+from ..meta import sourceOfFunction, callFunctionFromSource
 from ._util import verifyMetadataByException, prepareOutfile
 
 
@@ -114,12 +115,12 @@ def init(lattice, params, rng, makeAction, outfile, overwrite, startIdx=0):
         outfile = fileio.pathAndType(outfile)
     _ensureIsValidOutfile(outfile, overwrite, startIdx, lattice, params)
 
-    makeActionSrc = fileio.sourceOfFunction(makeAction)
+    makeActionSrc = sourceOfFunction(makeAction)
     if not outfile[0].exists():
         prepareOutfile(outfile[0], lattice, params, makeActionSrc,
                        ["/configuration", "/checkpoint"])
 
-    return HMC(lattice, params, rng, fileio.callFunctionFromSource(makeActionSrc, lattice, params),
+    return HMC(lattice, params, rng, callFunctionFromSource(makeActionSrc, lattice, params),
                outfile[0], startIdx)
 
 

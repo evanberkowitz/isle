@@ -8,6 +8,7 @@ import h5py as h5
 
 from .. import fileio
 from .. import cli
+from ..meta import callFunctionFromSource
 from ._util import verifyMetadataByException, verifyVersionsByException, prepareOutfile
 
 
@@ -81,7 +82,7 @@ def init(infile, outfile, overwrite):
         prepareOutfile(outfile[0], lattice, params, makeActionSrc)
 
     return Measure(lattice, params,
-                   fileio.callFunctionFromSource(makeActionSrc, lattice, params),
+                   callFunctionFromSource(makeActionSrc, lattice, params),
                    infile[0], outfile[0])
 
 def _ensureIsValidOutfile(outfile, overwrite, lattice, params):
