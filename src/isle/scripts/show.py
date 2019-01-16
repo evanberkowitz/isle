@@ -168,7 +168,7 @@ def _correlator(infname, lattice, params, makeActionSrc):
 
     # use this to bundle information and perform simple measurements if needed
     measState = Measure(lattice, params,
-                        isle.fileio.callFunctionFromSource(makeActionSrc, lattice, params),
+                        callFunctionFromSource(makeActionSrc, lattice, params),
                         infname, None)
 
     fig = plt.figure(figsize=(11, 5))
