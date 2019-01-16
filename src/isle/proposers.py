@@ -45,11 +45,13 @@ class Proposer(metaclass=ABCMeta):
 
     @classmethod
     @abstractmethod
-    def fromH5(cls, h5group):
+    def fromH5(cls, h5group, action, lattice):
         r"""!
         Construct a proposer from HDF5.
         Create and initialize a new instance from parameters stored via Proposer.save().
         \param h5group HDF5 group to load parameters from.
+        \param action Action to use.
+        \param lattice Lattice the simulation runs on.
         \returns A newly constructed proposer.
         """
 
@@ -161,13 +163,15 @@ def saveProposer(proposer, h5group, definitions={}):
         _ = classFromSource(src)  # attempt to recosntruct it to check for errors early
         h5group["__source__"] = src
 
-def loadProposer(h5group, definitions={}):
+def loadProposer(h5group, action, lattice, definitions={}):
     r"""! \ingroup proposers
     Load a proposer from HDF5.
 
     Retrieves the class of a proposer from HDF5 and constructs an instance.
 
     \param h5group HDF5 group containing name, (source), parameters of a proposer.
+    \param action Action to use the proposer with. Passed to Proposer.fromH5().
+    \param lattice Lattice passed to Proposer.fromH5().
     \param definitions Dict containing custom definitions. If it contains an entry
                        with the name of the proposer, it is loaded based on that
                        entry instead of from source code.
@@ -208,4 +212,4 @@ def loadProposer(h5group, definitions={}):
     if not issubclass(cls, Proposer):
         getLogger(__name__).error("Loaded type is not a proposer: %s", name)
 
-    return cls.fromH5(h5group)
+    return cls.fromH5(h5group, action, lattice)
