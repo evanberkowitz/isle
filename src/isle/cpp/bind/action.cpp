@@ -3,6 +3,7 @@
 #include "../action/action.hpp"
 #include "../action/hubbardGaugeAction.hpp"
 #include "../action/hubbardFermiAction.hpp"
+#include "../action/sumAction.hpp"
 
 using namespace pybind11::literals;
 using namespace isle;
@@ -33,6 +34,39 @@ namespace bind {
                 );
             }
         };
+
+        template <typename A>
+        void bindSumAction(py::module &mod, A &action) {
+            py::class_<SumAction>(mod, "SumAction", action)
+                .def(py::init<>())
+                .def(py::init([](py::args args) {
+                                  SumAction act;
+                                  for (auto arg : args)
+                                      act.add(arg.cast<Action*>(), false);  // Python owns the action
+                                  return act;
+                              }),
+                    py::keep_alive<1, 2>())
+                .def("add", [](SumAction &self, Action *const action) {
+                                self.add(action, false);  // Python owns the action
+                            },
+                    py::keep_alive<1, 2>())
+                .def("__getitem__", py::overload_cast<std::size_t>(&SumAction::operator[]),
+                     py::return_value_policy::reference_internal)
+                .def("__len__", &SumAction::size)
+                .def("clear", &SumAction::clear)
+                .def("eval", &SumAction::eval)
+                .def("force", &SumAction::force)
+                ;
+        }
+
+        template <typename a>
+        void bindHubbardGaugeAction(py::module &mod, a &action) {
+            py::class_<HubbardGaugeAction>(mod, "HubbardGaugeAction", action)
+                .def(py::init<double>())
+                .def("eval", &HubbardGaugeAction::eval)
+                .def("force", &HubbardGaugeAction::force)
+                ;
+        }
 
         template <HFAHopping HOPPING, HFAVariant VARIANT, HFABasis BASIS,
                   typename A>
@@ -166,12 +200,8 @@ namespace bind {
             .def("force", &Action::force)
             ;
 
-        py::class_<HubbardGaugeAction>{actmod, "HubbardGaugeAction", action}
-            .def(py::init<double>())
-            .def("eval", &HubbardGaugeAction::eval)
-            .def("force", &HubbardGaugeAction::force)
-            ;
-
+        bindSumAction(actmod, action);
+        bindHubbardGaugeAction(actmod, action);
         bindHubbardFermiAction(actmod, action);
     }
 }
