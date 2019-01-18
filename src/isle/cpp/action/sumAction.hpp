@@ -22,7 +22,7 @@ namespace isle {
          *            passed to it but does not own them. The user is responsible
          *            for freeing any resources appropriately.
          */
-        class SumAction {
+        class SumAction : public Action{
         public:
             SumAction() = default;
             SumAction(const SumAction &other) = default;
@@ -50,10 +50,10 @@ namespace isle {
             void clear() noexcept;
 
             /// Evaluate the sum of actions for given auxilliary field phi.
-            std::complex<double> eval(const CDVector &phi) const;
+            std::complex<double> eval(const CDVector &phi) const override;
 
             /// Calculate sum of forces for given auxilliary field phi.
-            CDVector force(const CDVector &phi) const ;
+            CDVector force(const CDVector &phi) const override;
 
         private:
             std::vector<Action*> _subActions;  ///< Stores individual summands.
