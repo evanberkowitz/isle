@@ -42,12 +42,12 @@ namespace bind {
                 .def(py::init([](py::args args) {
                                   SumAction act;
                                   for (auto arg : args)
-                                      act.add(arg.cast<Action*>(), false);  // Python owns the action
+                                      act.add(arg.cast<Action*>());
                                   return act;
                               }),
                     py::keep_alive<1, 2>())
                 .def("add", [](SumAction &self, Action *const action) {
-                                self.add(action, false);  // Python owns the action
+                                self.add(action);
                             },
                     py::keep_alive<1, 2>())
                 .def("__getitem__", py::overload_cast<std::size_t>(&SumAction::operator[]),
