@@ -35,6 +35,34 @@ namespace bind {
             }
         };
 
+        void addAction(SumAction &sum, py::object &action) {
+            try {
+                // if action is a SumAction, add all its members
+                SumAction *const otherSum = action.cast<SumAction*>();
+                for (size_t i = 0; i < otherSum->size(); ++i)
+                    sum.add((*otherSum)[i]);
+            }
+            catch (const py::cast_error &) {
+                // if action is not a SumAction, just add it
+                sum.add(action.cast<Action*>());
+            }
+        }
+
+        auto bindBaseAction(py::module &mod) {
+            return py::class_<Action, ActionTramp>(mod, "Action")
+                .def(py::init<>())
+                .def("eval", &Action::eval)
+                .def("force", &Action::force)
+                .def("__add__", [](py::object &self, py::object &other) {
+                                    SumAction sum;
+                                    addAction(sum, self);
+                                    addAction(sum, other);
+                                    return sum;
+                                },
+                    py::keep_alive<0, 1>(), py::keep_alive<0, 2>())
+                ;
+        }
+
         template <typename A>
         void bindSumAction(py::module &mod, A &action) {
             py::class_<SumAction>(mod, "SumAction", action)
@@ -50,6 +78,12 @@ namespace bind {
                                 self.add(action);
                             },
                     py::keep_alive<1, 2>())
+                // .def("__add__", [](SumAction *const this_, Action *const other) {
+                //                     SumAction sum(*this_);
+                //                     sum.add(other);
+                //                     return sum;
+                //                 },
+                //     py::keep_alive<0, 1>(), py::keep_alive<0, 2>())
                 .def("__getitem__", py::overload_cast<std::size_t>(&SumAction::operator[]),
                      py::return_value_policy::reference_internal)
                 .def("__len__", &SumAction::size)
@@ -193,13 +227,7 @@ namespace bind {
     void bindActions(py::module &mod) {
         py::module actmod = mod.def_submodule("action", "Actions");
 
-        py::class_<Action, ActionTramp> action{actmod, "Action"};
-        action
-            .def(py::init<>())
-            .def("eval", &Action::eval)
-            .def("force", &Action::force)
-            ;
-
+        auto action = bindBaseAction(actmod);
         bindSumAction(actmod, action);
         bindHubbardGaugeAction(actmod, action);
         bindHubbardFermiAction(actmod, action);
