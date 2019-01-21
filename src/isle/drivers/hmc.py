@@ -6,10 +6,11 @@ import h5py as h5
 from .. import Vector, fileio, cli
 from ..meta import sourceOfFunction, callFunctionFromSource
 from ..util import verifyMetadataByException
+from ..proposers import ProposerManager
 
 
 class HMC:
-    def __init__(self, lattice, params, rng, action, outfname, startIdx):
+    def __init__(self, lattice, params, rng, action, outfname, startIdx, definitions={}):
         self.lattice = lattice
         self.params = params
         self.rng = rng
@@ -17,7 +18,7 @@ class HMC:
         self.outfname = str(outfname)
 
         self._trajIdx = startIdx
-
+        self._propManager = ProposerManager(outfname, definitions=definitions)
 
     def __call__(self, phi, proposer, ntr,  saveFreq, checkpointFreq):
         if checkpointFreq != 0 and checkpointFreq % saveFreq != 0:
@@ -53,7 +54,7 @@ class HMC:
 
             if saveFreq != 0 and self._trajIdx % saveFreq == 0:
                 if checkpointFreq != 0 and self._trajIdx % checkpointFreq == 0:
-                    self.saveFieldAndCheckpoint(phi, actVal, trajPoint)
+                    self.saveFieldAndCheckpoint(phi, actVal, trajPoint, proposer)
                 else:
                     self.save(phi, actVal, trajPoint)
             else:
@@ -61,11 +62,11 @@ class HMC:
 
         return phi
 
-    def saveFieldAndCheckpoint(self, phi, actVal, trajPoint):
+    def saveFieldAndCheckpoint(self, phi, actVal, trajPoint, proposer):
         "!Write a trajectory (endpoint) and checkpoint to file and advance internal counter."
         with h5.File(self.outfname, "a") as outf:
             cfgGrp = self._writeTrajectory(outf, phi, actVal, trajPoint)
-            self._writeCheckpoint(outf, cfgGrp)
+            self._writeCheckpoint(outf, cfgGrp, proposer)
         self._trajIdx += 1
 
     def save(self, phi, actVal, trajPoint):
@@ -93,11 +94,11 @@ class HMC:
                                    " A dataset with the same name already exists.") from None
             raise
 
-    def _writeCheckpoint(self, h5file, trajGrp):
+    def _writeCheckpoint(self, h5file, trajGrp, proposer):
         "!Write a checkpoint to a HDF5 group."
         try:
             return fileio.h5.writeCheckpoint(h5file["checkpoint"], self._trajIdx,
-                                             self.rng, trajGrp.name)
+                                             self.rng, trajGrp.name, proposer, self._propManager)
         except (ValueError, RuntimeError) as err:
             if "name already exists" in err.args[0]:
                 raise RuntimeError(f"Cannot write checkpoint for trajectory {self._trajIdx} to file '{self.outfname}'."

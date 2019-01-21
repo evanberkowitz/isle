@@ -101,7 +101,7 @@ def writeTrajectory(h5group, label, phi, actVal, trajPoint):
     grp["trajPoint"] = trajPoint
     return grp
 
-def writeCheckpoint(h5group, label, rng, trajGrpName):
+def writeCheckpoint(h5group, label, rng, trajGrpName, proposer, proposerManager):
     r"""!
     Write a checkpoint to a HDF5 group.
     Creates a new group with name 'label' and stores RNG state
@@ -113,6 +113,8 @@ def writeCheckpoint(h5group, label, rng, trajGrpName):
     \param rng Random number generator whose state to save in the checkpoint.
     \param trajGrpName Name of the HDF5 group containing the trajectory this
                        checkpoint corresponds to.
+    \param proposer Proposer used to make the trajectory at this checkpoint.
+    \param proposerManager Instance of ProposerManager to handle saving the proposer.
 
     \returns The newly created HDF5 group containing the checkpoint.
     """
@@ -120,4 +122,5 @@ def writeCheckpoint(h5group, label, rng, trajGrpName):
     grp = h5group.create_group(str(label))
     rng.writeH5(grp.create_group("rngState"))
     grp["cfg"] = h5.SoftLink(trajGrpName)
+    proposerManager.save(proposer, grp.create_group("proposer"))
     return grp
