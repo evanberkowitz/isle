@@ -61,17 +61,17 @@ class HMC:
 
         return phi
 
-    def saveFieldAndCheckpoint(self, phi, act, acc):
+    def saveFieldAndCheckpoint(self, phi, actVal, trajPoint):
         "!Write a trajectory (endpoint) and checkpoint to file and advance internal counter."
         with h5.File(self.outfname, "a") as outf:
-            cfgGrp = self._writeTrajectory(outf, phi, act, acc)
+            cfgGrp = self._writeTrajectory(outf, phi, actVal, trajPoint)
             self._writeCheckpoint(outf, cfgGrp)
         self._trajIdx += 1
 
-    def save(self, phi, act, acc):
+    def save(self, phi, actVal, trajPoint):
         "!Write a trajectory (endpoint) to file and advance internal counter."
         with h5.File(self.outfname, "a") as outf:
-            self._writeTrajectory(outf, phi, act, acc)
+            self._writeTrajectory(outf, phi, actVal, trajPoint)
         self._trajIdx += 1
 
     def advance(self, amount=1):
@@ -82,11 +82,11 @@ class HMC:
         "!Reset the internal trajectory index to idx."
         self._trajIdx = idx
 
-    def _writeTrajectory(self, h5file, phi, act, trajPoint):
+    def _writeTrajectory(self, h5file, phi, actVal, trajPoint):
         "!Write a trajectory (endpoint) to a HDF5 group."
         try:
             return fileio.h5.writeTrajectory(h5file["configuration"], self._trajIdx,
-                                             phi, act, trajPoint)
+                                             phi, actVal, trajPoint)
         except (ValueError, RuntimeError) as err:
             if "name already exists" in err.args[0]:
                 raise RuntimeError(f"Cannot write trajectory {self._trajIdx} to file '{self.outfname}'."
