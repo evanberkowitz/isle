@@ -9,6 +9,7 @@ from abc import ABCMeta, abstractmethod
 import argparse
 import contextlib
 import logging
+from pathlib import Path
 import random
 import shutil
 import sys
@@ -685,27 +686,32 @@ def addDefaultArgs(parser, log="none"):
                         help="Specify log file name. Set to none to not write log file.")
     return parser
 
+def addContinueArgs(parser):
+    """!Add arguments for continuation run to parser."""
+    parser.add_argument("infile", help="Input file.", type=Path)
+    parser.add_argument("-o", "--output", help="Output file",
+                        type=fileio.pathAndType, dest="outfile")
+    parser.add_argument("-i", "--initial", type=int, default=-1,
+                        help="Initial checkpoint for HMC")
+    parser.add_argument("--overwrite", action="store_true",
+                        help="Overwrite existing output files")
+    parser.add_argument("-s", "--save-freq", type=int, default=None,
+                        help="Save configurations every s trajectories, "
+                        "computed from infile by default")
+    parser.add_argument("-c", "--checkpoint-freq", type=int, default=None,
+                        help="Save checkpoints every c trajectories, "
+                        "computed from infile by default")
+    requiredGrp = parser.add_argument_group("required named arguments")
+    requiredGrp.add_argument("-n", "--ntrajectories", type=int, required=True,
+                             help="Number of trajectories to produce")
+    return parser
+
 def addHMCArgs(parser):
-    """!Add arguments for HMC to parser."""
-    parser.add_argument("-i", "--input", help="Input file.",
-                        type=fileio.pathAndType, dest="infile")
+    """!Add arguments for continuation run to parser."""
     parser.add_argument("-o", "--output", help="Output file",
                         type=fileio.pathAndType, dest="outfile")
     parser.add_argument("--overwrite", action="store_true",
                         help="Overwrite existing output files")
-    parser.add_argument("-c", "--continue", action="store_true",
-                        help="Continue from previous run", dest="cont")
-    parser.add_argument("-n", "--nproduction", type=int,
-                        help="Number of production trajectories")
-    parser.add_argument("-t", "--ntherm", type=int, default=0,
-                        help="Number of thermalization trajectories. Defaults to 0.")
-    parser.add_argument("-s", "--save-freq", type=int, default=1,
-                        help="Frequency with which configurations are saved. Defaults to 1.")
-    parser.add_argument("--checkpoint-freq", type=int, default=0,
-                        help="Checkpoint frequency relative to measurement frequency. "
-                        "Defaults to 0.")
-    parser.add_argument("--no-checks", action="store_true",
-                        help="Disable consistency checks")
     return parser
 
 def addMeasArgs(parser):
@@ -716,9 +722,6 @@ def addMeasArgs(parser):
                         type=fileio.pathAndType, dest="outfile")
     parser.add_argument("--overwrite", action="store_true",
                         help="Overwrite existing output file.")
-    parser.add_argument("-n", type=_sliceArgType, default=slice(-1),
-                        help="Select which trajectories to process. "
-                        "In slice notation without spaces.")
     return parser
 
 def addShowArgs(parser):
@@ -758,10 +761,12 @@ def parseArguments(cmd, name, description, epilog, subdescriptions):
                            more than one command.
     """
 
-    cmdArgMap = {"hmc": addHMCArgs,
+    cmdArgMap = {"continue": addContinueArgs,
                  "meas": addMeasArgs,
-                 "show": addShowArgs}
-    defaultLog = {"hmc": "isle.hmc.log",
+                 "show": addShowArgs,
+                 "hmc": addHMCArgs}
+    defaultLog = {"continue": "isle.hmc.log",
+                  "hmc": "isle.hmc.log",
                   "meas": "isle.meas.log",
                   "show": "none"}
 
