@@ -90,7 +90,7 @@ def main():
     # Generate a random initial condition.
     # Note that configurations must be vectors of complex numbers.
     phi = isle.Vector(rng.normal(0,
-                                 (PARAMS.U * PARAMS.beta / lat.nt())**(1/2),
+                                 PARAMS.tilde("U", lat)**(1/2),
                                  lat.lattSize())
                       +0j)
 
