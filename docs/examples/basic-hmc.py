@@ -50,18 +50,18 @@ NT = 16
 #           and number of time steps.
 #     params - Dataclass instance of parameters, see above (PARAMS).
 def makeAction(lat, params):
-    # Import all this function needs so it is self-contained.
+    # Import everything this function needs so it is self-contained.
     import isle
     import isle.action
 
-    return isle.Hamiltonian(isle.action.HubbardGaugeAction(params.tilde("U", lat)),
-                            isle.action.makeHubbardFermiAction(lat,
-                                                               params.beta,
-                                                               params.tilde("mu", lat),
-                                                               params.sigmaKappa,
-                                                               params.hopping,
-                                                               params.basis,
-                                                               params.variant))
+    return isle.action.HubbardGaugeAction(params.tilde("U", lat)) \
+        + isle.action.makeHubbardFermiAction(lat,
+                                             params.beta,
+                                             params.tilde("mu", lat),
+                                             params.sigmaKappa,
+                                             params.hopping,
+                                             params.basis,
+                                             params.variant)
 
 
 def main():
@@ -98,7 +98,7 @@ def main():
     log.info("Thermalizing")
     # Pick a proposer towhich linearly decreases the number of MD steps from 20 to 5.
     # The number of steps (99) must be one less than the number of trajectories below.
-    proposer = isle.proposers.LinearStepLeapfrog(hmcState.ham, (1, 1), (20, 5), 99)
+    proposer = isle.proposers.LinearStepLeapfrog(hmcState.action, (1, 1), (20, 5), 99)
     # Thermalize configuration for 100 trajectories without saving anything.
     phi = hmcState(phi, proposer, 100, saveFreq=0, checkpointFreq=0)
     # Reset the internal counter so we start saving configs at index 0.
@@ -107,7 +107,7 @@ def main():
     # Run production.
     log.info("Producing")
     # Pick a new proposer with a constant number of steps to get a reproducible ensemble.
-    proposer = isle.proposers.ConstStepLeapfrog(hmcState.ham, 1, 5)
+    proposer = isle.proposers.ConstStepLeapfrog(hmcState.action, 1, 5)
     # Produce configurations and save in intervals of 2 trajectories.
     # Place a checkpoint every 10 trajectories.
     phi = hmcState(phi, proposer, 100, saveFreq=2, checkpointFreq=10)

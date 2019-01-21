@@ -13,7 +13,7 @@ class HMC:
         self.lattice = lattice
         self.params = params
         self.rng = rng
-        self.ham = action  # TODO rewrite for pure action
+        self.action = action
         self.outfname = str(outfname)
 
         self._trajIdx = startIdx
@@ -24,36 +24,38 @@ class HMC:
             raise ValueError("checkpointFreq must be a multiple of saveFreq."
                              f" Got {checkpointFreq} and {saveFreq}, resp.")
 
-        acc = 1  # was last trajectory accepted? (int so it can be written as trajPoint)
-        act = None  # running action (without pi)
+        trajPoint = 1  # point of last trajectory that was selected
+        actVal = self.action.eval(phi)  # running action (without pi)
+
         for _ in cli.progressRange(ntr, message="HMC evolution",
                                    updateRate=max(ntr//100, 1)):
             # get initial conditions for proposer
-            startPhi, startPi, startEnergy = _initialConditions(self.ham, phi, act, self.rng)
+            startPhi, startPi, startActVal = phi, Vector(self.rng.normal(0, 1, len(phi))+0j), actVal
 
-            # evolve fields using proposer
-            endPhi, endPi, endEnergy = proposer.propose(startPhi, startPi, startEnergy, acc)
+            # get new proposed fields
+            endPhi, endPi, endActVal = proposer.propose(startPhi, startPi, startActVal, trajPoint)
 
             # TODO consistency checks
 
             # accept-reject
-            deltaE = np.real(endEnergy - startEnergy)
+            deltaE = np.real((endActVal + np.linalg.norm(endPi)**2/2)
+                             - (startActVal + np.linalg.norm(startPi)**2/2))
             if deltaE < 0 or np.exp(-deltaE) > self.rng.uniform(0, 1):
-                acc = 1
+                trajPoint = 1
                 phi = endPhi
-                act = self.ham.stripMomentum(endPi, endEnergy)
+                actVal = endActVal
             else:
-                acc = 0
+                trajPoint = 0
                 phi = startPhi
-                act = self.ham.stripMomentum(startPi, startEnergy)
+                actVal = startActVal
 
             # TODO inline meas
 
             if saveFreq != 0 and self._trajIdx % saveFreq == 0:
                 if checkpointFreq != 0 and self._trajIdx % checkpointFreq == 0:
-                    self.saveFieldAndCheckpoint(phi, act, acc)
+                    self.saveFieldAndCheckpoint(phi, actVal, trajPoint)
                 else:
-                    self.save(phi, act, acc)
+                    self.save(phi, actVal, trajPoint)
             else:
                 self.advance()
 
@@ -166,25 +168,3 @@ def _ensureIsValidOutfile(outfile, overwrite, startIdx, lattice, params):
             verifyMetadataByException(outfname, lattice, params)
             _verifyConfigsByException(outfname, startIdx)
             getLogger(__name__).info("Output file '%s' exists -- appending", outfname)
-
-def _initialConditions(ham, oldPhi, oldAct, rng):
-    r"""!
-    Construct initial conditions for proposer.
-
-    \param ham Hamiltonian.
-    \param oldPhi Old configuration, result of previous run or some new phi.
-    \param oldAct Old action, result of previous run or `None` if first run.
-    \param rng Randum number generator that implements isle.random.RNGWrapper.
-
-    \returns Tuple `(phi, pi, energy)`.
-    """
-
-    # new random pi
-    pi = Vector(rng.normal(0, 1, len(oldPhi))+0j)
-    if oldAct is None:
-        # need to compute energy from scratch
-        energy = ham.eval(oldPhi, pi)
-    else:
-        # use old action for energy
-        energy = ham.addMomentum(pi, oldAct)
-    return oldPhi, pi, energy

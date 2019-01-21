@@ -22,17 +22,17 @@ class Proposer(metaclass=ABCMeta):
     """
 
     @abstractmethod
-    def propose(self, phi, pi, energy, trajPoint):
+    def propose(self, phi, pi, actVal, trajPoint):
         r"""!
         Propose a new configuration and momentum.
         \param phi Input configuration.
         \param pi Input Momentum.
-        \param energy Energy computed on phi and pi.
+        \param actVal Value of the action at phi.
         \param trajPoint 0 if previous trajectory was rejected, 1 if it was accepted.
         \returns In order:
           - New configuration
           - New momentum
-          - New energy
+          - Action evaluated at new configuration
         """
 
     @abstractmethod
@@ -70,17 +70,17 @@ class ConstStepLeapfrog(Proposer):
         self.length = length
         self.nstep = nstep
 
-    def propose(self, phi, pi, _energy, _trajPoint):
+    def propose(self, phi, pi, _actVal, _trajPoint):
         r"""!
         Run leapfrog integrator.
         \param phi Input configuration.
         \param pi Input Momentum.
-        \param _energy \e ignored.
+        \param _actVal \e ignored.
         \param _trajPoint \e ignored.
         \returns In order:
           - New configuration
           - New momentum
-          - New energy
+          - Action evaluated at new configuration
         """
         return leapfrog(phi, pi, self.action, self.length, self.nstep)
 
@@ -141,17 +141,17 @@ class LinearStepLeapfrog(Proposer):
             next(self._lengthIter)
             next(self._nstepIter)
 
-    def propose(self, phi, pi, _energy, _trajPoint):
+    def propose(self, phi, pi, _actVal, _trajPoint):
         r"""!
         Run leapfrog integrator.
         \param phi Input configuration.
         \param pi Input Momentum.
-        \param _energy \e ignored.
+        \param _actVal \e ignored.
         \param _trajPoint \e ignored.
         \returns In order:
           - New configuration
           - New momentum
-          - New energy
+          - Action evaluated at new configuration
         """
         self._current += 1
         return leapfrog(phi, pi, self.action,
