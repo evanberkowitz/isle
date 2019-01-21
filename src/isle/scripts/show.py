@@ -22,6 +22,7 @@ import h5py as h5
 import isle
 import isle.plotting
 from isle.drivers.meas import Measure
+from isle.meta import callFunctionFromSource
 
 def _overviewFigure():
     """!Open a new figure and construct a GridSpec to lay out subplots."""
@@ -93,7 +94,7 @@ def _overview(infname, lattice, params, makeActionSrc):
 
     # use this to bundle information and perform simple measurements if needed
     measState = Measure(lattice, params,
-                        isle.fileio.callFunctionFromSource(makeActionSrc, lattice, params),
+                        callFunctionFromSource(makeActionSrc, lattice, params),
                         infname, None)
 
     # set up the figure
@@ -167,7 +168,7 @@ def _correlator(infname, lattice, params, makeActionSrc):
 
     # use this to bundle information and perform simple measurements if needed
     measState = Measure(lattice, params,
-                        isle.fileio.callFunctionFromSource(makeActionSrc, lattice, params),
+                        callFunctionFromSource(makeActionSrc, lattice, params),
                         infname, None)
 
     fig = plt.figure(figsize=(11, 5))
