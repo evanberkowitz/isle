@@ -1,5 +1,5 @@
 """!\file
-
+Handle %HMC evolution and file output.
 """
 
 from logging import getLogger
@@ -14,11 +14,21 @@ from ..proposers import ProposerManager
 
 class HMC:
     r"""!
-    Do not construct yourself! Use factory functions.
+    Driver to control %HMC evolution.
+
+    Stores metadata and current state of %HMC evolution (apart from configuration and proposer).
+    Manages generation of configurations and file output.
+
+    \note Use isle.drivers.hmc.newRun() or isle.drivers.hmc.continueRun()
+          factory functions to construct this driver and set up / load files.
     """
 
     def __init__(self, lattice, params, rng, action, outfname, startIdx,
                  definitions={}, propManager=None):
+        """!
+        Construct with given parameters.
+        """
+
         self.lattice = lattice
         self.params = params
         self.rng = rng
@@ -29,10 +39,22 @@ class HMC:
         self._propManager = propManager if propManager \
             else ProposerManager(outfname, definitions=definitions)
 
-    def __call__(self, phi, proposer, ntr,  saveFreq, checkpointFreq):
+    def __call__(self, phi, proposer, ntr, saveFreq, checkpointFreq):
+        r"""!
+        Evolve configuration using %HMC.
+
+        \param phi Start configuration to evolve.
+        \param proposer Used to propose new configurations for Metropolis accept/reject.
+        \param ntr Number of trajectories to generate.
+        \param saveFreq Save configurations every `saveFreq` trajectories.
+        \param checkpointFreq Write a checkpoint every `checkpointFreq` trajectories.
+                              Must be a multiple of `saveFreq`.
+        """
+
         if checkpointFreq != 0 and checkpointFreq % saveFreq != 0:
-            raise ValueError("checkpointFreq must be a multiple of saveFreq."
-                             f" Got {checkpointFreq} and {saveFreq}, resp.")
+            getLogger(__name__).error("checkpointFreq must be a multiple of saveFreq."
+                                      " Got %d and %d, resp.", checkpointFreq, saveFreq)
+            raise ValueError("checkpointFreq must be a multiple of saveFreq.")
 
         trajPoint = 1  # point of last trajectory that was selected
         actVal = self.action.eval(phi)  # running action (without pi)
@@ -71,44 +93,58 @@ class HMC:
         return phi
 
     def saveFieldAndCheckpoint(self, phi, actVal, trajPoint, proposer):
-        "!Write a trajectory (endpoint) and checkpoint to file and advance internal counter."
+        """!
+        Write a trajectory (endpoint) and checkpoint to file.
+        """
         with h5.File(self.outfname, "a") as outf:
             cfgGrp = self._writeTrajectory(outf, phi, actVal, trajPoint)
             self._writeCheckpoint(outf, cfgGrp, proposer)
 
     def save(self, phi, actVal, trajPoint):
-        "!Write a trajectory (endpoint) to file and advance internal counter."
+        """!
+        Write a trajectory (endpoint) to file.
+        """
         with h5.File(self.outfname, "a") as outf:
             self._writeTrajectory(outf, phi, actVal, trajPoint)
 
     def advance(self, amount=1):
-        "!Advance the internal trajectory counter by amount without saving."
+        """!
+        Advance the internal trajectory counter by amount without saving.
+        """
         self._trajIdx += amount
 
     def resetIndex(self, idx=1):
-        "!Reset the internal trajectory index to idx."
+        """!
+        Reset the internal trajectory index to idx.
+        """
         self._trajIdx = idx
 
     def _writeTrajectory(self, h5file, phi, actVal, trajPoint):
-        "!Write a trajectory (endpoint) to a HDF5 group."
+        """!
+        Write a trajectory (endpoint) to a HDF5 group.
+        """
         try:
             return fileio.h5.writeTrajectory(h5file["configuration"], self._trajIdx,
                                              phi, actVal, trajPoint)
         except (ValueError, RuntimeError) as err:
             if "name already exists" in err.args[0]:
-                raise RuntimeError(f"Cannot write trajectory {self._trajIdx} to file '{self.outfname}'."
-                                   " A dataset with the same name already exists.") from None
+                getLogger(__name__).error("Cannot write trajectory %d to file %s."
+                                          " A dataset with the same name already exists.",
+                                          self._trajIdx, self.outfname)
             raise
 
     def _writeCheckpoint(self, h5file, trajGrp, proposer):
-        "!Write a checkpoint to a HDF5 group."
+        """!
+        Write a checkpoint to a HDF5 group.
+        """
         try:
             return fileio.h5.writeCheckpoint(h5file["checkpoint"], self._trajIdx,
                                              self.rng, trajGrp.name, proposer, self._propManager)
         except (ValueError, RuntimeError) as err:
             if "name already exists" in err.args[0]:
-                raise RuntimeError(f"Cannot write checkpoint for trajectory {self._trajIdx} to file '{self.outfname}'."
-                                   " A dataset with the same name already exists.") from None
+                getLogger(__name__).error("Cannot write checkpoint for trajectory %d to file %s."
+                                          " A dataset with the same name already exists.",
+                                          self._trajIdx, self.outfname)
             raise
 
 
@@ -207,18 +243,29 @@ def continueRun(infile, outfile, startIdx, overwrite, definitions={}):
             _stride(checkpoints))
 
 def _stride(values):
+    """!
+    Calculate difference in values in an array.
+    """
     try:
         return values[-1] - values[-2]
     except IndexError:
         return None  # cannot get stride with less than two elements
 
 def _loadIndices(fname):
+    """!
+    Load all configuration anc checkpoint indices from a file.
+    """
     with h5.File(str(fname), "r") as h5f:
         configurations = sorted(map(int, h5f["configuration"].keys()))
         checkpoints = sorted(map(int, h5f["checkpoint"].keys()))
     return configurations, checkpoints
 
 def _ensureNoNewerConfigs(fname, checkpointIdx, checkpoints, configurations, overwrite):
+    """!
+    Check if there are configurations or checkpoints with indices greater than checkpointIdx.
+    If so and `overwrite==True`, erase them.
+    """
+
     latestCheckpoint = checkpoints[-1]
     if latestCheckpoint > checkpointIdx:
         message = f"Output file {fname} contains checkpoints with greater index than HMC starting point.\n" \
@@ -242,6 +289,9 @@ def _ensureNoNewerConfigs(fname, checkpointIdx, checkpoints, configurations, ove
             _removeGreaterThan(fname, "configuration", checkpointIdx)
 
 def _removeGreaterThan(fname, groupPath, maxIdx):
+    """!
+    Remove all elements under groupPath in file that are greater then maxidx.
+    """
     with h5.File(str(fname), "a") as h5f:
         grp = h5f[groupPath]
         for idx in grp.keys():
@@ -250,6 +300,10 @@ def _removeGreaterThan(fname, groupPath, maxIdx):
 
 
 def _loadCheckpoint(fname, startIdx, checkpoints, propManager, action, lattice):
+    """!
+    Load a checkpoint from file allowing for negative indices.
+    """
+
     if startIdx < 0:
         startIdx = checkpoints[-1] + (startIdx+1) # +1 so that startIdx=-1 gives last point
 
