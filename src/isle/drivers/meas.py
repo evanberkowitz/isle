@@ -77,8 +77,7 @@ def init(infile, outfile, overwrite):
     verifyVersionsByException(versions, outfile)
     _ensureIsValidOutfile(outfile, overwrite, lattice, params)
 
-    if not outfile[0].exists():
-        fileio.h5.initializeFile(outfile[0], lattice, params, makeActionSrc)
+    fileio.h5.initializeNewFile(outfile[0], overwrite, lattice, params, makeActionSrc)
 
     return Measure(lattice, params,
                    callFunctionFromSource(makeActionSrc, lattice, params),

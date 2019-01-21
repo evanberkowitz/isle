@@ -84,8 +84,8 @@ def main():
 
     # Set up a fresh HMC driver.
     # It handles all HMC evolution as well as I/O.
-    hmcState = isle.drivers.hmc.init(lat, PARAMS, rng, makeAction, args.outfile,
-                                     args.overwrite, startIdx=0)
+    hmcState = isle.drivers.hmc.newRun(lat, PARAMS, rng, makeAction,
+                                       args.outfile[0], args.overwrite)
 
     # Generate a random initial condition.
     # Note that configurations must be vectors of complex numbers.

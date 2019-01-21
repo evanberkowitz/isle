@@ -1,3 +1,7 @@
+"""!\file
+
+"""
+
 from logging import getLogger
 
 import numpy as np
@@ -5,12 +9,16 @@ import h5py as h5
 
 from .. import Vector, fileio, cli
 from ..meta import sourceOfFunction, callFunctionFromSource
-from ..util import verifyMetadataByException
+from ..util import verifyVersionsByException
 from ..proposers import ProposerManager
 
-
 class HMC:
-    def __init__(self, lattice, params, rng, action, outfname, startIdx, definitions={}):
+    r"""!
+    Do not construct yourself! Use factory functions.
+    """
+
+    def __init__(self, lattice, params, rng, action, outfname, startIdx,
+                 definitions={}, propManager=None):
         self.lattice = lattice
         self.params = params
         self.rng = rng
@@ -18,7 +26,8 @@ class HMC:
         self.outfname = str(outfname)
 
         self._trajIdx = startIdx
-        self._propManager = ProposerManager(outfname, definitions=definitions)
+        self._propManager = propManager if propManager \
+            else ProposerManager(outfname, definitions=definitions)
 
     def __call__(self, phi, proposer, ntr,  saveFreq, checkpointFreq):
         if checkpointFreq != 0 and checkpointFreq % saveFreq != 0:
@@ -57,8 +66,7 @@ class HMC:
                     self.saveFieldAndCheckpoint(phi, actVal, trajPoint, proposer)
                 else:
                     self.save(phi, actVal, trajPoint)
-            else:
-                self.advance()
+            self.advance()
 
         return phi
 
@@ -67,19 +75,17 @@ class HMC:
         with h5.File(self.outfname, "a") as outf:
             cfgGrp = self._writeTrajectory(outf, phi, actVal, trajPoint)
             self._writeCheckpoint(outf, cfgGrp, proposer)
-        self._trajIdx += 1
 
     def save(self, phi, actVal, trajPoint):
         "!Write a trajectory (endpoint) to file and advance internal counter."
         with h5.File(self.outfname, "a") as outf:
             self._writeTrajectory(outf, phi, actVal, trajPoint)
-        self._trajIdx += 1
 
     def advance(self, amount=1):
         "!Advance the internal trajectory counter by amount without saving."
         self._trajIdx += amount
 
-    def resetIndex(self, idx=0):
+    def resetIndex(self, idx=1):
         "!Reset the internal trajectory index to idx."
         self._trajIdx = idx
 
@@ -106,66 +112,158 @@ class HMC:
             raise
 
 
-def init(lattice, params, rng, makeAction, outfile, overwrite, startIdx=0):
-    if outfile is None:
-        getLogger(__name__).error("No output file given for HMC driver.")
-        raise ValueError("No output file")
-
-    # convert to (name, type) tuple if necessary
-    if not isinstance(outfile, (tuple, list)):
-        outfile = fileio.pathAndType(outfile)
-    _ensureIsValidOutfile(outfile, overwrite, startIdx, lattice, params)
-
-    makeActionSrc = sourceOfFunction(makeAction)
-    if not outfile[0].exists():
-        fileio.h5.initializeFile(outfile[0], lattice, params, makeActionSrc,
-                                 ["/configuration", "/checkpoint"])
-
-    return HMC(lattice, params, rng, callFunctionFromSource(makeActionSrc, lattice, params),
-               outfile[0], startIdx)
-
-
-def _latestConfig(fname):
-    "!Get greatest index of stored configs."
-    with h5.File(str(fname), "r") as h5f:
-        return max(map(int, h5f["configuration"].keys()), default=0)
-
-def _verifyConfigsByException(outfname, startIdx):
-    # TODO what about checkpoints?
-
-    # TODO if there are no configs -> ok but warn
-
-    lastStored = _latestConfig(outfname)
-    if lastStored > startIdx:
-        getLogger(__name__).error(
-            "Error: Output file '%s' exists and has entries with higher index than HMC start index.\n"
-            "Greatest index in file: %d, user set start index: %d",
-            outfname, lastStored, startIdx)
-        raise RuntimeError("Cannot write into output file, contains newer data")
-
-def _ensureIsValidOutfile(outfile, overwrite, startIdx, lattice, params):
+def newRun(lattice, params, rng, makeAction, outfile, overwrite, definitions={}):
     r"""!
-    Check if the output file is a valid parameter and if it is possible to write to it.
-    Deletes the file if `overwrite == True`.
+    Start a fresh %HMC run.
 
-    Writing is not possible if the file exists and `overwrite == False` and
-    it contains configurations with an index greater than `startIdx`.
+    Constructs a %HMC driver from given parameters and initializes the output file.
+    Most parameters are stored in the HMC object under the same name.
 
-    \throws ValueError if output file type is not supported.
-    \throws RuntimeError if the file is not valid.
+    \param lattice Lattice to run simulation on, passed to `makeAction`.
+    \param params Parameters passed to `makeAction`.
+    \param rng Random number generator used for all random numbers needed during %HMC evolution.
+    \param makeAction Function to construct an action. Must be self-contained!
+    \param outfile Name (Path) of the output file. Must not exist unless `overwrite==True`.
+    \param overwrite If `False`, nothing in the output file will be erased/overwritten.
+                     If `True`, the file is removed and re-initialized, whereby all content is lost.
+    \param definitions Dictionary of mapping names to custom types. Used to control how proposers
+                       are stored for checkpoints. See proposers.saveProposerType().
+
+    \returns A new HMC instance to control evolution initialized with given parameters.
     """
 
-    if outfile[1] != fileio.FileType.HDF5:
-        getLogger(__name__).error("Output file type not supported by HMC driver: %s", outfile[1])
-        raise ValueError(f"Output file type no supported by HMC driver. Output file is '{outfile[0]}'")
+    if outfile is None:
+        getLogger(__name__).error("No output file given for HMC driver")
+        raise ValueError("No output file")
 
-    outfname = outfile[0]
-    if outfname.exists():
-        if overwrite:
-            getLogger(__name__).info("Output file '%s' exists -- overwriting", outfname)
-            outfname.unlink()
+    makeActionSrc = sourceOfFunction(makeAction)
+    fileio.h5.initializeNewFile(outfile, overwrite, lattice, params, makeActionSrc,
+                                ["/configuration", "/checkpoint"])
 
+    return HMC(lattice, params, rng, callFunctionFromSource(makeActionSrc, lattice, params),
+               outfile, 1, definitions)
+
+
+def continueRun(infile, outfile, startIdx, overwrite, definitions={}):
+    r"""!
+    Continue a previous %HMC run.
+
+    Loads metadata and a given checkpoint from the input file, constructs a new HMC driver
+    object from them, and initializes the output file.
+
+    \param infile Name of the input file. Must contain at least one checkpoint to continue from.
+    \param outfile Name of the output file. Can be `None`, which means equal to the input file.
+    \param startIdx Index of the checkpoint to start from. See parameter `overwrite`.
+                    Can be negative in which case it is counted from the end (-1 is last checkpoint).
+                    The number the checkpoint is saved as, not 'the nth checkpoint in the file'.
+    \param overwrite If `False`, nothing in the output file will be erased/overwritten.
+                     If `True`,
+                        - (`infile==outfile`): all configurations and checkpoints newer than `startIdx`
+                          are removed and have to be re-computed.
+                        - (`infile!=outfile`): outfile is removed and re-initialized,
+                          whereby all content is lost.
+    \param definitions Dictionary of mapping names to custom types. Used to control how proposers
+                       are stored for checkpoints. See proposers.saveProposerType().
+
+    \returns In order:
+        - Instance of HMC constructed from parameters found in `infile`.
+        - Configuration loaded from checkpoint.
+        - Proposer loaded from checkpoint.
+        - Save frequency computed on last two configurations.
+          `None` if there is only one configuration.
+        - Checkpoint frequency computed on last two checkpoints.
+          `None` if there is only one checkpoint.
+    """
+
+    if infile is None:
+        getLogger(__name__).error("No input file given for HMC driver in continuation run")
+        raise ValueError("No input file")
+    if outfile is None:
+        getLogger(__name__).info("No output file given for HMC driver")
+        outfile = infile
+
+    lattice, params, makeActionSrc, versions = fileio.h5.readMetadata(infile)
+    verifyVersionsByException(versions, infile)
+    action = callFunctionFromSource(makeActionSrc, lattice, params)
+    if outfile != infile:
+        fileio.h5.initializeNewFile(outfile, overwrite, lattice, params, makeActionSrc,
+                                    ["/configuration", "/checkpoint"])
+
+    configurations, checkpoints = _loadIndices(infile)
+    propManager = ProposerManager(infile, definitions=definitions)
+    checkpointIdx, (rng, phi, proposer) = _loadCheckpoint(infile, startIdx, checkpoints,
+                                                          propManager, action, lattice)
+
+    if outfile == infile:
+        _ensureNoNewerConfigs(infile, checkpointIdx, checkpoints, configurations, overwrite)
+
+    return (HMC(lattice, params, rng, action, outfile,
+                checkpointIdx+1,  # +1 because we start with the traj one after the checkpoint
+                definitions,
+                propManager if infile == outfile else None),  # need to re-init manager for new outfile
+            phi,
+            proposer,
+            _stride(configurations),
+            _stride(checkpoints))
+
+def _stride(values):
+    try:
+        return values[-1] - values[-2]
+    except IndexError:
+        return None  # cannot get stride with less than two elements
+
+def _loadIndices(fname):
+    with h5.File(str(fname), "r") as h5f:
+        configurations = sorted(map(int, h5f["configuration"].keys()))
+        checkpoints = sorted(map(int, h5f["checkpoint"].keys()))
+    return configurations, checkpoints
+
+def _ensureNoNewerConfigs(fname, checkpointIdx, checkpoints, configurations, overwrite):
+    latestCheckpoint = checkpoints[-1]
+    if latestCheckpoint > checkpointIdx:
+        message = f"Output file {fname} contains checkpoints with greater index than HMC starting point.\n" \
+            f"    Greatest index is {latestCheckpoint}, start index is {checkpointIdx}."
+        if not overwrite:
+            getLogger(__name__).error(message)
+            raise RuntimeError("HMC start index is not latest")
         else:
-            verifyMetadataByException(outfname, lattice, params)
-            _verifyConfigsByException(outfname, startIdx)
-            getLogger(__name__).info("Output file '%s' exists -- appending", outfname)
+            getLogger(__name__).warning(message+"\n    Overwriting")
+            _removeGreaterThan(fname, "checkpoints", checkpointIdx)
+
+    latestConfig = configurations[-1]
+    if latestConfig > checkpointIdx:
+        message = f"Output file {fname} contains configurations with greater index than HMC starting point.\n" \
+            f"    Greatest index is {latestConfig}, start index is {checkpointIdx}."
+        if not overwrite:
+            getLogger(__name__).error(message)
+            raise RuntimeError("HMC start index is not latest")
+        else:
+            getLogger(__name__).warning(message+"\n    Overwriting")
+            _removeGreaterThan(fname, "configuration", checkpointIdx)
+
+def _removeGreaterThan(fname, groupPath, maxIdx):
+    with h5.File(str(fname), "a") as h5f:
+        grp = h5f[groupPath]
+        for idx in grp.keys():
+            if int(idx) > maxIdx:
+                del grp[idx]
+
+
+def _loadCheckpoint(fname, startIdx, checkpoints, propManager, action, lattice):
+    if startIdx < 0:
+        startIdx = checkpoints[-1] + (startIdx+1) # +1 so that startIdx=-1 gives last point
+
+    if startIdx < 0 or startIdx > checkpoints[-1]:
+        getLogger(__name__).error("Start index for HMC continuation is out of range: %d",
+                                  startIdx)
+        raise ValueError("Start index out of range")
+
+    if startIdx not in checkpoints:
+        getLogger(__name__).error("There is no checkpoint matching the given start index: %d",
+                                  startIdx)
+        raise ValueError("No checkpoint matching start index")
+
+    # TODO load actVal and pass to HMC driver to avoid initial evaluation
+    with h5.File(str(fname), "r") as h5f:
+        return startIdx, fileio.h5.loadCheckpoint(h5f["checkpoint"], startIdx,
+                                                  propManager, action, lattice)
