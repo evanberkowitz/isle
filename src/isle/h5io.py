@@ -2,12 +2,14 @@
 Routines for working with HDF5.
 """
 
-import logging
+from logging import getLogger
+from pathlib import Path
 
 import yaml
 import h5py as h5
 
-from .cpp_wrappers import isleVersion, pythonVersion, blazeVersion, pybind11Version
+from . import Vector, isleVersion, pythonVersion, blazeVersion, pybind11Version
+from .random import readStateH5
 
 def createH5Group(base, name):
     r"""!
@@ -60,16 +62,25 @@ def readMetadata(fname):
             makeActionSrc = metaGrp["action"][()]
             versions = {name: val[()] for name, val in metaGrp["version"].items()}
         except KeyError as exc:
-            logging.getLogger(__name__).error("Cannot read metadata from file %s: %s",
+            getLogger(__name__).error("Cannot read metadata from file %s: %s",
                                               str(fname), str(exc))
             raise
     return lattice, params, makeActionSrc, versions
 
-def initializeFile(fname, lattice, params, makeActionSrc, extraGroups=[]):
+def initializeNewFile(fname, overwrite, lattice, params, makeActionSrc, extraGroups=[]):
     """!
     Prepare the output file by storing program versions, metadata, and creating groups.
-    The file is not allowed to exist yet.
+    If `overwrite==False` the file must not exist. If it is True, the file is removed if it exists.
     """
+
+    fname = Path(fname)
+    if fname.exists():
+        if overwrite:
+            fname.unlink()
+            getLogger(__name__).info("Output file %s exists -- overwriting", fname)
+        else:
+            getLogger(__name__).error("Output file %s exists and not allowed to overwrite", fname)
+            raise RuntimeError("Ouput file exists")
 
     with h5.File(str(fname), "w-") as h5f:
         for group in extraGroups:
@@ -84,7 +95,7 @@ def writeTrajectory(h5group, label, phi, actVal, trajPoint):
     Configuration, action, and whenther the trajectory was accepted.
 
     \param h5group Base HDF5 group to store trajectory in.
-    \param label Name of the subgroup of `group` to write to.
+    \param label Name of the subgroup of `h5group` to write to.
                  The subgroup must not already exist.
     \param phi Configuration to save.
     \param actVal Value of the action at configuration `phi`.
@@ -108,7 +119,7 @@ def writeCheckpoint(h5group, label, rng, trajGrpName, proposer, proposerManager)
     and a soft link to the trajectory for this checkpoint.
 
     \param h5group Base HDF5 group to store trajectory in.
-    \param label Name of the subgroup of `group` to write to.
+    \param label Name of the subgroup of `h5group` to write to.
                  The subgroup must not already exist.
     \param rng Random number generator whose state to save in the checkpoint.
     \param trajGrpName Name of the HDF5 group containing the trajectory this
@@ -124,3 +135,22 @@ def writeCheckpoint(h5group, label, rng, trajGrpName, proposer, proposerManager)
     grp["cfg"] = h5.SoftLink(trajGrpName)
     proposerManager.save(proposer, grp.create_group("proposer"))
     return grp
+
+def loadCheckpoint(h5group, label, proposerManager, action, lattice):
+    r"""!
+    Load a checkpoint from a HDF5 group.
+
+    \param h5group Base HDF5 group containing checkpoints.
+    \param label Name of the subgroup of `h5group` to read from.
+    \param proposerManager A ProposerManager to load the proposer
+                           including its type.
+    \param action Action to construct the proposer with.
+    \param lattice Lattice to construct the proposer with.
+    \returns (RNG, configuration, proposer)
+    """
+
+    grp = h5group[str(label)]
+    rng = readStateH5(grp["rngState"])
+    phi = Vector(grp["cfg/phi"][()])
+    proposer = proposerManager.load(grp["proposer"], action, lattice)
+    return rng, phi, proposer
