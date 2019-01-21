@@ -9,6 +9,5 @@ set(SOURCE
   bind/lattice.cpp
   bind/hubbardFermiMatrix.cpp
   bind/action.cpp
-  bind/hamiltonian.cpp
   bind/integrator.cpp
   PARENT_SCOPE)
