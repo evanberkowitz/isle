@@ -77,17 +77,17 @@ def initializeFile(fname, lattice, params, makeActionSrc, extraGroups=[]):
 
     writeMetadata(fname, lattice, params, makeActionSrc)
 
-def writeTrajectory(group, label, phi, act, trajPoint):
+def writeTrajectory(h5group, label, phi, actVal, trajPoint):
     r"""!
     Write a trajectory (endpoint) to a HDF5 group.
     Creates a new group with name 'label' and stores
     Configuration, action, and whenther the trajectory was accepted.
 
-    \param group Base HDF5 group to store trajectory in.
+    \param h5group Base HDF5 group to store trajectory in.
     \param label Name of the subgroup of `group` to write to.
                  The subgroup must not already exist.
     \param phi Configuration to save.
-    \param act Value of the action at configuration `phi`.
+    \param actVal Value of the action at configuration `phi`.
     \param trajPoint Point on the trajectory that was accepted.
                      `trajPoint==0` is the start point and values `>0` or `<0` are
                      `trajPoint` MD steps after or before the start point.
@@ -95,19 +95,19 @@ def writeTrajectory(group, label, phi, act, trajPoint):
     \returns The newly created HDF5 group containing the trajectory.
     """
 
-    grp = group.create_group(str(label))
+    grp = h5group.create_group(str(label))
     grp["phi"] = phi
-    grp["action"] = act
+    grp["action"] = actVal
     grp["trajPoint"] = trajPoint
     return grp
 
-def writeCheckpoint(group, label, rng, trajGrpName):
+def writeCheckpoint(h5group, label, rng, trajGrpName):
     r"""!
     Write a checkpoint to a HDF5 group.
     Creates a new group with name 'label' and stores RNG state
     and a soft link to the trajectory for this checkpoint.
 
-    \param group Base HDF5 group to store trajectory in.
+    \param h5group Base HDF5 group to store trajectory in.
     \param label Name of the subgroup of `group` to write to.
                  The subgroup must not already exist.
     \param rng Random number generator whose state to save in the checkpoint.
@@ -117,7 +117,7 @@ def writeCheckpoint(group, label, rng, trajGrpName):
     \returns The newly created HDF5 group containing the checkpoint.
     """
 
-    grp = group.create_group(str(label))
+    grp = h5group.create_group(str(label))
     rng.writeH5(grp.create_group("rngState"))
     grp["cfg"] = h5.SoftLink(trajGrpName)
     return grp

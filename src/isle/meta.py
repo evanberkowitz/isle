@@ -61,8 +61,8 @@ def defineFromSource(src, definitions={}):
                        objects that can be referenced by the source code.
     """
 
-    # an empty local scope to store new class definition
-    scope = dict()
+    # an empty local scope to store the new definition
+    scope = {}
     exec(src, definitions, scope)
 
     if not scope:
