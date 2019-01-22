@@ -1,5 +1,7 @@
 """!
-Example script to perform measurements on configurations generated with basic-hmc.py.
+Example script to perform measurements on configurations.
+
+See doc/examples/hmc-evolution.py for an example how to generate configurations.
 """
 
 
@@ -15,7 +17,7 @@ def main():
     # Initialize Isle.
     # This sets up the command line interface, defines an argument parser for a measurement
     # command, and parses and returns arguments.
-    args = isle.initialize("hmc", name="basic-hmc")
+    args = isle.initialize("meas", prog="measure")
 
     # Set up a measurement driver to run the measurements.
     measState = isle.drivers.meas.init(args.infile, args.outfile, args.overwrite)
