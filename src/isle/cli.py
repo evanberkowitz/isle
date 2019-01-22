@@ -676,13 +676,22 @@ def _sliceArgType(arg):
     """!Parse an argument in slice notation"""
     return slice(*map(lambda x: int(x) if x else None, arg.split(":")))
 
-def addDefaultArgs(parser, log="none"):
+def makeDefaultParser(defaultLog="none", **kwargs):
+    r"""!
+    Construct and return a new argument parser with the default arguments.
+    See isle.cli.addDefaultArgs().
+    \param defaultLog Default log file in case user does not supply --log argument.
+    \param **kwargs Passed to constructor of ArgumentParser.
+    """
+    return addDefaultArgs(argparse.ArgumentParser(**kwargs), defaultLog)
+
+def addDefaultArgs(parser, defaultLog="none"):
     """!Add default arguments common to all commands."""
     parser.add_argument("--version", action="version",
                         version=f"Isle {isle.__version__}")
     parser.add_argument("-v", "--verbose", action="count", default=0,
                         help="Make output more verbose, stacks.")
-    parser.add_argument("--log", default=log,
+    parser.add_argument("--log", default=defaultLog,
                         help="Specify log file name. Set to none to not write log file.")
     return parser
 
@@ -744,78 +753,63 @@ def addShowArgs(parser):
                         +",".join(reporters)+",all] Defaults to overview.")
     return parser
 
-def parseArguments(cmd, name, description, epilog, subdescriptions):
-    r"""!
-    Parse command line arguments.
-
-    \param cmd Command(s) to parse arguments for.
-               Supported commands are `'hmc', 'meas'`.
-               Can be a string or a list of strings.
-               In case of a string, the arguments for that command are registered
-               for the base program.
-               In case of a list, a subcommand is added for each element of the list.
-    \param name Name of the program for the help message.
-    \param description Short description of the program for the help message.
-    \param epilog Argparse epilog message to show below other help messages.
-    \param subdescriptions List of descriptions for subparsers in case cmd contains
-                           more than one command.
-    """
+def _makeParser(argParser, **kwargs):
+    """!Make an argument parser from given command name and keyword arguments."""
 
     cmdArgMap = {"continue": addContinueArgs,
                  "meas": addMeasArgs,
                  "show": addShowArgs,
-                 "hmc": addHMCArgs}
+                 "default": lambda parser: parser}
     defaultLog = {"continue": "isle.hmc.log",
-                  "hmc": "isle.hmc.log",
                   "meas": "isle.meas.log",
-                  "show": "none"}
+                  "show": "none",
+                  "default": "isle.log"}
 
-    if cmd is not None:
-        if isinstance(cmd, str):
-            # just one command
-            parser = argparse.ArgumentParser(prog=cmd if name is None else name,
-                                             description=description,
-                                             epilog=epilog)
-            cmdArgMap[cmd](addDefaultArgs(parser, log=defaultLog[cmd]))
+    if not argParser in cmdArgMap:
+        # this is pre logging setup => do it the ugly way
+        print(f"Error: requested argParser name not supported: {argParser}")
+        raise ValueError("Error: requested argParser name not supported")
 
-        else:
-            # multiple commands
-            parser = argparse.ArgumentParser(prog=name,
-                                             description=description,
-                                             epilog=epilog)
-            addDefaultArgs(parser)
-            subp = parser.add_subparsers(title="Commands", dest="cmd", required=True)
-            for i, subcmd in enumerate(cmd):
-                subParser = subp.add_parser(subcmd, epilog=epilog,
-                                            description=subdescriptions[i]
-                                            if subdescriptions else None)
-                cmdArgMap[subcmd](addDefaultArgs(subParser, log=defaultLog[subcmd]))
-        args = parser.parse_args()
-
-    else:
-        args = None
-
-    return args
-
+    return cmdArgMap[argParser](makeDefaultParser(defaultLog=defaultLog[argParser], **kwargs))
 
 
 ########################################################################
 # The one function to control all the rest.
 #
 
-def init(cmd=None, name=None, description=None, epilog=None, subdescriptions=None):
+def init(argParser="default", defaultLog=None, verbosity=0, **kwargs):
     r"""!
     Initialize command line interface.
+    This function must be called before any I/O as it sets up the logging framework.
 
-    \param cmd See isle.cli.parseArguments().
-    \param name See isle.cli.parseArguments().
-    \param description See isle.cli.parseArguments().
-    \param epilog See isle.cli.parseArguments().
-    \param subdescriptions See isle.cli.parseArguments().
+    \param argParser Command line argument parser. Can be
+                     - `argparse.ArgumentParser`: Use this parser as is.
+                     - `str`: Construct a parser based on this command name.
+                       See `add*Args` functions.
+                     - `None`: Don't parse any command line arguments.
+                       Log file and verbosity are set to the values provided in
+                       corresponding function parameters.
+    \param defaultLog Log file to use if `argParser is None`.
+    \param verbosity Output verbisity level to use if `argParser is None`.
+    \param **kwargs Passed to isle.cli.makeDefaultParser() if `argParser` is a string.
+    \returns Parsed arguments.
     """
 
-    args = parseArguments(cmd, name, description, epilog, subdescriptions)
-    setupLogging(None if args.log.lower() == "none" else args.log,
-                 verbosity=args.verbose)
+    if argParser is not None:
+        if isinstance(argParser, str):
+            # construct new parser based on command name
+            args = _makeParser(argParser, **kwargs).parse_args()
+        else:
+            # use provided parser
+            args = argParser.parse_args()
+
+        defaultLog = None if not hasattr(args, "log") or args.log.lower() == "none" else args.log
+        verbosity = args.verbose if hasattr(args, "verbose") else 0
+
+    else:
+        # don't parse anything, use default values
+        args = None
+
+    setupLogging(defaultLog, verbosity=verbosity)
 
     return args
