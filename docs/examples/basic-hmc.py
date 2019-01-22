@@ -4,12 +4,19 @@ Example script to show how to set up the HMC driver for basic production.
 
 # All output should go through a logger for better control and consistency.
 from logging import getLogger
+from pathlib import Path
 
 # Import base functionality of Isle.
 import isle
 # Import drivers (not included in above).
 import isle.drivers
 
+
+### Specify input / output files
+# Write all data to this file.
+OUTFILE = "full-hmc-example.out.h5"
+# Load lattice from this file.
+LATTICE = Path(__file__).resolve().parent/"../../resources/lattices/four_sites.yml"
 
 ### Specify parameters.
 # isle.util.parameters takes arbitrary keyword arguments, constructs a new dataclass,
@@ -66,15 +73,16 @@ def makeAction(lat, params):
 
 def main():
     # Initialize Isle.
-    # This sets up the command line interface, defines an argument parser for an HMC
-    # command, and parses and returns arguments.
-    args = isle.initialize("hmc", name="basic-hmc")
+    # This sets up the command line interface, defines a barebones argument parser,
+    # and parses and returns parsed arguments.
+    # More complex parsers can be automatically defined or passed in manually.
+    isle.initialize("default")
 
     # Get a logger. Use this instead of print() to output any and all information.
     log = getLogger("HMC")
 
     # Load the spatial lattice.
-    lat = isle.fileio.yaml.loadLattice("resources/lattices/four_sites.yml")
+    lat = isle.fileio.yaml.loadLattice(LATTICE)
     # Lattice files usually only contain information on the spatial lattice
     # to be more flexible. Set the number of time slices here.
     lat.nt(NT)
@@ -84,8 +92,9 @@ def main():
 
     # Set up a fresh HMC driver.
     # It handles all HMC evolution as well as I/O.
+    # Last argument forbids the driver to overwrite any existing data.
     hmcState = isle.drivers.hmc.newRun(lat, PARAMS, rng, makeAction,
-                                       args.outfile[0], args.overwrite)
+                                       OUTFILE, False)
 
     # Generate a random initial condition.
     # Note that configurations must be vectors of complex numbers.
