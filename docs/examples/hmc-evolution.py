@@ -1,5 +1,5 @@
-"""!
-Example script to show how to set up the HMC driver for basic production.
+r"""!\file
+Example script to show how to set up the HMC driver for production.
 """
 
 # All output should go through a logger for better control and consistency.
@@ -76,6 +76,7 @@ def main():
     # This sets up the command line interface, defines a barebones argument parser,
     # and parses and returns parsed arguments.
     # More complex parsers can be automatically defined or passed in manually.
+    # See, e.g., `change-proposer.py` or `measure.py` examples.
     isle.initialize("default")
 
     # Get a logger. Use this instead of print() to output any and all information.
