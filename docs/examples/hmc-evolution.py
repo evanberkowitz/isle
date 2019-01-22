@@ -14,7 +14,7 @@ import isle.drivers
 
 ### Specify input / output files
 # Write all data to this file.
-OUTFILE = "full-hmc-example.out.h5"
+OUTFILE = "hmc-example.out.h5"
 # Load lattice from this file.
 LATTICE = Path(__file__).resolve().parent/"../../resources/lattices/four_sites.yml"
 
