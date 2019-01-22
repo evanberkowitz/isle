@@ -717,8 +717,8 @@ def addContinueArgs(parser):
 
 def addMeasArgs(parser):
     """!Add arguments for measurements to parser."""
-    parser.add_argument("-i", "--input", help="Input file",
-                        type=fileio.pathAndType, dest="infile")
+    parser.add_argument("infile", help="Input file",
+                        type=fileio.pathAndType)
     parser.add_argument("-o", "--output", help="Output file",
                         type=fileio.pathAndType, dest="outfile")
     parser.add_argument("--overwrite", action="store_true",
