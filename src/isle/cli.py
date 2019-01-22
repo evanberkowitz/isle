@@ -715,14 +715,6 @@ def addContinueArgs(parser):
                              help="Number of trajectories to produce")
     return parser
 
-def addHMCArgs(parser):
-    """!Add arguments for continuation run to parser."""
-    parser.add_argument("-o", "--output", help="Output file",
-                        type=fileio.pathAndType, dest="outfile")
-    parser.add_argument("--overwrite", action="store_true",
-                        help="Overwrite existing output files")
-    return parser
-
 def addMeasArgs(parser):
     """!Add arguments for measurements to parser."""
     parser.add_argument("-i", "--input", help="Input file",
