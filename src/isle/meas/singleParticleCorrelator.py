@@ -3,6 +3,7 @@ Measurement of single-particle correlator.
 """
 
 import numpy as np
+import scipy.linalg as la   # scipy is needed because np.linalg.eig and np.linalg.eigh do not guarantee an orthonormal eigenbasis.
 
 import isle
 from ..util import spaceToSpacetime, rollTemporally
@@ -17,7 +18,7 @@ class SingleParticleCorrelator:
     def __init__(self, hfm, species, alpha=1):
         self.hfm = hfm
         self.corr = []
-        self.irreps = np.transpose(np.linalg.eig(isle.Matrix(hfm.kappaTilde()))[1])
+        self.irreps = np.transpose(la.orth(isle.Matrix(hfm.kappaTilde())))
         self.species = species
         self._alpha = alpha
 
