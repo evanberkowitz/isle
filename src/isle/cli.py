@@ -699,7 +699,7 @@ def addContinueArgs(parser):
     """!Add arguments for continuation run to parser."""
     parser.add_argument("infile", help="Input file.", type=Path)
     parser.add_argument("-o", "--output", help="Output file",
-                        type=fileio.pathAndType, dest="outfile")
+                        type=Path, dest="outfile")
     parser.add_argument("-i", "--initial", type=int, default=-1,
                         help="Initial checkpoint for HMC")
     parser.add_argument("--overwrite", action="store_true",
@@ -717,10 +717,8 @@ def addContinueArgs(parser):
 
 def addMeasArgs(parser):
     """!Add arguments for measurements to parser."""
-    parser.add_argument("infile", help="Input file",
-                        type=fileio.pathAndType)
-    parser.add_argument("-o", "--output", help="Output file",
-                        type=fileio.pathAndType, dest="outfile")
+    parser.add_argument("infile", help="Input file", type=Path)
+    parser.add_argument("-o", "--output", help="Output file", type=Path, dest="outfile")
     parser.add_argument("--overwrite", action="store_true",
                         help="Overwrite existing output file.")
     return parser
@@ -738,8 +736,7 @@ def addShowArgs(parser):
             else:
                 setattr(namespace, self.dest, values.split(","))
 
-    parser.add_argument("input", help="Input file", nargs="+",
-                        type=fileio.pathAndType)
+    parser.add_argument("input", help="Input file", nargs="+", type=Path)
     parser.add_argument("-r", "--report", action=_ReportAction, metavar="", default=["overview"],
                         help="Comma separated list of reporters to use. Allowed values are ["
                         +",".join(reporters)+",all] Defaults to overview.")

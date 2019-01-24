@@ -228,9 +228,9 @@ def main(args):
     # set up matplotlib once for all reporters
     isle.plotting.setupMPL()
 
-    for fname, ftype in args.input:
+    for fname in args.input:
         try:
-            lattice, params, makeActionSrc = _loadMetadata(fname, ftype)
+            lattice, params, makeActionSrc = _loadMetadata(fname, isle.fileio.fileType(fname))
         except ValueError:
             continue  # skip this file
 

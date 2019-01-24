@@ -58,30 +58,23 @@ class Measure:
 
 def init(infile, outfile, overwrite):
     if infile is None:
-        getLogger(__name__).critical("No input file given to meas driver.")
-        raise ValueError("No output file")
+        getLogger(__name__).error("No input file given to meas driver.")
+        raise ValueError("No intput file")
 
     if outfile is None:
         getLogger(__name__).info("No output file given to meas driver. "
                                  "Writing to input file.")
         outfile = infile
 
-    # convert to (name, type) tuples if necessary
-    if not isinstance(infile, (tuple, list)):
-        infile = fileio.pathAndType(infile)
-    if not isinstance(outfile, (tuple, list)):
-        outfile = fileio.pathAndType(outfile)
-
     lattice, params, makeActionSrc, versions = fileio.h5.readMetadata(infile)
-
     verifyVersionsByException(versions, outfile)
     _ensureIsValidOutfile(outfile, overwrite, lattice, params)
 
-    fileio.h5.initializeNewFile(outfile[0], overwrite, lattice, params, makeActionSrc)
+    fileio.h5.initializeNewFile(outfile, overwrite, lattice, params, makeActionSrc)
 
     return Measure(lattice, params,
                    callFunctionFromSource(makeActionSrc, lattice, params),
-                   infile[0], outfile[0])
+                   infile, outfile)
 
 def _ensureIsValidOutfile(outfile, overwrite, lattice, params):
     r"""!
@@ -95,16 +88,15 @@ def _ensureIsValidOutfile(outfile, overwrite, lattice, params):
     # TODO if outfile exists, check if there is data for all configs and if not,
     #      we can continue (how to check given that every meas has its own format?)
 
-    if outfile[1] != fileio.FileType.HDF5:
-        getLogger(__name__).error("Output file type not supported by Meas driver: %s", outfile[1])
-        raise ValueError(f"Output file type no supported by Meas driver. Output file is '{outfile[0]}'")
+    if fileio.fileType(outfile) != fileio.FileType.HDF5:
+        getLogger(__name__).error("Output file type not supported by Meas driver: %s", outfile)
+        raise ValueError(f"Output file type no supported by Meas driver. Output file is '{outfile}'")
 
-    outfname = outfile[0]
-    if outfname.exists():
+    if outfile.exists():
         if overwrite:
-            getLogger(__name__).info("Output file '%s' exists -- erasing", outfname)
-            outfname.unlink()
+            getLogger(__name__).info("Output file '%s' exists -- erasing", outfile)
+            outfile.unlink()
 
         else:
-            verifyMetadataByException(outfname, lattice, params)
-            getLogger(__name__).info("Output file '%s' exists -- appending", outfname)
+            verifyMetadataByException(outfile, lattice, params)
+            getLogger(__name__).info("Output file '%s' exists -- appending", outfile)
