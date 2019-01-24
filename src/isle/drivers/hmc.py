@@ -24,7 +24,7 @@ class HMC:
     """
 
     def __init__(self, lattice, params, rng, action, outfname, startIdx,
-                 definitions={}, propManager=None):
+                 definitions={}, propManager=None, new=False):
         """!
         Construct with given parameters.
         """
@@ -38,6 +38,7 @@ class HMC:
         self._trajIdx = startIdx
         self._propManager = propManager if propManager \
             else ProposerManager(outfname, definitions=definitions)
+        self._new = new
 
     def __call__(self, phi, proposer, ntr, saveFreq, checkpointFreq):
         r"""!
@@ -58,6 +59,10 @@ class HMC:
 
         trajPoint = 1  # point of last trajectory that was selected
         actVal = self.action.eval(phi)  # running action (without pi)
+
+        if self._new:
+            self._saveConditionally(phi, actVal, trajPoint, proposer, saveFreq, checkpointFreq)
+            self._new = False
 
         for _ in cli.progressRange(ntr, message="HMC evolution",
                                    updateRate=max(ntr//100, 1)):
@@ -83,12 +88,9 @@ class HMC:
 
             # TODO inline meas
 
-            if saveFreq != 0 and self._trajIdx % saveFreq == 0:
-                if checkpointFreq != 0 and self._trajIdx % checkpointFreq == 0:
-                    self.saveFieldAndCheckpoint(phi, actVal, trajPoint, proposer)
-                else:
-                    self.save(phi, actVal, trajPoint)
+            # advance before saving because phi is a new configuration (no 0 is handled above)
             self.advance()
+            self._saveConditionally(phi, actVal, trajPoint, proposer, saveFreq, checkpointFreq)
 
         return phi
 
@@ -113,11 +115,19 @@ class HMC:
         """
         self._trajIdx += amount
 
-    def resetIndex(self, idx=1):
+    def resetIndex(self, idx=0):
         """!
         Reset the internal trajectory index to idx.
         """
         self._trajIdx = idx
+
+    def _saveConditionally(self, phi, actVal, trajPoint, proposer, saveFreq, checkpointFreq):
+        """!Save the trajectory and checkpoint if frequencies permit."""
+        if saveFreq != 0 and self._trajIdx % saveFreq == 0:
+            if checkpointFreq != 0 and self._trajIdx % checkpointFreq == 0:
+                self.saveFieldAndCheckpoint(phi, actVal, trajPoint, proposer)
+            else:
+                self.save(phi, actVal, trajPoint)
 
     def _writeTrajectory(self, h5file, phi, actVal, trajPoint):
         """!
@@ -177,7 +187,7 @@ def newRun(lattice, params, rng, makeAction, outfile, overwrite, definitions={})
                                 ["/configuration", "/checkpoint"])
 
     return HMC(lattice, params, rng, callFunctionFromSource(makeActionSrc, lattice, params),
-               outfile, 1, definitions)
+               outfile, 0, definitions, new=True)
 
 
 def continueRun(infile, outfile, startIdx, overwrite, definitions={}):
