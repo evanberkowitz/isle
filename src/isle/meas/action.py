@@ -34,6 +34,8 @@ class Action:
         Read the action from a file.
         \param group HDF5 group which contains the data of this measurement.
         """
+        # TODO add centralized load function
+
         if "action" in group:
             self.action = group["action"][()]
         elif "configuration" in group:

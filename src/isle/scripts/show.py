@@ -54,9 +54,10 @@ def _nconfig(fname):
 
 def _loadAction(measState):
     """!Load action from previous measurement or compute from configurations."""
-    with h5.File(str(measState.infname), "r") as h5f:
+    # TODO add centralized load function
+    with h5.File(measState.infile, "r") as h5f:
         if "action" in h5f:
-            return h5f["action"][()]
+            return h5f["action/action"][()]
         if "configuration" not in h5f:
             getLogger("isle.show").info("No configurations or action found.")
             return None
@@ -95,7 +96,7 @@ def _overview(infname, lattice, params, makeActionSrc):
     # use this to bundle information and perform simple measurements if needed
     measState = Measure(lattice, params,
                         callFunctionFromSource(makeActionSrc, lattice, params),
-                        infname, None)
+                        infname, None, False)
 
     # set up the figure
     fig, (axTP, axAct, axPhase, axPhase2D, axPhi, axPhiHist, axText) = _overviewFigure()
@@ -169,7 +170,7 @@ def _correlator(infname, lattice, params, makeActionSrc):
     # use this to bundle information and perform simple measurements if needed
     measState = Measure(lattice, params,
                         callFunctionFromSource(makeActionSrc, lattice, params),
-                        infname, None)
+                        infname, None, False)
 
     fig = plt.figure(figsize=(11, 5))
     fig.canvas.set_window_title(f"Isle Correlators - {infname}")

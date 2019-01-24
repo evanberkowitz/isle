@@ -50,17 +50,17 @@ def main():
     #     are to be written to.
     measurements = [
         # log(det(M)) where M is the fermion matrix
-        (1, isle.meas.Logdet(hfm), "/logdet"),
+        (1, isle.meas.Logdet(hfm), "logdet"),
         # \sum_i phi_i
-        (1, isle.meas.TotalPhi(), "/field"),
+        (1, isle.meas.TotalPhi(), "field"),
         # copy the action into the output file
-        (1, isle.meas.Action(), "/"),
+        (1, isle.meas.Action(), "action"),
         # single particle correlator for particles / spin up
         (10, isle.meas.SingleParticleCorrelator(hfm, isle.Species.PARTICLE),
-         "/correlation_functions/single_particle"),
+         "correlation_functions/single_particle"),
         # single particle correlator for holes / spin down
         (10, isle.meas.SingleParticleCorrelator(hfm, isle.Species.HOLE),
-         "/correlation_functions/single_hole"),
+         "correlation_functions/single_hole"),
     ]
 
     # Run the measurements on all configurations in the input file.

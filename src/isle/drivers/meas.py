@@ -12,18 +12,21 @@ from ..util import verifyMetadataByException, verifyVersionsByException
 
 
 class Measure:
-    def __init__(self, lattice, params, action, infname, outfname):
+    def __init__(self, lattice, params, action, infile, outfile, overwrite):
         self.lattice = lattice
         self.params = params
         self.action = action
-        self.infname = str(infname)
-        self.outfname = str(outfname)
+        self.infile = infile
+        self.outfile = outfile
+        self.overwrite = overwrite
 
     def __call__(self, measurements):
+        _ensureCanWriteMeas(self.outfile, [meas[2] for meas in measurements], self.overwrite)
+
         getLogger(__name__).info("Performing measurements")
         self.mapOverConfigs(measurements)
         getLogger(__name__).info("Saving measurements")
-        self.save(measurements)
+        self.save(measurements, checked=True)
 
     def mapOverConfigs(self, measurements):
         """!
@@ -31,10 +34,11 @@ class Measure:
         of this driver.
         """
 
-        with h5.File(self.infname, "r") as cfgf:
+        with h5.File(self.infile, "r") as cfgf:
             # sorted list of configurations
             # each entry is a pair (index: int, config: H5group)
-            configurations = sorted(map(lambda p: (int(p[0]), p[1]), cfgf["/configuration"].items()),
+            configurations = sorted(map(lambda p: (int(p[0]), p[1]),
+                                        cfgf["/configuration"].items()),
                                     key=lambda item: item[0])
 
             # apply measurements to all configs
@@ -50,12 +54,15 @@ class Measure:
 
                     pbar.advance()
 
-    def save(self, measurements):
-        with h5.File(self.outfname, "a") as measFile:
+    def save(self, measurements, checked=False):
+        if not checked:
+            _ensureCanWriteMeas(self.outfile, [meas[2] for meas in measurements], self.overwrite)
+
+        with h5.File(self.outfile, "a") as measFile:
             for _, measurement, path in measurements:
                 measurement.save(measFile, path)
 
-
+# TODO allow to set a base path in file
 def init(infile, outfile, overwrite):
     if infile is None:
         getLogger(__name__).error("No input file given to meas driver.")
@@ -67,36 +74,78 @@ def init(infile, outfile, overwrite):
         outfile = infile
 
     lattice, params, makeActionSrc, versions = fileio.h5.readMetadata(infile)
-    verifyVersionsByException(versions, outfile)
-    _ensureIsValidOutfile(outfile, overwrite, lattice, params)
-
-    fileio.h5.initializeNewFile(outfile, overwrite, lattice, params, makeActionSrc)
+    verifyVersionsByException(versions, infile)
+    _ensureIsValidOutfile(outfile, lattice, params, makeActionSrc)
 
     return Measure(lattice, params,
                    callFunctionFromSource(makeActionSrc, lattice, params),
-                   infile, outfile)
+                   infile, outfile, overwrite)
 
-def _ensureIsValidOutfile(outfile, overwrite, lattice, params):
+def _isValidPath(path):
+    """!Check if parameter is a valid path to a measurement inside an HDF5 file."""
+    components = str(path).split("/")
+    if components[0] == "":
+        getLogger(__name__).warning(
+            "Output path of a measurement is specified as absolute path: %s\n"
+            "    Use relative paths so the base HDF5 group can be adjusted.",
+            path)
+
+    nonempty = [component for component in components if component.strip()]
+    if len(nonempty) == 0:
+        getLogger(__name__).error(
+            "Output path of a measurement is the root HDF5 group. "
+            "All measurements must be stored in a subgroup")
+        return False
+
+    return True
+
+def _ensureCanWriteMeas(outfile, paths, overwrite):
     r"""!
-    Check if the output file is a valid parameter and if it is possible to write to it.
-    Deletes the file if `overwrite == True`.
-
-    \throws ValueError if output file type is not supported.
-    \throws RuntimeError if the file is not valid.
+    Ensure that measurements can be written to the output file.
+    \param outfile The output file, must alreay exist!
+    \param paths Paths inside `outfile` that the measurements want to write to.
+    \param overwrite If `True`, erase all existing HDF5 objects under the given paths.
+                     if `False`, fail if an object exists under any given path.
     """
 
-    # TODO if outfile exists, check if there is data for all configs and if not,
-    #      we can continue (how to check given that every meas has its own format?)
+    # check if all paths are OK
+    for path in paths:
+        if not _isValidPath(path):
+            raise ValueError(f"Invalid output path for measurement: {path}")
+
+    # make sure that no paths point to existing objects in the output file
+    with h5.File(outfile, "a" if overwrite else "r") as h5f:
+        for path in paths:
+            if path in h5f:
+                if overwrite:
+                    # preemptively get rid of that HDF5 object
+                    getLogger(__name__).warning("Removing object from output file: %s",
+                                                path)
+                    del h5f[path]
+                else:
+                    # can't remove old object, needs action from user
+                    getLogger(__name__).error("Object exists in output file: %s\n"
+                                              "    Not allowed to overwrite",
+                                              path)
+                    raise RuntimeError("Object exists in output file")
+
+
+def _ensureIsValidOutfile(outfile, lattice, params, makeActionSrc):
+    r"""!
+    Check if the output file is a valid parameter.
+    If the file does not yet exists, create and initialize it.
+
+    \throws ValueError if output file type is not supported.
+    """
 
     if fileio.fileType(outfile) != fileio.FileType.HDF5:
         getLogger(__name__).error("Output file type not supported by Meas driver: %s", outfile)
-        raise ValueError(f"Output file type no supported by Meas driver. Output file is '{outfile}'")
+        raise ValueError("Output file type no supported by Meas driver. "
+                         f"Output file is '{outfile}'")
 
-    if outfile.exists():
-        if overwrite:
-            getLogger(__name__).info("Output file '%s' exists -- erasing", outfile)
-            outfile.unlink()
-
-        else:
-            verifyMetadataByException(outfile, lattice, params)
-            getLogger(__name__).info("Output file '%s' exists -- appending", outfile)
+    if not outfile.exists():
+        # the easy case, just make a new file
+        fileio.h5.initializeNewFile(outfile, False, lattice, params, makeActionSrc)
+    # else:
+    # Check measurement paths when running driver or saving measurements.
+    # Can't do this here because the paths are not know at this point.

@@ -89,7 +89,7 @@ def plotTotalPhi(measState, axPhi, axPhiHist):
     """!Plot MC history and histogram of total Phi."""
 
     # load data from previous measurement or compute from configurations
-    with h5.File(str(measState.infname), "r") as h5f:
+    with h5.File(str(measState.infile), "r") as h5f:
         if "field" in h5f:
             totalPhi = h5f["field"]["totalPhi"][()]
         elif "configuration" in h5f:
@@ -141,7 +141,7 @@ def plotTrajPoints(measState, ax):
     """!Plot MC history of accepted trajectory points."""
 
     # load data from configurations if possible
-    with h5.File(str(measState.infname), "r") as h5f:
+    with h5.File(str(measState.infile), "r") as h5f:
         trajPoints = []
         if "configuration" in h5f:
             for configName in sorted(h5f["configuration"], key=int):
@@ -240,7 +240,7 @@ def plotCorrelators(measState, axP, axH):
     """
 
     # load data from previous measurement
-    with h5.File(str(measState.infname), "r") as h5f:
+    with h5.File(str(measState.infile), "r") as h5f:
         if "correlation_functions" in h5f:
             corrP = h5f["correlation_functions"]["single_particle"]["correlators"][()]
             corrH = h5f["correlation_functions"]["single_hole"]["correlators"][()]
