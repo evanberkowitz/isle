@@ -1,5 +1,7 @@
 r"""!
+\todo document
 
+meas freq is relative to config index not loop iteration in mapOverConfigs
 """
 
 from logging import getLogger
@@ -8,7 +10,7 @@ import h5py as h5
 
 from .. import fileio, cli
 from ..meta import callFunctionFromSource
-from ..util import verifyMetadataByException, verifyVersionsByException
+from ..util import verifyVersionsByException
 
 
 class Measure:
@@ -20,26 +22,29 @@ class Measure:
         self.outfile = outfile
         self.overwrite = overwrite
 
-    def __call__(self, measurements):
+    def __call__(self, measurements, configRange=slice(None)):
         _ensureCanWriteMeas(self.outfile, [meas[2] for meas in measurements], self.overwrite)
 
         getLogger(__name__).info("Performing measurements")
-        self.mapOverConfigs(measurements)
+        self.mapOverConfigs(measurements, configRange)
         getLogger(__name__).info("Saving measurements")
-        self.save(measurements, checked=True)
+        self.save(measurements, configRange, checked=True)
 
-    def mapOverConfigs(self, measurements):
+    def mapOverConfigs(self, measurements, configRange=slice(None)):
         """!
         Apply measurements to all configurations in the input file
         of this driver.
         """
 
+        _checkStepIsDefaultByException(configRange)
+
         with h5.File(self.infile, "r") as cfgf:
             # sorted list of configurations
             # each entry is a pair (index: int, config: H5group)
+            # take only those in configRange
             configurations = sorted(map(lambda p: (int(p[0]), p[1]),
                                         cfgf["/configuration"].items()),
-                                    key=lambda item: item[0])
+                                    key=lambda item: item[0])[configRange]
 
             # apply measurements to all configs
             with cli.trackProgress(len(configurations), "Measurements", updateRate=1000) as pbar:
@@ -54,13 +59,17 @@ class Measure:
 
                     pbar.advance()
 
-    def save(self, measurements, checked=False):
+    def save(self, measurements, configRange, checked=False):
         if not checked:
             _ensureCanWriteMeas(self.outfile, [meas[2] for meas in measurements], self.overwrite)
 
+        _checkStepIsDefaultByException(configRange)
+
         with h5.File(self.outfile, "a") as measFile:
-            for _, measurement, path in measurements:
+            for frequency, measurement, path in measurements:
                 measurement.save(measFile, path)
+                measFile[path].attrs["configurations"] = \
+                    f"{configRange.start},{configRange.stop},{frequency}"
 
 # TODO allow to set a base path in file
 def init(infile, outfile, overwrite):
@@ -80,6 +89,14 @@ def init(infile, outfile, overwrite):
     return Measure(lattice, params,
                    callFunctionFromSource(makeActionSrc, lattice, params),
                    infile, outfile, overwrite)
+
+def _checkStepIsDefaultByException(slic):
+    """!Check if step size is None or 1 in given slice and raise ValueError if not."""
+    if slic.step not in (None, 1):
+        getLogger(__name__).error("Step size of configRange must be None (or 1). "
+                                  "Given value is %s", slic.step)
+        raise ValueError("Step size must be None (or 1)")
+
 
 def _isValidPath(path):
     """!Check if parameter is a valid path to a measurement inside an HDF5 file."""
