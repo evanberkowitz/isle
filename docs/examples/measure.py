@@ -65,7 +65,8 @@ def main():
 
     # Run the measurements on all configurations in the input file.
     # This automatically saves all results to the output file when done.
-    measState(measurements)
+    # Use args.configs to select which configurations to run on.
+    measState(measurements, configRange=args.configs)
 
 if __name__ == "__main__":
     main()
