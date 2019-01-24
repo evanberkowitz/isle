@@ -195,7 +195,7 @@ def plotPhase(action, axPhase, axPhase2D):
 
     if np.max(np.abs(theta)) > 1e-13:
         # show 1D histogram + KDE
-        axPhase.hist(theta, bins=len(theta)//100, density=True,
+        axPhase.hist(theta, bins=max(len(theta)//100, 10), density=True,
                      facecolor="C1", alpha=0.7)
         samplePts, dens = oneDimKDE(theta, bandwidth=1/5)
         if dens is not None:
