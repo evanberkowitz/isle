@@ -196,23 +196,61 @@ class LinearStepLeapfrog(Proposer):
 
 class Alternator(Proposer):
     r"""! \ingroup proposers
-    \todo Implement properly
+    Alternate between different proposers.
+
+    Each sub proposer is run a given number of times.
+    Then Alternator advances to the next proposer and runs it for its
+    number of iterations.
+    After the last sub proposer, Alternator cycles round to the first one and repeats.
     """
 
-    def __init__(self):
+    def __init__(self, proposers=None, startIndex=0):
         r"""!
-
+        Store given sub proposers.
+        \param proposers List of lists of the form `[[c0, p0], [c1, p1], ...]`,
+                         where `pi` are the sub proposers to cycle through.
+                         `ci` is the number of iterations to run `pi` for.
+        \param startIndex Start iteration at this point. Exists mostly for internal use.
         """
-        self._subProposers = []
-        self._counts = []
+        if proposers:
+            self._counts, self._subProposers = map(list, zip(*proposers))
+        else:
+            self._subProposers = []
+            self._counts = []
 
-    def add(self, proposer, count):
-        self._subProposers.append(proposer)
+        self._current = startIndex
+
+    def add(self, count, proposer):
+        r"""!
+        Add a sub proposer to the Alternator.
+        \param count Number of iterations the proposer shall be run for.
+        \param proposer Sub proposer to add.
+        """
+
+        if count < 1:
+            getLogger(__name__).warning(
+                "Iteration count for proposer %s is less than one: %d",
+                proposer, count)
+
         self._counts.append(count)
+        self._subProposers.append(proposer)
+
+    def _advance(self):
+        """!Advance internal proposer index."""
+        self._current = (self._current + 1) % sum(self._counts)
+
+    def _pickCurrentProposer(self):
+        """!Pick a sub proposer based on the current proposer index."""
+        currentTotalCount = 0
+        for count, proposer in zip(self._counts, self._subProposers):
+            currentTotalCount += count
+            if currentTotalCount > self._current:
+                return proposer
+        return None
 
     def propose(self, phi, pi, actVal, trajPoint):
         r"""!
-        Run leapfrog integrator.
+        Delegate to a sub proposer next in line.
         \param phi Input configuration.
         \param pi Input Momentum.
         \param actVal Value of the action at phi.
@@ -220,10 +258,13 @@ class Alternator(Proposer):
         \returns In order:
           - New configuration
           - New momentum
-          - Action evaluated at new configuration
+          - Action evaluated on new configuration
         """
-        # TODO
-        return self._subProposers[0].propose(phi, pi, actVal, trajPoint)
+
+        subProposer = self._pickCurrentProposer()
+        self._advance()
+
+        return subProposer.propose(phi, pi, actVal, trajPoint)
 
     def save(self, h5group, manager):
         r"""!
@@ -232,6 +273,7 @@ class Alternator(Proposer):
         \param manager ProposerManager whose purview to save the proposer in.
         """
         h5group["counts"] = self._counts
+        h5group["current"] = self._current
         for idx, proposer in enumerate(self._subProposers):
             grp = h5group.create_group(f"sub{idx}")
             manager.save(proposer, grp)
@@ -244,13 +286,13 @@ class Alternator(Proposer):
         \param manager ProposerManager responsible for the HDF5 file.
         \param action Action to use.
         \param lattice Lattice the simulation runs on.
-        \returns A newly constructed leapfrog proposer.
+        \returns A newly constructed alternating proposer.
         """
-        alternator = cls()
+        alternator = cls(startIndex=h5group["current"][()])
         counts = h5group["counts"][()]
         for idx, count in enumerate(counts):
-            sp = manager.load(h5group[f"sub{idx}"], action, lattice)
-            alternator.add(sp, count)
+            subProposer = manager.load(h5group[f"sub{idx}"], action, lattice)
+            alternator.add(count, subProposer)
         return alternator
 
 
