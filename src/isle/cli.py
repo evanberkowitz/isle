@@ -254,7 +254,7 @@ class TerminalProgressbar(Progressbar):
             return self._barStr
 
     def __init__(self, target, message="", barLength=40,
-                 barChar="≣", emptyChar="-"):
+                 barChar="#", emptyChar="-"):
 
         r"""!
         Construct a new progress bar.
