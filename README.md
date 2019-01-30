@@ -20,6 +20,7 @@ It's thought that the Hubbard model approximates carbon nanostructures, such as 
 ## Python
 - [Pybind11](https://github.com/pybind/pybind11) >= 2.2.4
 - [numpy](http://www.numpy.org/)
+- [SciPy](https://www.scipy.org/scipylib/index.html) library
 - [h5py](http://www.h5py.org/)
 - [scikit-learn](http://scikit-learn.org/stable/) (optional)
 - [matplotlib](https://matplotlib.org/) (optional)
