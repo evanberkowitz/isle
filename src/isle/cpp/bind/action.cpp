@@ -97,6 +97,7 @@ namespace bind {
         void bindHubbardGaugeAction(py::module &mod, a &action) {
             py::class_<HubbardGaugeAction>(mod, "HubbardGaugeAction", action)
                 .def(py::init<double>())
+                .def_readonly("utilde", &HubbardGaugeAction::utilde)
                 .def("eval", &HubbardGaugeAction::eval)
                 .def("force", &HubbardGaugeAction::force)
                 ;

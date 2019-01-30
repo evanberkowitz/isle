@@ -13,7 +13,10 @@ from logging import getLogger
 from pathlib import Path
 
 import h5py as h5
+import numpy as np
 
+import isle
+import isle.action
 from . import Vector, leapfrog
 from .util import hingeRange
 from .meta import classFromSource, sourceOfClass
@@ -49,7 +52,7 @@ class Proposer(metaclass=ABCMeta):
 
     @classmethod
     @abstractmethod
-    def fromH5(cls, h5group, manager, action, lattice):
+    def fromH5(cls, h5group, manager, action, lattice, rng):
         r"""!
         Construct a proposer from HDF5.
         Create and initialize a new instance from parameters stored via Proposer.save().
@@ -57,6 +60,7 @@ class Proposer(metaclass=ABCMeta):
         \param manager ProposerManager responsible for the HDF5 file.
         \param action Action to use.
         \param lattice Lattice the simulation runs on.
+        \param rng Central random number generator for the run.
         \returns A newly constructed proposer.
         """
 
@@ -99,13 +103,14 @@ class ConstStepLeapfrog(Proposer):
         h5group["nstep"] = self.nstep
 
     @classmethod
-    def fromH5(cls, h5group, manager, action, _lattice):
+    def fromH5(cls, h5group, _manager, action, _lattice, _rng):
         r"""!
         Construct from HDF5.
         \param h5group HDF5 group to load parameters from.
-        \param manager ProposerManager responsible for the HDF5 file.
+        \param _manager \e ignored.
         \param action Action to use.
         \param _lattice \e ignored.
+        \param _rng \e ignored.
         \returns A newly constructed leapfrog proposer.
         """
         return cls(action, h5group["length"][()], h5group["nstep"][()])
@@ -178,13 +183,14 @@ class LinearStepLeapfrog(Proposer):
         h5group["current"] = self._current
 
     @classmethod
-    def fromH5(cls, h5group, manager, action, _lattice):
+    def fromH5(cls, h5group, _manager, action, _lattice, _rng):
         r"""!
         Construct from HDF5.
         \param h5group HDF5 group to load parameters from.
-        \param manager ProposerManager responsible for the HDF5 file.
+        \param _manager \e ignored.
         \param action Action to use.
         \param _lattice \e ignored.
+        \param _rng \e ignored.
         \returns A newly constructed leapfrog proposer.
         """
         return cls(action,
@@ -193,6 +199,115 @@ class LinearStepLeapfrog(Proposer):
                    h5group["ninterp"][()],
                    h5group["current"][()])
 
+
+class TwoPiJumps(Proposer):
+    def __init__(self, selectionProbability, action, lattice, rng):
+        self.rng = rng
+        self.latSize = lattice.lattSize()
+        self.selectionProb = selectionProbability
+
+        # probabilities to shift by [+2pi, -2pi, no shift]
+        self._shiftProb = [self.selectionProb/2, self.selectionProb/2, 1-self.selectionProb]
+
+        # _sumInvUtildes is either sum(1/Utilde)/2 from all HubbardGaugeActions
+        #                or None
+        # _action is either None or action that was passed in (same order as _sumInvUtildes)
+        utildes = self._findUtildes(action)
+        if utildes is None:
+            self._action = action
+            self._sumHalfInvUtilde = None
+            getLogger(__name__).info("Action does not allow for evaluation shortcut under "
+                                     "jumps by 2pi, using normal (slow) evaluation")
+        else:
+            self._action = None
+            self._sumHalfInvUtilde = sum(1 / utilde for utilde in utildes) / 2
+            getLogger(__name__).info("Action allows for evaluation shortcut under jumps "
+                                     "by 2pi, found utilde = %s", utildes)
+
+        self.act = action
+
+    def _findUtildes(self, action):
+        r"""!
+        Find all HubbardGaugeActions and extract Utilde.
+        \returns Either a list of all Utildes found or None if there is any action
+                 which does not allow for the shortcut calculation.
+        """
+
+        # all sub actions must allow for the shortcut
+        if isinstance(action, isle.action.SumAction):
+            utildes = []
+            for i in range(len(action)):
+                aux = self._findUtildes(action[i])
+                if aux is None:
+                    return None
+                utildes.extend(aux)
+            return utildes
+
+        # single action
+        if isinstance(action, isle.action.HubbardGaugeAction):
+            return [action.utilde]
+
+        # action is invariant under 2pi jump
+        if isinstance(action, (isle.action.HubbardFermiActionDiaOneOne,
+                               isle.action.HubbardFermiActionDiaTwoOne,
+                               isle.action.HubbardFermiActionExpOneOne,
+                               isle.action.HubbardFermiActionExpTwoOne)):
+            return []
+
+        return None
+
+    def propose(self, phi, pi, actVal, trajPoint):
+        r"""!
+        Propose a new configuration, momentum remains unchanged.
+        \param phi Input configuration.
+        \param pi Input Momentum.
+        \param actVal Value of the action at phi.
+        \param _trajPoint \e ignored.
+        \returns In order:
+          - New configuration
+          - New momentum
+          - Action evaluated at new configuration
+        """
+
+        # site i is shifted by 2*pi*shifts[i]
+        shifts = np.random.choice([1, -1, 0],
+                                  p=self._shiftProb,
+                                  size=(self.latSize,))
+
+        newPhi = phi + isle.Vector(2*np.pi*shifts)
+
+        if self._action is None:
+            # calculate difference in gauge action
+            actVal = actVal + (np.linalg.norm(newPhi)**2 - np.linalg.norm(phi)**2) \
+                * self._sumHalfInvUtilde
+
+        else:
+            # evaluate the full action on new field
+            actVal = self._action.eval(newPhi)
+
+        return newPhi, pi, actVal
+
+    def save(self, h5group, _manager):
+        r"""!
+        Save the proposer to HDF5.
+        Has to be the inverse of Proposer.fromH5().
+        \param h5group HDF5 group to save to.
+        \param _manager \e ignored.
+        """
+        h5group["selectionProbability"] = self.selectionProb
+
+    @classmethod
+    def fromH5(cls, h5group, _manager, action, lattice, rng):
+        r"""!
+        Construct from HDF5.
+        \param h5group HDF5 group to load parameters from.
+        \param _manager \e ignored.
+        \param action Action to use.
+        \param lattice Lattice the simulation runs on.
+        \param rng Central random number generator for the run.
+        \returns A newly constructed TwoPiJumps proposer.
+        """
+        return cls(h5group["selectionProbability"][()], action, lattice, rng)
 
 class Alternator(Proposer):
     r"""! \ingroup proposers
@@ -279,19 +394,20 @@ class Alternator(Proposer):
             manager.save(proposer, grp)
 
     @classmethod
-    def fromH5(cls, h5group, manager, action, lattice):
+    def fromH5(cls, h5group, manager, action, lattice, rng):
         r"""!
         Construct from HDF5.
         \param h5group HDF5 group to load parameters from.
         \param manager ProposerManager responsible for the HDF5 file.
         \param action Action to use.
         \param lattice Lattice the simulation runs on.
+        \param rng Central random number generator for the run.
         \returns A newly constructed alternating proposer.
         """
         alternator = cls(startIndex=h5group["current"][()])
         counts = h5group["counts"][()]
         for idx, count in enumerate(counts):
-            subProposer = manager.load(h5group[f"sub{idx}"], action, lattice)
+            subProposer = manager.load(h5group[f"sub{idx}"], action, lattice, rng)
             alternator.add(count, subProposer)
         return alternator
 
@@ -396,7 +512,7 @@ class ProposerManager:
         """
         return loadProposerType(h5file[self.typeLocation+f"/{index}"])
 
-    def load(self, h5group, action, lattice):
+    def load(self, h5group, action, lattice, rng):
         r"""!
         Load a proposer's type and construct an instance from given group.
         The type has to be stored in the 'type location' (see `__init__`) in the same file
@@ -404,9 +520,10 @@ class ProposerManager:
         \param h5group Group in the file where proposer parameters are stored.
         \param action Passed to proposer's constructor.
         \param lattice Passed to proposer's constructor.
+        \param rng Passed to proposer's constructor.
         """
         return self.loadType(h5group.attrs["__index__"][()], h5group.file) \
-                   .fromH5(h5group, self, action, lattice)
+                   .fromH5(h5group, self, action, lattice, rng)
 
 
 def saveProposerType(proposer, h5group, definitions={}):
