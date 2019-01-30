@@ -64,8 +64,8 @@ namespace bind {
         }
 
         template <typename A>
-        void bindSumAction(py::module &mod, A &action) {
-            py::class_<SumAction>(mod, "SumAction", action)
+        void bindSumAction(py::module &mod, A &baseAction) {
+            py::class_<SumAction>(mod, "SumAction", baseAction)
                 .def(py::init<>())
                 .def(py::init([](py::args args) {
                                   SumAction act;
