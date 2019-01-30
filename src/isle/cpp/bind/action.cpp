@@ -78,12 +78,6 @@ namespace bind {
                                 self.add(action);
                             },
                     py::keep_alive<1, 2>())
-                // .def("__add__", [](SumAction *const this_, Action *const other) {
-                //                     SumAction sum(*this_);
-                //                     sum.add(other);
-                //                     return sum;
-                //                 },
-                //     py::keep_alive<0, 1>(), py::keep_alive<0, 2>())
                 .def("__getitem__", py::overload_cast<std::size_t>(&SumAction::operator[]),
                      py::return_value_policy::reference_internal)
                 .def("__len__", &SumAction::size)
