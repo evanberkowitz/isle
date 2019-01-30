@@ -7,9 +7,11 @@ from pathlib import Path
 
 import yaml
 import h5py as h5
+import numpy as np
 
 from . import Vector, isleVersion, pythonVersion, blazeVersion, pybind11Version
 from .random import readStateH5
+from .util import parseSlice
 
 def createH5Group(base, name):
     r"""!
@@ -152,5 +154,60 @@ def loadCheckpoint(h5group, label, proposerManager, action, lattice):
     grp = h5group[str(label)]
     rng = readStateH5(grp["rngState"])
     phi = Vector(grp["cfg/phi"][()])
-    proposer = proposerManager.load(grp["proposer"], action, lattice)
+    proposer = proposerManager.load(grp["proposer"], action, lattice, rng)
     return rng, phi, proposer
+
+def loadList(h5group, convert=int):
+    r"""!
+    Load a list of objects from a HDF5 group.
+
+    All entries in `h5group` must have names convertible to `int` by `convert`.
+
+    \param h5group HDF5 group to load from. All elements in that group must be
+                   named such that they can be processed by `convert`.
+    \param convert Function that takes a group entry name and returns an int.
+    \returns List of pairs (key, obj) where key is the name of each object converted to `int`.
+    """
+    return sorted(map(lambda p: (convert(p[0]), p[1]), h5group.items()),
+                  key=lambda item: item[0])
+
+
+def loadActionValues(fname):
+    r"""!
+    Load values of the action from a HDF5 file.
+
+    Reads the action from dataset `/action/action` if it exists.
+    Otherwise, read action from saved configurations.
+
+    \param fname Name of the file to load action from.
+    \returns (action, configRange) where
+             - action: Numpy array of values of the action.
+             - configRange: `slice` indicating the range of configurations
+                            the action was laoded for.
+    \throws RuntimeError if neither `/action/action` nor `/configuration` exist in the file.
+    """
+
+    with h5.File(fname, "r") as h5f:
+        if "action" in h5f:
+            action = h5f["action/action"][()]
+            configRange = parseSlice(h5f["action"].attrs["configurations"],
+                                     minComponents=3)
+
+        elif "configuration" in h5f:
+            configs = loadList(h5f["configuration"])
+            action = np.array([grp["action"][()] for _, grp in configs])
+            configRange = slice(configs[0][0], configs[-1][0],
+                                configs[-1][0]-configs[-2][0])
+        else:
+            getLogger(__name__).error("Cannot load action, no configurations or "
+                                      "separate action found in file %s.", fname)
+            raise RuntimeError("No action found in file")
+
+    return action, configRange
+
+# def loadWeightsFor(dset):
+#     group = dset.parent
+#     f = dset.file
+
+#     # action = f["arction/action"][()]
+#     action = loadAction(dset.file.name)
