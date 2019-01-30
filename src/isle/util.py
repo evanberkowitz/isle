@@ -2,8 +2,17 @@
 Some general utilities.
 """
 
-from dataclasses import make_dataclass, field
 from logging import getLogger
+
+try:
+    # use dataclasses if available (Python3.7 or later)
+    from dataclasses import make_dataclass, field, asdict
+    _HAVE_DATACLASSES = True
+except ImportError:
+    # construct poor man's workaround
+    _HAVE_DATACLASSES = False
+    getLogger(__name__).info("Could not import dataclasses, using a workaround "
+                             "for storing parameters")
 
 import yaml
 import numpy as np
@@ -134,6 +143,53 @@ def binnedArray(data, binsize):
     return np.reshape(data, (nbins, binsize)).mean(1)
 
 
+def _makeParametersClass(fields):
+    r"""!
+    Construct a new class for parameters. Uses either a dataclass or custom workaround.
+    """
+    def _tilde(self, value, nt, beta=None):
+        if beta is None:
+            # try to used stored beta
+            if not hasattr(self, "beta"):
+                raise RuntimeError("No parameter 'beta' stored. "
+                                   "Pass it as parameter to tilde().")
+            beta = self.beta
+
+        # normalize parameters
+        if isinstance(value, str):
+            value = getattr(self, value)
+        if isinstance(nt, Lattice):
+            nt = nt.nt()
+
+        return value*beta/nt
+
+    if _HAVE_DATACLASSES:
+        # use nifty built in dataclass
+        return make_dataclass("Parameters",
+                              ((key, type(value), field(default=value))
+                               for key, value in fields.items()),
+                              namespace={"asdict": asdict,
+                                         "tilde": _tilde},
+                              frozen=True)
+
+    # Use a workaround that lacks almost all of dataclasses features.
+    # Just stores a bunch of variables in a class.
+    class Parameters:
+        # store a list of all field names for asdict
+        _FIELDS = list(fields.keys())
+
+        def asdict(self):
+            return {key: getattr(self, key) for key in self._FIELDS}
+
+    # store all fields in class
+    for key, value in fields.items():
+        setattr(Parameters, key, value)
+
+    # add tilde method
+    setattr(Parameters, "tilde", _tilde)
+
+    return Parameters
+
 def parameters(**kwargs):
     r"""!
     Return a dataclass instance holding the parameters passed to this function.
@@ -157,30 +213,14 @@ def parameters(**kwargs):
 
     The new classes are automatically registered with YAML so they can
     be dumped. A loader is registered if yamlio is imported.
+
+    \warning Dataclasses were added in Python3.7.
+             This function uses a workaround in earlier versions.
+             That workaround has greatly reduced features compared to dataclasses.
+             Be careful when you need portability.
     """
 
-    def _tilde(self, value, nt, beta=None):
-        if beta is None:
-            if not hasattr(self, "beta"):
-                raise RuntimeError("No parameter 'beta' stored. Cannot compute tilde parameter.")
-            beta = self.beta
-
-        if isinstance(value, str):
-            value = getattr(self, value)
-        if isinstance(nt, Lattice):
-            nt = nt.nt()
-
-        return value*beta/nt
-
-    cls = make_dataclass("Parameters",
-                         ((key, type(value), field(default=value))
-                          for key, value in kwargs.items()),
-                         namespace={"asdict": lambda self:
-                                              {key: getattr(self, key)
-                                               for key in self.__dataclass_fields__.keys()},
-                                    "tilde": _tilde},
-                         frozen=True)
-
+    cls = _makeParametersClass(kwargs)
     yaml.add_representer(cls, lambda dumper, params:
                          dumper.represent_mapping("!parameters",
                                                   params.asdict(),
