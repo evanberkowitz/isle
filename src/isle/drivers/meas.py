@@ -39,12 +39,9 @@ class Measure:
         _checkStepIsDefaultByException(configRange)
 
         with h5.File(self.infile, "r") as cfgf:
-            # sorted list of configurations
-            # each entry is a pair (index: int, config: H5group)
+            # get all configuration groups (index, h5group) pairs
             # take only those in configRange
-            configurations = sorted(map(lambda p: (int(p[0]), p[1]),
-                                        cfgf["/configuration"].items()),
-                                    key=lambda item: item[0])[configRange]
+            configurations = fileio.h5.loadList(cfgf["/configuration"])[configRange]
 
             # apply measurements to all configs
             with cli.trackProgress(len(configurations), "Measurements", updateRate=1000) as pbar:
