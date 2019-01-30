@@ -41,6 +41,27 @@ def hingeRange(start, end, stepSize):
     while True:
         yield end
 
+def parseSlice(string, minComponents=0, maxComponents=3):
+    r"""!
+    Parse a string as a slice in usual :-notation.
+    Allows for components to be `None` or `"none"` (case insensitive).
+    \param string Input string.
+    \param minComponents Minimum number of slice components required in string.
+    \param minComponents Maxiumum number of slice components allowed in string.
+    \return `slice` object constructed from `string`.
+    """
+
+    components = list(map(lambda x: None if x is None or x.strip().lower() in ("", "none") \
+                          else int(x),
+                          string.split(":")))
+    if len(components) < minComponents:
+        raise ValueError(f"Too few components in string {string} for parsing as slice, "
+                         f"requires at least {minComponents}")
+    if len(components) > maxComponents:
+        raise ValueError(f"Too many components in string {string} for parsing as slice, "
+                         f"requires at most {maxComponents}")
+
+    return slice(*components)
 
 def _splitVersionStr(ver):
     """!Split a version string into its components major, minor, and extra."""
