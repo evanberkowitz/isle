@@ -66,7 +66,7 @@ class Measure:
             for frequency, measurement, path in measurements:
                 measurement.save(measFile, path)
                 measFile[path].attrs["configurations"] = \
-                    f"{configRange.start},{configRange.stop},{frequency}"
+                    f"{configRange.start}:{configRange.stop}:{frequency}"
 
 # TODO allow to set a base path in file
 def init(infile, outfile, overwrite):
