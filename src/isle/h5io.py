@@ -171,7 +171,7 @@ def loadList(h5group, convert=int):
     return sorted(map(lambda p: (convert(p[0]), p[1]), h5group.items()),
                   key=lambda item: item[0])
 
-def loadActionValuesFrom(h5obj):
+def loadActionValuesFrom(h5obj, configRange=None):
     r"""!
     Load values of the action from a HDF5 file given via a HDF5 object in that file.
 
@@ -179,6 +179,10 @@ def loadActionValuesFrom(h5obj):
     Otherwise, read action from saved configurations.
 
     \param fname An arbitrary HDF5 object in the file to read the action from.
+    \param configRange `slice` indicating which values of the action to load.
+                       Might need to load from `/configuration` to satisfy the constraint.
+                       If None, load whichever action values are stored in `/action/action` if
+                       it exists or all action if reading from `/configuration`.
     \returns (action, configRange) where
              - action: Numpy array of values of the action.
              - configRange: `slice` indicating the range of configurations
@@ -189,24 +193,24 @@ def loadActionValuesFrom(h5obj):
     h5f = h5obj.file
 
     if "action" in h5f:
-        action = h5f["action/action"][()]
-        configRange = parseSlice(h5f["action"].attrs["configurations"],
-                                 minComponents=3)
+        cRange = parseSlice(h5f["action"].attrs["configurations"],
+                            minComponents=3)
+        # not the cleverest way to handle it but the simplest; should be enough though
+        if configRange is None or cRange == configRange:
+            return h5f["action/action"][()], cRange
 
-    elif "configuration" in h5f:
-        configs = loadList(h5f["configuration"])
-        action = np.array([grp["action"][()] for _, grp in configs])
-        configRange = slice(configs[0][0], configs[-1][0],
-                            configs[-1][0]-configs[-2][0])
-    else:
-        getLogger(__name__).error("Cannot load action, no configurations or "
-                                  "separate action found in file %s.", h5f.filename)
-        raise RuntimeError("No action found in file")
+    if "configuration" in h5f:
+        if configRange is None:
+            configRange = slice(None)
+        configs = loadList(h5f["configuration"])[configRange]
+        return np.array([grp["action"][()] for _, grp in configs]), configRange
 
-    return action, configRange
+    getLogger(__name__).error("Cannot load action, no configurations or "
+                              "separate action found in file %s.", h5f.filename)
+    raise RuntimeError("No action found in file")
 
 
-def loadActionValues(fname):
+def loadActionValues(fname, configRange=None):
     r"""!
     Load values of the action from a HDF5 file.
 
@@ -214,6 +218,10 @@ def loadActionValues(fname):
     Otherwise, read action from saved configurations.
 
     \param fname Name of the file to load action from.
+    \param configRange `slice` indicating which values of the action to load.
+                       Might need to load from `/configuration` to satisfy the constraint.
+                       If None, load whichever action values are stored in `/action/action` if
+                       it exists or all action if reading from `/configuration`.
     \returns (action, configRange) where
              - action: Numpy array of values of the action.
              - configRange: `slice` indicating the range of configurations
@@ -222,11 +230,11 @@ def loadActionValues(fname):
     """
 
     with h5.File(fname, "r") as h5f:
-        return loadActionValuesFrom(h5f)
+        return loadActionValuesFrom(h5f, configRange)
 
 # def loadWeightsFor(dset):
 #     group = dset.parent
-#     f = dset.file
+#     # f = dset.file
 
 #     # action = f["arction/action"][()]
-#     action = loadAction(dset.file.name)
+#     action, configRange = loadActionValuesFrom(dset)
