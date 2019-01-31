@@ -171,6 +171,40 @@ def loadList(h5group, convert=int):
     return sorted(map(lambda p: (convert(p[0]), p[1]), h5group.items()),
                   key=lambda item: item[0])
 
+def loadActionValuesFrom(h5obj):
+    r"""!
+    Load values of the action from a HDF5 file given via a HDF5 object in that file.
+
+    Reads the action from dataset `/action/action` if it exists.
+    Otherwise, read action from saved configurations.
+
+    \param fname An arbitrary HDF5 object in the file to read the action from.
+    \returns (action, configRange) where
+             - action: Numpy array of values of the action.
+             - configRange: `slice` indicating the range of configurations
+                            the action was laoded for.
+    \throws RuntimeError if neither `/action/action` nor `/configuration` exist in the file.
+    """
+
+    h5f = h5obj.file
+
+    if "action" in h5f:
+        action = h5f["action/action"][()]
+        configRange = parseSlice(h5f["action"].attrs["configurations"],
+                                 minComponents=3)
+
+    elif "configuration" in h5f:
+        configs = loadList(h5f["configuration"])
+        action = np.array([grp["action"][()] for _, grp in configs])
+        configRange = slice(configs[0][0], configs[-1][0],
+                            configs[-1][0]-configs[-2][0])
+    else:
+        getLogger(__name__).error("Cannot load action, no configurations or "
+                                  "separate action found in file %s.", h5f.filename)
+        raise RuntimeError("No action found in file")
+
+    return action, configRange
+
 
 def loadActionValues(fname):
     r"""!
@@ -188,22 +222,7 @@ def loadActionValues(fname):
     """
 
     with h5.File(fname, "r") as h5f:
-        if "action" in h5f:
-            action = h5f["action/action"][()]
-            configRange = parseSlice(h5f["action"].attrs["configurations"],
-                                     minComponents=3)
-
-        elif "configuration" in h5f:
-            configs = loadList(h5f["configuration"])
-            action = np.array([grp["action"][()] for _, grp in configs])
-            configRange = slice(configs[0][0], configs[-1][0],
-                                configs[-1][0]-configs[-2][0])
-        else:
-            getLogger(__name__).error("Cannot load action, no configurations or "
-                                      "separate action found in file %s.", fname)
-            raise RuntimeError("No action found in file")
-
-    return action, configRange
+        return loadActionValuesFrom(h5f)
 
 # def loadWeightsFor(dset):
 #     group = dset.parent
