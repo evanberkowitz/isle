@@ -16,7 +16,6 @@ import sys
 import time
 
 import isle
-from . import fileio
 
 
 # the active progress bar
@@ -672,17 +671,6 @@ setupLogging.isSetUp = False
 # Argument parsing
 #
 
-def _sliceArgType(arg):
-    """!Parse an argument in slice notation of exactly two components (empty string allowed)."""
-    tokens = arg.split(":")
-    if len(tokens) > 2:
-        print(f"Error: Too many components in slice argument (need 2): {arg}")
-        raise ValueError("Too many slice components")
-    if len(tokens) < 2:
-        print(f"Error: :Too few components in slice argument (need 2): {arg}")
-        raise ValueError("Too few slice components")
-    return slice(*(int(token) if token != "" else None for token in tokens), None)
-
 def makeDefaultParser(defaultLog="none", **kwargs):
     r"""!
     Construct and return a new argument parser with the default arguments.
@@ -726,7 +714,8 @@ def addMeasArgs(parser):
     """!Add arguments for measurements to parser."""
     parser.add_argument("infile", help="Input file", type=Path)
     parser.add_argument("-o", "--output", help="Output file", type=Path, dest="outfile")
-    parser.add_argument("-c", "--configs", type=_sliceArgType, default=slice(None),
+    parser.add_argument("-c", "--configs", type=lambda x: isle.util.parseSlice(x, maxComponents=2),
+                        default=slice(None),
                         help="Configurations to measure on. In slice notation without spaces.")
     parser.add_argument("--overwrite", action="store_true",
                         help="Overwrite existing output file.")
