@@ -109,7 +109,7 @@ def _verifyVersion(current, other, name, fname, permissive):
         getLogger(__name__).info("Extra version string of %s (%s) different "
                                  "from version in file %s (%s)",
                                  name, current, fname, other)
-    if comp != "equal":
+    elif comp != "equal":
         message = f"Version of {name} ({current}) is {comp} than in file {fname} ({other})."
         if permissive:
             getLogger(__name__).warning(message)
