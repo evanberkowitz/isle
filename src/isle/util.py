@@ -41,6 +41,23 @@ def hingeRange(start, end, stepSize):
     while True:
         yield end
 
+def listToSlice(lst):
+    r"""!
+    Convert a list to a `slice`.
+    \param lst List of values in a uniform range.
+    \returns `slice s` such that `list(range(s.start, s.stop, s.step)) == lst`.
+    \throws ValueError if list has less than two elements or the step size is not uniform.
+    """
+
+    if len(lst) < 2:
+        raise ValueError("List must have at least two entries to convert to slice")
+
+    diffs = [l - lst[i-1] for i, l in enumerate(lst[1:], 1)]
+    if diffs.count(diffs[0]) != len(diffs):
+        raise ValueError("Not all step sizes are equal in list, can't convert to slice")
+
+    return slice(lst[0], lst[-1]+diffs[0], diffs[0])
+
 def parseSlice(string, minComponents=0, maxComponents=3):
     r"""!
     Parse a string as a slice in usual :-notation.
