@@ -35,29 +35,29 @@ class one_value_by():
         return wrapper
 
 
-print("\n\nHere's a simple demo usage of the @one_value_by memoization decorator on f(a,b,foo):")
-
-@one_value_by("b")         # Works
-def f(a, b, foo):
-    print("f is expensive and was evaluated!")
-    return a+1, b-1, foo+foo
-
-print("f(1,1,'bar') -->", f(1,1,"bar"), "   (evaluated)")
-print("f(1,1,'bar') -->", f(1,1,"bar"), "   (re-used)")
-print("f(1,2,'bar') -->", f(1,2,"bar"), "   (evaluated)")
-print("f(1,2,'bar') -->", f(1,2,"bar"), "   (re-used)")
-print("f(1,1,'bar') -->", f(1,1,"bar"), "   (evaluated, even though it was recently evaluated)")
-print("f(2,1,'bar') -->", f(2,1,"bar"), "   (re-used, even though a changed, because memoization was by b!)")
-
-print("\n\nHere's the same demo, but now consider both b and a for memoization of f(a,b,foo):")
-@one_value_by("b", "a")     # Works
-def f(a, b, foo):
-    print("f is expensive and was evaluated!")
-    return a+1, b-1, foo+foo
-
-print("f(1,1,'bar') -->", f(1,1,"bar"), "   (evaluated)")
-print("f(1,1,'bar') -->", f(1,1,"bar"), "   (re-used)")
-print("f(1,2,'bar') -->", f(1,2,"bar"), "   (evaluated)")
-print("f(1,2,'bar') -->", f(1,2,"bar"), "   (re-used)")
-print("f(1,1,'bar') -->", f(1,1,"bar"), "   (evaluated, even though it was recently evaluated)")
-print("f(2,1,'bar') -->", f(2,1,"bar"), "   (evaluated, unlike before, because we care about a now)")
+# print("\n\nHere's a simple demo usage of the @one_value_by memoization decorator on f(a,b,foo):")
+#
+# @one_value_by("b")         # Works
+# def f(a, b, foo):
+#     print("f is expensive and was evaluated!")
+#     return a+1, b-1, foo+foo
+#
+# print("f(1,1,'bar') -->", f(1,1,"bar"), "   (evaluated)")
+# print("f(1,1,'bar') -->", f(1,1,"bar"), "   (re-used)")
+# print("f(1,2,'bar') -->", f(1,2,"bar"), "   (evaluated)")
+# print("f(1,2,'bar') -->", f(1,2,"bar"), "   (re-used)")
+# print("f(1,1,'bar') -->", f(1,1,"bar"), "   (evaluated, even though it was recently evaluated)")
+# print("f(2,1,'bar') -->", f(2,1,"bar"), "   (re-used, even though a changed, because memoization was by b!)")
+#
+# print("\n\nHere's the same demo, but now consider both b and a for memoization of f(a,b,foo):")
+# @one_value_by("b", "a")     # Works
+# def f(a, b, foo):
+#     print("f is expensive and was evaluated!")
+#     return a+1, b-1, foo+foo
+#
+# print("f(1,1,'bar') -->", f(1,1,"bar"), "   (evaluated)")
+# print("f(1,1,'bar') -->", f(1,1,"bar"), "   (re-used)")
+# print("f(1,2,'bar') -->", f(1,2,"bar"), "   (evaluated)")
+# print("f(1,2,'bar') -->", f(1,2,"bar"), "   (re-used)")
+# print("f(1,1,'bar') -->", f(1,1,"bar"), "   (evaluated, even though it was recently evaluated)")
+# print("f(2,1,'bar') -->", f(2,1,"bar"), "   (evaluated, unlike before, because we care about a now)")
