@@ -76,7 +76,7 @@ def main():
     # This sets up the command line interface, defines a barebones argument parser,
     # and parses and returns parsed arguments.
     # More complex parsers can be automatically defined or passed in manually.
-    # See, e.g., `change-proposer.py` or `measure.py` examples.
+    # See, e.g., `change-evolver.py` or `measure.py` examples.
     isle.initialize("default")
 
     # Get a logger. Use this instead of print() to output any and all information.
@@ -106,21 +106,21 @@ def main():
 
     # Run thermalization.
     log.info("Thermalizing")
-    # Pick a proposer towhich linearly decreases the number of MD steps from 20 to 5.
+    # Pick an evolver towhich linearly decreases the number of MD steps from 20 to 5.
     # The number of steps (99) must be one less than the number of trajectories below.
-    proposer = isle.proposers.LinearStepLeapfrog(hmcState.action, (1, 1), (20, 5), 99)
+    evolver = isle.evolver.LinearStepLeapfrog(hmcState.action, (1, 1), (20, 5), 99)
     # Thermalize configuration for 100 trajectories without saving anything.
-    phi = hmcState(phi, proposer, 100, saveFreq=0, checkpointFreq=0)
+    phi = hmcState(phi, evolver, 100, saveFreq=0, checkpointFreq=0)
     # Reset the internal counter so we start saving configs at index 0.
     hmcState.resetIndex()
 
     # Run production.
     log.info("Producing")
-    # Pick a new proposer with a constant number of steps to get a reproducible ensemble.
-    proposer = isle.proposers.ConstStepLeapfrog(hmcState.action, 1, 5)
+    # Pick a new evolver with a constant number of steps to get a reproducible ensemble.
+    evolver = isle.evolver.ConstStepLeapfrog(hmcState.action, 1, 5)
     # Produce configurations and save in intervals of 2 trajectories.
     # Place a checkpoint every 10 trajectories.
-    phi = hmcState(phi, proposer, 100, saveFreq=2, checkpointFreq=10)
+    phi = hmcState(phi, evolver, 100, saveFreq=2, checkpointFreq=10)
 
     # That is it, clean up happens automatically.
 

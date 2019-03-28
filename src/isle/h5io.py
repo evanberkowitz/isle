@@ -114,7 +114,7 @@ def writeTrajectory(h5group, label, phi, actVal, trajPoint):
     grp["trajPoint"] = trajPoint
     return grp
 
-def writeCheckpoint(h5group, label, rng, trajGrpName, proposer, proposerManager):
+def writeCheckpoint(h5group, label, rng, trajGrpName, evolver, evolverManager):
     r"""!
     Write a checkpoint to a HDF5 group.
     Creates a new group with name 'label' and stores RNG state
@@ -126,8 +126,8 @@ def writeCheckpoint(h5group, label, rng, trajGrpName, proposer, proposerManager)
     \param rng Random number generator whose state to save in the checkpoint.
     \param trajGrpName Name of the HDF5 group containing the trajectory this
                        checkpoint corresponds to.
-    \param proposer Proposer used to make the trajectory at this checkpoint.
-    \param proposerManager Instance of ProposerManager to handle saving the proposer.
+    \param evolver Evolver used to make the trajectory at this checkpoint.
+    \param evolverManager Instance of EvolverManager to handle saving the evolver.
 
     \returns The newly created HDF5 group containing the checkpoint.
     """
@@ -135,27 +135,27 @@ def writeCheckpoint(h5group, label, rng, trajGrpName, proposer, proposerManager)
     grp = h5group.create_group(str(label))
     rng.writeH5(grp.create_group("rngState"))
     grp["cfg"] = h5.SoftLink(trajGrpName)
-    proposerManager.save(proposer, grp.create_group("proposer"))
+    evolverManager.save(evolver, grp.create_group("evolver"))
     return grp
 
-def loadCheckpoint(h5group, label, proposerManager, action, lattice):
+def loadCheckpoint(h5group, label, evolverManager, action, lattice):
     r"""!
     Load a checkpoint from a HDF5 group.
 
     \param h5group Base HDF5 group containing checkpoints.
     \param label Name of the subgroup of `h5group` to read from.
-    \param proposerManager A ProposerManager to load the proposer
-                           including its type.
-    \param action Action to construct the proposer with.
-    \param lattice Lattice to construct the proposer with.
-    \returns (RNG, configuration, proposer)
+    \param evolverManager A EvolverManager to load the evolver
+                          including its type.
+    \param action Action to construct the evolver with.
+    \param lattice Lattice to construct the evolver with.
+    \returns (RNG, configuration, evolver)
     """
 
     grp = h5group[str(label)]
     rng = readStateH5(grp["rngState"])
     phi = Vector(grp["cfg/phi"][()])
-    proposer = proposerManager.load(grp["proposer"], action, lattice, rng)
-    return rng, phi, proposer
+    evolver = evolverManager.load(grp["evolver"], action, lattice, rng)
+    return rng, phi, evolver
 
 def loadList(h5group, convert=int):
     r"""!

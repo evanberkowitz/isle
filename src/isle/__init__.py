@@ -10,7 +10,7 @@ from . import cli
 from . import collection
 from . import fileio
 from . import meta
-from . import proposers
+from . import evolver
 from . import random
 from . import util
 import isle.action

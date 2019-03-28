@@ -10,13 +10,13 @@ import h5py as h5
 from .. import Vector, fileio, cli
 from ..meta import sourceOfFunction, callFunctionFromSource
 from ..util import verifyVersionsByException
-from ..proposers import ProposerManager
+from ..evolver import EvolverManager
 
 class HMC:
     r"""!
     Driver to control %HMC evolution.
 
-    Stores metadata and current state of %HMC evolution (apart from configuration and proposer).
+    Stores metadata and current state of %HMC evolution (apart from configuration and evolver).
     Manages generation of configurations and file output.
 
     \note Use isle.drivers.hmc.newRun() or isle.drivers.hmc.continueRun()
@@ -37,15 +37,15 @@ class HMC:
 
         self._trajIdx = startIdx
         self._propManager = propManager if propManager \
-            else ProposerManager(outfname, definitions=definitions)
+            else EvolverManager(outfname, definitions=definitions)
         self._new = new
 
-    def __call__(self, phi, proposer, ntr, saveFreq, checkpointFreq):
+    def __call__(self, phi, evolver, ntr, saveFreq, checkpointFreq):
         r"""!
         Evolve configuration using %HMC.
 
         \param phi Start configuration to evolve.
-        \param proposer Used to propose new configurations for Metropolis accept/reject.
+        \param evolver Used to evolve configurations for Metropolis accept/reject.
         \param ntr Number of trajectories to generate.
         \param saveFreq Save configurations every `saveFreq` trajectories.
         \param checkpointFreq Write a checkpoint every `checkpointFreq` trajectories.
@@ -61,16 +61,16 @@ class HMC:
         actVal = self.action.eval(phi)  # running action (without pi)
 
         if self._new:
-            self._saveConditionally(phi, actVal, trajPoint, proposer, saveFreq, checkpointFreq)
+            self._saveConditionally(phi, actVal, trajPoint, evolver, saveFreq, checkpointFreq)
             self._new = False
 
         for _ in cli.progressRange(ntr, message="HMC evolution",
                                    updateRate=max(ntr//100, 1)):
-            # get initial conditions for proposer
+            # get initial conditions for evolver
             startPhi, startPi, startActVal = phi, Vector(self.rng.normal(0, 1, len(phi))+0j), actVal
 
             # get new proposed fields
-            endPhi, endPi, endActVal = proposer.propose(startPhi, startPi, startActVal, trajPoint)
+            endPhi, endPi, endActVal = evolver.evolve(startPhi, startPi, startActVal, trajPoint)
 
             # TODO consistency checks
 
@@ -90,17 +90,17 @@ class HMC:
 
             # advance before saving because phi is a new configuration (no 0 is handled above)
             self.advance()
-            self._saveConditionally(phi, actVal, trajPoint, proposer, saveFreq, checkpointFreq)
+            self._saveConditionally(phi, actVal, trajPoint, evolver, saveFreq, checkpointFreq)
 
         return phi
 
-    def saveFieldAndCheckpoint(self, phi, actVal, trajPoint, proposer):
+    def saveFieldAndCheckpoint(self, phi, actVal, trajPoint, evolver):
         """!
         Write a trajectory (endpoint) and checkpoint to file.
         """
         with h5.File(self.outfname, "a") as outf:
             cfgGrp = self._writeTrajectory(outf, phi, actVal, trajPoint)
-            self._writeCheckpoint(outf, cfgGrp, proposer)
+            self._writeCheckpoint(outf, cfgGrp, evolver)
 
     def save(self, phi, actVal, trajPoint):
         """!
@@ -121,11 +121,11 @@ class HMC:
         """
         self._trajIdx = idx
 
-    def _saveConditionally(self, phi, actVal, trajPoint, proposer, saveFreq, checkpointFreq):
+    def _saveConditionally(self, phi, actVal, trajPoint, evolver, saveFreq, checkpointFreq):
         """!Save the trajectory and checkpoint if frequencies permit."""
         if saveFreq != 0 and self._trajIdx % saveFreq == 0:
             if checkpointFreq != 0 and self._trajIdx % checkpointFreq == 0:
-                self.saveFieldAndCheckpoint(phi, actVal, trajPoint, proposer)
+                self.saveFieldAndCheckpoint(phi, actVal, trajPoint, evolver)
             else:
                 self.save(phi, actVal, trajPoint)
 
@@ -143,13 +143,13 @@ class HMC:
                                           self._trajIdx, self.outfname)
             raise
 
-    def _writeCheckpoint(self, h5file, trajGrp, proposer):
+    def _writeCheckpoint(self, h5file, trajGrp, evolver):
         """!
         Write a checkpoint to a HDF5 group.
         """
         try:
             return fileio.h5.writeCheckpoint(h5file["checkpoint"], self._trajIdx,
-                                             self.rng, trajGrp.name, proposer, self._propManager)
+                                             self.rng, trajGrp.name, evolver, self._propManager)
         except (ValueError, RuntimeError) as err:
             if "name already exists" in err.args[0]:
                 getLogger(__name__).error("Cannot write checkpoint for trajectory %d to file %s."
@@ -172,8 +172,8 @@ def newRun(lattice, params, rng, makeAction, outfile, overwrite, definitions={})
     \param outfile Name (Path) of the output file. Must not exist unless `overwrite==True`.
     \param overwrite If `False`, nothing in the output file will be erased/overwritten.
                      If `True`, the file is removed and re-initialized, whereby all content is lost.
-    \param definitions Dictionary of mapping names to custom types. Used to control how proposers
-                       are stored for checkpoints. See proposers.saveProposerType().
+    \param definitions Dictionary of mapping names to custom types. Used to control how evolvers
+                       are stored for checkpoints. See evolvers.saveEvolverType().
 
     \returns A new HMC instance to control evolution initialized with given parameters.
     """
@@ -208,13 +208,13 @@ def continueRun(infile, outfile, startIdx, overwrite, definitions={}):
                           are removed and have to be re-computed.
                         - (`infile!=outfile`): outfile is removed and re-initialized,
                           whereby all content is lost.
-    \param definitions Dictionary of mapping names to custom types. Used to control how proposers
-                       are stored for checkpoints. See proposers.saveProposerType().
+    \param definitions Dictionary of mapping names to custom types. Used to control how evolvers
+                       are stored for checkpoints. See evolvers.saveEvolverType().
 
     \returns In order:
         - Instance of HMC constructed from parameters found in `infile`.
         - Configuration loaded from checkpoint.
-        - Proposer loaded from checkpoint.
+        - Evolver loaded from checkpoint.
         - Save frequency computed on last two configurations.
           `None` if there is only one configuration.
         - Checkpoint frequency computed on last two checkpoints.
@@ -236,8 +236,8 @@ def continueRun(infile, outfile, startIdx, overwrite, definitions={}):
                                     ["/configuration", "/checkpoint"])
 
     configurations, checkpoints = _loadIndices(infile)
-    propManager = ProposerManager(infile, definitions=definitions)
-    checkpointIdx, (rng, phi, proposer) = _loadCheckpoint(infile, startIdx, checkpoints,
+    propManager = EvolverManager(infile, definitions=definitions)
+    checkpointIdx, (rng, phi, evolver) = _loadCheckpoint(infile, startIdx, checkpoints,
                                                           propManager, action, lattice)
 
     if outfile == infile:
@@ -248,7 +248,7 @@ def continueRun(infile, outfile, startIdx, overwrite, definitions={}):
                 definitions,
                 propManager if infile == outfile else None),  # need to re-init manager for new outfile
             phi,
-            proposer,
+            evolver,
             _stride(configurations),
             _stride(checkpoints))
 
