@@ -1,5 +1,5 @@
-r"""!
-Handle collections of elements.
+r"""!\file
+\brief Handle collections of elements.
 """
 
 from logging import getLogger
@@ -118,6 +118,19 @@ def _isValidSubslice(large, small):
     return True
 
 def subslice(large, small):
+    r"""!
+    Construct a slice for a sub collection.
+
+    Given an *unknown* collection of data `full` and a subset of it `sub = full[large]`,
+    construct and return a slice such that
+    ```{.py}
+    sub[subslice(large, small)] == full[small]
+    ```
+
+    \throws ValueError if `large` and `small` do not allow for such a construction,
+            e.g. small.start must be reachable from large.start in steps of size large.step.
+    """
+
     if not _isValidSubslice(large, small):
         raise ValueError(f"Invalid slices: large={large}, small={small}")
 
