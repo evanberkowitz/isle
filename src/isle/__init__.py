@@ -6,12 +6,13 @@ Contains Python modules and imports everything from C++ extension into the isle 
 
 from .cpp_wrappers import *
 from . import checks
+from . import cli
+from . import collection
 from . import fileio
+from . import meta
 from . import proposers
 from . import random
 from . import util
-from . import cli
-from . import meta
 import isle.action
 
 __version__ = str(isleVersion)

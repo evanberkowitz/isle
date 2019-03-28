@@ -18,7 +18,7 @@ import numpy as np
 import isle
 import isle.action
 from . import Vector, leapfrog
-from .util import hingeRange
+from .collection import hingeRange
 from .meta import classFromSource, sourceOfClass
 
 
