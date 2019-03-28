@@ -2,6 +2,10 @@ r"""!
 Handle collections of elements.
 """
 
+import logging
+import math
+
+
 def hingeRange(start, end, stepSize):
     r"""!
     A generator that behaves similarly to the builtin range with two differences:
@@ -62,3 +66,53 @@ def parseSlice(string, minComponents=0, maxComponents=3):
                          f"requires at most {maxComponents}")
 
     return slice(*components)
+
+
+def _isValidSubslice(large, small):
+    """!
+    Check if a small slice allows constructing an array from data in a larger array.
+    """
+
+    log = logging.getLogger(__name__)
+
+    if any(x is None for x in (large.start, large.stop, large.step,
+                               small.start, small.stop, small.step)):
+        log.error("All slice parameters must be given, None is not allowed")
+        return False
+    if any(x < 0 for x in (large.start, large.stop, large.step,
+                           small.start, small.stop, small.step)):
+        log.error("No slice parameters may be less than 0")
+        return False
+
+    if small.step % large.step != 0:
+        log.error("Step of small slice (%d) must be a multiple of step of large slice (%d)",
+                  small.step, large.step)
+        return False
+
+    if small.start < large.start:
+        log.error("Small start (%d) must not be less than large start (%d)",
+                  small.start, large.start)
+        return False
+    if (small.start - large.start) % large.step != 0:
+        log.error("Small start (%d) must be reachable from large start (%d) "
+                  "in steps of size large.step (%d)",
+                  small.start, large.start, large.step)
+        return False
+
+    if small.stop > large.stop:
+        log.error("Small start (%d) must not be greater than large stop (%d)",
+                  small.stop, large.stop)
+        return False
+    # Do not need any extra check for small.stop, it does not need to be reachable from
+    # either large.start or large.stop.
+
+    return True
+
+def subslice(large, small):
+    if not _isValidSubslice(large, small):
+        raise ValueError(f"Invalid slices: large={large}, small={small}")
+
+    step = small.step // large.step
+    start = (small.start - large.start) // large.step
+    stop = start + math.ceil((small.stop - small.start)/small.step)*step
+    return slice(start, stop, step)
