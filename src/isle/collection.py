@@ -2,7 +2,7 @@ r"""!
 Handle collections of elements.
 """
 
-import logging
+from logging import getLogger
 import math
 
 
@@ -73,7 +73,7 @@ def _isValidSubslice(large, small):
     Check if a small slice allows constructing an array from data in a larger array.
     """
 
-    log = logging.getLogger(__name__)
+    log = getLogger(__name__)
 
     if any(x is None for x in (large.start, large.stop, large.step,
                                small.start, small.stop, small.step)):
@@ -105,6 +105,15 @@ def _isValidSubslice(large, small):
         return False
     # Do not need any extra check for small.stop, it does not need to be reachable from
     # either large.start or large.stop.
+
+    if small.stop < small.start:
+        log.error("Small start (%d) must not be greater than small stop (%d)",
+                  small.start, small.stop)
+        return False
+    if large.stop < large.start:
+        log.error("Large start (%d) must not be greater than large stop (%d)",
+                  large.start, large.stop)
+        return False
 
     return True
 
