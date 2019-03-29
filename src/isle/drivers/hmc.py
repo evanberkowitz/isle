@@ -69,23 +69,10 @@ class HMC:
             # get initial conditions for evolver
             startPhi, startPi, startActVal = phi, Vector(self.rng.normal(0, 1, len(phi))+0j), actVal
 
-            # get new proposed fields
-            endPhi, endPi, endActVal = evolver.evolve(startPhi, startPi, startActVal, trajPoint)
+            # get new fields
+            phi, _, actVal, trajPoint = evolver.evolve(startPhi, startPi, startActVal, trajPoint)
 
             # TODO consistency checks
-
-            # accept-reject
-            deltaE = np.real((endActVal + np.linalg.norm(endPi)**2/2)
-                             - (startActVal + np.linalg.norm(startPi)**2/2))
-            if deltaE < 0 or np.exp(-deltaE) > self.rng.uniform(0, 1):
-                trajPoint = 1
-                phi = endPhi
-                actVal = endActVal
-            else:
-                trajPoint = 0
-                phi = startPhi
-                actVal = startActVal
-
             # TODO inline meas
 
             # advance before saving because phi is a new configuration (no 0 is handled above)
