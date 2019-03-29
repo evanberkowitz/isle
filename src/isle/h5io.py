@@ -11,7 +11,7 @@ import numpy as np
 
 from . import Vector, isleVersion, pythonVersion, blazeVersion, pybind11Version
 from .random import readStateH5
-from .util import parseSlice
+from .collection import listToSlice, parseSlice, subslice
 
 def createH5Group(base, name):
     r"""!
@@ -171,7 +171,8 @@ def loadList(h5group, convert=int):
     return sorted(map(lambda p: (convert(p[0]), p[1]), h5group.items()),
                   key=lambda item: item[0])
 
-def loadActionValuesFrom(h5obj, configRange=None):
+# TODO add base path param
+def loadActionValuesFrom(h5obj, full=False):
     r"""!
     Load values of the action from a HDF5 file given via a HDF5 object in that file.
 
@@ -179,38 +180,39 @@ def loadActionValuesFrom(h5obj, configRange=None):
     Otherwise, read action from saved configurations.
 
     \param fname An arbitrary HDF5 object in the file to read the action from.
-    \param configRange `slice` indicating which values of the action to load.
-                       Might need to load from `/configuration` to satisfy the constraint.
-                       If None, load whichever action values are stored in `/action/action` if
-                       it exists or all action if reading from `/configuration`.
+    \param full If True, always read from saved configurations as `/action/action` might
+                contain only a subset of all actions.
     \returns (action, configRange) where
              - action: Numpy array of values of the action.
              - configRange: `slice` indicating the range of configurations
-                            the action was laoded for.
+                            the action was loaded for.
     \throws RuntimeError if neither `/action/action` nor `/configuration` exist in the file.
     """
 
     h5f = h5obj.file
+    action = None
 
-    if "action" in h5f:
-        cRange = parseSlice(h5f["action"].attrs["configurations"],
-                            minComponents=3)
-        # not the cleverest way to handle it but the simplest; should be enough though
-        if configRange is None or cRange == configRange:
-            return h5f["action/action"][()], cRange
+    if not full and "action" in h5f:
+        action = h5f["action/action"][()]
+        auxRange = parseSlice(h5f["action"].attrs["configurations"],
+                              minComponents=3)
+        cRange = slice(0 if auxRange.start is None else auxRange.start,
+                       action.shape[0] if auxRange.stop is None else auxRange.stop,
+                       auxRange.step)
 
-    if "configuration" in h5f:
-        if configRange is None:
-            configRange = slice(None)
-        configs = loadList(h5f["configuration"])[configRange]
-        return np.array([grp["action"][()] for _, grp in configs]), configRange
+    if action is None and "configuration" in h5f:
+        indices, groups = zip(*loadList(h5f["configuration"]))
+        action = np.array([grp["action"][()] for grp in groups])
+        cRange = listToSlice(indices)
 
-    getLogger(__name__).error("Cannot load action, no configurations or "
-                              "separate action found in file %s.", h5f.filename)
-    raise RuntimeError("No action found in file")
+    if action is None:
+        getLogger(__name__).error("Cannot load action, no configurations or "
+                                  "separate action found in file %s.", h5f.filename)
+        raise RuntimeError("No action found in file")
 
+    return action, cRange
 
-def loadActionValues(fname, configRange=None):
+def loadActionValues(fname, full=False):
     r"""!
     Load values of the action from a HDF5 file.
 
@@ -218,23 +220,27 @@ def loadActionValues(fname, configRange=None):
     Otherwise, read action from saved configurations.
 
     \param fname Name of the file to load action from.
-    \param configRange `slice` indicating which values of the action to load.
-                       Might need to load from `/configuration` to satisfy the constraint.
-                       If None, load whichever action values are stored in `/action/action` if
-                       it exists or all action if reading from `/configuration`.
+    \param full If True, always read from saved configurations as `/action/action` might
+                contain only a subset of all actions.
     \returns (action, configRange) where
              - action: Numpy array of values of the action.
              - configRange: `slice` indicating the range of configurations
-                            the action was laoded for.
+                            the action was loaded for.
     \throws RuntimeError if neither `/action/action` nor `/configuration` exist in the file.
     """
 
     with h5.File(fname, "r") as h5f:
-        return loadActionValuesFrom(h5f, configRange)
+        return loadActionValuesFrom(h5f, full)
 
 # def loadWeightsFor(dset):
 #     group = dset.parent
-#     # f = dset.file
-
-#     # action = f["arction/action"][()]
-#     action, configRange = loadActionValuesFrom(dset)
+#     try:
+#         configRange = parseSlice(group.attrs["configurations"], minComponents=3)
+#     except KeyError:
+#         getLogger(__name__).error("Cannot load weights for dataset %s; "
+#                                   "there is no 'configurations' attribute", dset)
+#         raise
+#     print('configRange:', configRange)
+#     # configRange = slice(10, 40, 10)
+#     action, _ = loadActionValuesFrom(dset, configRange)
+#     return np.exp(-1j * np.imag(action))
