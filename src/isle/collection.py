@@ -67,6 +67,13 @@ def parseSlice(string, minComponents=0, maxComponents=3):
 
     return slice(*components)
 
+def normalizeSlice(inSlice, normStart, normStop):
+    """!
+    Return a slice by replacing start or stop in the input if those are None.
+    """
+    return slice(normStart if inSlice.start is None else inSlice.start,
+                 normStop if inSlice.stop is None else inSlice.stop,
+                 inSlice.step)
 
 def _isValidSubslice(large, small):
     """!
