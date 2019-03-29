@@ -67,10 +67,26 @@ def parseSlice(string, minComponents=0, maxComponents=3):
 
     return slice(*components)
 
-def normalizeSlice(inSlice, normStart, normStop):
-    """!
+def normalizeSlice(inSlice, normStart, normStop=None, size=None):
+    r"""!
     Return a slice by replacing start or stop in the input if those are None.
+    \param inSlice Input slice.
+    \param normStart Start value to use if `inSlice.start is None`.
+    \param normStop Stop value to use if `inSlice.stop is None`.
+                    May be `None`, in which case `size` is used.
+    \param size Number of elements described by the slice. If not `None`,
+                it is used as `normStop = normStart + size*inSlice.step`.
+
+    Parameters `normStop` and `size` are mutually exclusive.
     """
+    if normStop is None:
+        if size is None:
+            raise ValueError("Either normStop or size must not be None")
+        normStop = normStart + size*inSlice.step
+    else:
+        if size is not None:
+            raise ValueError("Only one of normStop and size may be not None")
+
     return slice(normStart if inSlice.start is None else inSlice.start,
                  normStop if inSlice.stop is None else inSlice.stop,
                  inSlice.step)
