@@ -65,6 +65,7 @@ class Evolver(metaclass=ABCMeta):
         \returns A newly constructed evolver.
         """
 
+
 class ConstStepLeapfrog(Evolver):
     r"""! \ingroup evolvers
     A leapfrog evolver with constant parameters.
@@ -218,115 +219,156 @@ class LinearStepLeapfrog(Evolver):
                    h5group["current"][()])
 
 
-# class TwoPiJumps(Evolver):
-#     def __init__(self, selectionProbability, action, lattice, rng):
-#         self.rng = rng
-#         self.latSize = lattice.lattSize()
-#         self.selectionProb = selectionProbability
+class TwoPiJumps(Evolver):
+    """!
+    Shift configuration by 2*pi at random lattice sites.
 
-#         # probabilities to shift by [+2pi, -2pi, no shift]
-#         self._shiftProb = [self.selectionProb/2, self.selectionProb/2, 1-self.selectionProb]
+    Evolver that selects lattice sites and shifts the configuration by
+    `+2*pi` or `-2*pi` at those sites where the sign is chosen randomly per site.
+    The conjugate momentum is not changed.
+    Can modify multiple sites at the same time (one "batch") and do multiple batches.
+    Each batch is accepted or rejected on its own.
 
-#         # _sumInvUtildes is either sum(1/Utilde)/2 from all HubbardGaugeActions
-#         #                or None
-#         # _action is either None or action that was passed in (same order as _sumInvUtildes)
-#         utildes = self._findUtildes(action)
-#         if utildes is None:
-#             self._action = action
-#             self._sumHalfInvUtilde = None
-#             getLogger(__name__).info("Action does not allow for evaluation shortcut under "
-#                                      "jumps by 2pi, using normal (slow) evaluation")
-#         else:
-#             self._action = None
-#             self._sumHalfInvUtilde = sum(1 / utilde for utilde in utildes) / 2
-#             getLogger(__name__).info("Action allows for evaluation shortcut under jumps "
-#                                      "by 2pi, found utilde = %s", utildes)
+    If the action consists only of isle.action.HubbardGaugeAction and any variant
+    of isle.action.HubbardFermiAction, a shortcurt can be used to compute the change
+    in action which allows for very fast execution.
+    """
 
-#         self.act = action
+    def __init__(self, nBatches, batchSize, action, lattice, rng):
+        r"""!
+        \param nBatches Number of batches of sites.
+        \param batchSize Number of sites in each batch.
+        \param action Instance of isle.Action to use for molecular dynamics.
+        \param lattice Lattice the simulation runs on.
+        \param rng Central random number generator for the run.
+        """
 
-#     def _findUtildes(self, action):
-#         r"""!
-#         Find all HubbardGaugeActions and extract Utilde.
-#         \returns Either a list of all Utildes found or None if there is any action
-#                  which does not allow for the shortcut calculation.
-#         """
+        self.nBatches = nBatches
+        self.batchSize = batchSize
+        self.rng = rng
+        self.latSize = lattice.lattSize()
+        self.selector = BinarySelector(rng)
 
-#         # all sub actions must allow for the shortcut
-#         if isinstance(action, isle.action.SumAction):
-#             utildes = []
-#             for i in range(len(action)):
-#                 aux = self._findUtildes(action[i])
-#                 if aux is None:
-#                     return None
-#                 utildes.extend(aux)
-#             return utildes
+        # _sumHalfInvUtildes is either sum(1/Utilde)/2 from all HubbardGaugeActions
+        #                    or None
+        # _action is either None or action that was passed in (same order as _sumInvUtildes)
+        utildes = self._findUtildes(action)
+        if utildes is None:
+            self._action = action
+            self._sumHalfInvUtilde = None
+            getLogger(__name__).info("Action does not allow for evaluation shortcut under "
+                                     "jumps by 2pi, using normal (slow) evaluation")
+        else:
+            self._action = None
+            self._sumHalfInvUtilde = sum(1 / utilde for utilde in utildes) / 2
+            getLogger(__name__).info("Action allows for evaluation shortcut under jumps "
+                                     "by 2pi, found utilde = %s", utildes)
 
-#         # single action
-#         if isinstance(action, isle.action.HubbardGaugeAction):
-#             return [action.utilde]
+    def _findUtildes(self, action):
+        r"""!
+        Find all HubbardGaugeActions and extract Utilde.
+        \returns Either a list of all Utildes found or None if there is any action
+                 which does not allow for the shortcut calculation.
+        """
 
-#         # action is invariant under 2pi jump
-#         if isinstance(action, (isle.action.HubbardFermiActionDiaOneOne,
-#                                isle.action.HubbardFermiActionDiaTwoOne,
-#                                isle.action.HubbardFermiActionExpOneOne,
-#                                isle.action.HubbardFermiActionExpTwoOne)):
-#             return []
+        # all sub actions must allow for the shortcut
+        if isinstance(action, isle.action.SumAction):
+            utildes = []
+            for i in range(len(action)):
+                aux = self._findUtildes(action[i])
+                if aux is None:
+                    return None
+                utildes.extend(aux)
+            return utildes
 
-#         return None
+        # single action
+        if isinstance(action, isle.action.HubbardGaugeAction):
+            return [action.utilde]
 
-#     def evolve(self, phi, pi, actVal, trajPoint):
-#         r"""!
-#         Evolve a configuration, momentum remains unchanged.
-#         \param phi Input configuration.
-#         \param pi Input Momentum.
-#         \param actVal Value of the action at phi.
-#         \param _trajPoint \e ignored.
-#         \returns In order:
-#           - New configuration
-#           - New momentum
-#           - Action evaluated at new configuration
-#           - Point along trajectory that was selected
-#         """
+        # action is invariant under 2pi jump
+        if isinstance(action, (isle.action.HubbardFermiActionDiaOneOne,
+                               isle.action.HubbardFermiActionDiaTwoOne,
+                               isle.action.HubbardFermiActionExpOneOne,
+                               isle.action.HubbardFermiActionExpTwoOne)):
+            return []
 
-#         # site i is shifted by 2*pi*shifts[i]
-#         shifts = np.random.choice([1, -1, 0],
-#                                   p=self._shiftProb,
-#                                   size=(self.latSize,))
+        return None
 
-#         newPhi = phi + isle.Vector(2*np.pi*shifts)
+    def _evalAction(self, newPhi, sites, shifts, actVal):
+        """!
+        Compute the value of the action at a given phi after a jump.
+        """
 
-#         if self._action is None:
-#             # calculate difference in gauge action
-#             actVal = actVal + (np.linalg.norm(newPhi)**2 - np.linalg.norm(phi)**2) \
-#                 * self._sumHalfInvUtilde
+        if self._action is None:
+            # shortcut: Computes (newPhi**2 - oldPhi**2) / (2*Utilde), the difference in
+            #           gauge action. The fermion action is invariant under jumps by 2*pi
+            #           if this branch is taken.
+            return actVal + np.dot(2*np.array(newPhi, copy=False)[sites]-shifts, shifts) \
+                * self._sumHalfInvUtilde
 
-#         else:
-#             # evaluate the full action on new field
-#             actVal = self._action.eval(newPhi)
+        # Some part of the action does not allow for the shortcut.
+        return self._action.eval(newPhi)
 
-#         return newPhi, pi, actVal
+    def evolve(self, phi, pi, actVal, trajPoint):
+        r"""!
+        Evolve a configuration, momentum remains unchanged.
+        \param phi Input configuration.
+        \param pi Input Momentum.
+        \param actVal Value of the action at phi.
+        \param trajPoint \e ignored.
+        \returns In order:
+          - New configuration
+          - New momentum
+          - Action evaluated at new configuration
+          - 0 if no jump was accepted, 1 if at least one was accepted (across all batches).
+        """
 
-#     def save(self, h5group, _manager):
-#         r"""!
-#         Save the evolver to HDF5.
-#         Has to be the inverse of Evolver.fromH5().
-#         \param h5group HDF5 group to save to.
-#         \param _manager \e ignored.
-#         """
-#         h5group["selectionProbability"] = self.selectionProb
+        # nothing accepted yet
+        trajPoint = 0
 
-#     @classmethod
-#     def fromH5(cls, h5group, _manager, action, lattice, rng):
-#         r"""!
-#         Construct from HDF5.
-#         \param h5group HDF5 group to load parameters from.
-#         \param _manager \e ignored.
-#         \param action Action to use.
-#         \param lattice Lattice the simulation runs on.
-#         \param rng Central random number generator for the run.
-#         \returns A newly constructed TwoPiJumps evolver.
-#         """
-#         return cls(h5group["selectionProbability"][()], action, lattice, rng)
+        for _ in range(self.nBatches):
+            # lattice sites at which to jump
+            sites = self.rng.choice(self.latSize, self.batchSize, replace=False)
+            # shifts for the above sites
+            shifts = self.rng.choice((-2*np.pi, +2*np.pi), self.batchSize, replace=True)
+
+            # perform jumps
+            newPhi = np.array(phi, copy=True)
+            newPhi[sites] += shifts
+            newActVal = self._evalAction(newPhi, sites, shifts, actVal)
+
+            # no need to put pi into check, it never changes in here
+            if self.selector.selectTrajPoint(actVal, newActVal) == 1:
+                phi, actVal = newPhi, newActVal
+                trajPoint = 1  # something has been accepted
+            # else:
+            #     nothing to do, variables are already set up
+
+        return phi, pi, actVal, trajPoint
+
+    def save(self, h5group, _manager):
+        r"""!
+        Save the evolver to HDF5.
+        Has to be the inverse of Evolver.fromH5().
+        \param h5group HDF5 group to save to.
+        \param _manager \e ignored.
+        """
+        h5group["nBatches"] = self.nBatches
+        h5group["batchSize"] = self.batchSize
+
+    @classmethod
+    def fromH5(cls, h5group, _manager, action, lattice, rng):
+        r"""!
+        Construct from HDF5.
+        \param h5group HDF5 group to load parameters from.
+        \param _manager \e ignored.
+        \param action Action to use.
+        \param lattice Lattice the simulation runs on.
+        \param rng Central random number generator for the run.
+        \returns A newly constructed TwoPiJumps evolver.
+        """
+        return cls(h5group["nBatches"][()], h5group["batchSize"][()], action, lattice, rng)
+
 
 class Alternator(Evolver):
     r"""! \ingroup evolvers
@@ -341,9 +383,9 @@ class Alternator(Evolver):
     def __init__(self, evolvers=None, startIndex=0):
         r"""!
         Store given sub evolvers.
-        \param evolvers List of lists of the form `[[c0, p0], [c1, p1], ...]`,
-                        where `pi` are the sub evolvers to cycle through.
-                        `ci` is the number of iterations to run `pi` for.
+        \param evolvers List of lists of the form `[[c0, e0], [c1, e1], ...]`,
+                        where `ei` are the sub evolvers to cycle through.
+                        `ci` is the number of iterations to run `ei` for.
         \param startIndex Start iteration at this point. Exists mostly for internal use.
         """
         if evolvers:
