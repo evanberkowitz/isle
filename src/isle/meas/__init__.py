@@ -10,6 +10,7 @@ More details can be found under \ref measdoc "Measurements".
 ## \defgroup meas Measurements
 # Perform measurements on configurations.
 
+from .measurement import Measurement
 from .action import Action  # (unused import) pylint: disable=W0611
 from .chiralCondensate import ChiralCondensate  # (unused import) pylint: disable=W0611
 from .logdet import Logdet  # (unused import) pylint: disable=W0611
