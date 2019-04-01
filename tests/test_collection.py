@@ -21,12 +21,16 @@ def _randomList():
 
 def _randomSlices(n):
     a = random.randint(0, n)
-    b = random.randint(a, n)
+    b = random.randint(a, n) if random.randint(0, 1) == 0 else None
     s = random.randint(1, max(n//2, 1))
     large = slice(a, b, s)
 
-    a = large.start+random.randint(0, (large.stop-large.start)//large.step)*large.step
-    b = random.randint(a, large.stop)
+    if large.stop is None:
+        a = large.start+random.randint(0, n//large.step)*large.step
+        b = None
+    else:
+        a = large.start+random.randint(0, (large.stop-large.start)//large.step)*large.step
+        b = random.randint(a, large.stop)
     s = random.randint(1, max(n//large.step, 1))*large.step
     small = slice(a, b, s)
 

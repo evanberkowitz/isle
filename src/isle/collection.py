@@ -98,13 +98,13 @@ def _isValidSubslice(large, small):
 
     log = getLogger(__name__)
 
-    if any(x is None for x in (large.start, large.stop, large.step,
-                               small.start, small.stop, small.step)):
+    if any(x is None for x in (large.start, large.step,
+                               small.start, small.step)):
         log.error("All slice parameters must be given, None is not allowed")
         return False
-    if any(x < 0 for x in (large.start, large.stop, large.step,
-                           small.start, small.stop, small.step)):
-        log.error("No slice parameters may be less than 0")
+    if any(x is not None and x < 0 for x in (large.start, large.stop, large.step,
+                                             small.start, small.stop, small.step)):
+        log.error("No slice parameter may be less than 0")
         return False
 
     if small.step % large.step != 0:
@@ -122,18 +122,18 @@ def _isValidSubslice(large, small):
                   small.start, large.start, large.step)
         return False
 
-    if small.stop > large.stop:
+    if small.stop is not None and large.step is not None and small.stop > large.stop:
         log.error("Small start (%d) must not be greater than large stop (%d)",
                   small.stop, large.stop)
         return False
     # Do not need any extra check for small.stop, it does not need to be reachable from
     # either large.start or large.stop.
 
-    if small.stop < small.start:
+    if small.stop is not None and small.stop < small.start:
         log.error("Small start (%d) must not be greater than small stop (%d)",
                   small.start, small.stop)
         return False
-    if large.stop < large.start:
+    if large.stop is not None and large.stop < large.start:
         log.error("Large start (%d) must not be greater than large stop (%d)",
                   large.start, large.stop)
         return False
@@ -159,5 +159,6 @@ def subslice(large, small):
 
     step = small.step // large.step
     start = (small.start - large.start) // large.step
-    stop = start + math.ceil((small.stop - small.start)/small.step)*step
+    stop = None if small.stop is None \
+        else start + math.ceil((small.stop - small.start)/small.step)*step
     return slice(start, stop, step)
