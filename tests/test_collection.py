@@ -19,11 +19,14 @@ MAX_LEN = 30
 def _randomList():
     return [random.gauss(RAND_MEAN, RAND_STD) for _ in range(random.randint(MIN_LEN, MAX_LEN))]
 
-def _randomSlices(n):
+def _randomSlice(n, allowNone=True):
     a = random.randint(0, n)
-    b = random.randint(a, n) if random.randint(0, 1) == 0 else None
+    b = None if random.randint(0, 1) == 0 and allowNone else random.randint(a, n)
     s = random.randint(1, max(n//2, 1))
-    large = slice(a, b, s)
+    return slice(a, b, s)
+
+def _randomSlices(n):
+    large = _randomSlice(n)
 
     if large.stop is None:
         a = large.start+random.randint(0, n//large.step)*large.step
@@ -49,6 +52,20 @@ class TestCollection(unittest.TestCase):
             self.assertEqual(subList[subslice], fullList[small],
                              msg=f"Failed check of subslice in repetition {i}\n"
                              f"with large = {large}, small = {small}, subslice = {subslice}")
+
+    def test_2_inSlice(self):
+        """Test function inSlice."""
+
+        for i in range(1000):
+            aslice = _randomSlice(100, allowNone=False)
+            alist = list(range(aslice.start, aslice.stop, aslice.step))
+
+            for j in range(100):
+                index = random.randint(-1, 101)
+                self.assertEqual(isle.collection.inSlice(index, aslice), index in alist,
+                                 msg=f"Failed check of inSLice in repetition {i}.{j}\n"
+                                 f"with aslice = {aslice}, index = {index}")
+
 
 def setUpModule():
     "Setup the SumAction test module."

@@ -45,6 +45,14 @@ def listToSlice(lst):
 
     return slice(lst[0], lst[-1]+diffs[0], diffs[0])
 
+def inSlice(index, aslice):
+    r"""!
+    Return whether `index` is in the interval described by `aslice`.
+    """
+    return aslice.start <= index \
+        and (aslice.stop is None or index < aslice.stop) \
+        and (index-aslice.start) % aslice.step == 0
+
 def parseSlice(string, minComponents=0, maxComponents=3):
     r"""!
     Parse a string as a slice in usual :-notation.
