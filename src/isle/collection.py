@@ -59,20 +59,20 @@ def withStart(aslice, start):
     \param aslice `aslice.stop` and `aslice.step` are retained,
                   `aslice.start` is conditionally replaced.
     \param start Desired start to insert if `aslice.start is None`.
-    \throws ValueError if `start` is less than or not reachable from `aslice.start`.
+    \throws ValueError if `start` is greater than or not reachable from `aslice.start`.
     """
 
     if aslice.start is None:
-        return slice((start - aslice.start) // aslice.step, aslice.stop, aslice.step)
+        return slice(start, aslice.stop, aslice.step)
 
-    if start < aslice.start:
-        getLogger(__name__).error("Start (%d) must not be less than slice start (%d)",
+    if start > aslice.start:
+        getLogger(__name__).error("Start (%d) must not be greater than slice start (%d)",
                                   start, aslice.start)
         raise ValueError("Invalid start")
-    if (start - aslice.start) % aslice.step != 0:
-        getLogger(__name__).error("Start (%d) must be reachable from slice start (%d) "
+    if (aslice.start - start) % aslice.step != 0:
+        getLogger(__name__).error("Slice start (%d) must be reachable from desired start (%d) "
                                   "in steps of size aslice.step (%d)",
-                                  start, aslice.start, aslice.step)
+                                  aslice.start, start, aslice.step)
         raise ValueError("Invalid start")
 
     return aslice
