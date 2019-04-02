@@ -66,6 +66,20 @@ class TestCollection(unittest.TestCase):
                                  msg=f"Failed check of inSLice in repetition {i}.{j}\n"
                                  f"with aslice = {aslice}, index = {index}")
 
+    def test_3_withStop(self):
+        """Test function withStop."""
+
+        for i in range(10000):
+            alist = _randomList()
+            aslice = _randomSlice(len(alist))
+            aslice = slice(aslice.start, None, aslice.step)
+
+            sliceWithStop = isle.collection.withStop(aslice, len(alist))
+            self.assertEqual(alist[aslice], alist[sliceWithStop],
+                             msg=f"Failed check of withStop in repetition {i}\n"
+                             f"with aslice = {aslice}, sliceWithStop = {sliceWithStop}, "
+                             f"len(alist) = {len(alist)}")
+
 
 def setUpModule():
     "Setup the SumAction test module."

@@ -53,6 +53,17 @@ def inSlice(index, aslice):
         and (aslice.stop is None or index < aslice.stop) \
         and (index-aslice.start) % aslice.step == 0
 
+def withStop(aslice, length):
+    r"""!
+    Return a new slice by adjusting the stop value according to the length of a collection.
+    \param aslice A slice whose stop value may be None or any other value.
+    \param length Number of elements in a collection sliced by aslice.
+    \returns `slice(aslice.start, stop, aslice.step)` where `stop` is computed based off
+             parameter `length`.
+    """
+    stop = math.ceil((length-aslice.start)/aslice.step) * aslice.step + aslice.start
+    return slice(aslice.start, stop, aslice.step)
+
 def parseSlice(string, minComponents=0, maxComponents=3):
     r"""!
     Parse a string as a slice in usual :-notation.
@@ -75,10 +86,10 @@ def parseSlice(string, minComponents=0, maxComponents=3):
 
     return slice(*components)
 
-def normalizeSlice(inSlice, normStart, normStop=None, size=None):
+def normalizeSlice(aSlice, normStart, normStop=None, size=None):
     r"""!
     Return a slice by replacing start or stop in the input if those are None.
-    \param inSlice Input slice.
+    \param aSlice Input slice.
     \param normStart Start value to use if `inSlice.start is None`.
     \param normStop Stop value to use if `inSlice.stop is None`.
                     May be `None`, in which case `size` is used.
@@ -90,14 +101,14 @@ def normalizeSlice(inSlice, normStart, normStop=None, size=None):
     if normStop is None:
         if size is None:
             raise ValueError("Either normStop or size must not be None")
-        normStop = normStart + size*inSlice.step
+        normStop = normStart + size*aSlice.step
     else:
         if size is not None:
             raise ValueError("Only one of normStop and size may be not None")
 
-    return slice(normStart if inSlice.start is None else inSlice.start,
-                 normStop if inSlice.stop is None else inSlice.stop,
-                 inSlice.step)
+    return slice(normStart if aSlice.start is None else aSlice.start,
+                 normStop if aSlice.stop is None else aSlice.stop,
+                 aSlice.step)
 
 def _isValidSubslice(large, small):
     """!
