@@ -1,28 +1,32 @@
-"""!
+r"""!\file
+\ingroup meas
 Measurement of logdet.
 """
 
 import numpy as np
 
 import isle
-from ..h5io import createH5Group
+from .measurement import Measurement
 
-class Logdet:
+class Logdet(Measurement):
     r"""!
     \ingroup meas
     Measure the log determinant of particles and holes.
     """
 
-    def __init__(self, hfm, alpha=1):
+    def __init__(self, hfm, savePath, configSlice=slice(None, None, None), alpha=1):
+        assert alpha in [0, 1]
+
+        super().__init__(savePath, configSlice)
+
         self.hfm = hfm
         self.logdet = {isle.Species.PARTICLE: [],
                        isle.Species.HOLE: []}
-        assert alpha in [0, 1]
-        self._alpha = alpha
+        self.alpha = alpha
 
     def __call__(self, phi, action, itr):
         """!Record logdet."""
-        if self._alpha == 1:
+        if self.alpha == 1:
             for species, logdet in self.logdet.items():
                 logdet.append(isle.logdetM(self.hfm, phi, species))
         else:
@@ -31,20 +35,33 @@ class Logdet:
                 ld = np.linalg.slogdet(isle.Matrix(self.hfm.M(-1j*phi, species)))
                 logdet.append(np.log(ld[0]) + ld[1])
 
-    def save(self, base, name):
+    def save(self, h5group):
         r"""!
         Write both the particle and hole logdet to a file.
-        \param base HDF5 group in which to store data.
-        \param name Name of the subgroup of base for this measurement.
+        \param h5group Base HDF5 group. Data is stored in subgroup `h5group/self.savePath`.
         """
-        group = createH5Group(base, name)
-        group["particles"] = self.logdet[isle.Species.PARTICLE]
-        group["holes"] = self.logdet[isle.Species.HOLE]
+        subGroup = isle.h5io.createH5Group(h5group, self.savePath)
+        subGroup["particles"] = self.logdet[isle.Species.PARTICLE]
+        subGroup["holes"] = self.logdet[isle.Species.HOLE]
 
-    def read(self, group):
+    def saveAll(self, h5group):
         r"""!
-        Read particle and hole logdet from a file.
-        \param group HDF5 group which contains the data of this measurement.
+        Save results of measurement as well as relevant metadata.
+        \param h5group Base HDF5 group. Data is stored in subgroup `h5group/self.savePath`.
         """
-        self.logdet[isle.Species.PARTICLE] = group["particles"][()]
-        self.logdet[isle.Species.HOLE] = group["holes"][()]
+
+        self.save(h5group)
+        # create the group here to make sure it really exists
+        subGroup = isle.h5io.createH5Group(h5group, self.savePath)
+        self.saveConfigSlice(subGroup)
+        subGroup.attrs["alpha"] = self.alpha
+
+
+def read(h5group):
+    r"""!
+    Read particle and hole logdet from a file.
+    \param h5group HDF5 group which contains the data of this measurement.
+    """
+    return {isle.Species.PARTICLE: h5group["particles"][()],
+            isle.Species.HOLE: h5group["holes"][()]}, \
+            h5group.attrs["alpha"] if "alpha" in h5group.attrs else None
