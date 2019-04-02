@@ -64,6 +64,23 @@ def withStop(aslice, length):
     stop = math.ceil((length-aslice.start)/aslice.step) * aslice.step + aslice.start
     return slice(aslice.start, stop, aslice.step)
 
+def withStep(aslice, step):
+    r"""!
+    Return a new slice whose step value is replaced if it was None.
+    \param aslice `aslice.start` and `aslice.stop` are retained,
+                  `aslice.step` is conditionally replaced.
+    \param step Desired step to insert if `aslice.step is None`.
+    \throws ValueError if `step` is not divisible by `aslice.step`.
+    """
+
+    if aslice.step is None:
+        return slice(aslice.start, aslice.stop, step)
+    if step % aslice.step != 0:
+        getLogger(__name__).error("Invalid step (%s), not a multiple of aslice.step (%s)",
+                                  step, aslice.step)
+        raise ValueError(f"Invalid slice step")
+    return aslice
+
 def parseSlice(string, minComponents=0, maxComponents=3):
     r"""!
     Parse a string as a slice in usual :-notation.
