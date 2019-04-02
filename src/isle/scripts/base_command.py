@@ -26,7 +26,7 @@ def _makeParser():
                          "none"),
 
                 "continue": ("Perform a continuation HMC run. Loads a checkpoint and produce more "
-                             "configurations with the same parameters and proposer.",
+                             "configurations with the same parameters and evolver.",
                              cli.addContinueArgs,
                              "isle.hmc.log")}
 
