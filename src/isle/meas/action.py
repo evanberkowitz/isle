@@ -6,7 +6,6 @@ Measurement of action.
 from logging import getLogger
 
 from ..h5io import createH5Group
-
 from .measurement import Measurement
 
 class Action(Measurement):

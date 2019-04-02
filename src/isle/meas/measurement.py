@@ -62,8 +62,8 @@ class Measurement(metaclass=ABCMeta):
 
         self.save(h5group)
         # create the group here to make sure it really exists
-        createH5Group(h5group, self.savePath)
-        self.saveConfigSlice(h5group[self.savePath])
+        subGroup = createH5Group(h5group, self.savePath)
+        self.saveConfigSlice(subGroup)
 
     def saveConfigSlice(self, h5obj, name="configurations"):
         r"""!
