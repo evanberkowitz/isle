@@ -27,7 +27,7 @@ class Measurement(metaclass=ABCMeta):
       It must be set to a number when saving the slice however!
     """
 
-    def __init__(self, savePath, configSlice=slice(0, None, 1)):
+    def __init__(self, savePath, configSlice=slice(None, None, None)):
         r"""!
         Store common parameters.
         \param savePath Path in an HDF5 file under which results are stored.
