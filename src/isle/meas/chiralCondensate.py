@@ -1,20 +1,23 @@
-"""!
+r"""!\file
+\ingroup meas
 Measurement of the chiral condensate.
 """
 
 import numpy as np
 
 import isle
-from ..h5io import createH5Group
+from .measurement import Measurement
 
-
-class ChiralCondensate:
+class ChiralCondensate(Measurement):
     r"""!
     \ingroup meas
     Tabulate the chiral condensate.
     """
 
-    def __init__(self, seed, nsamples, hfm, species):
+    def __init__(self, seed, nsamples, hfm, species,
+                 savePath, configSlice=slice(None, None, None)):
+        super().__init__(savePath, configSlice)
+
         self.nsamples = nsamples
         self.rng = isle.random.NumpyRNG(seed)
         self.hfm = hfm
@@ -37,18 +40,19 @@ class ChiralCondensate:
 
         self.chiCon.append(np.mean([np.dot(rhs, r) for rhs, r in zip(rhss, res)]))
 
-    def save(self, base, name):
+    def save(self, h5group):
         r"""!
         Write the chiral condensate
         \param base HDF5 group in which to store data.
-        \param name Name of the subgroup ob base for this measurement.
+        \param h5group Base HDF5 group. Data is stored in subgroup `h5group/self.savePath`.
         """
-        group = createH5Group(base, name)
-        group["chiralCondensate"] = self.chiCon
+        subGroup = isle.h5io.createH5Group(h5group, self.savePath)
+        subGroup["chiralCondensate"] = self.chiCon
 
-    def read(self, group):
-        r"""!
-        Read the chiral condensate from HDF5.
-        \param group HDF5 group which contains the data of this measurement.
-        """
-        self.chiCon = group["chiralCondensate"][()]
+
+def read(h5group):
+    r"""!
+    Read the chiral condensate from HDF5.
+    \param h5group HDF5 group which contains the data of this measurement.
+    """
+    return h5group["chiralCondensate"][()]
