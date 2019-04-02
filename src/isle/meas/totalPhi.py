@@ -1,18 +1,22 @@
-"""!
+r"""!\file
+\ingroup meas
 Measurement of total phi and norm of phi.
 """
 
 import numpy as np
 
+from .measurement import Measurement
 from ..h5io import createH5Group
 
-class TotalPhi:
+class TotalPhi(Measurement):
     r"""!
     \ingroup meas
     Tabulate phi and mean value of phi^2.
     """
 
-    def __init__(self):
+    def __init__(self, savePath, configSlice=slice(None, None, None)):
+        super().__init__(savePath, configSlice)
+
         self.Phi = []
         self.phiSq = []
 
@@ -21,20 +25,20 @@ class TotalPhi:
         self.Phi.append(np.sum(phi))
         self.phiSq.append(np.linalg.norm(phi)**2 / len(phi))
 
-    def save(self, base, name):
+    def save(self, h5group):
         r"""!
         Write both Phi and phiSquared.
         \param base HDF5 group in which to store data.
-        \param name Name of the subgroup of base for this measurement.
+        \param h5group Base HDF5 group. Data is stored in subgroup `h5group/self.savePath`.
         """
-        group = createH5Group(base, name)
-        group["totalPhi"] = self.Phi
-        group["phiSquared"] = self.phiSq
+        subGroup = createH5Group(h5group, self.savePath)
+        subGroup["totalPhi"] = self.Phi
+        subGroup["phiSquared"] = self.phiSq
 
-    def read(self, group):
-        r"""!
-        Read Phi and phiSquared from a file.
-        \param group HDF5 group which contains the data of this measurement.
-        """
-        self.Phi = group["totalPhi"][()]
-        self.phiSq = group["phiSquared"][()]
+
+def read(h5group):
+    r"""!
+    Read Phi and phiSquared from a file.
+    \param h5group HDF5 group which contains the data of this measurement.
+    """
+    return h5group["totalPhi"][()], h5group["phiSquared"][()]
