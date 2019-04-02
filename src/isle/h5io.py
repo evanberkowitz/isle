@@ -1,4 +1,4 @@
-"""!
+r"""!\file
 Routines for working with HDF5.
 """
 
@@ -11,7 +11,7 @@ import numpy as np
 
 from . import Vector, isleVersion, pythonVersion, blazeVersion, pybind11Version
 from .random import readStateH5
-from .collection import listToSlice, parseSlice, subslice
+from .collection import listToSlice, parseSlice, subslice, normalizeSlice
 
 def createH5Group(base, name):
     r"""!
@@ -194,11 +194,9 @@ def loadActionValuesFrom(h5obj, full=False):
 
     if not full and "action" in h5f:
         action = h5f["action/action"][()]
-        auxRange = parseSlice(h5f["action"].attrs["configurations"],
-                              minComponents=3)
-        cRange = slice(0 if auxRange.start is None else auxRange.start,
-                       action.shape[0] if auxRange.stop is None else auxRange.stop,
-                       auxRange.step)
+        cRange = normalizeSlice(parseSlice(h5f["action"].attrs["configurations"],
+                                           minComponents=3),
+                                0, action.shape[0])
 
     if action is None and "configuration" in h5f:
         indices, groups = zip(*loadList(h5f["configuration"]))
@@ -232,15 +230,42 @@ def loadActionValues(fname, full=False):
     with h5.File(fname, "r") as h5f:
         return loadActionValuesFrom(h5f, full)
 
-# def loadWeightsFor(dset):
-#     group = dset.parent
-#     try:
-#         configRange = parseSlice(group.attrs["configurations"], minComponents=3)
-#     except KeyError:
-#         getLogger(__name__).error("Cannot load weights for dataset %s; "
-#                                   "there is no 'configurations' attribute", dset)
-#         raise
-#     print('configRange:', configRange)
-#     # configRange = slice(10, 40, 10)
-#     action, _ = loadActionValuesFrom(dset, configRange)
-#     return np.exp(-1j * np.imag(action))
+def loadActionWeightsFor(dset):
+    r"""!
+    Load the weights from the imaginary part of the action for a measurement result.
+
+    The weights are loaded based on the 'configurations' attribute stored in the
+    parent group of `dset`.
+    This requires the attribute to be stored properly (no `None`) and the file to
+    contain the values of the action for all the trajectories the measurement was taken on
+    (can be as '/action/action' dataset or '/configuration' group).
+
+    The weights are computed as \f$e^{-i S_{I}}\f$.
+
+    \param dset HDF5 dataset containing the measurement result.
+    \returns np.ndarray of the weights for `dset`.
+    """
+
+    # load the configuration slice
+    group = dset.parent
+    try:
+        neededRange = parseSlice(group.attrs["configurations"], minComponents=3)
+    except KeyError:
+        getLogger(__name__).error("Cannot load weights for dataset %s; "
+                                  "there is no 'configurations' attribute", dset)
+        raise
+    if None in (neededRange.start, neededRange.stop, neededRange.step):
+        getLogger(__name__).error("The 'configurations' attibute for dataset %s "
+                                  "has not been saved properly, it contains None: %s",
+                                  dset, neededRange)
+        raise RuntimeError("configSlice of dataset contains None")
+
+    action, actionRange = loadActionValuesFrom(dset)
+    try:
+        subRange = subslice(actionRange, neededRange)
+    except ValueError:
+        # try again, maybe there are enough configurations in the file
+        action, actionRange = loadActionValuesFrom(dset, True)
+        subRange = subslice(actionRange, neededRange)
+
+    return np.exp(-1j * np.imag(action[subRange]))
