@@ -714,9 +714,6 @@ def addMeasArgs(parser):
     """!Add arguments for measurements to parser."""
     parser.add_argument("infile", help="Input file", type=Path)
     parser.add_argument("-o", "--output", help="Output file", type=Path, dest="outfile")
-    parser.add_argument("-c", "--configs", type=lambda x: isle.util.parseSlice(x, maxComponents=2),
-                        default=slice(None),
-                        help="Configurations to measure on. In slice notation without spaces.")
     parser.add_argument("--overwrite", action="store_true",
                         help="Overwrite existing output file.")
     return parser
