@@ -1,4 +1,5 @@
-"""!
+r"""!\file
+\ingroup meas
 Measurement of single-particle correlator.
 """
 
@@ -6,16 +7,19 @@ import numpy as np
 import scipy.linalg as la   # scipy is needed because np.linalg.eig and np.linalg.eigh do not guarantee an orthonormal eigenbasis.
 
 import isle
+from .measurement import Measurement
 from ..util import spaceToSpacetime, rollTemporally
 from ..h5io import createH5Group
 
-class SingleParticleCorrelator:
+class SingleParticleCorrelator(Measurement):
     r"""!
     \ingroup meas
     Tabulate single-particle correlator.
     """
 
-    def __init__(self, hfm, species, alpha=1):
+    def __init__(self, hfm, species, savePath, configSlice=slice(None, None, None), alpha=1):
+        super().__init__(savePath, configSlice)
+
         self.hfm = hfm
         self.corr = []
         self.irreps = np.transpose(la.orth(isle.Matrix(hfm.kappaTilde())))
@@ -56,20 +60,18 @@ class SingleParticleCorrelator:
                 for irrepj in self.irreps]),
             axis=2))
 
-    def save(self, base, name):
+    def save(self, h5group):
         r"""!
         Write the irreps and their correlators to a file.
-        \param base HDF5 group in which to store data.
-        \param name Name of the subgroup ob base for this measurement.
+        \param h5group Base HDF5 group. Data is stored in subgroup `h5group/self.savePath`.
         """
-        group = createH5Group(base, name)
-        group["correlators"] = self.corr
-        group["irreps"] = self.irreps
+        subGroup = createH5Group(h5group, self.savePath)
+        subGroup["correlators"] = self.corr
+        subGroup["irreps"] = self.irreps
 
-    def read(self, group):
-        r"""!
-        Read the irreps and their correlators from a file.
-        \param group HDF5 group which contains the data of this measurement.
-        """
-        self.corr = group["correlators"][()]
-        self.irreps = group["irreps"][()]
+def read(h5group):
+    r"""!
+    Read the irreps and their correlators from a file.
+    \param h5group HDF5 group which contains the data of this measurement.
+    """
+    return h5group["correlators"][()], h5group["irreps"][()]

@@ -7,9 +7,9 @@ Various basic checks.
 #
 # All callables in this module satisfy the requirements of hmc.hmc, i.e.
 # they have arguments
-#  - `startPhi`/`endPhi`: Configuration before and after the proposer.
-#  - `startPi`/`endPi`: Momentum before and after the proposer.
-#  - `startEnergy`/`endEnergy`: Energy before and after the proposer.
+#  - `startPhi`/`endPhi`: Configuration before and after the evolver.
+#  - `startPi`/`endPi`: Momentum before and after the evolver.
+#  - `startEnergy`/`endEnergy`: Energy before and after the evolver.
 #
 # and raise a `ConsistencyCheckFailure` in case of failure.
 #

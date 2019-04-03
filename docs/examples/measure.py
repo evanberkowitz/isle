@@ -4,6 +4,8 @@ Example script to perform measurements on configurations.
 See doc/examples/hmc-evolution.py for an example how to generate configurations.
 """
 
+# For nicer slice notation.
+from numpy import s_
 
 # Import base functionality of Isle.
 import isle
@@ -42,31 +44,36 @@ def main():
         hfm = isle.HubbardFermiMatrixExp(kappaTilde, muTilde, params.sigmaKappa)
 
     # Define measurements to run.
-    # Each list element is a tuple (freq, meas, store), where
-    #   - freq is the measurement frequency. Freq=x means that the measurement
-    #     is run every x configurations.
-    #   - meas is the measurement callable.
-    #   - store is a path inside the output file that the measurement results
-    #     are to be written to.
+    #
+    # The measurements are run on each configuration in the slice passed to 'configSlice'.
+    # It defaults to 'all configurations' in e.g. the Logdet measurement.
+    # The two correlator measurements are called for every 10th configuration only
+    # but across the entire range of configurations.
+    #
+    # The string parameter in each constructor call is the path in the output file
+    # where the measurement shall be stored.
+    # The driver ensures that the location can be written to and that nothing gets
+    # overwritten by accident.
     measurements = [
         # log(det(M)) where M is the fermion matrix
-        (1, isle.meas.Logdet(hfm), "logdet"),
+        isle.meas.Logdet(hfm, "logdet"),
         # \sum_i phi_i
-        (1, isle.meas.TotalPhi(), "field"),
+        isle.meas.TotalPhi("field"),
         # copy the action into the output file
-        (1, isle.meas.Action(), "action"),
+        isle.meas.Action("action"),
         # single particle correlator for particles / spin up
-        (10, isle.meas.SingleParticleCorrelator(hfm, isle.Species.PARTICLE),
-         "correlation_functions/single_particle"),
+        isle.meas.SingleParticleCorrelator(hfm, isle.Species.PARTICLE,
+                                           "correlation_functions/single_particle",
+                                           configSlice=s_[::10]),
         # single particle correlator for holes / spin down
-        (10, isle.meas.SingleParticleCorrelator(hfm, isle.Species.HOLE),
-         "correlation_functions/single_hole"),
+        isle.meas.SingleParticleCorrelator(hfm, isle.Species.HOLE,
+                                           "correlation_functions/single_hole",
+                                           configSlice=s_[::10]),
     ]
 
     # Run the measurements on all configurations in the input file.
     # This automatically saves all results to the output file when done.
-    # Use args.configs to select which configurations to run on.
-    measState(measurements, configRange=args.configs)
+    measState(measurements)
 
 if __name__ == "__main__":
     main()

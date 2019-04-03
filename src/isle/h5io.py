@@ -1,4 +1,4 @@
-"""!
+r"""!\file
 Routines for working with HDF5.
 """
 
@@ -11,7 +11,7 @@ import numpy as np
 
 from . import Vector, isleVersion, pythonVersion, blazeVersion, pybind11Version
 from .random import readStateH5
-from .util import parseSlice
+from .collection import listToSlice, parseSlice, subslice, normalizeSlice
 
 def createH5Group(base, name):
     r"""!
@@ -114,7 +114,7 @@ def writeTrajectory(h5group, label, phi, actVal, trajPoint):
     grp["trajPoint"] = trajPoint
     return grp
 
-def writeCheckpoint(h5group, label, rng, trajGrpName, proposer, proposerManager):
+def writeCheckpoint(h5group, label, rng, trajGrpName, evolver, evolverManager):
     r"""!
     Write a checkpoint to a HDF5 group.
     Creates a new group with name 'label' and stores RNG state
@@ -126,8 +126,8 @@ def writeCheckpoint(h5group, label, rng, trajGrpName, proposer, proposerManager)
     \param rng Random number generator whose state to save in the checkpoint.
     \param trajGrpName Name of the HDF5 group containing the trajectory this
                        checkpoint corresponds to.
-    \param proposer Proposer used to make the trajectory at this checkpoint.
-    \param proposerManager Instance of ProposerManager to handle saving the proposer.
+    \param evolver Evolver used to make the trajectory at this checkpoint.
+    \param evolverManager Instance of EvolverManager to handle saving the evolver.
 
     \returns The newly created HDF5 group containing the checkpoint.
     """
@@ -135,27 +135,27 @@ def writeCheckpoint(h5group, label, rng, trajGrpName, proposer, proposerManager)
     grp = h5group.create_group(str(label))
     rng.writeH5(grp.create_group("rngState"))
     grp["cfg"] = h5.SoftLink(trajGrpName)
-    proposerManager.save(proposer, grp.create_group("proposer"))
+    evolverManager.save(evolver, grp.create_group("evolver"))
     return grp
 
-def loadCheckpoint(h5group, label, proposerManager, action, lattice):
+def loadCheckpoint(h5group, label, evolverManager, action, lattice):
     r"""!
     Load a checkpoint from a HDF5 group.
 
     \param h5group Base HDF5 group containing checkpoints.
     \param label Name of the subgroup of `h5group` to read from.
-    \param proposerManager A ProposerManager to load the proposer
-                           including its type.
-    \param action Action to construct the proposer with.
-    \param lattice Lattice to construct the proposer with.
-    \returns (RNG, configuration, proposer)
+    \param evolverManager A EvolverManager to load the evolver
+                          including its type.
+    \param action Action to construct the evolver with.
+    \param lattice Lattice to construct the evolver with.
+    \returns (RNG, configuration, evolver)
     """
 
     grp = h5group[str(label)]
     rng = readStateH5(grp["rngState"])
     phi = Vector(grp["cfg/phi"][()])
-    proposer = proposerManager.load(grp["proposer"], action, lattice, rng)
-    return rng, phi, proposer
+    evolver = evolverManager.load(grp["evolver"], action, lattice, rng)
+    return rng, phi, evolver
 
 def loadList(h5group, convert=int):
     r"""!
@@ -171,8 +171,46 @@ def loadList(h5group, convert=int):
     return sorted(map(lambda p: (convert(p[0]), p[1]), h5group.items()),
                   key=lambda item: item[0])
 
+# TODO add base path param
+def loadActionValuesFrom(h5obj, full=False):
+    r"""!
+    Load values of the action from a HDF5 file given via a HDF5 object in that file.
 
-def loadActionValues(fname):
+    Reads the action from dataset `/action/action` if it exists.
+    Otherwise, read action from saved configurations.
+
+    \param fname An arbitrary HDF5 object in the file to read the action from.
+    \param full If True, always read from saved configurations as `/action/action` might
+                contain only a subset of all actions.
+    \returns (action, configRange) where
+             - action: Numpy array of values of the action.
+             - configRange: `slice` indicating the range of configurations
+                            the action was loaded for.
+    \throws RuntimeError if neither `/action/action` nor `/configuration` exist in the file.
+    """
+
+    h5f = h5obj.file
+    action = None
+
+    if not full and "action" in h5f:
+        action = h5f["action/action"][()]
+        cRange = normalizeSlice(parseSlice(h5f["action"].attrs["configurations"],
+                                           minComponents=3),
+                                0, action.shape[0])
+
+    if action is None and "configuration" in h5f:
+        indices, groups = zip(*loadList(h5f["configuration"]))
+        action = np.array([grp["action"][()] for grp in groups])
+        cRange = listToSlice(indices)
+
+    if action is None:
+        getLogger(__name__).error("Cannot load action, no configurations or "
+                                  "separate action found in file %s.", h5f.filename)
+        raise RuntimeError("No action found in file")
+
+    return action, cRange
+
+def loadActionValues(fname, full=False):
     r"""!
     Load values of the action from a HDF5 file.
 
@@ -180,34 +218,54 @@ def loadActionValues(fname):
     Otherwise, read action from saved configurations.
 
     \param fname Name of the file to load action from.
+    \param full If True, always read from saved configurations as `/action/action` might
+                contain only a subset of all actions.
     \returns (action, configRange) where
              - action: Numpy array of values of the action.
              - configRange: `slice` indicating the range of configurations
-                            the action was laoded for.
+                            the action was loaded for.
     \throws RuntimeError if neither `/action/action` nor `/configuration` exist in the file.
     """
 
     with h5.File(fname, "r") as h5f:
-        if "action" in h5f:
-            action = h5f["action/action"][()]
-            configRange = parseSlice(h5f["action"].attrs["configurations"],
-                                     minComponents=3)
+        return loadActionValuesFrom(h5f, full)
 
-        elif "configuration" in h5f:
-            configs = loadList(h5f["configuration"])
-            action = np.array([grp["action"][()] for _, grp in configs])
-            configRange = slice(configs[0][0], configs[-1][0],
-                                configs[-1][0]-configs[-2][0])
-        else:
-            getLogger(__name__).error("Cannot load action, no configurations or "
-                                      "separate action found in file %s.", fname)
-            raise RuntimeError("No action found in file")
+def loadActionWeightsFor(dset):
+    r"""!
+    Load the weights from the imaginary part of the action for a measurement result.
 
-    return action, configRange
+    The weights are loaded based on the 'configurations' attribute stored in the
+    parent group of `dset`.
+    This requires the attribute to be stored properly (no `None`) and the file to
+    contain the values of the action for all the trajectories the measurement was taken on
+    (can be as '/action/action' dataset or '/configuration' group).
 
-# def loadWeightsFor(dset):
-#     group = dset.parent
-#     f = dset.file
+    The weights are computed as \f$e^{-i S_{I}}\f$.
 
-#     # action = f["arction/action"][()]
-#     action = loadAction(dset.file.name)
+    \param dset HDF5 dataset containing the measurement result.
+    \returns np.ndarray of the weights for `dset`.
+    """
+
+    # load the configuration slice
+    group = dset.parent
+    try:
+        neededRange = parseSlice(group.attrs["configurations"], minComponents=3)
+    except KeyError:
+        getLogger(__name__).error("Cannot load weights for dataset %s; "
+                                  "there is no 'configurations' attribute", dset)
+        raise
+    if None in (neededRange.start, neededRange.stop, neededRange.step):
+        getLogger(__name__).error("The 'configurations' attibute for dataset %s "
+                                  "has not been saved properly, it contains None: %s",
+                                  dset, neededRange)
+        raise RuntimeError("configSlice of dataset contains None")
+
+    action, actionRange = loadActionValuesFrom(dset)
+    try:
+        subRange = subslice(actionRange, neededRange)
+    except ValueError:
+        # try again, maybe there are enough configurations in the file
+        action, actionRange = loadActionValuesFrom(dset, True)
+        subRange = subslice(actionRange, neededRange)
+
+    return np.exp(-1j * np.imag(action[subRange]))

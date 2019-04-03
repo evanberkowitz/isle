@@ -9,6 +9,7 @@ from logging import getLogger
 import h5py as h5
 
 from .. import fileio, cli
+from ..collection import inSlice, withStart, withStop, withStep
 from ..meta import callFunctionFromSource
 from ..util import verifyVersionsByException
 
@@ -22,26 +23,26 @@ class Measure:
         self.outfile = outfile
         self.overwrite = overwrite
 
-    def __call__(self, measurements, configRange=slice(None)):
-        _ensureCanWriteMeas(self.outfile, [meas[2] for meas in measurements], self.overwrite)
+    def __call__(self, measurements):
+        _ensureCanWriteMeas(self.outfile, measurements, self.overwrite)
 
-        getLogger(__name__).info("Performing measurements")
-        self.mapOverConfigs(measurements, configRange)
-        getLogger(__name__).info("Saving measurements")
-        self.save(measurements, configRange, checked=True)
+        self.mapOverConfigs(measurements, adjustSlices=True)
+        self.save(measurements, checkedBefore=True)
 
-    def mapOverConfigs(self, measurements, configRange=slice(None)):
+    def mapOverConfigs(self, measurements, adjustSlices=True):
         """!
         Apply measurements to all configurations in the input file
         of this driver.
         """
 
-        _checkStepIsDefaultByException(configRange)
-
+        # TODO drop meas from list (copy list) when passed configSlice
+        #      and stop iterating when len(measurements)==0
         with h5.File(self.infile, "r") as cfgf:
             # get all configuration groups (index, h5group) pairs
-            # take only those in configRange
-            configurations = fileio.h5.loadList(cfgf["/configuration"])[configRange]
+            configurations = fileio.h5.loadList(cfgf["/configuration"])
+
+            if adjustSlices:
+                _adjustConfigSlices(measurements, configurations)
 
             # apply measurements to all configs
             with cli.trackProgress(len(configurations), "Measurements", updateRate=1000) as pbar:
@@ -50,23 +51,20 @@ class Measure:
                     phi = grp["phi"][()]
                     action = grp["action"][()]
                     # measure
-                    for frequency, measurement, _ in measurements:
-                        if i % frequency == 0:
+                    for measurement in measurements:
+                        if inSlice(i, measurement.configSlice):
                             measurement(phi, action, i)
 
                     pbar.advance()
 
-    def save(self, measurements, configRange, checked=False):
-        if not checked:
-            _ensureCanWriteMeas(self.outfile, [meas[2] for meas in measurements], self.overwrite)
-
-        _checkStepIsDefaultByException(configRange)
+    def save(self, measurements, checkedBefore=False):
+        if not checkedBefore:
+            _ensureCanWriteMeas(self.outfile, measurements, self.overwrite)
 
         with h5.File(self.outfile, "a") as measFile:
-            for frequency, measurement, path in measurements:
-                measurement.save(measFile, path)
-                measFile[path].attrs["configurations"] = \
-                    f"{configRange.start}:{configRange.stop}:{frequency}"
+            for measurement in measurements:
+                measurement.saveAll(measFile)
+
 
 # TODO allow to set a base path in file
 def init(infile, outfile, overwrite):
@@ -87,14 +85,6 @@ def init(infile, outfile, overwrite):
                    callFunctionFromSource(makeActionSrc, lattice, params),
                    infile, outfile, overwrite)
 
-def _checkStepIsDefaultByException(slic):
-    """!Check if step size is None or 1 in given slice and raise ValueError if not."""
-    if slic.step not in (None, 1):
-        getLogger(__name__).error("Step size of configRange must be None (or 1). "
-                                  "Given value is %s", slic.step)
-        raise ValueError("Step size must be None (or 1)")
-
-
 def _isValidPath(path):
     """!Check if parameter is a valid path to a measurement inside an HDF5 file."""
     components = str(path).split("/")
@@ -113,14 +103,16 @@ def _isValidPath(path):
 
     return True
 
-def _ensureCanWriteMeas(outfile, paths, overwrite):
+def _ensureCanWriteMeas(outfile, measurements, overwrite):
     r"""!
     Ensure that measurements can be written to the output file.
     \param outfile The output file, must alreay exist!
-    \param paths Paths inside `outfile` that the measurements want to write to.
+    \param measurements Measurements that want to save at some point.
     \param overwrite If `True`, erase all existing HDF5 objects under the given paths.
                      if `False`, fail if an object exists under any given path.
     """
+
+    paths = [measurement.savePath for measurement in measurements]
 
     # check if all paths are OK
     for path in paths:
@@ -143,7 +135,6 @@ def _ensureCanWriteMeas(outfile, paths, overwrite):
                                               path)
                     raise RuntimeError("Object exists in output file")
 
-
 def _ensureIsValidOutfile(outfile, lattice, params, makeActionSrc):
     r"""!
     Check if the output file is a valid parameter.
@@ -163,3 +154,28 @@ def _ensureIsValidOutfile(outfile, lattice, params, makeActionSrc):
     # else:
     # Check measurement paths when running driver or saving measurements.
     # Can't do this here because the paths are not know at this point.
+
+def _adjustConfigSlices(measurements, configurations):
+    r"""!
+    Change the configSlices of all measurements to reflect the actual range of configurations.
+    \param measurements List of measurement objects. Each element's configSlice member is modified.
+    \param configurations List of tuples `(index, ...)`. The indices are used to determine
+                          the configSlices for the measurements. All other tuple elements
+                          are ignored.
+    """
+
+    configStep = configurations[1][0] - configurations[0][0]
+    # last index in the list plus the stride to go '1 past the end'
+    length = configurations[-1][0] + configStep
+
+    for measurement in measurements:
+        try:
+            # replace step first (needed by other with* functions)
+            aux = withStart(withStep(measurement.configSlice, configStep), configurations[0][0])
+            if aux.stop is None:
+                measurement.configSlice = withStop(aux, length)
+        except ValueError:
+            getLogger(__name__).error("Invalid configuration slice %s in measurement %s "
+                                      "given the actual configurations",
+                                      measurement.configSlice, type(measurement))
+            raise

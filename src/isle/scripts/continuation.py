@@ -16,7 +16,7 @@ def main(args):
     \param args Parsed command line arguments.
     """
 
-    hmcState, phi, proposer, \
+    hmcState, phi, evolver, \
         saveFreq, checkpointFreq = continueRun(args.infile, args.outfile,
                                                args.initial, args.overwrite)
 
@@ -26,5 +26,5 @@ def main(args):
         checkpointFreq = args.checkpoint_freq
 
     getLogger("continuation").info("Starting evolution")
-    phi = hmcState(phi, proposer, args.ntrajectories,
+    phi = hmcState(phi, evolver, args.ntrajectories,
                    saveFreq=saveFreq, checkpointFreq=checkpointFreq)
