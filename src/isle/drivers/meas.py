@@ -172,8 +172,7 @@ def _adjustConfigSlices(measurements, configurations):
         try:
             # replace step first (needed by other with* functions)
             aux = withStart(withStep(measurement.configSlice, configStep), configurations[0][0])
-            if aux.stop is None:
-                measurement.configSlice = withStop(aux, length)
+            measurement.configSlice = withStop(aux, length) if aux.stop is None else aux
         except ValueError:
             getLogger(__name__).error("Invalid configuration slice %s in measurement %s "
                                       "given the actual configurations",
