@@ -54,18 +54,7 @@ def _nconfig(fname):
 
 def _loadAction(measState):
     """!Load action from previous measurement or compute from configurations."""
-    # TODO add centralized load function
-    with h5.File(measState.infile, "r") as h5f:
-        if "action" in h5f:
-            return h5f["action/action"][()]
-        if "configuration" not in h5f:
-            getLogger("isle.show").info("No configurations or action found.")
-            return None
-
-    # do this here so the file is closed when the meas driver reads from it
-    meas = isle.meas.Action()
-    measState.mapOverConfigs([(1, meas, None)])
-    return meas.action
+    return isle.h5io.loadActionValues(measState.infile)[0]
 
 def _formatParams(params):
     """!Format parameters as a multi line string."""
