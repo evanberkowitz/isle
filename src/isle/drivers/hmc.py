@@ -1,10 +1,9 @@
-"""!\file
+r"""!\file
 Handle %HMC evolution and file output.
 """
 
 from logging import getLogger
 
-import numpy as np
 import h5py as h5
 
 from .. import Vector, fileio, cli
@@ -225,7 +224,7 @@ def continueRun(infile, outfile, startIdx, overwrite, definitions={}):
     configurations, checkpoints = _loadIndices(infile)
     propManager = EvolverManager(infile, definitions=definitions)
     checkpointIdx, (rng, phi, evolver) = _loadCheckpoint(infile, startIdx, checkpoints,
-                                                          propManager, action, lattice)
+                                                         propManager, action, lattice)
 
     if outfile == infile:
         _ensureNoNewerConfigs(infile, checkpointIdx, checkpoints, configurations, overwrite)
