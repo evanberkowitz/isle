@@ -25,9 +25,11 @@ class Measure:
     conflicting entries iff it is initialized with `overwrite==True`.
     This assumes that the measurements only write to the file under their `savePath`
     attribute and nowhere else.
-    \todo ref to the file format
 
     \note The driver should not be initialized directly, instead use `isle.drivers.meas.init`.
+
+    \see
+        \ref filelayout and \ref measdoc
     """
 
 
