@@ -1,7 +1,7 @@
-r"""!
-\todo document
+r"""!\file
+Driver to perform measurements on configurations stored in a file.
 
-meas freq is relative to config index not loop iteration in mapOverConfigs
+\todo Allow setting a base path in the output file so more than one ensemble can be stored in a file.
 """
 
 from logging import getLogger
@@ -15,24 +15,78 @@ from ..util import verifyVersionsByException
 
 
 class Measure:
+    r"""!
+    Driver to perform measurements on configurations stored in a file.
+
+    Assumes that configurations are stored in the default format as written by e.g.
+    the driver isle.drivers.hmc.HMC.
+    Measurement results can be written to a new file or to the iput file.
+    The driver checks for conflicts should the output file already exist and removes
+    conflicting entries iff it is initialized with `overwrite==True`.
+    This assumes that the measurements only write to the file under their `savePath`
+    attribute and nowhere else.
+    \todo ref to the file format
+
+    \note The driver should not be initialized directly, instead use `isle.drivers.meas.init`.
+    """
+
+
     def __init__(self, lattice, params, action, infile, outfile, overwrite):
+        ## The spatial lattice.
         self.lattice = lattice
+        ## Run parameters.
         self.params = params
+        ## The action (object).
         self.action = action
+        ## Path to the input.
         self.infile = infile
+        ## Path to the output.
         self.outfile = outfile
+        ## True if existing data may be overwritten.
         self.overwrite = overwrite
 
     def __call__(self, measurements):
+        r"""!
+        Apply measurements to all configurations in the input file and
+        save results to the output file.
+
+        Makes sure that the measurements can be saved without conflicts.
+        If entries with the same paths as measurement save paths exist in the file, they are
+        deleted iff `self.overwrite == True`.
+        Otherwise, a `RuntimeError` is raised.
+
+        Reads configurations from the input file in the order of the Markov chain.
+        Compares the trajectory index extracted from file to the configSlice attribute of each
+        measurement and if the index is in the slice, calls the measurement with that trajectory.
+
+        \warning Calls Measure.mapOverConfigs with `adjustSlices=True`. See doc of that function.
+
+        \param measurements List of instances of isle.meas.measurement.Measurement to be called
+                            on each configuration in the input file.
+        """
+
         _ensureCanWriteMeas(self.outfile, measurements, self.overwrite)
 
         self.mapOverConfigs(measurements, adjustSlices=True)
         self.save(measurements, checkedBefore=True)
 
     def mapOverConfigs(self, measurements, adjustSlices=True):
-        """!
-        Apply measurements to all configurations in the input file
-        of this driver.
+        r"""!
+        Apply measurements to all configurations in the input file of this driver.
+
+        Reads configurations from the input file in the order of the Markov chain.
+        Compares the trajectory index extracted from file to the configSlice attribute of each
+        measurement and if the index is in the slice, calls the measurement with that trajectory.
+
+        \warning If `adjustSlices == True`, the `configSlice` attribute of all measurements is
+                 modified to contain the actual trajectory indices read from the file instead
+                 of what the user specified (if those are incompatible, `ValueError` is raised).
+                 This is necessary in order to call Measure.save() later.
+
+        \param measurements List of instances of isle.meas.measurement.Measurement to be called
+                            on each configuration in the input file.
+        \param adjustSlices Modify the `configSlice` attribute of the measurements to reflect the
+                            configurations in the file.
         """
 
         # copy so the list can be modified in this function
@@ -64,6 +118,20 @@ class Measure:
                     pbar.advance()
 
     def save(self, measurements, checkedBefore=False):
+        r"""!
+        Save results of measurements to the output file.
+
+        \note Calls the `saveAll` function of measurements to write metadata as well as
+              the plain results.
+              This requires the `configSlice` attributes to be set properly,
+              i.e. without any elements being `None`.
+
+        \param measurements List of instances of isle.meas.measurement.Measurement.
+        \param checkedBefore *For internal use only!*
+                             If `True`, assumes that the output filehas been checked and
+                             initialized properly.
+        """
+
         if not checkedBefore:
             _ensureCanWriteMeas(self.outfile, measurements, self.overwrite)
 
@@ -72,8 +140,21 @@ class Measure:
                 measurement.saveAll(measFile)
 
 
-# TODO allow to set a base path in file
 def init(infile, outfile, overwrite):
+    r"""!
+    Initialize a new measurement driver.
+
+    Reads parameters and other metadata from the input file to set up a new Measure driver.
+    Ensures that the output file can be written to and stores the meatadata in it if necessary.
+
+    \param infile Path to the input file. Must contain configurations.
+    \param outfile Path to the output file. May be the same as `infile`.
+                   If this file exists, it must be compatible with the metadata and measurements.
+                   Conflicts with existing measurement results are only checked by the driver
+                   when the actual measurements are known.
+    \returns A new isle.drivers.meas.Measure driver.
+    """
+
     if infile is None:
         getLogger(__name__).error("No input file given to meas driver.")
         raise ValueError("No intput file")
@@ -93,6 +174,7 @@ def init(infile, outfile, overwrite):
 
 def _isValidPath(path):
     """!Check if parameter is a valid path to a measurement inside an HDF5 file."""
+
     components = str(path).split("/")
     if components[0] == "":
         getLogger(__name__).warning(
