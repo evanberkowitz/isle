@@ -1,7 +1,5 @@
 """!
 Evolvers for HMC evolutions.
-
-\todo describe HDF5 file layout
 """
 
 ## \defgroup evolvers Evolvers
@@ -524,7 +522,7 @@ class EvolverManager:
 
     def saveType(self, evolver, h5file):
         r"""!
-        Save the type of a evolver if it is not already stored.
+        Save the type of an evolver if it is not already stored.
         \param evolver Evolver object (<I>not</I> type!) to save.
         \param h5file File to save to.
         \returns Index of the evolver type in the file.
@@ -550,7 +548,7 @@ class EvolverManager:
 
     def save(self, evolver, h5group):
         r"""!
-        Save a evolver including its type.
+        Save an evolver including its type.
         \param evolver Evolver object to save.
         \param h5group Group in the HDF5 file to save the evolver's parameters to.
                        Stores the index of the evolver's type in the attribute `__index__`
@@ -568,7 +566,7 @@ class EvolverManager:
 
     def loadType(self, index, h5file):
         r"""!
-        Load a evolver type from file.
+        Load an evolver type from file.
         \param index Index of the type to load. Corresponds to group name in the type location.
         \param h5file HDF5 file to load the type from.
         """
@@ -576,7 +574,7 @@ class EvolverManager:
 
     def load(self, h5group, action, lattice, rng):
         r"""!
-        Load a evolver's type and construct an instance from given group.
+        Load an evolver's type and construct an instance from given group.
         The type has to be stored in the 'type location' (see `__init__`) in the same file
         as `h5group`.
         \param h5group Group in the file where evolver parameters are stored.
@@ -590,7 +588,7 @@ class EvolverManager:
 
 def saveEvolverType(evolver, h5group, definitions={}):
     r"""! \ingroup evolvers
-    Save a evolver's type to HDF5.
+    Save an evolver's type to HDF5.
 
     There are three possible scenarios:
      - The evolver is built into Isle: Only its name is stored.
@@ -610,7 +608,7 @@ def saveEvolverType(evolver, h5group, definitions={}):
         getLogger(__name__).error("Can only save instances of subclasses of "
                                   "isle.evolver.Evolver, given %s",
                                   type(evolver))
-        raise ValueError("Not a evolver")
+        raise ValueError("Not an evolver")
 
     # get the name of the evolver's class
     name = type(evolver).__name__
@@ -636,9 +634,9 @@ def saveEvolverType(evolver, h5group, definitions={}):
 
 def loadEvolverType(h5group, definitions={}):
     r"""! \ingroup evolvers
-    Retrieves the class of a evolver from HDF5.
+    Retrieves the class of an evolver from HDF5.
 
-    \param h5group HDF5 group containing name, (source), parameters of a evolver.
+    \param h5group HDF5 group containing name, (source), parameters of an evolver.
     \param definitions Dict containing custom definitions. If it contains an entry
                        with the name of the evolver, it is loaded based on that
                        entry instead of from source code.
@@ -677,7 +675,7 @@ def loadEvolverType(h5group, definitions={}):
                 raise RuntimeError("Cannot load evolver from source") from None
 
     if not issubclass(cls, Evolver):
-        getLogger(__name__).error("Loaded type is not a evolver: %s", name)
+        getLogger(__name__).error("Loaded type is not an evolver: %s", name)
 
     return cls
 
