@@ -192,7 +192,7 @@ def _verifyIsleVersion(version, fname):
         getLogger("isle.show").warning("Extra version string of Isle (%s) is different from "
                                        "version in file %s (%s)",
                                        this, fname, version)
-    if comp != "equal":
+    elif comp != "equal":
         getLogger("isle.show").warning("Version of Isle (%s), is %s than in file %s (%s).",
                                        this, comp, fname, version)
 
