@@ -35,8 +35,9 @@ class Measure:
         of this driver.
         """
 
-        # TODO drop meas from list (copy list) when passed configSlice
-        #      and stop iterating when len(measurements)==0
+        # copy so the list can be modified in this function
+        measurements = list(measurements)
+
         with h5.File(self.infile, "r") as cfgf:
             # get all configuration groups (index, h5group) pairs
             configurations = fileio.h5.loadList(cfgf["/configuration"])
@@ -46,14 +47,19 @@ class Measure:
 
             # apply measurements to all configs
             with cli.trackProgress(len(configurations), "Measurements", updateRate=1000) as pbar:
-                for i, grp in configurations:
+                for itr, grp in configurations:
                     # read config and action
                     phi = grp["phi"][()]
                     action = grp["action"][()]
                     # measure
-                    for measurement in measurements:
-                        if inSlice(i, measurement.configSlice):
-                            measurement(phi, action, i)
+                    for imeas, measurement in enumerate(measurements):
+                        if inSlice(itr, measurement.configSlice):
+                            measurement(phi, action, itr)
+                        elif itr >= measurement.configSlice.stop:
+                            # this measurement is done => drop it
+                            del measurements[imeas]
+                    if not measurements:
+                        break  # no measurements left
 
                     pbar.advance()
 
