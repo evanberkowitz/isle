@@ -171,8 +171,7 @@ def loadList(h5group, convert=int):
     return sorted(map(lambda p: (convert(p[0]), p[1]), h5group.items()),
                   key=lambda item: item[0])
 
-# TODO add base path param
-def loadActionValuesFrom(h5obj, full=False):
+def loadActionValuesFrom(h5obj, full=False, base="/"):
     r"""!
     Load values of the action from a HDF5 file given via a HDF5 object in that file.
 
@@ -182,6 +181,7 @@ def loadActionValuesFrom(h5obj, full=False):
     \param fname An arbitrary HDF5 object in the file to read the action from.
     \param full If True, always read from saved configurations as `/action/action` might
                 contain only a subset of all actions.
+    \param base Path in HDF5 file under which the action is stored.
     \returns (action, configRange) where
              - action: Numpy array of values of the action.
              - configRange: `slice` indicating the range of configurations
@@ -189,7 +189,7 @@ def loadActionValuesFrom(h5obj, full=False):
     \throws RuntimeError if neither `/action/action` nor `/configuration` exist in the file.
     """
 
-    h5f = h5obj.file
+    h5f = h5obj.file[base]
     action = None
 
     if not full and "action" in h5f:
@@ -210,7 +210,7 @@ def loadActionValuesFrom(h5obj, full=False):
 
     return action, cRange
 
-def loadActionValues(fname, full=False):
+def loadActionValues(fname, full=False, base="/"):
     r"""!
     Load values of the action from a HDF5 file.
 
@@ -220,6 +220,7 @@ def loadActionValues(fname, full=False):
     \param fname Name of the file to load action from.
     \param full If True, always read from saved configurations as `/action/action` might
                 contain only a subset of all actions.
+    \param base Path in HDF5 file under which the action is stored.
     \returns (action, configRange) where
              - action: Numpy array of values of the action.
              - configRange: `slice` indicating the range of configurations
@@ -228,9 +229,9 @@ def loadActionValues(fname, full=False):
     """
 
     with h5.File(fname, "r") as h5f:
-        return loadActionValuesFrom(h5f, full)
+        return loadActionValuesFrom(h5f, full, base)
 
-def loadActionWeightsFor(dset):
+def loadActionWeightsFor(dset, base="/"):
     r"""!
     Load the weights from the imaginary part of the action for a measurement result.
 
@@ -243,6 +244,7 @@ def loadActionWeightsFor(dset):
     The weights are computed as \f$e^{-i S_{I}}\f$.
 
     \param dset HDF5 dataset containing the measurement result.
+    \param base Path in HDF5 file under which the action is stored.
     \returns np.ndarray of the weights for `dset`.
     """
 
@@ -260,12 +262,12 @@ def loadActionWeightsFor(dset):
                                   dset, neededRange)
         raise RuntimeError("configSlice of dataset contains None")
 
-    action, actionRange = loadActionValuesFrom(dset)
+    action, actionRange = loadActionValuesFrom(dset, base=base)
     try:
         subRange = subslice(actionRange, neededRange)
     except ValueError:
         # try again, maybe there are enough configurations in the file
-        action, actionRange = loadActionValuesFrom(dset, True)
+        action, actionRange = loadActionValuesFrom(dset, True, base=base)
         subRange = subslice(actionRange, neededRange)
 
     return np.exp(-1j * np.imag(action[subRange]))
