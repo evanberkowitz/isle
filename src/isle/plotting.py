@@ -236,21 +236,33 @@ def plotPhase(action, axPhase, axPhase2D):
 def plotCorrelators(measState, axP, axH):
     r"""!
     Plot particle and hole Correlators.
+    The correlators are reweighted with the imaginary part of the action if possible.
     \returns True if successful, False if no data was found.
     """
 
     # load data from previous measurement
     with h5.File(str(measState.infile), "r") as h5f:
         if "correlation_functions" in h5f:
-            corrP = h5f["correlation_functions"]["single_particle"]["correlators"][()]
-            corrH = h5f["correlation_functions"]["single_hole"]["correlators"][()]
+            dsetP = h5f["correlation_functions/single_particle/correlators"]
+            corrP = dsetP[()]
+            dsetH = h5f["correlation_functions/single_hole/correlators"]
+            corrH = dsetH[()]
+
+            try:
+                weightP = isle.h5io.loadActionWeightsFor(dsetP)
+                weightH = isle.h5io.loadActionWeightsFor(dsetH)
+            except KeyError:
+                getLogger(__name__).warning("Unable to load action to do reweighting for correlators."
+                                            "Showing correlators without applying weights.")
+                weightP = np.ones(dsetP.shape[0])
+                weightH = np.ones(dsetH.shape[0])
         else:
             getLogger(__name__).error("No correlation functions found.")
             return False
 
     # ensemble averages
-    corrP = np.mean(corrP, axis=0)
-    corrH = np.mean(corrH, axis=0)
+    corrP = np.sum(corrP*weightP.reshape(-1, 1, 1, 1), axis=0) / np.sum(weightP)
+    corrH = np.sum(corrH*weightH.reshape(-1, 1, 1, 1), axis=0) / np.sum(weightH)
 
     # plot all correlators
     nx = corrP.shape[0]
