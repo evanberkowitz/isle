@@ -34,21 +34,3 @@ class Action(Measurement):
         """
         subGroup = createH5Group(h5group, self.savePath)
         subGroup["action"] = self.action
-
-    def read(self, h5group):
-        r"""!
-        Read the action from a file.
-        \param h5group HDF5 group which contains the data of this measurement.
-        """
-        # TODO add centralized load function
-
-        if "action" in h5group:
-            self.action = h5group["action"][()]
-        elif "configuration" in h5group:
-            cfgGrp = h5group["configuration"]
-            self.action = [cfgGrp[cfg]["action"][()] for cfg in cfgGrp]
-        else:
-            getLogger(__name__).error("No action found in HDF5 group '%s'. "
-                                      "Did not find subgroups 'action' or 'configuration'.",
-                                      h5group)
-            raise RuntimeError("No action found in HDF5")
