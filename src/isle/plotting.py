@@ -93,8 +93,8 @@ def plotTotalPhi(measState, axPhi, axPhiHist):
         if "field" in h5f:
             totalPhi = h5f["field"]["totalPhi"][()]
         elif "configuration" in h5f:
-            meas = isle.meas.TotalPhi()
-            measState.mapOverConfigs([(1, meas, None)])
+            meas = isle.meas.TotalPhi(None)
+            measState.mapOverConfigs([meas])
             totalPhi = meas.Phi
         else:
             getLogger(__name__).info("No configurations or total Phi found.")
