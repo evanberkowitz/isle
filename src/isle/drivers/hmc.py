@@ -49,6 +49,9 @@ class HMC:
         \param saveFreq Save configurations every `saveFreq` trajectories.
         \param checkpointFreq Write a checkpoint every `checkpointFreq` trajectories.
                               Must be a multiple of `saveFreq`.
+
+        \returns (phi, actVal, trajPoint), field configuration, value of the action,
+                 and selected trajectory point of last trajectory.
         """
 
         if checkpointFreq != 0 and checkpointFreq % saveFreq != 0:
@@ -78,7 +81,7 @@ class HMC:
             self.advance()
             self._saveConditionally(phi, actVal, trajPoint, evolver, saveFreq, checkpointFreq)
 
-        return phi
+        return phi, actVal, trajPoint
 
     def saveFieldAndCheckpoint(self, phi, actVal, trajPoint, evolver):
         """!

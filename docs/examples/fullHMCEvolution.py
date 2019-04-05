@@ -76,7 +76,7 @@ def main():
     # This sets up the command line interface, defines a barebones argument parser,
     # and parses and returns parsed arguments.
     # More complex parsers can be automatically defined or passed in manually.
-    # See, e.g., `change-evolver.py` or `measure.py` examples.
+    # See, e.g., `hmcThermalization.py` or `measure.py` examples.
     isle.initialize("default")
 
     # Get a logger. Use this instead of print() to output any and all information.
@@ -106,11 +106,11 @@ def main():
 
     # Run thermalization.
     log.info("Thermalizing")
-    # Pick an evolver towhich linearly decreases the number of MD steps from 20 to 5.
+    # Pick an evolver which linearly decreases the number of MD steps from 20 to 5.
     # The number of steps (99) must be one less than the number of trajectories below.
     evolver = isle.evolver.LinearStepLeapfrog(hmcState.action, (1, 1), (20, 5), 99, rng)
     # Thermalize configuration for 100 trajectories without saving anything.
-    phi = hmcState(phi, evolver, 100, saveFreq=0, checkpointFreq=0)
+    phi, *_ = hmcState(phi, evolver, 100, saveFreq=0, checkpointFreq=0)
     # Reset the internal counter so we start saving configs at index 0.
     hmcState.resetIndex()
 
