@@ -1,5 +1,5 @@
 r"""!\file
-Example script to show how to set up the HMC driver for production.
+Example script to show how to set up the HMC driver for production including thermalization.
 """
 
 # All output should go through a logger for better control and consistency.
