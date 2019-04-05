@@ -35,7 +35,7 @@ def main():
     muTilde = params.tilde("mu", lat)
     kappaTilde = params.tilde(measState.lattice.hopping(), lat.nt())
 
-    # This object is a lover level interface for the Hubbard fermion action
+    # This object is a lower level interface for the Hubbard fermion action
     # needed by some measurements. The discretization (hopping) needs
     # to be selected manually.
     if params.hopping == isle.action.HFAHopping.DIA:
