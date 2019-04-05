@@ -1,4 +1,4 @@
-r"""!\file
+"""
 Example script to show how to set up the HMC driver for production including thermalization.
 """
 
