@@ -1,4 +1,4 @@
-"""!
+r"""!\file
 Evolvers for HMC evolutions.
 """
 
@@ -376,6 +376,21 @@ class Alternator(Evolver):
     Then Alternator advances to the next evolver and runs it for its
     number of iterations.
     After the last sub evolver, Alternator cycles round to the first one and repeats.
+
+    <B>Example</B><br>
+    This example defines an %Alternator which uses ConstStepLeapfrog for 100 trajectories,
+    then TwoPiJumps once, and repeats.
+    ```{.py}
+    # Set up parameters
+    # hmcState, length, nstep
+    # ...
+
+    evolver = isle.evolver.Alternator((
+        (100, isle.evolver.ConstStepLeapfrog(hmcState.action, length, nstep, hmcState.rng)),
+        (1, isle.evolver.TwoPiJumps(hmcState.lattice.lattSize(), 1, hmcState.action,
+                                    hmcState.lattice, hmcState.rng))
+    ))
+    ```
     """
 
     def __init__(self, evolvers=None, startIndex=0):
