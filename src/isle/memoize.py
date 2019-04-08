@@ -65,11 +65,9 @@ class one_value_by():
         def wrapper(*arguments):
             if self.recent is not None:  # Check that we've evaluated at all in the past.
 
-                for i in self.indices:
-                    if self.recent[i] != arguments[i]:  # If all the self.recent match the arguments,
-                        break                           # there won't be a break,
-                else:                                   # We'll exit the for loop normally
-                    return self.value                   # and we can use the memoized value.
+                # If all the self.recent match the arguments, we can use the memoized value.
+                if all(self.recent[i] == arguments[i] for i in self.indices):
+                    return self.value
 
             # If an argument differs from the recent evaluation, (or it's our first evaluation)
             self.recent = {i: arguments[i] for i in self.indices}   # We store the arguments to compare with next time
