@@ -120,7 +120,7 @@ def main():
     evolver = isle.evolver.ConstStepLeapfrog(hmcState.action, 1, 5, rng)
     # Produce configurations and save in intervals of 2 trajectories.
     # Place a checkpoint every 10 trajectories.
-    phi = hmcState(phi, evolver, 100, saveFreq=2, checkpointFreq=10)
+    phi, *_ = hmcState(phi, evolver, 100, saveFreq=2, checkpointFreq=10)
 
     # That is it, clean up happens automatically.
 
