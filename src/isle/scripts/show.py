@@ -1,8 +1,10 @@
 r"""! \file
-\todo
+Script to report on input and output files of Isle.
+
+Run the script via show.main().
 """
 
-import sys
+from logging import getLogger
 
 try:
     import matplotlib.pyplot as plt
@@ -11,7 +13,7 @@ try:
     from matplotlib import cm
 
 except ImportError:
-    print("Error: Cannot import matplotlib, show command is not available.")
+    getLogger("isle.show").error("Cannot import matplotlib, show command is not available.")
     raise
 
 import numpy as np
@@ -20,6 +22,7 @@ import h5py as h5
 import isle
 import isle.plotting
 from isle.drivers.meas import Measure
+from isle.meta import callFunctionFromSource
 
 def _overviewFigure():
     """!Open a new figure and construct a GridSpec to lay out subplots."""
@@ -51,17 +54,7 @@ def _nconfig(fname):
 
 def _loadAction(measState):
     """!Load action from previous measurement or compute from configurations."""
-    with h5.File(str(measState.infname), "r") as h5f:
-        if "action" in h5f:
-            return h5f["action"][()]
-        if "configuration" not in h5f:
-            print("no configurations or action found")
-            return None
-
-    # do this here so the file is closed when the meas driver reads from it
-    meas = isle.meas.Action()
-    measState.mapOverConfigs([(1, meas, None)])
-    return meas.action
+    return isle.h5io.loadActionValues(measState.infile)[0]
 
 def _formatParams(params):
     """!Format parameters as a multi line string."""
@@ -81,17 +74,18 @@ def _overview(infname, lattice, params, makeActionSrc):
     Show an overview of a HDF5 file.
     """
 
-    print(f"Info: showing overview of file {infname}")
+    log = getLogger("isle.show")
+    log.info("Showing overview of file %s", infname)
 
     if lattice is None or params is None or makeActionSrc is None:
-        print("Error: Could not find all required information in the input file to generate an overview."
-              "Need HDF5 files.")
+        log.error("Could not find all required information in the input file to generate an overview."
+                  "Need HDF5 files.")
         return
 
     # use this to bundle information and perform simple measurements if needed
     measState = Measure(lattice, params,
-                        isle.fileio.callFunctionFromSource(makeActionSrc, lattice, params),
-                        infname, None)
+                        callFunctionFromSource(makeActionSrc, lattice, params),
+                        infname, None, False)
 
     # set up the figure
     fig, (axTP, axAct, axPhase, axPhase2D, axPhi, axPhiHist, axText) = _overviewFigure()
@@ -118,7 +112,7 @@ def _lattice(infname, lattice):
     Show the hopping matrix as a 3D grid.
     """
 
-    print(f"Info: Showing lattice in file {infname}")
+    getLogger("isle.show").info("Showing lattice in file %s", infname)
 
     fig = plt.figure(figsize=(10, 10))
     fig.canvas.set_window_title(f"Isle Lattice - {infname}")
@@ -154,17 +148,18 @@ def _correlator(infname, lattice, params, makeActionSrc):
     Show all-to-all correlators.
     """
 
-    print(f"Info: Showing correlators in file {infname}")
+    log = getLogger("isle.show")
+    log.info("Showing correlators in file %s", infname)
 
     if lattice is None or params is None or makeActionSrc is None:
-        print("Error: Could not find all required information in the input file to show correlators."
-              "Need HDF5 files.")
+        log.error("Could not find all required information in the input file to show correlators."
+                  "Need HDF5 files.")
         return
 
     # use this to bundle information and perform simple measurements if needed
     measState = Measure(lattice, params,
-                        isle.fileio.callFunctionFromSource(makeActionSrc, lattice, params),
-                        infname, None)
+                        callFunctionFromSource(makeActionSrc, lattice, params),
+                        infname, None, False)
 
     fig = plt.figure(figsize=(11, 5))
     fig.canvas.set_window_title(f"Isle Correlators - {infname}")
@@ -175,33 +170,69 @@ def _correlator(infname, lattice, params, makeActionSrc):
         # failed -> do not show the figure
         plt.close(fig)
 
+def _verifyIsleVersion(version, fname):
+    """!
+    Check version of Isle, warn if it does not match.
+    """
+
+    this = isle.isleVersion
+    comp = isle.util.compareVersions(this, version)
+    if comp == "none":
+        getLogger("isle.show").warning("Extra version string of Isle (%s) is different from "
+                                       "version in file %s (%s)",
+                                       this, fname, version)
+    elif comp != "equal":
+        getLogger("isle.show").warning("Version of Isle (%s), is %s than in file %s (%s).",
+                                       this, comp, fname, version)
+
+def _loadMetadata(fname, ftype):
+    """!
+    Load all available metadata from a file.
+    Abstracts away the file type.
+    """
+
+    if ftype == isle.fileio.FileType.HDF5:
+        lattice, params, makeActionSrc, versions = isle.fileio.h5.readMetadata((fname, ftype))
+        _verifyIsleVersion(versions["isle"], fname)
+
+    elif ftype == isle.fileio.FileType.YAML:
+        lattice = isle.fileio.yaml.loadLattice(fname)
+        params = None
+        makeActionSrc = None
+
+    else:
+        getLogger("isle.show").error("Cannot load file '%s', unsupported file type.",
+                                     fname)
+        raise ValueError("Invalid file type")
+
+    return lattice, params, makeActionSrc
 
 
 def main(args):
-    """!
+    r"""!
     Run the show script to report on contents of Isle files.
-    """
 
-    # load metadata to abstract away file type
-    if args.input[1] == isle.fileio.FileType.HDF5:
-        lattice, params, makeActionSrc = isle.fileio.h5.readMetadata(args.input)
-    elif args.input[1] == isle.fileio.FileType.YAML:
-        lattice = isle.fileio.yaml.loadLattice(args.input[0])
-        params = None
-        makeActionSrc = None
-    else:
-        print(f"Error: Cannot load file '{args.input[0]}', unsupported file type.")
-        sys.exit(1)
+    \param args Parsed command line arguments.
+    """
 
     # set up matplotlib once for all reporters
     isle.plotting.setupMPL()
 
-    # call individual reporters
-    if "overview" in args.report:
-        _overview(args.input[0], lattice, params, makeActionSrc)
-    if "lattice" in args.report:
-        _lattice(args.input[0], lattice)
-    if "correlator" in args.report:
-        _correlator(args.input[0], lattice, params, makeActionSrc)
+    for fname in args.input:
+        try:
+            lattice, params, makeActionSrc = _loadMetadata(fname, isle.fileio.fileType(fname))
+        except ValueError:
+            continue  # skip this file
+
+        try:
+            # call individual reporters
+            if "overview" in args.report:
+                _overview(fname, lattice, params, makeActionSrc)
+            if "lattice" in args.report:
+                _lattice(fname, lattice)
+            if "correlator" in args.report:
+                _correlator(fname, lattice, params, makeActionSrc)
+        except:
+            getLogger("isle.show").exception("Show command failed with file %s.", fname)
 
     plt.show()

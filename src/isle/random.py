@@ -47,6 +47,18 @@ class RNGWrapper(ABC):
         pass
 
     @abstractmethod
+    def choice(self, a, size=None, replace=True):
+        r"""!
+        Generate a random sample from a given 1-D array
+        \param a If an np.ndarray or equivalent, a random sample is generated from
+                 its elements. If an int, the random sample is generated as if a were np.arange(a).
+        \param size Output shape. If the given shape is, e.g., (m, n, k), then m * n * k
+                    samples are drawn. Default is None, in which case a single value is returned.
+        \param replace Whether the sample is with or without replacement.
+        """
+        pass
+
+    @abstractmethod
     def writeH5(self, group):
         r"""!
         Write the current state of the RNG into a HDF5 group.
@@ -108,6 +120,18 @@ class NumpyRNG(RNGWrapper):
             return self._state.normal(mean, std, size) \
                 + 1j*self._state.normal(mean, std, size)
         return self._state.normal(mean, std, size)
+
+    def choice(self, a, size=None, replace=True):
+        r"""!
+        Generate a random sample from a given 1-D array
+        \param a If an np.ndarray or equivalent, a random sample is generated from
+                 its elements. If an int, the random sample is generated as if a were np.arange(a).
+        \param size Output shape. If the given shape is, e.g., (m, n, k), then m * n * k
+                    samples are drawn. Default is None, in which case a single value is returned.
+        \param replace Whether the sample is with or without replacement.
+        """
+
+        return self._state.choice(a, size=size, replace=replace)
 
     def writeH5(self, group):
         r"""!

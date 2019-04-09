@@ -68,9 +68,14 @@ def nx_scaling():
 
     times = {"logdetM": []}
 
+    nxs = []
     for lat in lattices:
         print(f"lat = {lat.name}")
         nx = lat.nx()
+        if nx in nxs:
+            continue
+
+        nxs.append(nx)
         lat.nt(NT)
 
         # make random auxilliary field and HFM
@@ -86,7 +91,7 @@ def nx_scaling():
     # save benchmark to file
     pickle.dump({"xlabel": "Nx",
                  "ylabel": "time / s",
-                 "xvalues": [lat.nx() for lat in lattices],
+                 "xvalues": nxs,
                  "results": times},
                 open("logdet.ben", "wb"))
 

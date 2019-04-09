@@ -38,9 +38,13 @@ namespace isle {
         }
     }
 
-    bool isBipartite(const Lattice &lat) {
-        std::vector<color> colors(lat.nx(), unspecified);
+    bool isBipartite(const SparseMatrix<double> &hoppingMatrix) {
+        std::vector<color> colors(hoppingMatrix.rows(), unspecified);
         colors[0] = latA;
-        return colorNeighborsDescend(0, colors, lat.hopping());
+        return colorNeighborsDescend(0, colors, hoppingMatrix);
+    }
+
+    bool isBipartite(const Lattice &lat) {
+        return isBipartite(lat.hopping());
     }
 }

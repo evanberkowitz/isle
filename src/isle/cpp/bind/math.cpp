@@ -419,6 +419,12 @@ namespace {
             mod.def("imag", [](const VT &vec) {
                     return blaze::evaluate(blaze::imag(vec));
                 });
+            mod.def("norm", [](const VT &vec) {
+                    return blaze::evaluate(blaze::norm(vec));
+                });
+            mod.def("sqrNorm", [](const VT &vec) {
+                    return blaze::evaluate(blaze::sqrNorm(vec));
+                });
         }
     };
 

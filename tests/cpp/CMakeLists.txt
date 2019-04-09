@@ -2,7 +2,8 @@
 #
 
 set(TEST_SOURCE
-  ${ISLE_CPP_SOURCE}
+  # TODO activate
+  # ${ISLE_CPP_SOURCE}
   main.cpp
   )
 
@@ -22,6 +23,13 @@ endif ()
 # use a system include because we get all the warnings from the library compilation already
 target_include_directories(${TEST_EXE} SYSTEM PUBLIC ${SOURCE_DIR})
 
+# Pybind11
+set_target_properties(${TEST_EXE} PROPERTIES PREFIX "" SUFFIX "${PYBIND11_LIB_SUFFIX}")
+target_include_directories(${TEST_EXE} SYSTEM PUBLIC "${PYBIND11_INCLUDE_DIRS}")
+target_compile_options(${TEST_EXE} PUBLIC ${PYBIND11_CXX_FLAGS})
+target_link_libraries(${TEST_EXE} ${PYBIND11_LIBRARIES})
+target_linker_flags(${TEST_EXE} "${PYBIND11_LINKER_FLAGS}")
+
 # blaze
 target_include_directories(${TEST_EXE} SYSTEM PUBLIC ${blaze_INCLUDE_DIRS})
 target_compile_options(${TEST_EXE} PUBLIC "${blaze_CXX_FLAGS}")
@@ -30,9 +38,9 @@ target_linker_flags(${TEST_EXE} "${blaze_LINKER_FLAGS}")
 
 # OpenMP if blaze does not use it
 if (NOT "${BLAZE_PARALLELISM}" STREQUAL "OMP")
-  target_compile_options(${TEST_EXE} PUBLIC "${OMP_CXX_FLAGS}")
-  target_link_libraries(${TEST_EXE} ${OMP_LIBRARIES})
-  target_linker_flags(${TEST_EXE} "${OMP_LINKER_FLAGS}")
+  target_compile_options(${TEST_EXE} PUBLIC "${OpenMP_CXX_FLAGS}")
+  target_link_libraries(${TEST_EXE} "${OpenMP_CXX_LIBRARIES}")
+  target_linker_flags(${TEST_EXE} "${OpenMP_LINKER_FLAGS}")
 endif ()
 
 # install into test directory

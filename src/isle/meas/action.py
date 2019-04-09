@@ -1,42 +1,36 @@
-"""!
+r"""!\file
+\ingroup meas
 Measurement of action.
 """
 
-from ..h5io import createH5Group
+from logging import getLogger
 
-class Action:
+from ..h5io import createH5Group
+from .measurement import Measurement
+
+class Action(Measurement):
     r"""!
     \ingroup meas
     Transfer the action from a configuration file into a measurement file.
     Does nothing if the measurement file already contains the action.
     """
 
-    def __init__(self):
+    def __init__(self, savePath, configSlice=slice(None, None, None)):
+        r"""!
+        \param savePath Path in an HDF5 file under which results are stored.
+        \param configSlice Indicates which configurations the measurement is taken on.
+        """
+        super().__init__(savePath, configSlice)
         self.action = []
 
     def __call__(self, phi, action, itr):
         """!Record action."""
         self.action.append(action)
 
-    def save(self, base, name):
+    def save(self, h5group):
         r"""!
         Write the action to a file.
-        \param base HDF5 group in which to store data.
-        \param name Name of the subgroup of base for this measurement.
+        \param h5group Base HDF5 group. Data is stored in subgroup `h5group/self.savePath`.
         """
-        group = createH5Group(base, name)
-        group["action"] = self.action
-
-    def read(self, group):
-        r"""!
-        Read the action from a file.
-        \param group HDF5 group which contains the data of this measurement.
-        """
-        if "action" in group:
-            self.action = group["action"][()]
-        elif "configuration" in group:
-            cfgGrp = group["configuration"]
-            self.action = [cfgGrp[cfg]["action"][()] for cfg in cfgGrp]
-        else:
-            print(f"Error: no action found in HDF5 group '{group}'."
-                  " Did not find subgroups 'action' or 'configuration'.")
+        subGroup = createH5Group(h5group, self.savePath)
+        subGroup["action"] = self.action

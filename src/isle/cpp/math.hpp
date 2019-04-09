@@ -12,6 +12,7 @@
 
 #include "core.hpp"
 #include "tmp.hpp"
+#include "bind/logging.hpp"
 
 namespace isle {
     /**
@@ -176,11 +177,12 @@ namespace isle {
         noexcept(ndebug) {
         // some rudimentary bounds check, no idea how to do this in general...
 #ifndef NDEBUG
-        // TODO warn if size(vec) == 0
         if (t == static_cast<std::size_t>(-1))
             throw std::runtime_error("t is -1");
         if (t == static_cast<std::size_t>(-2))
             throw std::runtime_error("t is -2");
+        if (blaze::size(vec) == 0)
+            getLogger("cpp.math").warning("Size of vector is zero in spacevec.");
         return blaze::subvector(std::forward<VT>(vec), t*nx, nx);
 #else
         return blaze::subvector(std::forward<VT>(vec), t*nx, nx, blaze::unchecked);
@@ -193,7 +195,6 @@ namespace isle {
                             const std::size_t nx) noexcept(ndebug) {
         // some rudimentary bounds check, no idea how to do this in general...
 #ifndef NDEBUG
-        // TODO warn if size(vec) == 0
         if (tp == static_cast<std::size_t>(-1))
             throw std::runtime_error("tp is -1");
         if (tp == static_cast<std::size_t>(-2))
@@ -202,6 +203,10 @@ namespace isle {
             throw std::runtime_error("t is -1");
         if (t == static_cast<std::size_t>(-2))
             throw std::runtime_error("t is -2");
+        if (blaze::rows(mat) == 0)
+            getLogger("cpp.math").warning("Number of rows of matrix is zero in spacemat.");
+        if (blaze::columns(mat) == 0)
+            getLogger("cpp.math").warning("Number of columns of matrix is zero in spacemat.");
         return blaze::submatrix(std::forward<MT>(mat), tp*nx, t*nx, nx, nx);
 #else
         return blaze::submatrix(std::forward<MT>(mat), tp*nx, t*nx, nx, nx, blaze::unchecked);

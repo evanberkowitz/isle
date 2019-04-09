@@ -5,7 +5,6 @@
 #include "lattice.hpp"
 #include "hubbardFermiMatrix.hpp"
 #include "action.hpp"
-#include "hamiltonian.hpp"
 #include "integrator.hpp"
 
 #include "../math.hpp"
@@ -31,7 +30,6 @@ PYBIND11_MODULE(ISLE_LIBNAME, mod) {
     bind::bindLattice(mod);
     bind::bindHubbardFermiMatrix(mod);
     bind::bindActions(mod);
-    bind::bindHamiltonian(mod);
     bind::bindIntegrators(mod);
 
     bind::bindSTLContainers(mod);

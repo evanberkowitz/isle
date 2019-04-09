@@ -5,6 +5,8 @@ This module requires matplotlib which is not needed for the core operation of is
 Thus, plotting is not imported automatically when isle is imported.
 """
 
+from logging import getLogger
+
 ## \cond DO_NOT_DOCUMENT
 try:
     import matplotlib as mpl
@@ -12,7 +14,7 @@ try:
     from matplotlib.ticker import MultipleLocator
 
 except ImportError:
-    print("Error: Cannot import matplotlib, plotting functionality is not available.")
+    getLogger(__name__).error("Cannot import matplotlib, plotting functionality is not available.")
     raise
 
 try:
@@ -87,15 +89,15 @@ def plotTotalPhi(measState, axPhi, axPhiHist):
     """!Plot MC history and histogram of total Phi."""
 
     # load data from previous measurement or compute from configurations
-    with h5.File(str(measState.infname), "r") as h5f:
+    with h5.File(str(measState.infile), "r") as h5f:
         if "field" in h5f:
             totalPhi = h5f["field"]["totalPhi"][()]
         elif "configuration" in h5f:
-            meas = isle.meas.TotalPhi()
-            measState.mapOverConfigs([(1, meas, None)])
+            meas = isle.meas.TotalPhi(None)
+            measState.mapOverConfigs([meas])
             totalPhi = meas.Phi
         else:
-            print("no configurations or total Phi found")
+            getLogger(__name__).info("No configurations or total Phi found.")
             totalPhi = None
 
     # need those in any case
@@ -139,13 +141,13 @@ def plotTrajPoints(measState, ax):
     """!Plot MC history of accepted trajectory points."""
 
     # load data from configurations if possible
-    with h5.File(str(measState.infname), "r") as h5f:
+    with h5.File(str(measState.infile), "r") as h5f:
         trajPoints = []
         if "configuration" in h5f:
             for configName in sorted(h5f["configuration"], key=int):
                 trajPoints.append(h5f["configuration"][configName]["trajPoint"][()])
         else:
-            print("No traj points found")
+            getLogger(__name__).info("No traj points found.")
             trajPoints = None
 
     if trajPoints is None:
@@ -193,7 +195,7 @@ def plotPhase(action, axPhase, axPhase2D):
 
     if np.max(np.abs(theta)) > 1e-13:
         # show 1D histogram + KDE
-        axPhase.hist(theta, bins=len(theta)//100, density=True,
+        axPhase.hist(theta, bins=max(len(theta)//100, 10), density=True,
                      facecolor="C1", alpha=0.7)
         samplePts, dens = oneDimKDE(theta, bandwidth=1/5)
         if dens is not None:
@@ -234,21 +236,33 @@ def plotPhase(action, axPhase, axPhase2D):
 def plotCorrelators(measState, axP, axH):
     r"""!
     Plot particle and hole Correlators.
+    The correlators are reweighted with the imaginary part of the action if possible.
     \returns True if successful, False if no data was found.
     """
 
     # load data from previous measurement
-    with h5.File(str(measState.infname), "r") as h5f:
+    with h5.File(str(measState.infile), "r") as h5f:
         if "correlation_functions" in h5f:
-            corrP = h5f["correlation_functions"]["single_particle"]["correlators"][()]
-            corrH = h5f["correlation_functions"]["single_hole"]["correlators"][()]
+            dsetP = h5f["correlation_functions/single_particle/correlators"]
+            corrP = dsetP[()]
+            dsetH = h5f["correlation_functions/single_hole/correlators"]
+            corrH = dsetH[()]
+
+            try:
+                weightP = isle.h5io.loadActionWeightsFor(dsetP)
+                weightH = isle.h5io.loadActionWeightsFor(dsetH)
+            except KeyError:
+                getLogger(__name__).warning("Unable to load action to do reweighting for correlators."
+                                            "Showing correlators without applying weights.")
+                weightP = np.ones(dsetP.shape[0])
+                weightH = np.ones(dsetH.shape[0])
         else:
-            print("Error: No correlation functions found.")
+            getLogger(__name__).error("No correlation functions found.")
             return False
 
     # ensemble averages
-    corrP = np.mean(corrP, axis=0)
-    corrH = np.mean(corrH, axis=0)
+    corrP = np.sum(corrP*weightP.reshape(-1, 1, 1, 1), axis=0) / np.sum(weightP)
+    corrH = np.sum(corrH*weightH.reshape(-1, 1, 1, 1), axis=0) / np.sum(weightH)
 
     # plot all correlators
     nx = corrP.shape[0]
