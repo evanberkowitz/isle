@@ -1,0 +1,7 @@
+<map id="isle.meas.measurement.Measurement" name="isle.meas.measurement.Measurement">
+<area shape="rect" id="node4" href="$classisle_1_1meas_1_1action_1_1Action.html" title="Transfer the action from a configuration file into a measurement file. " alt="" coords="494,5,665,32"/>
+<area shape="rect" id="node5" href="$classisle_1_1meas_1_1chiralCondensate_1_1ChiralCondensate.html" title="Tabulate the chiral condensate. " alt="" coords="478,57,681,98"/>
+<area shape="rect" id="node6" href="$classisle_1_1meas_1_1logdet_1_1Logdet.html" title="Measure the log determinant of particles and holes. " alt="" coords="492,123,667,149"/>
+<area shape="rect" id="node7" href="$classisle_1_1meas_1_1singleParticleCorrelator_1_1SingleParticleCorrelator.html" title="Tabulate single&#45;particle correlator. " alt="" coords="460,174,699,215"/>
+<area shape="rect" id="node8" href="$classisle_1_1meas_1_1totalPhi_1_1TotalPhi.html" title="Tabulate phi and mean value of phi^2. " alt="" coords="486,240,673,267"/>
+</map>

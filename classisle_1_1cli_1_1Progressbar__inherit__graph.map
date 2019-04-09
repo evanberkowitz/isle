@@ -1,0 +1,4 @@
+<map id="isle.cli.Progressbar" name="isle.cli.Progressbar">
+<area shape="rect" id="node4" href="$classisle_1_1cli_1_1FileProgressbar.html" title="A progress indicator that writes individual update messages. " alt="" coords="5,155,167,181"/>
+<area shape="rect" id="node5" href="$classisle_1_1cli_1_1TerminalProgressbar.html" title="A progress bar that is shown in the terminal via sys.stdio. " alt="" coords="191,155,386,181"/>
+</map>

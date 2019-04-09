@@ -1,0 +1,4 @@
+<map id="Graphical Class Hierarchy" name="Graphical Class Hierarchy">
+<area shape="rect" id="node2" href="$classisle_1_1random_1_1RNGWrapper.html" title="Base for all RNG wrappers. " alt="" coords="103,5,284,32"/>
+<area shape="rect" id="node3" href="$classisle_1_1random_1_1NumpyRNG.html" title="Wrapper around numpy&#39;s Mersenne Twister random number generator. " alt="" coords="332,5,507,32"/>
+</map>

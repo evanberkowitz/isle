@@ -1,0 +1,6 @@
+<map id="Graphical Class Hierarchy" name="Graphical Class Hierarchy">
+<area shape="rect" id="node1" href="$structisle_1_1action_1_1Action.html" title="Abstract base for Actions. " alt="" coords="5,92,144,119"/>
+<area shape="rect" id="node2" href="$classisle_1_1action_1_1HubbardFermiAction.html" title="Fermion action for Hubbard model. " alt="" coords="192,5,395,61"/>
+<area shape="rect" id="node3" href="$classisle_1_1action_1_1HubbardGaugeAction.html" title="Pure gauge action for Hubbard model. " alt="" coords="196,85,391,126"/>
+<area shape="rect" id="node4" href="$classisle_1_1action_1_1SumAction.html" title="Sum of several actions. " alt="" coords="209,151,377,177"/>
+</map>

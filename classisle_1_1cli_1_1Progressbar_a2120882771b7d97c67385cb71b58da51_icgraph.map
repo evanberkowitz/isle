@@ -1,0 +1,4 @@
+<map id="isle.cli.Progressbar.clear" name="isle.cli.Progressbar.clear">
+<area shape="rect" id="node2" href="$classisle_1_1cli_1_1TerminalProgressbar.html#a193f5e1578a1e4cd1546af549e9b3e69" title="Write a message to the terminal. " alt="" coords="235,5,462,32"/>
+<area shape="rect" id="node3" href="$classisle_1_1cli_1_1TerminalProgressbar.html#a0ce0d2fe85047bc59e3f12999ec0507d" title="Remove bar from screen and print a message showing the run time. " alt="" coords="228,56,469,83"/>
+</map>

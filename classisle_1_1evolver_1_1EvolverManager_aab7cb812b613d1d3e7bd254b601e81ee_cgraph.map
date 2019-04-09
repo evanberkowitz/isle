@@ -1,0 +1,7 @@
+<map id="isle.evolver.EvolverManager.load" name="isle.evolver.EvolverManager.load">
+<area shape="rect" id="node2" href="$classisle_1_1evolver_1_1EvolverManager.html#a67e08a3cc9367783217438ae43e90870" title="Load an evolver type from file. " alt="" coords="281,5,537,32"/>
+<area shape="rect" id="node3" href="$group__evolvers.html#gabcb6b0f1c26ecf096c3b80dda262bcbc" title="Retrieves the class of an evolver from HDF5. " alt="" coords="585,31,783,57"/>
+<area shape="rect" id="node4" href="$group__evolvers.html#ga453b0e2fbb3db0b072c65b7f36848c21" title="Save an evolver&#39;s type to HDF5. " alt="" coords="309,107,509,133"/>
+<area shape="rect" id="node5" href="$namespaceisle.html#ab26d96123c95ced1a69a81682cd706c9" title="Construct and return a new logger. " alt="" coords="351,157,467,184"/>
+<area shape="rect" id="node6" href="$classisle_1_1Logger.html#ad61df581edd5661f4fa301ffef39a26f" title="Request a Python logger with the given name. " alt="" coords="611,157,757,184"/>
+</map>

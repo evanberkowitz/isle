@@ -1,0 +1,6 @@
+<map id="isle.evolver.loadEvolverType" name="isle.evolver.loadEvolverType">
+<area shape="rect" id="node2" href="$classisle_1_1evolver_1_1EvolverManager.html#ab610859bbdec89116c63bd9de1fbeadf" title="Load all types of evolvers in file fname. " alt="" coords="278,5,479,47"/>
+<area shape="rect" id="node4" href="$classisle_1_1evolver_1_1EvolverManager.html#a67e08a3cc9367783217438ae43e90870" title="Load an evolver type from file. " alt="" coords="251,71,507,98"/>
+<area shape="rect" id="node5" href="$classisle_1_1evolver_1_1EvolverManager.html#aab7cb812b613d1d3e7bd254b601e81ee" title="Load an evolver&#39;s type and construct an instance from given group. " alt="" coords="555,97,783,123"/>
+<area shape="rect" id="node3" href="$classisle_1_1evolver_1_1EvolverManager.html#a771ab4a0f3ab372d3d56b1bd2c0c0e29" title="Initialize for a given file. " alt="" coords="568,5,769,47"/>
+</map>

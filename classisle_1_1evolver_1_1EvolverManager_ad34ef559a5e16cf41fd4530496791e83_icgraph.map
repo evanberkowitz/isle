@@ -1,0 +1,7 @@
+<map id="isle.evolver.EvolverManager.saveType" name="isle.evolver.EvolverManager.saveType">
+<area shape="rect" id="node2" href="$classisle_1_1evolver_1_1EvolverManager.html#a5f09376a3e7343bef6737f82f4e2fddb" title="Save an evolver including its type. " alt="" coords="312,78,543,105"/>
+<area shape="rect" id="node3" href="$classisle_1_1drivers_1_1hmc_1_1HMC.html#a9f90ff4358874bae36be255f6f8b44cb" title="Save the trajectory and checkpoint if frequencies permit. " alt="" coords="623,5,783,47"/>
+<area shape="rect" id="node5" href="$classisle_1_1drivers_1_1meas_1_1Measure.html#ab64ead6a0737d7036b32791ac14f8a22" title="Apply measurements to all configurations in the input file and save results to the output file..." alt="" coords="606,71,799,112"/>
+<area shape="rect" id="node6" href="$classisle_1_1meas_1_1logdet_1_1Logdet.html#a8b44aa843dfa2d34750b05037be98430" title="Save results of measurement as well as relevant metadata. " alt="" coords="591,137,815,163"/>
+<area shape="rect" id="node4" href="$classisle_1_1drivers_1_1hmc_1_1HMC.html#ae41b05171f01101cd51a1bb6e37bd30f" title="Evolve configuration using HMC. " alt="" coords="863,5,1023,47"/>
+</map>
