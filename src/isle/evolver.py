@@ -247,65 +247,7 @@ class TwoPiJumps(Evolver):
         self.latSize = lattice.lattSize()
         self.selector = BinarySelector(rng)
 
-        # _sumHalfInvUtildes is either sum(1/Utilde)/2 from all HubbardGaugeActions
-        #                    or None
-        # _action is either None or action that was passed in (same order as _sumInvUtildes)
-        utildes = self._findUtildes(action)
-        if utildes is None:
-            self._action = action
-            self._sumHalfInvUtilde = None
-            getLogger(__name__).info("Action does not allow for evaluation shortcut under "
-                                     "jumps by 2pi, using normal (slow) evaluation")
-        else:
-            self._action = None
-            self._sumHalfInvUtilde = sum(1 / utilde for utilde in utildes) / 2
-            getLogger(__name__).info("Action allows for evaluation shortcut under jumps "
-                                     "by 2pi, found utilde = %s", utildes)
-
-    def _findUtildes(self, action):
-        r"""!
-        Find all HubbardGaugeActions and extract Utilde.
-        \returns Either a list of all Utildes found or None if there is any action
-                 which does not allow for the shortcut calculation.
-        """
-
-        # all sub actions must allow for the shortcut
-        if isinstance(action, isle.action.SumAction):
-            utildes = []
-            for i in range(len(action)):
-                aux = self._findUtildes(action[i])
-                if aux is None:
-                    return None
-                utildes.extend(aux)
-            return utildes
-
-        # single action
-        if isinstance(action, isle.action.HubbardGaugeAction):
-            return [action.utilde]
-
-        # action is invariant under 2pi jump
-        if isinstance(action, (isle.action.HubbardFermiActionDiaOneOne,
-                               isle.action.HubbardFermiActionDiaTwoOne,
-                               isle.action.HubbardFermiActionExpOneOne,
-                               isle.action.HubbardFermiActionExpTwoOne)):
-            return []
-
-        return None
-
-    def _evalAction(self, newPhi, sites, shifts, actVal):
-        """!
-        Compute the value of the action at a given phi after a jump.
-        """
-
-        if self._action is None:
-            # shortcut: Computes (newPhi**2 - oldPhi**2) / (2*Utilde), the difference in
-            #           gauge action. The fermion action is invariant under jumps by 2*pi
-            #           if this branch is taken.
-            return actVal + np.dot(2*np.array(newPhi, copy=False)[sites]-shifts, shifts) \
-                * self._sumHalfInvUtilde
-
-        # Some part of the action does not allow for the shortcut.
-        return self._action.eval(newPhi)
+        self._action = _HubbardActionShortcut(action)
 
     def evolve(self, phi, pi, actVal, trajPoint):
         r"""!
@@ -333,7 +275,7 @@ class TwoPiJumps(Evolver):
             # perform jumps
             newPhi = np.array(phi, copy=True)
             newPhi[sites] += shifts
-            newActVal = self._evalAction(newPhi, sites, shifts, actVal)
+            newActVal = self._action.eval(newPhi, sites, shifts, actVal)
 
             # no need to put pi into check, it never changes in here
             if self.selector.selectTrajPoint(actVal, newActVal) == 1:
@@ -485,6 +427,80 @@ class Alternator(Evolver):
             subEvolver = manager.load(h5group[f"sub{idx}"], action, lattice, rng)
             alternator.add(count, subEvolver)
         return alternator
+
+
+
+class _HubbardActionShortcut:
+    """!
+    Evaulates actions if a shortcut can be taken.
+
+    \todo write!!
+    """
+
+
+    def __init__(self, action):
+        # _sumHalfInvUtildes is either sum(1/Utilde)/2 from all HubbardGaugeActions
+        #                    or None
+        # _action is either None or action that was passed in (same order as _sumInvUtildes)
+        utildes = self._findUtildes(action)
+        if utildes is None:
+            self._action = action
+            self._sumHalfInvUtilde = None
+            getLogger(__name__).info("Action does not allow for evaluation shortcut by "
+                                     "invariance of the fermion determinant, "
+                                     "using normal (slow) evaluation")
+        else:
+            self._action = None
+            self._sumHalfInvUtilde = sum(1 / utilde for utilde in utildes) / 2
+            getLogger(__name__).info("Action allows for evaluation shortcut by "
+                                     "invariance of the fermion determinant, "
+                                     "found utilde = %s", utildes)
+
+    def _findUtildes(self, action):
+        r"""!
+        Find all HubbardGaugeActions and extract Utilde.
+        \returns Either a list of all Utildes found or None if there is any action
+                 which does not allow for the shortcut calculation.
+        """
+
+        # all sub actions must allow for the shortcut
+        if isinstance(action, isle.action.SumAction):
+            utildes = []
+            for act in action:
+                aux = self._findUtildes(act)
+                if aux is None:  # propagate 'non-regognized action'
+                    return None
+                utildes.extend(aux)
+            return utildes
+
+        # single action
+        if isinstance(action, isle.action.HubbardGaugeAction):
+            return [action.utilde]
+
+        # action is invariant under 2pi jump
+        if isinstance(action, (isle.action.HubbardFermiActionDiaOneOne,
+                               isle.action.HubbardFermiActionDiaTwoOne,
+                               isle.action.HubbardFermiActionExpOneOne,
+                               isle.action.HubbardFermiActionExpTwoOne)):
+            return []
+
+        # not recognized, can't use shortcut
+        return None
+
+    def eval(self, newPhi, sites, shifts, actVal):
+        """!
+        Compute the value of the action at a given phi after a jump.
+        """
+
+        if self._action is None:
+            # shortcut: Computes (newPhi**2 - oldPhi**2) / (2*Utilde), the difference in
+            #           gauge action. The fermion action is invariant under jumps by 2*pi
+            #           if this branch is taken.
+            return actVal + np.dot(2*np.array(newPhi, copy=False)[sites]-shifts, shifts) \
+                * self._sumHalfInvUtilde
+
+        # Some part of the action does not allow for the shortcut.
+        return self._action.eval(newPhi)
 
 
 
