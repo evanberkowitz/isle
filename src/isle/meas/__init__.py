@@ -1,10 +1,5 @@
 """!
 General measurements that can be useful in various contexts.
-
-Canonically, a measurement is a class with a name in UpperCamelCase in a module
-of the same name but in lowerCamelCase.
-
-More details can be found under \ref measdoc "Measurements".
 """
 
 ## \defgroup meas Measurements
