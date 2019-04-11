@@ -275,7 +275,7 @@ class TwoPiJumps(Evolver):
             # perform jumps
             newPhi = np.array(phi, copy=True)
             newPhi[sites] += shifts
-            newActVal = self._action.eval(newPhi, sites, shifts, actVal)
+            newActVal = self._action.evalLocal(newPhi, sites, shifts, actVal)
 
             # no need to put pi into check, it never changes in here
             if self.selector.selectTrajPoint(actVal, newActVal) == 1:
@@ -308,6 +308,78 @@ class TwoPiJumps(Evolver):
         \returns A newly constructed TwoPiJumps evolver.
         """
         return cls(h5group["nBatches"][()], h5group["batchSize"][()], action, lattice, rng)
+
+
+class UniformJump(Evolver):
+    """!
+    Shift configuration by 2*pi/Nt at all lattice sites.
+
+    If the action consists only of isle.action.HubbardGaugeAction and any variants
+    of isle.action.HubbardFermiAction, a shortcurt can be used to compute the change
+    in action which allows for very fast execution.
+    """
+
+    def __init__(self, action, lattice, rng):
+        r"""!
+        \param action Instance of isle.Action to use for molecular dynamics.
+        \param lattice Lattice the simulation runs on.
+        \param rng Central random number generator for the run.
+        """
+
+        self.rng = rng
+        self.selector = BinarySelector(rng)
+
+        # use this to evaluate action
+        self._action = _HubbardActionShortcut(action)
+        # absolute value of shift
+        self._absShift = 2*np.pi/lattice.nt()
+
+    def evolve(self, phi, pi, actVal, trajPoint):
+        r"""!
+        Evolve a configuration, momentum remains unchanged.
+        \param phi Input configuration.
+        \param pi Input Momentum.
+        \param actVal Value of the action at phi.
+        \param trajPoint \e ignored.
+        \returns In order:
+          - New configuration
+          - New momentum
+          - Action evaluated at new configuration
+          - 0 if no jump was accepted, 1 if at least one was accepted (across all batches).
+        """
+
+        shift = self.rng.choice((-1, +1)) * self._absShift
+        newPhi = phi + shift
+        newActVal = self._action.evalGlobal(newPhi, shift, actVal)
+
+        if self.selector.selectTrajPoint(actVal, newActVal) == 1:
+            phi, actVal = newPhi, newActVal
+            trajPoint = 1
+        else:
+            trajPoint = 0
+
+        return phi, pi, actVal, trajPoint
+
+    def save(self, _h5group, _manager):
+        r"""!
+        Save the evolver to HDF5.
+        Has to be the inverse of Evolver.fromH5().
+        \param _h5group \e ignored.
+        \param _manager \e ignored.
+        """
+
+    @classmethod
+    def fromH5(cls, _h5group, _manager, action, lattice, rng):
+        r"""!
+        Construct from HDF5.
+        \param _h5group \e ignored.
+        \param _manager \e ignored.
+        \param action Action to use.
+        \param lattice Lattice the simulation runs on.
+        \param rng Central random number generator for the run.
+        \returns A newly constructed TwoPiJumps evolver.
+        """
+        return cls(action, lattice, rng)
 
 
 class Alternator(Evolver):
@@ -487,9 +559,14 @@ class _HubbardActionShortcut:
         # not recognized, can't use shortcut
         return None
 
-    def eval(self, newPhi, sites, shifts, actVal):
-        """!
-        Compute the value of the action at a given phi after a jump.
+    def evalLocal(self, newPhi, sites, shifts, actVal):
+        r"""!
+        Compute the value of the action at a given phi after a jump at given sites.
+        \param newPhi Configuration after the jump.
+        \param sites Array of indices of sites that were shifted.
+        \param shifts Amount by which newPhi was shifted per site in parameter `sites`.
+        \param actVal Original value of the action (at newPhi - shifts).
+        \returns Value of the action at newPhi.
         """
 
         if self._action is None:
@@ -498,6 +575,24 @@ class _HubbardActionShortcut:
             #           if this branch is taken.
             return actVal + np.dot(2*np.array(newPhi, copy=False)[sites]-shifts, shifts) \
                 * self._sumHalfInvUtilde
+
+        # Some part of the action does not allow for the shortcut.
+        return self._action.eval(newPhi)
+
+    def evalGlobal(self, newPhi, shift, actVal):
+        r"""!
+        Compute the value of the action after a uniform jump at all sites.
+        \param newPhi Configuration after the jump.
+        \param shift Amount by which newPhi was shifted.
+        \param actVal Original value of the action (at newPhi - shift).
+        \returns Value of the action at newPhi.
+        """
+
+        if self._action is None:
+            # shortcut: Computes (newPhi**2 - oldPhi**2) / (2*Utilde), the difference in
+            #           gauge action. The fermion action is invariant under jumps by 2*pi
+            #           if this branch is taken.
+            return actVal + shift*(2*np.sum(newPhi) - shift*len(newPhi)) / self._sumHalfInvUtilde
 
         # Some part of the action does not allow for the shortcut.
         return self._action.eval(newPhi)
