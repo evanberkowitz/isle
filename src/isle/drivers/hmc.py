@@ -233,7 +233,7 @@ def continueRun(infile, outfile, startIdx, overwrite, definitions={}):
         _ensureNoNewerConfigs(infile, checkpointIdx, checkpoints, configurations, overwrite)
 
     return (HMC(lattice, params, rng, action, outfile,
-                checkpointIdx+1,  # +1 because we start with the traj one after the checkpoint
+                checkpointIdx,
                 definitions,
                 propManager if infile == outfile else None),  # need to re-init manager for new outfile
             phi,
