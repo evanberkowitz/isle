@@ -181,9 +181,15 @@ class _HubbardActionShortcut:
     """!
     Evaulates actions if a shortcut can be taken.
 
-    \todo write!!
+    Some evolvers change the configuration in such a way that the fermion action
+    of the Hubbard model is invariant.
+    If this is the case, this class can be used to evaluate the action after such
+    a change in a very fast way.
+    If the action consists only of (potentially multiple instances of) HubbardGaugeAction
+    and any of HubbardFermiAction*, `evalGlobal` and `evalLocal` compute the action
+    from the change in gauge action, assuming that the fermion action is invariant.
+    If other actions are present, the full action is evaluated and no shortcut is taken.
     """
-
 
     def __init__(self, action):
         # _sumHalfInvUtildes is either sum(1/Utilde)/2 from all HubbardGaugeActions
