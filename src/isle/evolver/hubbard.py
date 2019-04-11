@@ -144,11 +144,11 @@ class UniformJump(Evolver):
         """
 
         shift = self.rng.choice((-1, +1)) * self._absShift
-        newPhi = phi + shift
+        newPhi = np.array(phi, copy=False) + shift
         newActVal = self._action.evalGlobal(newPhi, shift, actVal)
 
         if self.selector.selectTrajPoint(actVal, newActVal) == 1:
-            phi, actVal = newPhi, newActVal
+            phi, actVal = isle.Vector(newPhi), newActVal
             trajPoint = 1
         else:
             trajPoint = 0
