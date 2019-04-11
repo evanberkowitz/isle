@@ -55,9 +55,11 @@ isle.evolver.EvolverManager supports different ways of saving types in order to 
 custom evolvers as well as built in ones.
 There are three scenarios for saving/loading evolver types
 (see \ref filelayout for more details on how this looks in the file):
-- The evolver is built into Isle (i.e. defined in module isle.evolver).
+- The evolver is built into Isle (i.e. defined in package isle.evolver).
   In this case, reconstructing it is trivial and only its classname is stored in the file
-  (dataset `__name__`).
+  (dataset `__name__`).<br>
+  Note to *developers*: All evolvers must be imported into the package isle.evolver
+  in order for `saveEvolverType` to find and store them correctly.
 
 - The evolver is custom defined but is provided as part of the `definitions` argument
   to the constructor of EvolverManager.
