@@ -39,9 +39,9 @@ namespace isle {
             Action *add(Action *action);
 
             /// Access an action via its index.
-            Action *operator[](std::size_t idx) noexcept(ndebug);
+            Action *operator[](std::size_t idx);
             /// Access an action via its index.
-            const Action *operator[](std::size_t idx) const noexcept(ndebug);
+            const Action *operator[](std::size_t idx) const;
 
             /// Return the number of actions currently referenced.
             std::size_t size() const noexcept;

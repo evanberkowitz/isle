@@ -7,19 +7,15 @@ namespace isle {
             return _subActions.back();
         }
 
-        Action *SumAction::operator[](std::size_t idx) noexcept(ndebug) {
-#ifndef NDEBUG
+        Action *SumAction::operator[](std::size_t idx) {
             if (idx >= _subActions.size())
                 throw std::out_of_range("Index of action is out of range");
-#endif
             return _subActions[idx];
         }
 
-        const Action *SumAction::operator[](std::size_t idx) const noexcept(ndebug) {
-#ifndef NDEBUG
+        const Action *SumAction::operator[](std::size_t idx) const {
             if (idx >= _subActions.size())
                 throw std::out_of_range("Index of action is out of range");
-#endif
             return _subActions[idx];
         }
 
