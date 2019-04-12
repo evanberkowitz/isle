@@ -17,12 +17,24 @@ class SingleParticleCorrelator(Measurement):
     Tabulate single-particle correlator.
     """
 
-    def __init__(self, hfm, species, savePath, configSlice=slice(None, None, None), alpha=1):
+    def __init__(self, hfm, species, savePath, configSlice=slice(None, None, None), alpha=1, projector=None):
         super().__init__(savePath, configSlice)
 
         self.hfm = hfm
         self.corr = []
-        self.irreps = np.transpose(la.orth(isle.Matrix(hfm.kappaTilde())))
+        # self.irreps = np.transpose(la.orth(isle.Matrix(hfm.kappaTilde())))
+        if projector is None:
+            _, self.irreps = np.linalg.eigh(isle.Matrix(hfm.kappaTilde()))
+            self.irreps = self.irreps.T
+        else:
+            self.irreps = projector.T
+        # self.irreps = np.identity(self.hfm.nx())
+        if species == isle.Species.PARTICLE:
+            print("Single particle\n", self.irreps)
+        elif species == isle.Species.HOLE:
+            print("Single hole\n", self.irreps)
+        else:
+            print("Unknown species. :(")
         self.species = species
         self._alpha = alpha
 
