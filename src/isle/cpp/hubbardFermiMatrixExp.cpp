@@ -547,7 +547,7 @@ namespace isle {
         }
 
         B += IdMatrix<std::complex<double>>(NX);
-        return toFirstLogBranch(logdet(B));
+        return toFirstLogBranch(ilogdet(B));
     }
 
     namespace {

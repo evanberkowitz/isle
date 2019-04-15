@@ -587,12 +587,11 @@ namespace isle {
         aux += IdMatrix<std::complex<double>>(NX);
 
         // add Phi and return
-        // TODO use ilogdet?
         switch (species) {
         case Species::PARTICLE:
-            return toFirstLogBranch(1.0i*blaze::sum(phi) + logdet(aux));
+            return toFirstLogBranch(1.0i*blaze::sum(phi) + ilogdet(aux));
         case Species::HOLE:
-            return toFirstLogBranch(-1.0i*blaze::sum(phi) + logdet(aux));
+            return toFirstLogBranch(-1.0i*blaze::sum(phi) + ilogdet(aux));
         }
 
         // We should never get here unless someone fucks up with the enum!
