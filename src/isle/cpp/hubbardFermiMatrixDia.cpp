@@ -587,6 +587,7 @@ namespace isle {
         aux += IdMatrix<std::complex<double>>(NX);
 
         // add Phi and return
+        // TODO use ilogdet?
         switch (species) {
         case Species::PARTICLE:
             return toFirstLogBranch(1.0i*blaze::sum(phi) + logdet(aux));
@@ -596,6 +597,24 @@ namespace isle {
 
         // We should never get here unless someone fucks up with the enum!
         throw std::runtime_error("Wrong value for species.");
+    }
+
+    namespace {
+        void verifyResultOfSolveM(const HubbardFermiMatrixDia &hfm,
+                                  const CDVector &phi,
+                                  const Species species,
+                                  const std::vector<CDVector> &res,
+                                  const std::vector<CDVector> &rhs) {
+            for (std::size_t i = 0; i < rhs.size(); ++i) {
+                const double diff = blaze::max(blaze::abs((hfm.M(phi, species) * res[i] - rhs[i]) / rhs[i]));
+                if (diff > 1e-8) {
+                    std::ostringstream oss;
+                    oss << "Check of result of solveM for right hand side " << i
+                        << " exceeds tolerance: " << diff << '\n';
+                    getLogger("HubbardFermiMatrixExp").warning(oss.str());
+                }
+            }
+        }
     }
 
     std::vector<CDVector> solveM(const HubbardFermiMatrixDia &hfm,
@@ -652,6 +671,10 @@ namespace isle {
             }
         }
         // }
+
+#ifndef NDEBUG
+        verifyResultOfSolveM(hfm, phi, species, res, rhs);
+#endif  // ndef NDEBUG
 
         return res;
     }
