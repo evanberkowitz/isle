@@ -18,8 +18,7 @@ class EvolverManager:
     Manages evolvers in a file.
 
     Handles saving and loading of types and parameters of evolvers in a centralized way.
-    Operates with the file structure descriped in
-    \todo link to file doc
+    Uses the file structure descriped in \ref filelayout.
     """
 
     def __init__(self, fname, typeLocation="/meta/evolvers", definitions={}):
