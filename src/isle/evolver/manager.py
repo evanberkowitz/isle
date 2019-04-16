@@ -3,7 +3,6 @@ r"""!\file
 Handlers for I/O from/to HDF5 files.
 """
 
-from inspect import getmodule
 from logging import getLogger
 from pathlib import Path
 
