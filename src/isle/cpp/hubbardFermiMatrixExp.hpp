@@ -335,8 +335,6 @@ namespace isle {
      * Can be called for multiple right hand sides b in order to re-use parts of
      * the calculation.
      *
-     * \todo on-the-fly check in debug mode
-     *
      * \param hfm Represents matrix M which describes the system of equations.
      * \param phi Gauge configuration needed to construct M.
      * \param species Select whether to solve for particles or holes.

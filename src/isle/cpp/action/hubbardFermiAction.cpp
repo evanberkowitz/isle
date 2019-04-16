@@ -5,8 +5,6 @@
 
 using namespace std::complex_literals;
 
-// TODO detect bipartiteness and other params to only evaluate det(M_p) and get det(M_h) from it
-
 namespace isle {
     namespace action {
         namespace {
