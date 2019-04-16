@@ -33,6 +33,7 @@ namespace isle {
                 using type = HubbardFermiMatrixExp;
             };
 
+            /// Check if the shortcut to compute det(M_hole) is possible.
             template <HFABasis BASIS>
             bool _holeShortcutPossible(const SparseMatrix<double> &hopping,
                                        const double muTilde,
@@ -48,16 +49,6 @@ namespace isle {
                 const SparseMatrix<double> &hopping,
                 const double muTilde,
                 const std::int8_t sigmaKappa);
-
-            // extern template bool _holeShortcutPossible<HFABasis::PARTICLE_HOLE>(
-            //     const SparseMatrix<double> &,
-            //     const double,
-            //     const std::int8_t);
-
-            // extern template bool _holeShortcutPossible<HFABasis::SPIN>(
-            //     const SparseMatrix<double> &,
-            //     const double,
-            //     const std::int8_t);
         }
         /// \endcond DO_NOT_DOCUMENT
 
@@ -79,6 +70,15 @@ namespace isle {
          * This is controlled through the parameter `alpha` as
          * - `alpha == 0` - spin basis
          * - `alpha == 1` - particle/hole basis
+         *
+         * It is possible to compute the contribution from holes from the contribution
+         * from particles iff the lattice is bipartite, mu=0, sigmaKappa=+1,
+         * basis=SPIN, and phi is real.
+         * If `allowShortcut=true` in the constructor and the parameters permit,
+         * %HubbardFermiAction uses that shortcut.
+         * \warning The field configuration is not checked.
+         *          If you allow for the shortcut, you must ensure that phi is
+         *          always real!
          *
          * \warning Only supports `nt > 2`.
          *
