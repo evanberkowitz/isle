@@ -1,7 +1,5 @@
 /** \file
  * \brief Hubbard model fermion matrices with hopping matrix on the diagonal.
- *
- * \todo Derive force and solver based on new form of algorithm.
  */
 
 #ifndef HUBBARD_FERMI_MATRIX_DIA_HPP
