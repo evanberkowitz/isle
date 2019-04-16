@@ -175,8 +175,14 @@ namespace isle {
         HubbardFermiAction<HFAHopping::DIA, HFAVariant::ONE, HFABasis::PARTICLE_HOLE>::force(
             const CDVector &phi) const {
 
-            return -1.i*(forceVariant1Part(_hfm, phi, _kp, Species::PARTICLE)
+            if (_shortcutForHoles) {
+                const auto fp = forceVariant1Part(_hfm, phi, _kp, Species::PARTICLE);
+                return -1.i*(fp + blaze::conj(fp));
+            }
+            else {
+                return -1.i*(forceVariant1Part(_hfm, phi, _kp, Species::PARTICLE)
                          - forceVariant1Part(_hfm, phi, _kh, Species::HOLE));
+            }
         }
 
         template <> std::complex<double>
@@ -240,8 +246,14 @@ namespace isle {
         HubbardFermiAction<HFAHopping::EXP, HFAVariant::ONE, HFABasis::PARTICLE_HOLE>::force(
             const CDVector &phi) const {
 
-            return -1.i*(forceVariant1Part(_hfm, phi, _kp, Species::PARTICLE)
+            if (_shortcutForHoles) {
+                const auto fp = forceVariant1Part(_hfm, phi, _kp, Species::PARTICLE);
+                return -1.i*(fp + blaze::conj(fp));
+            }
+            else {
+                return -1.i*(forceVariant1Part(_hfm, phi, _kp, Species::PARTICLE)
                          - forceVariant1Part(_hfm, phi, _kh, Species::HOLE));
+            }
         }
 
         template <> std::complex<double>
