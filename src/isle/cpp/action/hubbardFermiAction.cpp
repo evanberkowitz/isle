@@ -1,5 +1,8 @@
 #include "hubbardFermiAction.hpp"
 
+#include "../core.hpp"
+#include "../bind/logging.hpp"
+
 using namespace std::complex_literals;
 
 // TODO detect bipartiteness and other params to only evaluate det(M_p) and get det(M_h) from it
@@ -109,12 +112,64 @@ namespace isle {
         }  // anonymous namespace
 
 
+        namespace _internal {
+            template <> bool _holeShortcutPossible<HFABasis::PARTICLE_HOLE>(
+                const SparseMatrix<double> &hopping,
+                const double muTilde,
+                const std::int8_t sigmaKappa) {
+
+                auto log = getLogger("HubbardFermiAction");
+
+                if (!isBipartite(hopping)) {
+                    log.info("Not using shortcut for hole determinant, "
+                             "lattice is not bipartite.");
+                    return false;
+                }
+                else if (muTilde != 0.0) {  // must be exactlz zero
+                    log.info("Not using shortcut for hole determinant, "
+                             "chemical potential is not zero.");
+                    return false;
+                }
+                else if (sigmaKappa != +1) {
+                    log.info("Not using shortcut for hole determinant, "
+                             "sigmaKappa is not +1");
+                    // If other params do not allow for the shortcut,
+                    // we hit an earlier return.
+                    log.info("The other parameters allow using the shortcut, "
+                             "consider setting sigmaKappa to +1 or explicitly "
+                             "forbidding the use of the shortcut.");
+                    return false;
+                }
+
+                log.info("Using shortcut to calculate hole determinant from "
+                         "particle determinant.");
+                return true;
+            }
+
+            template <> bool _holeShortcutPossible<HFABasis::SPIN>(
+                const SparseMatrix<double> &UNUSED(hopping),
+                const double UNUSED(muTilde),
+                const std::int8_t UNUSED(sigmaKappa)) {
+
+                getLogger("HubbardFermiAction").info(
+                    "Not using shortcut for hole determinant, "
+                    "spin basis is not supported.");
+                return false;
+            }
+        }
+
         template <> std::complex<double>
         HubbardFermiAction<HFAHopping::DIA, HFAVariant::ONE, HFABasis::PARTICLE_HOLE>::eval(
             const CDVector &phi) const {
 
-            return -toFirstLogBranch(logdetM(_hfm, phi, Species::PARTICLE)
-                                     + logdetM(_hfm, phi, Species::HOLE));
+            if (_shortcutForHoles) {
+                const auto ldp = logdetM(_hfm, phi, Species::PARTICLE);
+                return -toFirstLogBranch(ldp + std::conj(ldp));
+            }
+            else {
+                return -toFirstLogBranch(logdetM(_hfm, phi, Species::PARTICLE)
+                                         + logdetM(_hfm, phi, Species::HOLE));
+            }
         }
         template <> CDVector
         HubbardFermiAction<HFAHopping::DIA, HFAVariant::ONE, HFABasis::PARTICLE_HOLE>::force(
@@ -172,8 +227,14 @@ namespace isle {
         HubbardFermiAction<HFAHopping::EXP, HFAVariant::ONE, HFABasis::PARTICLE_HOLE>::eval(
             const CDVector &phi) const {
 
-            return -toFirstLogBranch(logdetM(_hfm, phi, Species::PARTICLE)
-                                     + logdetM(_hfm, phi, Species::HOLE));
+            if (_shortcutForHoles) {
+                const auto ldp = logdetM(_hfm, phi, Species::PARTICLE);
+                return -toFirstLogBranch(ldp + std::conj(ldp));
+            }
+            else {
+                return -toFirstLogBranch(logdetM(_hfm, phi, Species::PARTICLE)
+                                         + logdetM(_hfm, phi, Species::HOLE));
+            }
         }
         template <> CDVector
         HubbardFermiAction<HFAHopping::EXP, HFAVariant::ONE, HFABasis::PARTICLE_HOLE>::force(
