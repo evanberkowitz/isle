@@ -2,6 +2,8 @@
 
 \todo Needs to be completely rewritten!
 
+\todo Implement continuation
+
 Measurements are a uniform mechanism to extract information from gauge configurations.
 They can be called both during HMC as 'inline' measurements or afterwards as
 'out-of-line' measurements.
