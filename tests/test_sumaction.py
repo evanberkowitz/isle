@@ -161,7 +161,7 @@ class TestSumAction(unittest.TestCase):
                   + 1j*np.random.normal(RAND_MEAN, RAND_STD, 1000)
 
             sacteval = sact.eval(isle.Vector(phi))
-            manualeval = np.sum(phi) + np.linalg.norm(phi)**2/2/1
+            manualeval = np.sum(phi) + np.dot(phi, phi)/2
 
             self.assertAlmostEqual(sacteval, manualeval, places=10,
                                    msg="Failed check of SumAction.eval in repetition {}\n".format(rep)\
