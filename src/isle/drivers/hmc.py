@@ -46,6 +46,8 @@ class HMC:
         \param phi Start configuration to evolve.
         \param evolver Used to evolve configurations for Metropolis accept/reject.
         \param ntr Number of trajectories to generate.
+                   May be `None` in which case production never stops unless the
+                   evolver raises an instance of `StopIteration`.
         \param saveFreq Save configurations every `saveFreq` trajectories.
         \param checkpointFreq Write a checkpoint every `checkpointFreq` trajectories.
                               Must be a multiple of `saveFreq`.
@@ -66,13 +68,17 @@ class HMC:
             self._saveConditionally(phi, actVal, trajPoint, evolver, saveFreq, checkpointFreq)
             self._new = False
 
-        for _ in cli.progressRange(ntr, message="HMC evolution",
-                                   updateRate=max(ntr//100, 1)):
+        for _ in _iterTrajectories(ntr):
             # get initial conditions for evolver
             startPhi, startPi, startActVal = phi, Vector(self.rng.normal(0, 1, len(phi))+0j), actVal
 
-            # get new fields
-            phi, _, actVal, trajPoint = evolver.evolve(startPhi, startPi, startActVal, trajPoint)
+            try:
+                # get new fields
+                phi, _, actVal, trajPoint = evolver.evolve(startPhi, startPi, startActVal, trajPoint)
+            except StopIteration:
+                # the evolver wants to stop,
+                # don't advance or save because no new config was produced
+                break
 
             # TODO consistency checks
             # TODO inline meas
@@ -320,3 +326,23 @@ def _loadCheckpoint(fname, startIdx, checkpoints, propManager, action, lattice):
     with h5.File(str(fname), "r") as h5f:
         return startIdx, fileio.h5.loadCheckpoint(h5f["checkpoint"], startIdx,
                                                   propManager, action, lattice)
+
+def _iterTrajectories(ntr):
+    """!
+    Iterator for production.
+    Either iterate ntr times or infinitely long if ntr is None.
+    Shows a progressbar in both cases.
+    """
+    # TODO allow max iteration for ntr is None
+
+    if ntr is not None:
+        yield from cli.progressRange(ntr, message="HMC evolution",
+                                     updateRate=max(ntr//100, 1))
+
+    else:
+        with cli.trackProgress(ntr, message="HMC evolution", updateRate=1) as pbar:
+            count = 0
+            while True:
+                yield count
+                count += 1
+                pbar.advance()
