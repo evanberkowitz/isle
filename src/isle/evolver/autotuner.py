@@ -23,7 +23,7 @@ from .. import leapfrog
 TARGET_ACC_RATE = 0.67
 
 MAX_NSTEP = 1000
-ARTIFICIAL_POINTS = [(0, 0.0, 1e-8), (MAX_NSTEP, 1.0, 1e-8)]
+
 
 # targeted confidence for acc rate and probability per nMD
 TARGET_CONF = 0.92
@@ -60,7 +60,7 @@ def _confIntTrajPoints(trajPoints, quantileProb):
     # acceptance rate
     mean = accepted / total
     # the wald interval relative to mean
-    interval = quantile/sqrt(total) * sqrt((accepted/total)*(1-accepted/total)) + 1/(2*total)
+    interval = quantile/sqrt(total) * sqrt(mean*(1-mean)) + 1/(2*total)
 
     # TODO is it valid to just take the max/min? Does the CDF need to be modified for that?
     # # used with binary selector => can't be < 0
@@ -82,7 +82,7 @@ def _errorTrajPoints(trajPoints, quantileProb):
 
 def _confIntProbabilities(probabilities, quantileProb):
     mean = np.mean(probabilities)
-    err = np.std(probabilities) / sqrt(len(probabilities))
+    err = np.std(probabilities)
     # endpoints of quantileProb confidence interval
     result = norm.interval(quantileProb, loc=mean, scale=err)
     # TODO see above
@@ -105,9 +105,22 @@ def _intervalLength(interval):
     return interval[1] - interval[0]
 
 
-class Recording:
+def appendToListInDict(dictionary, key, value):
+    try:
+        dictionary[key].append(value)
+    except KeyError:
+        dictionary[key] = [value]
 
-    class Entry:
+def extendListInDict(dictionary, key, values):
+    try:
+        dictionary[key].extend(values)
+    except KeyError:
+        dictionary[key] = values
+
+
+class Registrar:
+
+    class Record:
         def __init__(self, length, nstep):
             self.length = length
             self.nstep = nstep
@@ -129,274 +142,248 @@ class Recording:
 
 
     def __init__(self, initialLength, initialNstep):
-        self.entries = []
-        self._paramToEntry = dict()
+        self.records = []
+        self._knownLength = set()
+        self._knownNstep = set()
+        self.newRecord(initialLength, initialNstep)
 
-        self.newEntry(initialLength, initialNstep)
+        self.fitResults = []
 
     def __len__(self):
-        return len(self.entries)
+        return len(self.records)
 
-    def current(self):
-        return self.entries[-1]
+    def currentRecord(self):
+        return self.records[-1]
 
-    def __getitem__(self, index):
-        return self.entries[index]
+    def newRecord(self, length, nstep):
+        record = self.Record(length, nstep)
+        self.records.append(record)
+        self._knownLength.add(length)
+        self._knownNstep.add(nstep)
+        return record
 
-    def newEntry(self, length, nstep):
-        entry = self.Entry(length, nstep)
-        self.entries.append(entry)
+    def addFitResult(self, result):
+        self.fitResults.append(result)
 
-        params = (length, nstep)
-        try:
-            self._paramToEntry[params].append(entry)
-        except KeyError:
-            self._paramToEntry[params] = [entry]
-
-        return entry
-
-    def gather(self, length=None, nstep=None):
+    def gather(self, *, length=None, nstep=None, maxRecord=None):
         if length is None:
             if nstep is None:
                 raise ValueError("One of length and nstep must not be None")
             # filter with respect to nstep
-            paramFilter = lambda keyVal: keyVal[0][1] == nstep
+            recordFilter = lambda record: record.nstep == nstep
             # and use length as key
-            selectParam = lambda params: params[0]
+            selectParam = lambda record: record.length
         else:
             if nstep is not None:
                 raise ValueError("One of length and nstep must be None")
             # filter with respect to length
-            paramFilter = lambda keyVal: keyVal[0][0] == length
+            recordFilter = lambda record: record.length == length
             # and use nstep as key
-            selectParam = lambda params: params[1]
+            selectParam = lambda record: record.nstep
 
-        probPoints = []
-        tpPoints = []
-        for params, entries in filter(paramFilter, self._paramToEntry.items()):
-            # flatten arrays
-            probs = [prob for entry in entries for prob in entry.probabilities]
-            tps = [tp for entry in entries for tp in entry.probabilities]
+        probDict = dict()
+        tpDict = dict()
+        for record in filter(recordFilter, self.records[:maxRecord]):
+            extendListInDict(probDict, selectParam(record), record.probabilities)
+            extendListInDict(tpDict, selectParam(record), record.trajPoints)
 
-            # store varying parameter, mean, and error
-            probPoints.append((selectParam(params), np.mean(probs),
-                               _errorProbabilities(probs, ONE_SIGMA_PROB)))
-            tpPoints.append((selectParam(params), np.mean(tps),
-                             _errorTrajPoints(tps, ONE_SIGMA_PROB)))
+        probabilities = [(param, np.mean(probs), _errorProbabilities(probs, ONE_SIGMA_PROB))
+                         for param, probs in probDict.items()]
+        trajPoints = [(param, np.mean(tps), _errorTrajPoints(tps, ONE_SIGMA_PROB))
+                      for param, tps in tpDict.items()]
 
-        return probPoints, tpPoints
+        return probabilities, trajPoints
 
+    def seenBefore(self, *, length=None, nstep=None):
+        if length is None:
+            if nstep is None:
+                raise ValueError("At leas one of length and nstep must not be None")
+            return nstep in self._knownNstep
 
-# def fitFunctionLS(a, x, y):
-#     return skewnorm.cdf(x, *a) - y
+        # else: length is not None
+        if nstep is None:
+            return length in self._knownLength
 
-# def fitFunctionCF(x, *a):
-#     return skewnorm.cdf(x, *a)
-
-# def fitData(runData):
-#     points = runData.probAsPoints() + runData.tpAsPoints() + ARTIFICIAL_POINTS
-#     indep, dep, deperr = np.asarray(points).T
-#     deperr[deperr == 0.0] = 1e-8
-#     return indep, dep, deperr
+        # else: both not None
+        return length in self._knownLength and nstep in self._knownNstep
 
 
-# def squareSum(func, indep, dep, deperr, par):
-#     return np.sum((func(indep, *par)-dep)**2 / deperr**2)
+def fitFunctionLS(a, x, y):
+    return skewnorm.cdf(x, *a) - y
+
+def fitFunctionCF(x, *a):
+    return skewnorm.cdf(x, *a)
+
+def squareSum(func, indep, dep, deperr, par):
+    return np.sum((func(indep, *par)-dep)**2 / deperr**2)
 
 
-# class Fitter:
-#     class Result:
-#         def __init__(self, bestFit, otherFits):
-#             self.bestFit = bestFit
-#             self.otherFits = otherFits
-#             self.optimum = skewnorm.ppf(TARGET_ACC_RATE, *bestFit[0])
+class Fitter:
+    class Result:
+        def __init__(self, bestFit, otherFits):
+            self.bestFit = bestFit
+            self.otherFits = otherFits
 
-#         def plot(self, ax, xvalues, color="k", ls="-"):
-#             ax.plot(xvalues, fitFunctionCF(xvalues, *self.bestFit[0]), c=color, ls=ls)
-#             for other in self.otherFits:
-#                 ax.plot(xvalues, fitFunctionCF(xvalues, *other[0]), c=color, ls=ls, alpha=0.5)
-
-#             ax.axvline(self.optimum, c=color, ls="--")
-
-#     def __init__(self):
-#         self._startParams = [(0.1, 1, 10),
-#                              (1, 1, 1)]
-#         self._lastFit = None
+        def bestNstep(self, targetAccRate):
+            return skewnorm.ppf(targetAccRate, *self.bestFit[0])
 
 
-#     def fit(self, runData):
-#         independent, dependent, dependenterr = fitData(runData)
+    def __init__(self, startParams=[(0.1, 1, 10), (1, 1, 1)],
+                 artificialPoints = [(0, 0.0, 1e-8), (MAX_NSTEP, 1.0, 1e-8)]):
 
-#         startParams = self._startParams + (self._lastFit if self._lastFit is not None else [])
-#         # # w/o errors
-#         # result = min((least_squares(fitFunctionLS, guess, max_nfev=1000,
-#         #                             args=(independent, dependent),
-#         #                             verbose=0, loss="soft_l1", method="trf")
-#         #               for guess in startParams),
-#         #              key=lambda res: res.cost)
+        self._startParams = startParams
+        self._lastFit = None   # parameters only
+        self.artificialPoints = artificialPoints
 
-#         # w/ errors
-#         results = sorted([curve_fit(fitFunctionCF, independent, dependent,
-#                                     p0=guess, sigma=dependenterr,
-#                                     absolute_sigma=False, method="trf")
-#                           for guess in startParams],
-#                          key=lambda pair: squareSum(fitFunctionCF, independent,
-#                                                     dependent, dependenterr, pair[0]))
-#         bestFit = results[0]
-#         otherFits = results[1:]
+    def _joinFitData(self, probabilityPoints, trajPointPoints):
+        return np.asarray([*zip(*(probabilityPoints + trajPointPoints + self.artificialPoints))])
 
-#         # getLogger("fit").error(result)
+    def fitNstep(self, probabilityPoints, trajPointPoints):
+        independent, dependent, dependenterr = self._joinFitData(probabilityPoints, trajPointPoints)
+        startParams = self._startParams + (self._lastFit if self._lastFit is not None else [])
 
-#         self._lastFit = bestFit[0]
+        # # w/o errors
+        # result = min((least_squares(fitFunctionLS, guess, max_nfev=1000,
+        #                             args=(independent, dependent),
+        #                             verbose=0, loss="soft_l1", method="trf")
+        #               for guess in startParams),
+        #              key=lambda res: res.cost)
 
-#         return self.Result(bestFit, otherFits)
+        # w/ errors
+        results = sorted([curve_fit(fitFunctionCF, independent, dependent,
+                                    p0=guess, sigma=dependenterr,
+                                    absolute_sigma=True, method="trf")
+                          for guess in startParams],
+                         key=lambda pair: squareSum(fitFunctionCF, independent,
+                                                    dependent, dependenterr, pair[0]))
+        bestFit = results[0]
+        otherFits = results[1:]
+
+        self._lastFit = bestFit[0]
+
+        return self.Result(bestFit, otherFits)
 
 
 
-# class LeapfrogParam:
-#     def __init__(self, action, length, nstep):
-#         self.action = action
-#         self.length = length
-#         self.nstep = nstep
+class LeapfrogTuner(Evolver):
+    r"""! \ingroup evolvers
 
+    """
 
-# class LeapfrogTuner(Evolver):
-#     r"""! \ingroup evolvers
+    def __init__(self, action, initialLength, initialNstep, rng,
+                 targetAccRate=0.67, runsPerParam=(5, 100)):
+        r"""!
 
-#     """
+        """
 
-#     def __init__(self, action, length, nstep, rng):
-#         r"""!
+        self.registrar = Registrar(initialLength, initialNstep)
+        self.action = action
+        self.runsPerParam = runsPerParam
+        self.targetAccRate = targetAccRate
 
-#         """
+        self._fitter = Fitter()
+        self._selector = BinarySelector(rng)
+        self._finished = False
 
-#         self._lfParam = LeapfrogParam(action, length, nstep)
-#         self._runData = RunData()
-#         self._fitter = Fitter()
-#         self._trace = []
-#         self._selector = BinarySelector(rng)
-#         self._finished = False
+    def evolve(self, phi, pi, actVal, trajPoint):
+        r"""!
+        Run one step of leapfrog integration and tune parameters.
+        \param phi Input configuration.
+        \param pi Input Momentum.
+        \param actVal Value of the action at phi.
+        \param trajPoint 0 if previous trajectory was rejected, 1 if it was accepted.
+        \returns In order:
+          - New configuration
+          - New momentum
+          - Action evaluated at new configuration
+          - Point along trajectory that was selected
+        """
 
-#     def evolve(self, phi, pi, actVal, trajPoint):
-#         r"""!
-#         Run leapfrog integrator.
-#         \param phi Input configuration.
-#         \param pi Input Momentum.
-#         \param actVal Value of the action at phi.
-#         \param trajPoint 0 if previous trajectory was rejected, 1 if it was accepted.
-#         \returns In order:
-#           - New configuration
-#           - New momentum
-#           - Action evaluated at new configuration
-#           - Point along trajectory that was selected
-#         """
+        # do not even evolve any more (we don't want to waste precious time)
+        if self._finished:
+            raise StopIteration()
 
-#         phi, pi, actVal, trajPoint = self._doEvolve(phi, pi, actVal, trajPoint)
+        phi, pi, actVal, trajPoint = self._doEvolve(phi, pi, actVal, trajPoint)
 
-#         log = getLogger("atune")
+        log = getLogger("atune")
+        currentRecord = self.registrar.currentRecord()
 
-#         if len(self._runData.probPerNStep[self._lfParam.nstep]) > 5:
-#             confIntProb = self._runData.confIntProb(self._lfParam.nstep)
-#             confIntTP = self._runData.confIntTP(self._lfParam.nstep)
+        if len(currentRecord) > self.runsPerParam[0]:
+            confIntProb = currentRecord.confIntProbabilities(TWO_SIGMA_PROB)
+            confIntTP = currentRecord.confIntTrajPoints(TWO_SIGMA_PROB)
 
-#             # log.error(f"Prob: {confIntProb}, TP: {confIntTP}")
+            log.error(f"{_intervalLength(confIntProb)}, {_intervalLength(confIntTP)}")
 
-#             if intDiff(confIntTP) < TARGET_CONF_INT_ACC:
-#                 log.error("Stopping because of tp")
-#                 self._pickNextNStep()
+            if _intervalLength(confIntTP) < TARGET_CONF_INT_ACC:
+                log.error("Stopping because of tp")
+                self._pickNextNStep()
 
-#             if intDiff(confIntProb) < TARGET_CONF_INT_PROB:
-#                 log.error("Stopping because of prob")
-#                 self._pickNextNStep()
+            elif _intervalLength(confIntProb) < TARGET_CONF_INT_PROB:
+                log.error("Stopping because of prob")
+                self._pickNextNStep()
 
-#         if self._runData.currentCount > 100:
-#             raise RuntimeError("Did not converge")
+            elif len(currentRecord) > self.runsPerParam[1]:
+                log.error("reached max runs for current params")
+                # raise RuntimeError("Did not converge")
+                self._pickNextNStep()
 
-#         if len(self._runData.tpPerNStep) > 10:
-#             self._finished = True
+        if len(self.registrar) > 10:
+            self._finished = True
 
-#         if self._finished:
-#             raise StopIteration()
+        return phi, pi, actVal, trajPoint
 
-#         return phi, pi, actVal, trajPoint
+    def currentParams(self):
+        record = self.registrar.currentRecord()
+        return record.length, record.nstep
 
-#     def plot(self):
-#         trace = self._trace[:min(16, len(self._trace))]
+    def _doEvolve(self, phi0, pi0, actVal0, _trajPoint0):
+        phi1, pi1, actVal1 = leapfrog(phi0, pi0, self.action, *self.currentParams())
+        energy0 = actVal0 + +np.linalg.norm(pi0)**2/2
+        energy1 = actVal1 + +np.linalg.norm(pi1)**2/2
+        trajPoint1 = self._selector.selectTrajPoint(energy0, energy1)
 
-#         fig = plt.figure(figsize=(11, 11))
-#         gspec = gridspec.GridSpec(1, 2)
-#         innerGspec = gridspec.GridSpecFromSubplotSpec(4, int(ceil(len(trace)/4)),
-#                                                       subplot_spec=gspec[0, 0])
+        self.registrar.currentRecord().add(min(1, exp(np.real(energy0 - energy1))),
+                                           trajPoint1)
 
-#         axs = [fig.add_subplot(innerGspec[i, j])
-#                for i in range(innerGspec.get_geometry()[0])
-#                for j in range(innerGspec.get_geometry()[1])]
+        return (phi1, pi1, actVal1, trajPoint1) if trajPoint1 == 1 \
+            else (phi0, pi0, actVal0, trajPoint1)
 
-#         for runNo, (ax, (fitResult, runData)) in enumerate(zip(axs, trace)):
-#             nsteps = np.linspace(0, max(runData.tpPerNStep.keys())*1.05, 100)
-#             runData.plot(ax)
-#             fitResult.plot(ax, nsteps)
-#             ax.set_title(f"Run {runNo}")
-#             ax.legend()
+    def _pickNextNStep(self):
+        fitResult = self._fitter.fitNstep(*self.registrar.gather(
+            length=self.currentParams()[0]))
+        self.registrar.addFitResult(fitResult)
+        floatStep = fitResult.bestNstep(self.targetAccRate)
 
+        nextStep = max(int(floor(floatStep)), 1)
+        if self.registrar.seenBefore(nstep=nextStep):
+            nextStep = int(ceil(floatStep))
+            if self.registrar.seenBefore(nstep=nextStep):
+                getLogger("atune").error(f"Done with nstep = {nextStep}")
+                self._finished = True
+                return
 
-#         ax = fig.add_subplot(gspec[0, 1])
+        if nextStep > MAX_NSTEP:
+            raise RuntimeError(f"nstep is too large: {nextStep}")
 
+        self.registrar.newRecord(self.currentParams()[0], nextStep)
+        getLogger("atune").error("New nstep: %d", nextStep)
 
-#         fig.tight_layout()
+    def save(self, h5group, manager):
+        r"""!
+        Save the evolver to HDF5.
+        \param h5group HDF5 group to save to.
+        \param manager EvolverManager whose purview to save the evolver in.
+        """
 
-
-#     def _pickNextNStep(self):
-#         fitResult = self._fitter.fit(self._runData)
-#         self._trace.append((fitResult, deepcopy(self._runData)))
-#         floatStep = fitResult.optimum
-
-#         nextStep = max(int(floor(floatStep)), 1)
-#         if nextStep in self._runData.tpPerNStep:
-#             nextStep = int(ceil(floatStep))
-#             if nextStep in self._runData.tpPerNStep:
-#                 getLogger("atune").error(f"Done with nstep = {nextStep}")
-#                 self._finished = True
-
-#         if nextStep > MAX_NSTEP:
-#             raise RuntimeError(f"nstep is too large: {nextStep}")
-
-#         self._lfParam.nstep = nextStep
-#         self._runData.currentCount = 0
-#         getLogger("atune").error("New nstep: %d", nextStep)
-
-#     def _doEvolve(self, phi0, pi0, actVal0, _trajPoint0):
-#         phi1, pi1, actVal1 = leapfrog(phi0, pi0, self._lfParam.action,
-#                                       self._lfParam.length, self._lfParam.nstep)
-#         energy0 = actVal0 + +np.linalg.norm(pi0)**2/2
-#         energy1 = actVal1 + +np.linalg.norm(pi1)**2/2
-#         trajPoint1 = self._selector.selectTrajPoint(energy0, energy1)
-
-#         self._runData.addForNStep(self._lfParam.nstep,
-#                                   min(1, exp(np.real(energy0 - energy1))),
-#                                   trajPoint1)
-#         self._runData.currentCount += 1
-
-#         return (phi1, pi1, actVal1, trajPoint1) if trajPoint1 == 1 \
-#             else (phi0, pi0, actVal0, trajPoint1)
-
-#     def save(self, h5group, manager):
-#         r"""!
-#         Save the evolver to HDF5.
-#         \param h5group HDF5 group to save to.
-#         \param manager EvolverManager whose purview to save the evolver in.
-#         """
-
-#     @classmethod
-#     def fromH5(cls, h5group, _manager, action, _lattice, rng):
-#         r"""!
-#         Construct from HDF5.
-#         \param h5group HDF5 group to load parameters from.
-#         \param _manager \e ignored.
-#         \param action Action to use.
-#         \param _lattice \e ignored.
-#         \param rng Central random number generator for the run.
-#         \returns A newly constructed leapfrog evolver.
-#         """
-#         return None
-
+    @classmethod
+    def fromH5(cls, h5group, _manager, action, _lattice, rng):
+        r"""!
+        Construct from HDF5.
+        \param h5group HDF5 group to load parameters from.
+        \param _manager \e ignored.
+        \param action Action to use.
+        \param _lattice \e ignored.
+        \param rng Central random number generator for the run.
+        \returns A newly constructed leapfrog evolver.
+        """
+        return None
