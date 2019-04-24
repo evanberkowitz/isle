@@ -107,17 +107,17 @@ def _intervalLength(interval):
     return interval[1] - interval[0]
 
 
-def appendToListInDict(dictionary, key, value):
-    try:
-        dictionary[key].append(value)
-    except KeyError:
-        dictionary[key] = [value]
+# def appendToListInDict(dictionary, key, value):
+#     try:
+#         dictionary[key].append(value)
+#     except KeyError:
+#         dictionary[key] = [value]
 
 def extendListInDict(dictionary, key, values):
     try:
         dictionary[key].extend(values)
     except KeyError:
-        dictionary[key] = values
+        dictionary[key] = deepcopy(values)
 
 
 class Registrar:
@@ -303,6 +303,10 @@ class Fitter:
         def bestNstep(self, targetAccRate):
             return skewnorm.ppf(targetAccRate, *self.bestFit)
 
+        def evalOn(self, x):
+            return fitFunctionCF(x, *self.bestFit), \
+                [fitFunctionCF(x, *params) for params in self.otherFits]
+
         def __eq__(self, other):
             return np.array_equal(self.bestFit, other.bestFit) \
                 and np.array_equal(self.otherFits, other.otherFits)
@@ -446,10 +450,10 @@ class LeapfrogTuner(Evolver):
         nextStep = max(int(floor(floatStep)), 1)
         if self.registrar.seenBefore(nstep=nextStep):
             nextStep = int(ceil(floatStep))
-            if self.registrar.seenBefore(nstep=nextStep):
-                getLogger("atune").error(f"Done with nstep = {nextStep}")
-                self._finalize()
-                return
+            # if self.registrar.seenBefore(nstep=nextStep):
+                # getLogger("atune").error(f"Done with nstep = {nextStep}")
+                # self._finalize()
+                # return
 
         self.saveRecording()
 
@@ -467,6 +471,10 @@ class LeapfrogTuner(Evolver):
         getLogger(__name__).info("Saving current recording")
         with h5.File(self.recordFname, "a") as h5f:
             self.registrar.save(createH5Group(h5f, "leapfrogTuner"))
+
+    @classmethod
+    def loadRecording(cls, h5group):
+        return Registrar.fromH5(h5group)
 
     def save(self, h5group, manager):
         r"""!
