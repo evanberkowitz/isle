@@ -170,6 +170,56 @@ def _correlator(infname, lattice, params, makeActionSrc):
         # failed -> do not show the figure
         plt.close(fig)
 
+def _tuning(infname):
+    """!
+    Show tuning results.
+    """
+
+    log = getLogger("isle.show")
+    log.info("Showing tuning results in file %s", infname)
+
+    with h5.File(infname, "r") as h5f:
+        if not "leapfrogTuner" in h5f:
+            log.error("Can not show tuning results, no group 'leapfrogTuner' in input file.")
+            return
+
+        registrar = isle.evolver.LeapfrogTuner.loadRecording(h5f["leapfrogTuner"])
+
+    fig = plt.figure(figsize=(13, 12))
+    gspec = gridspec.GridSpec(1, 2, width_ratios=(3, 1))
+    fitsGspec = gridspec.GridSpecFromSubplotSpec(4, 3, subplot_spec=gspec[0, 0],
+                                                 wspace=0.05)
+
+    if len(registrar) >= fitsGspec.get_geometry()[0]*fitsGspec.get_geometry()[1]:
+        log.warning("The tuner performed %d runs with different leapfrog parameters "
+                    "but only the first %d are shown.",
+                    len(registrar), fitsGspec.get_geometry()[0]*fitsGspec.get_geometry()[1])
+
+    for idx, (x, y) in enumerate(np.ndindex(fitsGspec.get_geometry())):
+        if idx >= len(registrar):
+            break
+
+        ax = fig.add_subplot(fitsGspec[x, y])
+        ax.set_title(r"Run {}, length={}, $N_{{\mathrm{{MD}}}}$={}" \
+                     .format(idx, registrar.records[idx].length, registrar.records[idx].nstep))
+        ax.set_ylim((-0.1, 1.1))
+        if y != 0:
+            ax.tick_params(axis="y", which="both", labelleft=False)
+
+        # TODO handle different lengths
+        probabilityPoints, trajPointPoints = registrar.gather(length=registrar.records[-1].length,
+                                                              maxRecord=idx+1)
+        fitResult = registrar.fitResults[idx] if idx < len(registrar.fitResults) else None
+        isle.plotting.plotTunerFit(ax, probabilityPoints, trajPointPoints, fitResult)
+
+        if idx == 0:
+            ax.legend()
+
+    ax = fig.add_subplot(gspec[0, 1])
+    isle.plotting.plotTunerTrace(ax, registrar.records)
+
+    fig.tight_layout()
+
 def _verifyIsleVersion(version, fname):
     """!
     Check version of Isle, warn if it does not match.
@@ -192,8 +242,13 @@ def _loadMetadata(fname, ftype):
     """
 
     if ftype == isle.fileio.FileType.HDF5:
-        lattice, params, makeActionSrc, versions = isle.fileio.h5.readMetadata((fname, ftype))
-        _verifyIsleVersion(versions["isle"], fname)
+        try:
+            lattice, params, makeActionSrc, versions = isle.fileio.h5.readMetadata((fname, ftype))
+            _verifyIsleVersion(versions["isle"], fname)
+        except KeyError:  # could not read the metadata
+            lattice = None
+            params = None
+            makeActionSrc = None
 
     elif ftype == isle.fileio.FileType.YAML:
         lattice = isle.fileio.yaml.loadLattice(fname)
@@ -219,10 +274,7 @@ def main(args):
     isle.plotting.setupMPL()
 
     for fname in args.input:
-        try:
-            lattice, params, makeActionSrc = _loadMetadata(fname, isle.fileio.fileType(fname))
-        except ValueError:
-            continue  # skip this file
+        lattice, params, makeActionSrc = _loadMetadata(fname, isle.fileio.fileType(fname))
 
         try:
             # call individual reporters
@@ -232,6 +284,9 @@ def main(args):
                 _lattice(fname, lattice)
             if "correlator" in args.report:
                 _correlator(fname, lattice, params, makeActionSrc)
+            if "tuning" in args.report:
+                _tuning(fname)
+
         except:
             getLogger("isle.show").exception("Show command failed with file %s.", fname)
 
