@@ -284,10 +284,7 @@ class Registrar:
 
         return registrar
 
-def fitFunctionLS(a, x, y):
-    return skewnorm.cdf(x, *a) - y
-
-def fitFunctionCF(x, *a):
+def fitFunction(x, *a):
     return skewnorm.cdf(x, *a)
 
 def squareSum(func, indep, dep, deperr, par):
@@ -304,8 +301,8 @@ class Fitter:
             return skewnorm.ppf(targetAccRate, *self.bestFit)
 
         def evalOn(self, x):
-            return fitFunctionCF(x, *self.bestFit), \
-                [fitFunctionCF(x, *params) for params in self.otherFits]
+            return fitFunction(x, *self.bestFit), \
+                [fitFunction(x, *params) for params in self.otherFits]
 
         def __eq__(self, other):
             return np.array_equal(self.bestFit, other.bestFit) \
@@ -334,27 +331,26 @@ class Fitter:
         independent, dependent, dependenterr = self._joinFitData(probabilityPoints, trajPointPoints)
         startParams = self._startParams + (self._lastFit if self._lastFit is not None else [])
 
-        # # w/o errors
-        # result = min((least_squares(fitFunctionLS, guess, max_nfev=1000,
-        #                             args=(independent, dependent),
-        #                             verbose=0, loss="soft_l1", method="trf")
-        #               for guess in startParams),
-        #              key=lambda res: res.cost)
+        fittedParams = []
+        for guess in startParams:
+            try:
+                fittedParams.append(curve_fit(fitFunction, independent, dependent,
+                                              p0=guess, sigma=dependenterr,
+                                              absolute_sigma=True, method="trf")[0])
+            except RuntimeError as err:
+                getLogger(__name__).info("Fit failed with starting parameters %s: %s",
+                                         guess, err)
 
-        # w/ errors
-        results = sorted([curve_fit(fitFunctionCF, independent, dependent,
-                                    p0=guess, sigma=dependenterr,
-                                    absolute_sigma=True, method="trf")[0]
-                          for guess in startParams],
-                         key=lambda params: squareSum(fitFunctionCF, independent,
-                                                      dependent, dependenterr, params))
-        bestFit = results[0]
-        otherFits = results[1:]
+        if not fittedParams:
+            getLogger(__name__).error("No fit converged, unable to continue tuning.")
+            raise RuntimeError("No fit converged")
 
-        self._lastFit = bestFit[0]
-
+        bestFit, *otherFits = sorted(fittedParams,
+                                     key=lambda params: squareSum(fitFunction, independent,
+                                                                  dependent, dependenterr, params))
+        self._lastFit = bestFit
+        getLogger(__name__).info("New best fit parameters: %s", bestFit)
         return self.Result(bestFit, otherFits)
-
 
 
 class LeapfrogTuner(Evolver):
@@ -450,10 +446,10 @@ class LeapfrogTuner(Evolver):
         nextStep = max(int(floor(floatStep)), 1)
         if self.registrar.seenBefore(nstep=nextStep):
             nextStep = int(ceil(floatStep))
-            # if self.registrar.seenBefore(nstep=nextStep):
-                # getLogger("atune").error(f"Done with nstep = {nextStep}")
-                # self._finalize()
-                # return
+            if self.registrar.seenBefore(nstep=nextStep):
+                getLogger("atune").error(f"Done with nstep = {nextStep}")
+                self._finalize()
+                return
 
         self.saveRecording()
 
