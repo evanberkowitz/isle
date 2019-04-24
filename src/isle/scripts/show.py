@@ -186,7 +186,7 @@ def _tuning(infname):
         registrar = isle.evolver.LeapfrogTuner.loadRecording(h5f["leapfrogTuner"])
 
     fig = plt.figure(figsize=(13, 12))
-    gspec = gridspec.GridSpec(1, 2, width_ratios=(3, 1))
+    gspec = gridspec.GridSpec(1, 2, width_ratios=(2.8, 1))
     fitsGspec = gridspec.GridSpecFromSubplotSpec(4, 3, subplot_spec=gspec[0, 0],
                                                  wspace=0.05)
 

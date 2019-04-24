@@ -287,9 +287,9 @@ def plotTunerFit(ax, probabilityPoints, trajPointPoints, fitResult):
     """
 
     x, y, err = zip(*probabilityPoints)
-    ax.errorbar(np.asarray(x)+0.05, y, err, ls="", marker=".", label="prob")
+    ax.errorbar(np.asarray(x)+0.05, y, err, ls="", marker=".", label="min(1, $\exp{(dH)}$)")
     x, y, err = zip(*trajPointPoints)
-    ax.errorbar(np.asarray(x)-0.05, y, err, ls="", marker=".", label="tp")
+    ax.errorbar(np.asarray(x)-0.05, y, err, ls="", marker=".", label="trajPoint")
 
     if fitResult is not None:
         x = np.linspace(0, ax.get_xlim()[1]*1.1)
@@ -327,10 +327,10 @@ def plotTunerTrace(ax, records):
     axNstep.yaxis.set_major_locator(MaxNLocator(integer=True))
     axNstep.set_xlabel(r"$N_{\mathrm{MD}}$")
     axNstep.set_ylabel("trajectory")
-    axProbTP.set_xlabel(r"$\exp{(dH)}$ | trajPoint")
+    axProbTP.set_xlabel(r"min(1, $\exp{(dH)}$) | trajPoint")
 
     # manual legend so that all lines are shown
     axNstep.legend([lineNstep, lineProb, lineTP],
-                   [r"$N_{\mathrm{MD}}$", r"$\exp{(dH)}$", r"trajPoint"],
+                   [r"$N_{\mathrm{MD}}$", r"min(1, $\exp{(dH)}$)", r"trajPoint"],
                    bbox_to_anchor=(0, -0.075, 1, 0), loc="lower left", mode="expand",
-                   ncol=3, borderaxespad=0)
+                   ncol=3, borderaxespad=0, handletextpad=0.05)
