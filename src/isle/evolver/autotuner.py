@@ -8,6 +8,7 @@ from math import sqrt, exp, floor, ceil
 from logging import getLogger
 from itertools import chain
 
+import h5py as h5
 import numpy as np
 from scipy.stats import norm, skewnorm
 from scipy.optimize import least_squares, curve_fit
@@ -18,6 +19,7 @@ import matplotlib.gridspec as gridspec
 from .evolver import Evolver
 from .selector import BinarySelector
 from .. import leapfrog
+from ..h5io import createH5Group, loadList
 
 
 TARGET_ACC_RATE = 0.67
@@ -140,6 +142,29 @@ class Registrar:
         def confIntTrajPoints(self, quantileProb):
             return _confIntTrajPoints(self.trajPoints, quantileProb)
 
+        def __eq__(self, other):
+            return self.length == other.length \
+                and self.nstep == other.nstep \
+                and self.probabilities == other.probabilities \
+                and self.trajPoints == other.trajPoints \
+
+        def __str__(self):
+            return f"""Record(length={self.length}, nstep={self.nstep}
+       probabilities={self.probabilities}
+       trajPoints={self.trajPoints})"""
+
+        def save(self, h5group):
+            h5group["length"] = self.length
+            h5group["nstep"] = self.nstep
+            h5group["probabilities"] = self.probabilities
+            h5group["trajPoints"] = self.trajPoints
+
+        @classmethod
+        def fromH5(cls, h5group):
+            record = cls(h5group["length"][()], h5group["nstep"][()])
+            record.probabilities = list(h5group["probabilities"][()])
+            record.trajPoints = list(h5group["trajPoints"][()])
+            return record
 
     def __init__(self, initialLength, initialNstep):
         self.records = []
@@ -207,6 +232,57 @@ class Registrar:
         # else: both not None
         return length in self._knownLength and nstep in self._knownNstep
 
+    def _saveRecords(self, h5group):
+        maxStored = -1
+        for idx, grp in loadList(h5group):
+            storedRecord = self.Record.fromH5(grp)
+            if storedRecord != self.records[idx]:
+                getLogger(__name__).error("Cannot save recording, record %d stored in the file "
+                                          "does dot match record in memory.", idx)
+                raise RuntimeError("Record in file does not match record in memory")
+            maxStored = idx
+
+        for idx, record in filter(lambda pair: pair[0] > maxStored, enumerate(self.records)):
+            record.save(h5group.create_group(str(idx)))
+
+    def _saveFitResults(self, h5group):
+        maxStored = -1
+        for idx, grp in loadList(h5group):
+            storedResult = Fitter.Result.fromH5(grp)
+            if storedResult != self.fitResults[idx]:
+                getLogger(__name__).error("Cannot save recording, fit result %d stored in the file "
+                                          "does dot match fit result in memory.", idx)
+                raise RuntimeError("Fit result in file does not match fit result in memory")
+            maxStored = idx
+
+        for idx, fitResult in filter(lambda pair: pair[0] > maxStored, enumerate(self.fitResults)):
+            fitResult.save(h5group.create_group(str(idx)))
+
+    def save(self, h5group):
+        self._saveRecords(createH5Group(h5group, "records"))
+        self._saveFitResults(createH5Group(h5group, "fitResults"))
+
+    @classmethod
+    def fromH5(cls, h5group):
+        # build a completely empty instance
+        registrar = cls(0, 0)
+        registrar.records = []
+        registrar._knownLength = set()
+        registrar._knownNstep = set()
+
+        for _, grp in sorted(h5group["records"].items(),
+                                 key=lambda pair: int(pair[0])):
+            storedRecord = cls.Record.fromH5(grp)
+            # go through this function to make sure all internal variables are set up properly
+            record = registrar.newRecord(storedRecord.length, storedRecord.nstep)
+            record.probabilities = storedRecord.probabilities
+            record.trajPoints = storedRecord.trajPoints
+
+        for _, grp in sorted(h5group["fitResults"].items(),
+                                 key=lambda pair: int(pair[0])):
+            registrar.addFitResult(Fitter.Result.fromH5(grp))
+
+        return registrar
 
 def fitFunctionLS(a, x, y):
     return skewnorm.cdf(x, *a) - y
@@ -225,8 +301,20 @@ class Fitter:
             self.otherFits = otherFits
 
         def bestNstep(self, targetAccRate):
-            return skewnorm.ppf(targetAccRate, *self.bestFit[0])
+            return skewnorm.ppf(targetAccRate, *self.bestFit)
 
+        def __eq__(self, other):
+            return np.array_equal(self.bestFit, other.bestFit) \
+                and np.array_equal(self.otherFits, other.otherFits)
+
+        def save(self, h5group):
+            h5group["best"] = self.bestFit
+            h5group["others"] = self.otherFits
+
+        @classmethod
+        def fromH5(cls, h5group):
+            return cls(h5group["best"][()],
+                       h5group["others"][()])
 
     def __init__(self, startParams=[(0.1, 1, 10), (1, 1, 1)],
                  artificialPoints = [(0, 0.0, 1e-8), (MAX_NSTEP, 1.0, 1e-8)]):
@@ -252,10 +340,10 @@ class Fitter:
         # w/ errors
         results = sorted([curve_fit(fitFunctionCF, independent, dependent,
                                     p0=guess, sigma=dependenterr,
-                                    absolute_sigma=True, method="trf")
+                                    absolute_sigma=True, method="trf")[0]
                           for guess in startParams],
-                         key=lambda pair: squareSum(fitFunctionCF, independent,
-                                                    dependent, dependenterr, pair[0]))
+                         key=lambda params: squareSum(fitFunctionCF, independent,
+                                                      dependent, dependenterr, params))
         bestFit = results[0]
         otherFits = results[1:]
 
@@ -270,7 +358,7 @@ class LeapfrogTuner(Evolver):
 
     """
 
-    def __init__(self, action, initialLength, initialNstep, rng,
+    def __init__(self, action, initialLength, initialNstep, rng, recordFname,
                  targetAccRate=0.67, runsPerParam=(5, 100)):
         r"""!
 
@@ -280,6 +368,7 @@ class LeapfrogTuner(Evolver):
         self.action = action
         self.runsPerParam = runsPerParam
         self.targetAccRate = targetAccRate
+        self.recordFname = recordFname
 
         self._fitter = Fitter()
         self._selector = BinarySelector(rng)
@@ -312,7 +401,7 @@ class LeapfrogTuner(Evolver):
             confIntProb = currentRecord.confIntProbabilities(TWO_SIGMA_PROB)
             confIntTP = currentRecord.confIntTrajPoints(TWO_SIGMA_PROB)
 
-            log.error(f"{_intervalLength(confIntProb)}, {_intervalLength(confIntTP)}")
+            # log.error(f"{_intervalLength(confIntProb)}, {_intervalLength(confIntTP)}")
 
             if _intervalLength(confIntTP) < TARGET_CONF_INT_ACC:
                 log.error("Stopping because of tp")
@@ -328,7 +417,7 @@ class LeapfrogTuner(Evolver):
                 self._pickNextNStep()
 
         if len(self.registrar) > 10:
-            self._finished = True
+            self._finalize()
 
         return phi, pi, actVal, trajPoint
 
@@ -359,14 +448,25 @@ class LeapfrogTuner(Evolver):
             nextStep = int(ceil(floatStep))
             if self.registrar.seenBefore(nstep=nextStep):
                 getLogger("atune").error(f"Done with nstep = {nextStep}")
-                self._finished = True
+                self._finalize()
                 return
+
+        self.saveRecording()
 
         if nextStep > MAX_NSTEP:
             raise RuntimeError(f"nstep is too large: {nextStep}")
 
         self.registrar.newRecord(self.currentParams()[0], nextStep)
         getLogger("atune").error("New nstep: %d", nextStep)
+
+    def _finalize(self):
+        self.saveRecording()
+        self._finished = True
+
+    def saveRecording(self):
+        getLogger(__name__).info("Saving current recording")
+        with h5.File(self.recordFname, "a") as h5f:
+            self.registrar.save(createH5Group(h5f, "leapfrogTuner"))
 
     def save(self, h5group, manager):
         r"""!
