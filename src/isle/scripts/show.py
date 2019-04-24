@@ -211,6 +211,9 @@ def _tuning(infname):
                                                               maxRecord=idx+1)
         fitResult = registrar.fitResults[idx] if idx < len(registrar.fitResults) else None
         isle.plotting.plotTunerFit(ax, probabilityPoints, trajPointPoints, fitResult)
+        if fitResult is not None:
+            log.info("Best fit for run %d: %s", idx, fitResult.bestFit)
+
 
         if idx == 0:
             ax.legend()
