@@ -320,8 +320,8 @@ class Fitter:
             return cls(h5group["best"][()],
                        h5group["others"][()])
 
-    def __init__(self, startParams=[(0.1, 1, 10), (1, 1, 1)],
-                 artificialPoints = [(0, 0.0, 1e-8), (MAX_NSTEP, 1.0, 1e-8)]):
+    def __init__(self, startParams=[(2, 3, 1), (1, 1, 1), (10, 2, 1)],
+                 artificialPoints=[(0, 0.0, 1e-8), (MAX_NSTEP, 1.0, 1e-8)]):
 
         self._startParams = startParams
         self._lastFit = None   # parameters only
@@ -464,6 +464,7 @@ class LeapfrogTuner(Evolver):
         getLogger("atune").error("New nstep: %d", nextStep)
 
     def _finalize(self):
+        # TODO really save here?
         self.saveRecording()
         self._finished = True
 
