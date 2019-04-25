@@ -64,6 +64,8 @@ set(PYBIND11_CXX_FLAGS "${PYBIND11_CXX_FLAGS};-fvisibility=hidden")
 unset(AUX_LIST)
 unset(RAW_INCLUDES)
 
+message("++ PYBIND11_CXX_FLAGS = ${PYBIND11_CXX_FLAGS}")
+message("++ PYBIND11_INCLUDE_DIR = ${PYBIND11_INCLUDE_DIR}")
 
 ### get linker flags and libraries ###
 python_config("--ldflags" AUX)
@@ -77,6 +79,10 @@ unset(AUX)
 # hijack extract function to separate actual libraries from flags
 extract_flags_paths(AUX_FLAGS "-l" PYBIND11_LINKER_FLAGS AUX_LIBS)
 unset(AUX_FLAGS)
+
+message("++ PYBIND11_LIB_PATHS = ${PYBIND11_LIB_PATHS}")
+message("++ PYBIND11_LINKER_FLAGS = ${PYBIND11_LINKER_FLAGS}")
+message("++ AUX_LIBS = ${AUX_LIBS}")
 
 # search for all libs
 string(REPLACE ":" ";" LD_LIBRARY_PATH "$ENV{LD_LIBRARY_PATH}")
