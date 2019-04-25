@@ -67,8 +67,12 @@ unset(RAW_INCLUDES)
 message("++ PYBIND11_CXX_FLAGS = ${PYBIND11_CXX_FLAGS}")
 message("++ PYBIND11_INCLUDE_DIR = ${PYBIND11_INCLUDE_DIR}")
 
+python_config("--libs" AUX)
+message("++ libs = ${AUX}")
+
 ### get linker flags and libraries ###
 python_config("--ldflags" AUX)
+message("++ ldflags = ${AUX}")
 # turn it into a list
 string(REPLACE " " ";" AUX_LIST ${AUX})
 # split
