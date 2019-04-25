@@ -4,6 +4,8 @@
 #include <limits>
 #include <cmath>
 
+#include "bind/logging.hpp"
+
 using namespace std::complex_literals;
 
 namespace isle {
@@ -41,10 +43,12 @@ namespace isle {
           _expKappap{computeExponential(kappaTilde, muTilde, sigmaKappa, Species::PARTICLE)},
           _expKappah{computeExponential(kappaTilde, muTilde, sigmaKappa, Species::HOLE)}
     {
-#ifndef NDEBUG
         if (kappaTilde.rows() != kappaTilde.columns())
             throw std::invalid_argument("Hopping matrix is not square.");
-#endif
+        if (sigmaKappa != +1 && sigmaKappa != -1)
+            getLogger("HubbardFermiMatrixExp").warning("sigmaKappa should be either -1 or +1.");
+        if (sigmaKappa == +1 && !isBipartite(kappaTilde))
+            getLogger("HubbardFermiMatrixExp").warning("sigmaKappa should be -1 because the lattice is not bipartite.");
     }
 
     HubbardFermiMatrixExp::HubbardFermiMatrixExp(const Lattice &lat,

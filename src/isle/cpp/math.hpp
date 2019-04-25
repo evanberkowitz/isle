@@ -12,6 +12,7 @@
 
 #include "core.hpp"
 #include "tmp.hpp"
+#include "bind/logging.hpp"
 
 namespace isle {
     /**
@@ -180,6 +181,8 @@ namespace isle {
             throw std::runtime_error("t is -1");
         if (t == static_cast<std::size_t>(-2))
             throw std::runtime_error("t is -2");
+        if (blaze::size(vec) == 0)
+            getLogger("cpp.math").warning("Size of vector is zero in spacevec.");
         return blaze::subvector(std::forward<VT>(vec), t*nx, nx);
 #else
         return blaze::subvector(std::forward<VT>(vec), t*nx, nx, blaze::unchecked);
@@ -200,6 +203,10 @@ namespace isle {
             throw std::runtime_error("t is -1");
         if (t == static_cast<std::size_t>(-2))
             throw std::runtime_error("t is -2");
+        if (blaze::rows(mat) == 0)
+            getLogger("cpp.math").warning("Number of rows of matrix is zero in spacemat.");
+        if (blaze::columns(mat) == 0)
+            getLogger("cpp.math").warning("Number of columns of matrix is zero in spacemat.");
         return blaze::submatrix(std::forward<MT>(mat), tp*nx, t*nx, nx, nx);
 #else
         return blaze::submatrix(std::forward<MT>(mat), tp*nx, t*nx, nx, nx, blaze::unchecked);
@@ -274,16 +281,17 @@ namespace isle {
         blaze::getrf(matrix, ipiv.get());
 
         std::complex<ET> res = 0;
-        std::int8_t detP = 1;
+        bool negDetP = false;  // if true det(P) == -1, else det(P) == +1
         for (std::size_t i = 0; i < n; ++i) {
             // determinant of pivot matrix P
-            if (ipiv[i]-1 != blaze::numeric_cast<int>(i))
-                detP = -detP;
+            if (ipiv[i]-1 != blaze::numeric_cast<int>(i)) {
+                negDetP = !negDetP;
+            }
             // log det of U (diagonal elements)
             res += std::log(std::complex<ET>{matrix(i, i)});
         }
         // combine log dets and project to (-pi, pi]
-        return toFirstLogBranch(res + (detP == 1 ? 0 : std::complex<ET>{0, pi<ET>}));
+        return toFirstLogBranch(res + (negDetP ? std::complex<ET>{0, pi<ET>} : 0));
     }
 
     /// Compute the logarithm of the determinant of a dense matrix.
@@ -314,16 +322,17 @@ namespace isle {
         blaze::getrf(mat, ipiv.get());
 
         std::complex<ET> res = 0;
-        std::int8_t detP = 1;
+        bool negDetP = false;  // if true det(P) == -1, else det(P) == +1
         for (std::size_t i = 0; i < n; ++i) {
             // determinant of pivot matrix P
-            if (ipiv[i]-1 != blaze::numeric_cast<int>(i))
-                detP = -detP;
+            if (ipiv[i]-1 != blaze::numeric_cast<int>(i)) {
+                negDetP = !negDetP;
+            }
             // log det of U (diagonal elements)
             res += std::log(std::complex<ET>{mat(i, i)});
         }
         // combine log dets and project to (-pi, pi]
-        return toFirstLogBranch(res + (detP == 1 ? 0 : std::complex<ET>{0, pi<ET>}));
+        return toFirstLogBranch(res + (negDetP ? std::complex<ET>{0, pi<ET>} : 0));
     }
 
 }  // namespace isle

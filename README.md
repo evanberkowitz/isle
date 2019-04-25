@@ -13,16 +13,17 @@ It's thought that the Hubbard model approximates carbon nanostructures, such as 
 
 ## C++
 - C++14 compiler (tested with recent versions of gcc and clang)
-- [Python 3](https://www.python.org/) version 3.7 or later, [numpy](http://www.numpy.org/)
 - [blaze](https://bitbucket.org/blaze-lib/blaze)
 - BLAS/LAPACK
 
 ## Python
+- [Python 3](https://www.python.org/) version 3.7 or later
 - [Pybind11](https://github.com/pybind/pybind11) >= 2.2.4
 - [numpy](http://www.numpy.org/)
+- [SciPy](https://www.scipy.org/scipylib/index.html) library
 - [h5py](http://www.h5py.org/)
-- [scikit-learn](http://scikit-learn.org/stable/)
-- [matplotlib](https://matplotlib.org/)
+- [scikit-learn](http://scikit-learn.org/stable/) (optional)
+- [matplotlib](https://matplotlib.org/) (optional)
 
 # Setup
 
@@ -30,7 +31,8 @@ It's thought that the Hubbard model approximates carbon nanostructures, such as 
 See other sections for an explanation and details.
 ```
 python3 setup.py configure --build-type=RELEASE --blaze=<path-to-blaze>
-pip3 install . [--user]
+python3 setup.py build -j <number-of-threads>
+python3 setup.py install
 ```
 
 ## Configuring
@@ -50,33 +52,25 @@ with suitable arguments. The supported arguments are (run `python3 setup.py conf
 
 This does not actually run CMake to configure the C++ build but merely performs some rudimentary checks and saves the parameters.
 
-Note that specifying the compiler of build type when running `python3 setup.py build` does not work; they need to be set when configuring.
+Note that specifying the compiler or build type when running `python3 setup.py build` does not work; they need to be set when configuring.
 
 ## Building
 For **users**:
 Compile and install the package using
 ```
-pip3 install . [--user]
-# or alternatively: python3 setup.py install [--user]
+python3 setup.py build -j <number-of-threads>
+python3 setup.py install [--user]
 ```
 
 For **developers**:
 Compile and install in development mode using
 ```
-pip3 install -e . [--user]
-# or alternatively: python3 setup.py develop [--user]
+python3 setup.py develop [--user]
 ```
 And just re-run the command after changing the code.
 
-Unfortunately neither pip nor setup.py's install or develop commands support concurrent builds. So the first time you compile takes some time. If you installed in development mode, you can run
-```
-python3 setup.py build -j<n-threads>
-```
-to compile your changes in a parallel fashion.
-However, if you are in development mode, you must compile using one of the above commands before you can use the explicit build command!
-
 ## Testing
-Unit tests are automatically compiled when using the above commands (sorry for the extra compilation time, you are welcome to fix this :D).
+Unit tests are automatically compiled when using the above commands (sorry for the extra compilation time, we are working on a way around that).
 They only work however, if you are in development mode!
 You can run them via
 ```
@@ -85,7 +79,9 @@ python3 setup.py test
 Keep in mind that some tests take a long time because they need to process fairly big matrices in an inefficient way to make sure the efficient algorithms are correct.
 
 # Documentation
-Run
+The documentation is available online at https://jl-wynen.github.io/isle/
+
+You can generate it locally by running
 ```
 python3 setup.py doc
 ```
@@ -93,4 +89,4 @@ to generate the source code documentation using Doxygen. Then open `docs/html/in
 
 Note that the `C++` interface is not identical to the `Python` interface. Documentation of the `Python` side is incomplete as of now.
 
-There is additional documentation available under `docs/algorithm`; run `make` to generate it. This needs LaTeX to compiler PDFs.
+There is additional documentation available under `docs/algorithm`; run `make` to generate it. This needs LaTeX to compile PDFs.

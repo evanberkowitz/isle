@@ -4,6 +4,8 @@
 #include <limits>
 #include <cmath>
 
+#include "bind/logging.hpp"
+
 using namespace std::complex_literals;
 
 namespace isle {
@@ -49,14 +51,14 @@ namespace isle {
                                                  const std::int8_t sigmaKappa)
         : _kappa{kappaTilde}, _mu{muTilde}, _sigmaKappa{sigmaKappa},
           _kinvp{std::bind(inverseK, std::ref(*this), Species::PARTICLE)},
-          _kinvh{std::bind(inverseK, std::ref(*this), Species::HOLE)},
-          _logdetKinvp{[this](){ return logdet(this->Kinv(Species::PARTICLE)); }},
-          _logdetKinvh{[this](){ return logdet(this->Kinv(Species::HOLE)); }}
+          _kinvh{std::bind(inverseK, std::ref(*this), Species::HOLE)}
     {
-#ifndef NDEBUG
         if (kappaTilde.rows() != kappaTilde.columns())
-            throw std::invalid_argument("Hopping matrix is not square.");
-#endif
+            throw std::invalid_argument("Hopping matrix is not square");
+        if (sigmaKappa != +1 && sigmaKappa != -1)
+            getLogger("HubbardFermiMatrixDia").warning("sigmaKappa should be either -1 or +1.");
+        if (sigmaKappa == +1 && !isBipartite(kappaTilde))
+            getLogger("HubbardFermiMatrixDia").warning("sigmaKappa should be -1 because the lattice is not bipartite.");
     }
 
     HubbardFermiMatrixDia::HubbardFermiMatrixDia(const Lattice &lat,
@@ -69,9 +71,7 @@ namespace isle {
     HubbardFermiMatrixDia::HubbardFermiMatrixDia(const HubbardFermiMatrixDia &other)
         : _kappa{other._kappa}, _mu{other._mu}, _sigmaKappa{other._sigmaKappa},
           _kinvp{std::bind(inverseK, std::ref(*this), Species::PARTICLE)},
-          _kinvh{std::bind(inverseK, std::ref(*this), Species::HOLE)},
-          _logdetKinvp{[this](){ return logdet(this->Kinv(Species::PARTICLE)); }},
-          _logdetKinvh{[this](){ return logdet(this->Kinv(Species::HOLE)); }}
+          _kinvh{std::bind(inverseK, std::ref(*this), Species::HOLE)}
         { }
 
     HubbardFermiMatrixDia &HubbardFermiMatrixDia::operator=(
@@ -84,10 +84,6 @@ namespace isle {
                                             Species::PARTICLE));
         _kinvh = decltype(_kinvh)(std::bind(inverseK, std::ref(*this),
                                             Species::HOLE));
-        _logdetKinvp = decltype(_logdetKinvp)(
-            [this](){ return logdet(this->Kinv(Species::PARTICLE)); });
-        _logdetKinvh = decltype(_logdetKinvh)(
-            [this](){ return logdet(this->Kinv(Species::HOLE)); });
 
         return *this;
     }
@@ -95,8 +91,6 @@ namespace isle {
     void HubbardFermiMatrixDia::_invalidateKCaches() noexcept {
         _kinvp.invalidate();
         _kinvh.invalidate();
-        _logdetKinvp.invalidate();
-        _logdetKinvh.invalidate();
     }
 
     void HubbardFermiMatrixDia::K(DSparseMatrix &k, const Species species) const {
@@ -119,13 +113,6 @@ namespace isle {
             return _kinvp;
         else
             return _kinvh;
-    }
-
-    std::complex<double> HubbardFermiMatrixDia::logdetKinv(Species species) const {
-        if (species == Species::PARTICLE)
-            return _logdetKinvp;
-        else
-            return _logdetKinvh;
     }
 
     void HubbardFermiMatrixDia::F(CDSparseMatrix &f,
@@ -580,7 +567,6 @@ namespace isle {
         return toFirstLogBranch(ldet);
     }
 
-
     std::complex<double> logdetM(const HubbardFermiMatrixDia &hfm,
                                  const CDVector &phi, const Species species) {
         if (hfm.muTilde() != 0)
@@ -588,23 +574,28 @@ namespace isle {
 
         const auto NX = hfm.nx();
         const auto NT = getNt(phi, NX);
-        const auto &kinv = hfm.Kinv(species);
+        const auto &k = hfm.K(species);
 
-        // first K^-1 * F pair
-        auto f = hfm.F(0, phi, species, false);
-        Matrix<std::complex<double>> A = kinv*f;
+        // first K * F^{-1} pair
+        auto f = hfm.F(0, phi, species, true);
+        CDMatrix aux = f*k;  // the matrix under the determinant
         // other pairs
         for (std::size_t t = 1; t < NT; ++t) {
-            hfm.F(f, t, phi, species, false);
-            A = kinv*f*A;
+            hfm.F(f, t, phi, species, true);
+            aux = aux*f*k;
+        }
+        aux += IdMatrix<std::complex<double>>(NX);
+
+        // add Phi and return
+        switch (species) {
+        case Species::PARTICLE:
+            return toFirstLogBranch(1.0i*blaze::sum(phi) + logdet(aux));
+        case Species::HOLE:
+            return toFirstLogBranch(-1.0i*blaze::sum(phi) + logdet(aux));
         }
 
-        // use kinv for first term because we already have it, otherwise would need dense K
-        // gives extra minus sign
-        return toFirstLogBranch(
-            -static_cast<double>(NT)*hfm.logdetKinv(species)
-            + logdet(CDMatrix(IdMatrix<std::complex<double>>(NX) + A))
-            );
+        // We should never get here unless someone fucks up with the enum!
+        throw std::runtime_error("Wrong value for species.");
     }
 
     std::vector<CDVector> solveM(const HubbardFermiMatrixDia &hfm,

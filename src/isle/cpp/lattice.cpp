@@ -1,7 +1,7 @@
 #include "lattice.hpp"
 
 /// Type to color graph with.
-using color = std::int8_t;
+using color = int;
 
 constexpr color unspecified = 0;  ///< No color set.
 constexpr color latA = 1;  ///< On sub graph A, graph B is marked by ~latB.
@@ -38,9 +38,13 @@ namespace isle {
         }
     }
 
-    bool isBipartite(const Lattice &lat) {
-        std::vector<color> colors(lat.nx(), unspecified);
+    bool isBipartite(const SparseMatrix<double> &hoppingMatrix) {
+        std::vector<color> colors(hoppingMatrix.rows(), unspecified);
         colors[0] = latA;
-        return colorNeighborsDescend(0, colors, lat.hopping());
+        return colorNeighborsDescend(0, colors, hoppingMatrix);
+    }
+
+    bool isBipartite(const Lattice &lat) {
+        return isBipartite(lat.hopping());
     }
 }

@@ -350,14 +350,14 @@ namespace {
 
                             if (binfo.strides[0] == sizeof(ET))
                                 // copy as is (w/o stride)
-                                return VT(binfo.shape[0],
+                                return VT(static_cast<std::size_t>(binfo.shape[0]),
                                           static_cast<const ET *>(binfo.ptr));
                             else {
                                 // copy with specific stride
-                                VT vec(binfo.shape[0]);
-                                const py::ssize_t stride = binfo.strides[0]/sizeof(ET);
+                                VT vec(static_cast<std::size_t>(binfo.shape[0]));
+                                const py::ssize_t stride = binfo.strides[0]/static_cast<py::ssize_t>(sizeof(ET));
                                 for (py::ssize_t i = 0; i < binfo.shape[0]; ++i)
-                                    vec[i] = static_cast<const ET*>(binfo.ptr)[i*stride];
+                                    vec[static_cast<std::size_t>(i)] = static_cast<const ET*>(binfo.ptr)[i*stride];
                                 return vec;
                             }
                         }))
@@ -418,6 +418,12 @@ namespace {
                 });
             mod.def("imag", [](const VT &vec) {
                     return blaze::evaluate(blaze::imag(vec));
+                });
+            mod.def("norm", [](const VT &vec) {
+                    return blaze::evaluate(blaze::norm(vec));
+                });
+            mod.def("sqrNorm", [](const VT &vec) {
+                    return blaze::evaluate(blaze::sqrNorm(vec));
                 });
         }
     };
@@ -489,16 +495,19 @@ namespace {
                             if (binfo.strides[0] == static_cast<py::ssize_t>(sizeof(ET))*binfo.shape[1]
                                 && binfo.strides[1] == sizeof(ET))
                                 // buffer in row-major format => copy as is
-                                return MT(binfo.shape[0], binfo.shape[1],
+                                return MT(static_cast<std::size_t>(binfo.shape[0]),
+                                          static_cast<std::size_t>(binfo.shape[1]),
                                           static_cast<const ET *>(binfo.ptr));
                             else {
                                 // copy taking strides into account
-                                MT mat(binfo.shape[0], binfo.shape[1]);
-                                const py::ssize_t stride0 = binfo.strides[0]/sizeof(ET);
-                                const py::ssize_t stride1 = binfo.strides[1]/sizeof(ET);
+                                MT mat(static_cast<std::size_t>(binfo.shape[0]),
+                                       static_cast<std::size_t>(binfo.shape[1]));
+                                const py::ssize_t stride0 = binfo.strides[0]/static_cast<py::ssize_t>(sizeof(ET));
+                                const py::ssize_t stride1 = binfo.strides[1]/static_cast<py::ssize_t>(sizeof(ET));
                                 for (py::ssize_t i = 0; i < binfo.shape[0]; ++i) {
                                     for (py::ssize_t j = 0; j < binfo.shape[1]; ++j) {
-                                        mat(i, j) = static_cast<const ET*>(binfo.ptr)[i*stride0 + j*stride1];
+                                        mat(static_cast<std::size_t>(i), static_cast<std::size_t>(j))
+                                            = static_cast<const ET*>(binfo.ptr)[i*stride0 + j*stride1];
                                     }
                                 }
                                 return mat;
@@ -561,8 +570,8 @@ namespace {
                 .def_buffer([](MT &mat) {
                         // alignment adjusted number of columns
                         const std::size_t adjColumns = mat.rows()>1 ?
-                                                         (&mat(1,0)-&mat(0,0)) :
-                                                         mat.columns();
+                            static_cast<std::size_t>(&mat(1,0)-&mat(0,0)) :
+                            mat.columns();
                         return py::buffer_info{
                             &mat(0, 0), sizeof(ET), py::format_descriptor<ET>::format(),
                             2, {mat.rows(), mat.columns()},

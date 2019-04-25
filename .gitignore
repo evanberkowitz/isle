@@ -2,11 +2,17 @@
 *.h5
 *.hdf5
 
+# log files
+*.log
+
 # Python binaries
 __pycache__
 *.pyc
 *.egg-info
 dist
+
+# Python virtual environments
+Pipfile
 
 # C++ binaries
 *.so
@@ -15,6 +21,3 @@ dist
 
 # build directory
 build
-
-# Pyhton virtual environments
-Pipfile

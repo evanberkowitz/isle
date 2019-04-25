@@ -4,23 +4,26 @@ Routines for YAML IO.
 Registers representable types with YAML allowing automatic loading and dumping.
 """
 
+from logging import getLogger
+
 import yaml
 import numpy as np
 
 from . import Lattice
 from .util import parameters
-from .action import HFAHopping, HFAVariant
+from .action import HFAHopping, HFABasis, HFAVariant
 
 def _parseLattice(adjacency, hopping, positions, nt=0, name="", comment=""):
     """!
     Parse a `!lattice` YAML node.
     """
+    log = getLogger(__name__)
 
     # turn hopping into a list if it isn't already
     if not isinstance(hopping, list):
         hopping = [hopping]*len(adjacency)
     elif len(adjacency) != len(hopping):
-        print("Lengths of adjacency matrix and list of hopping strengths do not match")
+        log.error("Lengths of adjacency matrix and list of hopping strengths do not match")
         raise RuntimeError("Lengths of adjacency matrix and list of hopping strengths do not match")
 
     # construct lattice
@@ -40,7 +43,7 @@ def _parseLattice(adjacency, hopping, positions, nt=0, name="", comment=""):
             raise RuntimeError(f"Lattice site positions given with {len(pos)} coorddinates."
                                +"only supports 2D and 3D positions.")
 
-    print("Read lattice '{}': {}".format(name, comment))
+    log.info("Read lattice '%s': %s", name, comment)
     return lat
 
 yaml.add_constructor("!lattice",
@@ -93,6 +96,16 @@ yaml.add_constructor("!HFAHopping",
                      lambda loader, node: \
                      HFAHopping.DIA if loader.construct_scalar(node) == "DIA"
                      else HFAHopping.EXP,
+                     Loader=yaml.SafeLoader)
+
+# register isle.action.HFABasis
+yaml.add_representer(HFABasis,
+                     lambda dumper, basis: \
+                     dumper.represent_scalar("!HFABasis", str(basis).rsplit(".")[-1]))
+yaml.add_constructor("!HFABasis",
+                     lambda loader, node: \
+                     HFABasis.PARTICLE_HOLE if loader.construct_scalar(node) == "PARTICLE_HOLE"
+                     else HFABasis.SPIN,
                      Loader=yaml.SafeLoader)
 
 # register isle.action.HFAVariant

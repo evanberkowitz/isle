@@ -8,7 +8,9 @@ set(SOURCE
   hubbardFermiMatrixDia.cpp
   hubbardFermiMatrixExp.cpp
   integrator.cpp
-  lattice.cpp)
+  lattice.cpp
+  # unusual but logging must be linked against by the unit tests as well
+  bind/logging.cpp)
 
 # add submodules
 add_subdirectory(action)
@@ -34,9 +36,18 @@ set_target_properties(${LIBNAME} PROPERTIES CXX_STANDARD 14
   CXX_STANDARD_REQUIRED ON)
 
 # warnings
-target_compile_options(${LIBNAME} PUBLIC -Wall -Wextra -pedantic)
+set(GCC_CLANG_WARNINGS -Wall -Wextra -Wshadow -Wnon-virtual-dtor -Wpedantic
+ -Wold-style-cast -Wcast-align -Wunused -Woverloaded-virtual
+ -Wconversion -Wnull-dereference
+ -Wdouble-promotion -Wformat=2)
+
+set(GCC_EXTRA_WARNINGS -Wmisleading-indentation -Wduplicated-cond -Wduplicated-branches
+ -Wlogical-op -Wuseless-cast)
+
 if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
-  target_compile_options(${LIBNAME} PUBLIC -Wno-c++98-compat)
+  target_compile_options(${LIBNAME} PUBLIC ${GCC_CLANG_WARNINGS} -Wno-c++98-compat)
+elseif ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
+  target_compile_options(${LIBNAME} PUBLIC ${GCC_CLANG_WARNINGS} ${GCC_EXTRA_WARNINGS})
 endif ()
 
 # versioning - create version.hpp file
@@ -61,7 +72,7 @@ target_linker_flags(${LIBNAME} "${blaze_LINKER_FLAGS}")
 
 # OpenMP if blaze does not use it
 if (NOT "${BLAZE_PARALLELISM}" STREQUAL "OMP")
-  target_compile_options(${LIBNAME} PUBLIC "${OMP_CXX_FLAGS}")
-  target_link_libraries(${LIBNAME} ${OMP_LIBRARIES})
-  target_linker_flags(${LIBNAME} "${OMP_LINKER_FLAGS}")
+  target_compile_options(${LIBNAME} PUBLIC "${OpenMP_CXX_FLAGS}")
+  target_link_libraries(${LIBNAME} "${OpenMP_CXX_LIBRARIES}")
+  target_linker_flags(${LIBNAME} "${OpenMP_LINKER_FLAGS}")
 endif ()
