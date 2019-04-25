@@ -20,8 +20,8 @@ matrix:
 
 before_install:
   - eval "${MATRIX_EVAL}"
-  - export "LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/use/local/lib"
-  - export "DYLD_LIBRARY_PATH=$DYLD_LIBRARY_PATH:/use/local/lib"
+  - export "LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/usr/local/lib"
+  - export "DYLD_LIBRARY_PATH=$DYLD_LIBRARY_PATH:/usr/local/lib"
 
 install:
   - mkdir lib
