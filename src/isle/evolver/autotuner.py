@@ -29,8 +29,8 @@ MAX_NSTEP = 1000
 
 # targeted confidence for acc rate and probability per nMD
 TARGET_CONF = 0.92
-TARGET_CONF_INT_ACC = 0.25 / 10
-TARGET_CONF_INT_PROB = 0.25
+TARGET_CONF_INT_TP = 0.25 / 10 / 2
+TARGET_CONF_INT_PROB = 0.25 / 2
 
 ONE_SIGMA_PROB = 0.682689492
 TWO_SIGMA_PROB = 0.954499736
@@ -87,7 +87,8 @@ def _confIntProbabilities(probabilities, quantileProb):
     err = np.std(probabilities)
     # endpoints of quantileProb confidence interval
     result = norm.interval(quantileProb, loc=mean, scale=err)
-    # TODO see above
+    # TODO see above, not really correct but close enough
+    #      taking the min/max decreaes the error for extreme nstep, that makes the fits worse!
     # # used with probabilities => can't be < 0
     # lower = max(0, result[0])
     # # used with probabilities => can't be > 1
@@ -222,7 +223,7 @@ class Registrar:
     def seenBefore(self, *, length=None, nstep=None):
         if length is None:
             if nstep is None:
-                raise ValueError("At leas one of length and nstep must not be None")
+                raise ValueError("At least one of length and nstep must not be None")
             return nstep in self._knownNstep
 
         # else: length is not None
@@ -235,6 +236,10 @@ class Registrar:
     def _saveRecords(self, h5group):
         maxStored = -1
         for idx, grp in loadList(h5group):
+            if idx >= len(self.records):
+                getLogger(__name__).error("Cannot save recording, there are more records in the "
+                                          "file than currently recorded")
+                raise RuntimeError("More records in the file that currently stored")
             storedRecord = self.Record.fromH5(grp)
             if storedRecord != self.records[idx]:
                 getLogger(__name__).error("Cannot save recording, record %d stored in the file "
@@ -243,11 +248,20 @@ class Registrar:
             maxStored = idx
 
         for idx, record in filter(lambda pair: pair[0] > maxStored, enumerate(self.records)):
+            if idx == len(self) and len(record) == 0:
+                # TODO still true?
+                # the last record might be empty, do not save it
+                break
             record.save(h5group.create_group(str(idx)))
 
     def _saveFitResults(self, h5group):
         maxStored = -1
         for idx, grp in loadList(h5group):
+            if idx >= len(self.fitResults):
+                getLogger(__name__).error("Cannot save recording, there are more fit results in "
+                                          "the file than currently recorded")
+                raise RuntimeError("More fit results in the file that currently stored")
+
             storedResult = Fitter.Result.fromH5(grp)
             if storedResult != self.fitResults[idx]:
                 getLogger(__name__).error("Cannot save recording, fit result %d stored in the file "
@@ -279,7 +293,7 @@ class Registrar:
             record.trajPoints = storedRecord.trajPoints
 
         for _, grp in sorted(h5group["fitResults"].items(),
-                                 key=lambda pair: int(pair[0])):
+                             key=lambda pair: int(pair[0])):
             registrar.addFitResult(Fitter.Result.fromH5(grp))
 
         return registrar
@@ -317,12 +331,13 @@ class Fitter:
             return cls(h5group["best"][()],
                        h5group["others"][()])
 
-    def __init__(self, startParams=[(2, 3, 1), (1, 1, 1), (10, 2, 1)],
-                 artificialPoints=[(0, 0.0, 1e-8), (MAX_NSTEP, 1.0, 1e-8)]):
+    def __init__(self, startParams=None, artificialPoints=None):
 
-        self._startParams = startParams
+        self._startParams = startParams if startParams is not None else \
+            [(2, 3, 1), (1, 1, 1), (10, 2, 1)]
         self._lastFit = None   # parameters only
-        self.artificialPoints = artificialPoints
+        self.artificialPoints = artificialPoints if artificialPoints is not None else \
+            [(0, 0.0, 1e-8), (MAX_NSTEP, 1.0, 1e-8)]
 
     def _joinFitData(self, probabilityPoints, trajPointPoints):
         return np.asarray([*zip(*(probabilityPoints + trajPointPoints + self.artificialPoints))])
@@ -343,13 +358,14 @@ class Fitter:
 
         if not fittedParams:
             getLogger(__name__).error("No fit converged, unable to continue tuning.")
-            raise RuntimeError("No fit converged")
+            # raise RuntimeError("No fit converged")
+            return None
 
         bestFit, *otherFits = sorted(fittedParams,
                                      key=lambda params: squareSum(fitFunction, independent,
                                                                   dependent, dependenterr, params))
         self._lastFit = bestFit
-        getLogger(__name__).info("New best fit parameters: %s", bestFit)
+
         return self.Result(bestFit, otherFits)
 
 
@@ -359,7 +375,7 @@ class LeapfrogTuner(Evolver):
     """
 
     def __init__(self, action, initialLength, initialNstep, rng, recordFname,
-                 targetAccRate=0.67, runsPerParam=(5, 100)):
+                 targetAccRate=0.61, runsPerParam=(10, 100)):
         r"""!
 
         """
@@ -397,26 +413,34 @@ class LeapfrogTuner(Evolver):
         log = getLogger("atune")
         currentRecord = self.registrar.currentRecord()
 
-        if len(currentRecord) > self.runsPerParam[0]:
-            confIntProb = currentRecord.confIntProbabilities(TWO_SIGMA_PROB)
-            confIntTP = currentRecord.confIntTrajPoints(TWO_SIGMA_PROB)
+        if len(currentRecord) >= self.runsPerParam[0]:
+            # confIntProb = currentRecord.confIntProbabilities(TWO_SIGMA_PROB)
+            # confIntTP = currentRecord.confIntTrajPoints(TWO_SIGMA_PROB)
 
-            # log.error(f"{_intervalLength(confIntProb)}, {_intervalLength(confIntTP)}")
+            errProb = _errorProbabilities(currentRecord.probabilities, TWO_SIGMA_PROB)
+            errTP = _errorTrajPoints(currentRecord.trajPoints, TWO_SIGMA_PROB)
 
-            if _intervalLength(confIntTP) < TARGET_CONF_INT_ACC:
-                log.error("Stopping because of tp")
+            # log.debug(f"{_intervalLength(confIntProb)}, {_intervalLength(confIntTP)}")
+            # log.debug(f"prob = {currentRecord.probabilities}\n  tp = {currentRecord.trajPoints}")
+            # log.debug(f"errors: {errProb}, {errTP}")
+
+            # if _intervalLength(confIntTP) < TARGET_CONF_INT_TP:
+            if errTP < TARGET_CONF_INT_TP:
+                log.debug("Stopping because of tp")
                 self._pickNextNStep()
 
-            elif _intervalLength(confIntProb) < TARGET_CONF_INT_PROB:
-                log.error("Stopping because of prob")
+            # elif _intervalLength(confIntProb) < TARGET_CONF_INT_PROB:
+            elif errProb < TARGET_CONF_INT_PROB:
+                log.debug("Stopping because of prob")
                 self._pickNextNStep()
 
             elif len(currentRecord) > self.runsPerParam[1]:
-                log.error("reached max runs for current params")
+                log.debug("reached max runs for current params")
                 # raise RuntimeError("Did not converge")
                 self._pickNextNStep()
 
         if len(self.registrar) > 10:
+            log.error("Too many records")
             self._finalize()
 
         return phi, pi, actVal, trajPoint
@@ -427,8 +451,8 @@ class LeapfrogTuner(Evolver):
 
     def _doEvolve(self, phi0, pi0, actVal0, _trajPoint0):
         phi1, pi1, actVal1 = leapfrog(phi0, pi0, self.action, *self.currentParams())
-        energy0 = actVal0 + +np.linalg.norm(pi0)**2/2
-        energy1 = actVal1 + +np.linalg.norm(pi1)**2/2
+        energy0 = actVal0 + pi0@pi0/2
+        energy1 = actVal1 + pi1@pi1/2
         trajPoint1 = self._selector.selectTrajPoint(energy0, energy1)
 
         self.registrar.currentRecord().add(min(1, exp(np.real(energy0 - energy1))),
@@ -437,19 +461,60 @@ class LeapfrogTuner(Evolver):
         return (phi1, pi1, actVal1, trajPoint1) if trajPoint1 == 1 \
             else (phi0, pi0, actVal0, trajPoint1)
 
+    def _shiftNstep(self):
+        probPoints, TPPoints = self.registrar.gather(length=self.currentParams()[0])
+
+        tps = [tp for (_, tp, _) in TPPoints]
+
+
+        # small nstep is faster => try that first
+        if min(tps) > 0.1:
+            minStep = min(self.registrar._knownNstep)
+            nextStep = max(1, minStep//2)
+            if not self.registrar.seenBefore(nstep=nextStep):
+                getLogger(__name__).info("Picked small nstep: %d in run %d",
+                                         nextStep, len(self.registrar)-1)
+                self.registrar.addFitResult(self._fitter.Result([0, 0, 0], []))
+                return nextStep
+
+        # else: just try a bigger one, there should be enough room to expand
+        # TODO don't go super big, if tp at the large nstep is 1,
+        #      try a smaller one in between existing ones
+        maxStep = max(self.registrar._knownNstep)
+        nextStep = maxStep * 2
+        getLogger(__name__).info("Picked large nstep: %d in run %d",
+                                 nextStep, len(self.registrar)-1)
+        self.registrar.addFitResult(self._fitter.Result([0, 0, 0], []))
+
+        return nextStep
+
     def _pickNextNStep(self):
+        log = getLogger(__name__)
         fitResult = self._fitter.fitNstep(*self.registrar.gather(
             length=self.currentParams()[0]))
-        self.registrar.addFitResult(fitResult)
-        floatStep = fitResult.bestNstep(self.targetAccRate)
 
-        nextStep = max(int(floor(floatStep)), 1)
-        if self.registrar.seenBefore(nstep=nextStep):
-            nextStep = int(ceil(floatStep))
+        if fitResult is not None:
+            # pick nstep from fit
+            log.info("Completed fit for run %d, best parameters: %s",
+                     len(self.registrar)-1, fitResult.bestFit)
+            self.registrar.addFitResult(fitResult)
+
+            floatStep = fitResult.bestNstep(self.targetAccRate)
+            log.info("Optimal nstep from current fit: %f", floatStep)
+
+            nextStep = max(int(floor(floatStep)), 1)
             if self.registrar.seenBefore(nstep=nextStep):
-                getLogger("atune").error(f"Done with nstep = {nextStep}")
-                self._finalize()
-                return
+                nextStep = int(ceil(floatStep))
+                if self.registrar.seenBefore(nstep=nextStep):
+                    getLogger("atune").debug(f"Done with nstep = {nextStep}")
+                    self._finalize()
+                    return
+
+        else:
+            log.info("Fit unsuccessful, shifting nstep")
+            # try a different nstep at an extreme end to stabilise the fit
+            nextStep = self._shiftNstep()
+
 
         self.saveRecording()
 
@@ -457,10 +522,9 @@ class LeapfrogTuner(Evolver):
             raise RuntimeError(f"nstep is too large: {nextStep}")
 
         self.registrar.newRecord(self.currentParams()[0], nextStep)
-        getLogger("atune").error("New nstep: %d", nextStep)
+        getLogger("atune").debug("New nstep: %d", nextStep)
 
     def _finalize(self):
-        # TODO really save here?
         self.saveRecording()
         self._finished = True
 
@@ -479,6 +543,7 @@ class LeapfrogTuner(Evolver):
         \param h5group HDF5 group to save to.
         \param manager EvolverManager whose purview to save the evolver in.
         """
+        # TODO
 
     @classmethod
     def fromH5(cls, h5group, _manager, action, _lattice, rng):
@@ -491,4 +556,5 @@ class LeapfrogTuner(Evolver):
         \param rng Central random number generator for the run.
         \returns A newly constructed leapfrog evolver.
         """
+        # TODO
         return None
