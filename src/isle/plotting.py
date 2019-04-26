@@ -292,7 +292,7 @@ def plotTunerFit(ax, probabilityPoints, trajPointPoints, fitResult):
     ax.errorbar(np.asarray(x)-0.05, y, err, ls="", marker=".", label="trajPoint")
 
     if fitResult is not None:
-        x = np.linspace(0, ax.get_xlim()[1]*1.1)
+        x = np.linspace(0, ax.get_xlim()[1]*1.1, 1000)
         bestFit, otherFits = fitResult.evalOn(x)
         for y in otherFits:
             ax.plot(x, y, c="k", alpha=0.5)
@@ -332,5 +332,5 @@ def plotTunerTrace(ax, records):
     # manual legend so that all lines are shown
     axNstep.legend([lineNstep, lineProb, lineTP],
                    [r"$N_{\mathrm{MD}}$", r"min(1, $\exp{(dH)}$)", r"trajPoint"],
-                   bbox_to_anchor=(0, -0.075, 1, 0), loc="lower left", mode="expand",
+                   bbox_to_anchor=(0, -0.08, 1, 0), loc="lower left", mode="expand",
                    ncol=3, borderaxespad=0, handletextpad=0.05)
