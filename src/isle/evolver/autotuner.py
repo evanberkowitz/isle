@@ -615,7 +615,8 @@ class LeapfrogTuner(Evolver):
             self._tunedParameters = {"nstep": nstep, "length": length}
 
             with h5.File(self.recordFname, "a") as h5f:
-                h5f["leapfrogTuner/finished"] = True
+                h5f["leapfrogTuner/tuned_length"] = length
+                h5f["leapfrogTuner/tuned_nstep"] = nstep
             getLogger(__name__).info("Finished tuning with length = %f and nstep = %d",
                                      length, nstep)
 
@@ -641,12 +642,11 @@ class LeapfrogTuner(Evolver):
     def loadTunedParameters(cls, h5group):
         h5group = h5group["leapfrogTuner"]
 
-        if "finished" not in h5group:
+        if "tuned_length" not in h5group or "tuned_nstep" not in h5group:
             raise RuntimeError("LeapfrogTuner has not finished, parameters have not been tuned")
 
-        lastRecordGrp = loadList(h5group["records"])[-1][1]
-        return {"length": lastRecordGrp["length"][()],
-                "nstep": lastRecordGrp["nstep"][()]}
+        return {"length": h5group["tuned_length"][()],
+                "nstep": h5group["tuned_nstep"][()]}
 
     @classmethod
     def loadTunedEvolver(cls, h5group, action, rng):
