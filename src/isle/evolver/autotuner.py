@@ -395,6 +395,7 @@ class LeapfrogTuner(Evolver):
         self._selector = BinarySelector(rng)
         self._pickNextNStep = self._pickNextNStep_search
         self._finished = False
+        self._tunedParameters = None
 
     def evolve(self, phi, pi, actVal, trajPoint):
         r"""!
@@ -542,13 +543,13 @@ class LeapfrogTuner(Evolver):
         log = getLogger(__name__)
         floatStep = self._nstepFromFit()
         if floatStep is None:
-            log.info("Fit unsuccessful in verification, switching back to search")
+            log.info("Fit unsuccessful in verification")
             self._cancelVerification(self._shiftNstep())
             return None
 
         if abs(floatStep-oldFloatStep) > 1:
-            log.info("Nstep changed by more than 1 in verification: %d vs %d, "
-                     "switching back to search", floatStep, oldFloatStep)
+            log.info("Nstep changed by more than 1 in verification: %d vs %d",
+                     floatStep, oldFloatStep)
             self._cancelVerification(max(int(floor(floatStep)), 1))
             return None
 
@@ -598,14 +599,22 @@ class LeapfrogTuner(Evolver):
         self._pickNextNStep = _pickNextNStep_verificationLower
 
     def _cancelVerification(self, nextStep):
+        getLogger(__name__).info("Cancelling verification, reverting back to search")
         self.registrar.newRecord(self.currentParams()[0], nextStep, False)
         self._pickNextNStep = self._pickNextNStep_search
 
     def _finalize(self, finalFloatStep):
-        # arg may be None!!!
-        getLogger("done!!").warning("done with %s", finalFloatStep)
-        self.saveRecording()
         self._finished = True
+        self.saveRecording()
+
+        if finalFloatStep is not None:
+            nstep = max(int(floor(finalFloatStep)), 1)
+            # linearly interpolate between floor(floatStep) and ceil(floatStep)
+            length = nstep / finalFloatStep
+            self._tunedParameters = {"nstep": nstep, "length": length}
+
+            getLogger(__name__).info("Finished tuning with length = %f and nstep = %d",
+                                     length, nstep)
 
     def saveRecording(self):
         getLogger(__name__).info("Saving current recording")
