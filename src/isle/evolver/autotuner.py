@@ -18,6 +18,7 @@ import matplotlib.gridspec as gridspec
 
 from .evolver import Evolver
 from .selector import BinarySelector
+from .leapfrog import ConstStepLeapfrog
 from .. import leapfrog
 from ..h5io import createH5Group, loadList
 
@@ -613,6 +614,8 @@ class LeapfrogTuner(Evolver):
             length = nstep / finalFloatStep
             self._tunedParameters = {"nstep": nstep, "length": length}
 
+            with h5.File(self.recordFname, "a") as h5f:
+                h5f["leapfrogTuner/finished"] = True
             getLogger(__name__).info("Finished tuning with length = %f and nstep = %d",
                                      length, nstep)
 
@@ -620,6 +623,36 @@ class LeapfrogTuner(Evolver):
         getLogger(__name__).info("Saving current recording")
         with h5.File(self.recordFname, "a") as h5f:
             self.registrar.save(createH5Group(h5f, "leapfrogTuner"))
+
+    def tunedParameters(self):
+        if not self._finished:
+            raise RuntimeError("LeapfrogTuner has not finished, parameters have not been tuned")
+        if not self._tunedParameters:
+            raise RuntimeError("LeapfrogTuner has finished but parameters could not be tuned")
+
+        return self._tunedParameters.copy()
+
+    def tunedEvolver(self):
+        params = self.tunedParameters()
+        return ConstStepLeapfrog(self.action, params["length"],
+                                 params["nstep"], self._selector.rng)
+
+    @classmethod
+    def loadTunedParameters(cls, h5group):
+        h5group = h5group["leapfrogTuner"]
+
+        if "finished" not in h5group:
+            raise RuntimeError("LeapfrogTuner has not finished, parameters have not been tuned")
+
+        lastRecordGrp = loadList(h5group["records"])[-1][1]
+        return {"length": lastRecordGrp["length"][()],
+                "nstep": lastRecordGrp["nstep"][()]}
+
+    @classmethod
+    def loadTunedEvolver(cls, h5group, action, rng):
+        params = cls.loadTunedParameters(h5group)
+        return ConstStepLeapfrog(action, params["length"],
+                                 params["nstep"], rng)
 
     @classmethod
     def loadRecording(cls, h5group):
