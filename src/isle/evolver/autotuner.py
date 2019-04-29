@@ -124,11 +124,12 @@ def extendListInDict(dictionary, key, values):
 class Registrar:
 
     class Record:
-        def __init__(self, length, nstep):
+        def __init__(self, length, nstep, verification=False):
             self.length = length
             self.nstep = nstep
             self.probabilities = []
             self.trajPoints = []
+            self.verification = verification
 
         def __len__(self):
             return len(self.trajPoints)
@@ -159,10 +160,12 @@ class Registrar:
             h5group["nstep"] = self.nstep
             h5group["probabilities"] = self.probabilities
             h5group["trajPoints"] = self.trajPoints
+            h5group["verification"] = self.verification
 
         @classmethod
         def fromH5(cls, h5group):
-            record = cls(h5group["length"][()], h5group["nstep"][()])
+            record = cls(h5group["length"][()], h5group["nstep"][()],
+                         h5group["verification"][()])
             record.probabilities = list(h5group["probabilities"][()])
             record.trajPoints = list(h5group["trajPoints"][()])
             return record
@@ -181,8 +184,8 @@ class Registrar:
     def currentRecord(self):
         return self.records[-1]
 
-    def newRecord(self, length, nstep):
-        record = self.Record(length, nstep)
+    def newRecord(self, length, nstep, verification=False):
+        record = self.Record(length, nstep, verification)
         self.records.append(record)
         self._knownLength.add(length)
         self._knownNstep.add(nstep)
@@ -288,7 +291,8 @@ class Registrar:
                                  key=lambda pair: int(pair[0])):
             storedRecord = cls.Record.fromH5(grp)
             # go through this function to make sure all internal variables are set up properly
-            record = registrar.newRecord(storedRecord.length, storedRecord.nstep)
+            record = registrar.newRecord(storedRecord.length, storedRecord.nstep,
+                                         storedRecord.verification)
             record.probabilities = storedRecord.probabilities
             record.trajPoints = storedRecord.trajPoints
 
@@ -388,6 +392,7 @@ class LeapfrogTuner(Evolver):
 
         self._fitter = Fitter()
         self._selector = BinarySelector(rng)
+        self._pickNextNStep = self._pickNextNStep_search
         self._finished = False
 
     def evolve(self, phi, pi, actVal, trajPoint):
@@ -441,7 +446,7 @@ class LeapfrogTuner(Evolver):
 
         if len(self.registrar) > 10:
             log.error("Too many records")
-            self._finalize()
+            self._finalize(None)
 
         return phi, pi, actVal, trajPoint
 
@@ -488,7 +493,7 @@ class LeapfrogTuner(Evolver):
 
         return nextStep
 
-    def _pickNextNStep(self):
+    def _nstepFromFit(self):
         log = getLogger(__name__)
         fitResult = self._fitter.fitNstep(*self.registrar.gather(
             length=self.currentParams()[0]))
@@ -498,25 +503,31 @@ class LeapfrogTuner(Evolver):
             log.info("Completed fit for run %d, best parameters: %s",
                      len(self.registrar)-1, fitResult.bestFit)
             self.registrar.addFitResult(fitResult)
-
             floatStep = fitResult.bestNstep(self.targetAccRate)
             log.info("Optimal nstep from current fit: %f", floatStep)
 
-            nextStep = max(int(floor(floatStep)), 1)
-            if self.registrar.seenBefore(nstep=nextStep):
-                nextStep = int(ceil(floatStep))
-                if self.registrar.seenBefore(nstep=nextStep):
-                    getLogger("atune").debug(f"Done with nstep = {nextStep}")
-                    self._finalize()
-                    return
+            return floatStep
 
-        else:
+        return None
+
+    def _pickNextNStep_search(self):
+        log = getLogger(__name__)
+        floatStep = self._nstepFromFit()
+
+        self.saveRecording()
+
+        if floatStep is None:
             log.info("Fit unsuccessful, shifting nstep")
             # try a different nstep at an extreme end to stabilise the fit
             nextStep = self._shiftNstep()
 
-
-        self.saveRecording()
+        else:
+            nextStep = max(int(floor(floatStep)), 1)
+            if self.registrar.seenBefore(nstep=nextStep):
+                nextStep = int(ceil(floatStep))
+                if self.registrar.seenBefore(nstep=nextStep):
+                    self._enterVerification(floatStep)
+                    return
 
         if nextStep > MAX_NSTEP:
             raise RuntimeError(f"nstep is too large: {nextStep}")
@@ -524,7 +535,59 @@ class LeapfrogTuner(Evolver):
         self.registrar.newRecord(self.currentParams()[0], nextStep)
         getLogger("atune").debug("New nstep: %d", nextStep)
 
-    def _finalize(self):
+    def _verificationIntStep(self, oldFloatStep):
+        log = getLogger(__name__)
+        floatStep = self._nstepFromFit()
+        if floatStep is None:
+            log.info("Fit unsuccessful in verification, switching back to search")
+            self._cancelVerification(self._shiftNstep())
+            return None
+
+        if abs(floatStep-oldFloatStep) > 1:
+            log.info("Nstep changed by more than 1 in verification: %d vs %d, "
+                     "switching back to search", floatStep, oldFloatStep)
+            self._cancelVerification(max(int(floor(floatStep)), 1))
+            return None
+
+        return floatStep
+
+    def _enterVerification(self, floatStep):
+
+        def _pickNextNStep_verificationFinalize():
+            # ran with both ends
+            self.saveRecording()
+            nextFloatStep = self._verificationIntStep(floatStep)
+            if nextFloatStep is not None:
+                self._finalize(nextFloatStep)
+
+
+        def _pickNextNStep_verificationUpper():
+            # run with lower end of interval next
+            self.saveRecording()
+
+            nextFloatStep = self._verificationIntStep(floatStep)
+            if nextFloatStep is not None:
+                self.registrar.newRecord(self.currentParams()[0],
+                                         int(ceil(floatStep)),
+                                         True)
+                self._pickNextNStep = _pickNextNStep_verificationFinalize
+
+        getLogger("atune").debug("entering verification")
+
+        # run with lower end of interval next
+        self.registrar.newRecord(self.currentParams()[0],
+                                 max(int(floor(floatStep)), 1),
+                                 True)
+        # and do upper afterwards
+        self._pickNextNStep = _pickNextNStep_verificationUpper
+
+    def _cancelVerification(self, nextStep):
+        self.registrar.newRecord(self.currentParams()[0], nextStep, False)
+        self._pickNextNStep = self._pickNextNStep_search
+
+    def _finalize(self, finalFloatStep):
+        # arg may be None!!!
+        getLogger("done!!").warning("done with %s", finalFloatStep)
         self.saveRecording()
         self._finished = True
 
