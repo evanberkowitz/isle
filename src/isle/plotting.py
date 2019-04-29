@@ -13,6 +13,7 @@ try:
     import matplotlib.pyplot as plt
     from matplotlib.ticker import MultipleLocator, MaxNLocator
     from matplotlib.lines import Line2D
+    from matplotlib.patches import Rectangle
 
 except ImportError:
     getLogger(__name__).error("Cannot import matplotlib, plotting functionality is not available.")
@@ -281,13 +282,13 @@ def plotCorrelators(measState, axP, axH):
 
     return True
 
-def plotTunerFit(ax, probabilityPoints, trajPointPoints, fitResult):
+def plotTunerFit(ax, probabilityPoints, trajPointPoints, fitResult, verification):
     r"""!
     \todo document
     """
 
     x, y, err = zip(*probabilityPoints)
-    ax.errorbar(np.asarray(x)+0.05, y, err, ls="", marker=".", label="min(1, $\exp{(dH)}$)")
+    ax.errorbar(np.asarray(x)+0.05, y, err, ls="", marker=".", label=r"min(1, $\exp{(dH)}$)")
     x, y, err = zip(*trajPointPoints)
     ax.errorbar(np.asarray(x)-0.05, y, err, ls="", marker=".", label="trajPoint")
 
@@ -297,6 +298,11 @@ def plotTunerFit(ax, probabilityPoints, trajPointPoints, fitResult):
         for y in otherFits:
             ax.plot(x, y, c="k", alpha=0.5)
         ax.plot(x, bestFit, c="k")
+
+    if verification:
+        # draw a rectangle just inside of the axes borders
+        ax.add_patch(Rectangle((0.01, 0.01), 0.98, 0.98, linewidth=2, transform=ax.transAxes,
+                               edgecolor="#E3D514", facecolor="none"))
 
 def plotTunerTrace(ax, records):
     r"""!

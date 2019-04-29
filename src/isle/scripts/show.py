@@ -210,7 +210,8 @@ def _tuning(infname):
         probabilityPoints, trajPointPoints = registrar.gather(length=registrar.records[-1].length,
                                                               maxRecord=idx+1)
         fitResult = registrar.fitResults[idx] if idx < len(registrar.fitResults) else None
-        isle.plotting.plotTunerFit(ax, probabilityPoints, trajPointPoints, fitResult)
+        isle.plotting.plotTunerFit(ax, probabilityPoints, trajPointPoints, fitResult,
+                                   registrar.records[idx].verification)
         if fitResult is not None:
             log.info("Best fit for run %d: %s", idx, fitResult.bestFit)
 
