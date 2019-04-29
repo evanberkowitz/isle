@@ -406,7 +406,7 @@ class LeapfrogTuner(Evolver):
           - Point along trajectory that was selected
         """
 
-        # do not even evolve any more (we don't want to waste precious time)
+        # do not evolve any more, signal the driver to stop
         if self._finished:
             raise StopIteration()
 
@@ -415,21 +415,22 @@ class LeapfrogTuner(Evolver):
         log = getLogger("atune")
         currentRecord = self.registrar.currentRecord()
 
+        # check if the minimum number of runs has been reached
         if len(currentRecord) >= self.runsPerParam[0]:
+            # get errors for current run
             errProb = _errorProbabilities(currentRecord.probabilities, TWO_SIGMA_PROB)
             errTP = _errorTrajPoints(currentRecord.trajPoints, TWO_SIGMA_PROB)
 
             if errTP < self.targetConfIntTP:
-                log.debug("Stopping because of tp")
+                log.info("Reached target confidence for trajectory point, picking next nstep")
                 self._pickNextNStep()
 
             elif errProb < self.targetConfIntProb:
-                log.debug("Stopping because of prob")
+                log.info("Reached target confidence for probability, picking next nstep")
                 self._pickNextNStep()
 
             elif len(currentRecord) > self.runsPerParam[1]:
-                log.debug("reached max runs for current params")
-                # raise RuntimeError("Did not converge")
+                log.debug("Reached maximum number of runs for current nstep, picking next nstep")
                 self._pickNextNStep()
 
         # Check here not at the beginning of the function because
@@ -441,11 +442,13 @@ class LeapfrogTuner(Evolver):
         return phi, pi, actVal, trajPoint
 
     def currentParams(self):
+        """Return the """
         record = self.registrar.currentRecord()
-        return record.length, record.nstep
+        return {"length": record.length, "nstep": record.nstep}
 
     def _doEvolve(self, phi0, pi0, actVal0, _trajPoint0):
-        phi1, pi1, actVal1 = leapfrog(phi0, pi0, self.action, *self.currentParams())
+        params = self.currentParams()
+        phi1, pi1, actVal1 = leapfrog(phi0, pi0, self.action, params["length"], params["nstep"])
         energy0 = actVal0 + pi0@pi0/2
         energy1 = actVal1 + pi1@pi1/2
         trajPoint1 = self._selector.selectTrajPoint(energy0, energy1)
@@ -457,7 +460,7 @@ class LeapfrogTuner(Evolver):
             else (phi0, pi0, actVal0, trajPoint1)
 
     def _shiftNstep(self):
-        probPoints, TPPoints = self.registrar.gather(length=self.currentParams()[0])
+        probPoints, TPPoints = self.registrar.gather(length=self.currentParams()["length"])
 
         tps = [tp for (_, tp, _) in TPPoints]
 
@@ -486,7 +489,7 @@ class LeapfrogTuner(Evolver):
     def _nstepFromFit(self):
         log = getLogger(__name__)
         fitResult = self._fitter.fitNstep(*self.registrar.gather(
-            length=self.currentParams()[0]))
+            length=self.currentParams()["length"]))
 
         if fitResult is not None:
             # pick nstep from fit
@@ -523,7 +526,7 @@ class LeapfrogTuner(Evolver):
             # TODO
             raise RuntimeError(f"nstep is too large: {nextStep}")
 
-        self.registrar.newRecord(self.currentParams()[0], nextStep)
+        self.registrar.newRecord(self.currentParams()["length"], nextStep)
         getLogger("atune").debug("New nstep: %d", nextStep)
 
     def _verificationIntStep(self, oldFloatStep):
@@ -569,7 +572,7 @@ class LeapfrogTuner(Evolver):
 
             if nextFloatStep is not None:
                 # run with upper end of interval next
-                self.registrar.newRecord(self.currentParams()[0],
+                self.registrar.newRecord(self.currentParams()["length"],
                                          int(ceil(floatStep)),
                                          True)
                 self._pickNextNStep = _pickNextNStep_verificationUpper
@@ -580,14 +583,14 @@ class LeapfrogTuner(Evolver):
         getLogger(__name__).debug("Checking lower end of interval around floatStep")
 
         # run with lower end of interval next
-        self.registrar.newRecord(self.currentParams()[0],
+        self.registrar.newRecord(self.currentParams()["length"],
                                  max(int(floor(floatStep)), 1),
                                  True)
         self._pickNextNStep = _pickNextNStep_verificationLower
 
     def _cancelVerification(self, nextStep):
         getLogger(__name__).info("Cancelling verification, reverting back to search")
-        self.registrar.newRecord(self.currentParams()[0], nextStep, False)
+        self.registrar.newRecord(self.currentParams()["length"], nextStep, False)
         self._pickNextNStep = self._pickNextNStep_search
 
     def _finalize(self, finalFloatStep):
