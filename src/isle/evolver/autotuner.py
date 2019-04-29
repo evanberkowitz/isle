@@ -379,15 +379,16 @@ class LeapfrogTuner(Evolver):
     """
 
     def __init__(self, action, initialLength, initialNstep, rng, recordFname,
-                 targetAccRate=0.61, runsPerParam=(10, 100)):
+                 targetAccRate=0.61, runsPerParam=(10, 100), maxRuns=10):
         r"""!
 
         """
 
         self.registrar = Registrar(initialLength, initialNstep)
         self.action = action
-        self.runsPerParam = runsPerParam
         self.targetAccRate = targetAccRate
+        self.runsPerParam = runsPerParam
+        self.maxRuns = maxRuns
         self.recordFname = recordFname
 
         self._fitter = Fitter()
@@ -444,8 +445,10 @@ class LeapfrogTuner(Evolver):
                 # raise RuntimeError("Did not converge")
                 self._pickNextNStep()
 
-        if len(self.registrar) > 10:
-            log.error("Too many records")
+        # Check here not at the beginning of the function because
+        # one of the above steps may have inserted a new record.
+        if not self._finished and len(self.registrar) > self.maxRuns:
+            log.error("Tuning was unsuccessful within the given maximum number of runs")
             self._finalize(None)
 
         return phi, pi, actVal, trajPoint
@@ -553,33 +556,46 @@ class LeapfrogTuner(Evolver):
 
     def _enterVerification(self, floatStep):
 
-        def _pickNextNStep_verificationFinalize():
-            # ran with both ends
-            self.saveRecording()
+        def _pickNextNStep_verificationUpper():
+            "Check run with upper end of interval around floatStep."
+
+            getLogger(__name__).debug("Checking upper end of interval around floatStep")
             nextFloatStep = self._verificationIntStep(floatStep)
+            self.saveRecording()  # save also fit from above function
+
             if nextFloatStep is not None:
                 self._finalize(nextFloatStep)
+            else:
+                # something is seriously unstable if this happens
+                getLogger(__name__).error("The final fit did not converge, "
+                                          "unable to extract nstep from tuning results. "
+                                          "Continuing search.")
+                # verification has been canceled => do nothing more here
 
+        def _pickNextNStep_verificationLower():
+            "Check run with lowre end of interval around floatStep."
 
-        def _pickNextNStep_verificationUpper():
-            # run with lower end of interval next
-            self.saveRecording()
-
+            getLogger(__name__).debug("Checking lower end of interval around floatStep")
             nextFloatStep = self._verificationIntStep(floatStep)
+            self.saveRecording()  # save also fit from above function
+
             if nextFloatStep is not None:
+                # run with upper end of interval next
                 self.registrar.newRecord(self.currentParams()[0],
                                          int(ceil(floatStep)),
                                          True)
-                self._pickNextNStep = _pickNextNStep_verificationFinalize
+                self._pickNextNStep = _pickNextNStep_verificationUpper
 
-        getLogger("atune").debug("entering verification")
+            # else: verification has been canceled => do nothing here
+
+        getLogger(__name__).info("Entering verification stage with nstep = %f", floatStep)
+        getLogger(__name__).debug("Checking lower end of interval around floatStep")
 
         # run with lower end of interval next
         self.registrar.newRecord(self.currentParams()[0],
                                  max(int(floor(floatStep)), 1),
                                  True)
-        # and do upper afterwards
-        self._pickNextNStep = _pickNextNStep_verificationUpper
+        self._pickNextNStep = _pickNextNStep_verificationLower
 
     def _cancelVerification(self, nextStep):
         self.registrar.newRecord(self.currentParams()[0], nextStep, False)
