@@ -23,16 +23,6 @@ from .. import leapfrog
 from ..h5io import createH5Group, loadList
 
 
-TARGET_ACC_RATE = 0.67
-
-MAX_NSTEP = 1000
-
-
-# targeted confidence for acc rate and probability per nMD
-TARGET_CONF = 0.92
-TARGET_CONF_INT_TP = 0.25 / 10 / 2
-TARGET_CONF_INT_PROB = 0.25 / 2
-
 ONE_SIGMA_PROB = 0.682689492
 TWO_SIGMA_PROB = 0.954499736
 
@@ -336,13 +326,13 @@ class Fitter:
             return cls(h5group["best"][()],
                        h5group["others"][()])
 
-    def __init__(self, startParams=None, artificialPoints=None):
+    def __init__(self, startParams=None, artificialPoints=None, maxNstep=1000):
 
         self._startParams = startParams if startParams is not None else \
             [(2, 3, 1), (1, 1, 1), (10, 2, 1)]
         self._lastFit = None   # parameters only
         self.artificialPoints = artificialPoints if artificialPoints is not None else \
-            [(0, 0.0, 1e-8), (MAX_NSTEP, 1.0, 1e-8)]
+            [(0, 0.0, 1e-8), (maxNstep, 1.0, 1e-8)]
 
     def _joinFitData(self, probabilityPoints, trajPointPoints):
         return np.asarray([*zip(*(probabilityPoints + trajPointPoints + self.artificialPoints))])
@@ -380,7 +370,8 @@ class LeapfrogTuner(Evolver):
     """
 
     def __init__(self, action, initialLength, initialNstep, rng, recordFname,
-                 targetAccRate=0.61, runsPerParam=(10, 100), maxRuns=10):
+                 targetAccRate=0.61, targetConfIntProb=0.125, targetConfIntTP=None,
+                 maxNstep=1000, runsPerParam=(10, 100), maxRuns=10):
         r"""!
 
         """
@@ -388,11 +379,14 @@ class LeapfrogTuner(Evolver):
         self.registrar = Registrar(initialLength, initialNstep)
         self.action = action
         self.targetAccRate = targetAccRate
+        self.targetConfIntProb = targetConfIntProb
+        self.targetConfIntTP = targetConfIntTP if targetConfIntTP else targetConfIntProb / 10
+        self.maxNstep = maxNstep
         self.runsPerParam = runsPerParam
         self.maxRuns = maxRuns
         self.recordFname = recordFname
 
-        self._fitter = Fitter()
+        self._fitter = Fitter(maxNstep=maxNstep)
         self._selector = BinarySelector(rng)
         self._pickNextNStep = self._pickNextNStep_search
         self._finished = False
@@ -422,23 +416,14 @@ class LeapfrogTuner(Evolver):
         currentRecord = self.registrar.currentRecord()
 
         if len(currentRecord) >= self.runsPerParam[0]:
-            # confIntProb = currentRecord.confIntProbabilities(TWO_SIGMA_PROB)
-            # confIntTP = currentRecord.confIntTrajPoints(TWO_SIGMA_PROB)
-
             errProb = _errorProbabilities(currentRecord.probabilities, TWO_SIGMA_PROB)
             errTP = _errorTrajPoints(currentRecord.trajPoints, TWO_SIGMA_PROB)
 
-            # log.debug(f"{_intervalLength(confIntProb)}, {_intervalLength(confIntTP)}")
-            # log.debug(f"prob = {currentRecord.probabilities}\n  tp = {currentRecord.trajPoints}")
-            # log.debug(f"errors: {errProb}, {errTP}")
-
-            # if _intervalLength(confIntTP) < TARGET_CONF_INT_TP:
-            if errTP < TARGET_CONF_INT_TP:
+            if errTP < self.targetConfIntTP:
                 log.debug("Stopping because of tp")
                 self._pickNextNStep()
 
-            # elif _intervalLength(confIntProb) < TARGET_CONF_INT_PROB:
-            elif errProb < TARGET_CONF_INT_PROB:
+            elif errProb < self.targetConfIntProb:
                 log.debug("Stopping because of prob")
                 self._pickNextNStep()
 
@@ -534,7 +519,8 @@ class LeapfrogTuner(Evolver):
                     self._enterVerification(floatStep)
                     return
 
-        if nextStep > MAX_NSTEP:
+        if nextStep > self.maxNstep:
+            # TODO
             raise RuntimeError(f"nstep is too large: {nextStep}")
 
         self.registrar.newRecord(self.currentParams()[0], nextStep)
