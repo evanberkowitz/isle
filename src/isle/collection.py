@@ -4,6 +4,7 @@ r"""!\file
 
 from logging import getLogger
 import math
+from copy import deepcopy
 
 
 def hingeRange(start, end, stepSize):
@@ -222,3 +223,15 @@ def subslice(large, small):
     stop = None if small.stop is None \
         else start + math.ceil((small.stop - small.start)/small.step)*step
     return slice(start, stop, step)
+
+def extendListInDict(dictionary, key, values):
+    r"""!
+    Extend a list contained in a dictionary or insert as a new item.
+    """
+
+    try:
+        dictionary[key].extend(values)
+    except KeyError:
+        # Make sure the dict owns the values so a later call to this function
+        # does not accidentally modify the list.
+        dictionary[key] = deepcopy(values)
