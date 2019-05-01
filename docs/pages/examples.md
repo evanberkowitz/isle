@@ -5,6 +5,7 @@ Here are some example script showing how Isle can be used to perform HMC evoluti
 - \subpage fullHMCExample - HMC evolution with thermalization and production with hard coded parameters.
 - \subpage thermalizationExample - Thermalize a configuration controlled through command line arguments.
 - \subpage changeExample - Continue an existing HMC run but swap out the evolver.
+- \subpage tuningExample - Automatically tune a leapfrog integrator for an optimum acceptance rate.
 - \subpage measureExample - Perform measurements on an ensemble of configurations.
 
 All scripts can be found in the directory `docs/examples`.
@@ -52,6 +53,25 @@ and set up the HMC driver.
 
 The following code can be found in `docs/examples/changeEvolver.py`.
 \include changeEvolver.py
+
+
+
+\page tuningExample Automatic Leapfrog Tuning
+
+This example demonstrates how a leapfrog integrator can be automatically tuned using the
+isle.evolver.autotuner.LeapfrogTuner evolver.
+First, a thermalized configuration is produced as in \ref fullHMCExample and \ref thermalizationExample.
+Then, the leapfrog tuner is used to estimate parameters to achieve a 61% acceptance rate.
+Finally, a few configurations are produced using the tuned evolver.
+
+The tuning evolver can not write checkpoints due to a restriction in its implementation.
+Thus continuing a run after tuning is not as easy as in other cases (see for instance \ref changeExample).
+The function `produce` demonstrates how to switch to production given only the output of
+a tuning run, not any of the parameters defined elsewhere in the script.
+Note in particular that the RNG state can not be read from the file.
+
+The following code can be found in `docs/examples/tuning.py`.
+\include tuning.py
 
 
 

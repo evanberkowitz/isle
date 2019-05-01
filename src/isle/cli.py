@@ -721,7 +721,7 @@ def addMeasArgs(parser):
 def addShowArgs(parser):
     """!Add arguments for reporting to parser."""
 
-    reporters = ["overview", "lattice", "correlator"]
+    reporters = ["overview", "lattice", "correlator", "tuning"]
 
     class _ReportAction(argparse.Action):
         """!custom action to parse reporters."""

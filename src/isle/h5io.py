@@ -157,6 +157,26 @@ def loadCheckpoint(h5group, label, evolverManager, action, lattice):
     evolver = evolverManager.load(grp["evolver"], action, lattice, rng)
     return rng, phi, evolver
 
+def loadConfiguration(h5group, trajIdx=-1, path="configuration"):
+    r"""!
+    Load a configuration from HDF5.
+
+    \param h5group Base HDF5 group. Configurations must be located at `h5group[path]`.
+    \param trajIdx Trajectory index of the configuration to load.
+                   This is the number under which the configuration is stored, not a
+                   plain index into the array of all configurations.
+    \param path Path under `h5group` that contains configurations.
+
+    \returns (configuration, action value, trajectory point)
+    """
+
+    configs = loadList(h5group[path])
+    # get proper positive index
+    idx = configs[-1][0]+trajIdx+1 if trajIdx < 0 else trajIdx
+    # get the configuration group with the given index
+    cfgGrp = next(pair[1] for pair in loadList(h5group[path]) if pair[0] == idx)
+    return Vector(cfgGrp["phi"][()]), cfgGrp["action"][()], cfgGrp["trajPoint"][()]
+
 def loadList(h5group, convert=int):
     r"""!
     Load a list of objects from a HDF5 group.

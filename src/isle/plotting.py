@@ -11,7 +11,9 @@ from logging import getLogger
 try:
     import matplotlib as mpl
     import matplotlib.pyplot as plt
-    from matplotlib.ticker import MultipleLocator
+    from matplotlib.ticker import MultipleLocator, MaxNLocator
+    from matplotlib.lines import Line2D
+    from matplotlib.patches import Rectangle
 
 except ImportError:
     getLogger(__name__).error("Cannot import matplotlib, plotting functionality is not available.")
@@ -279,3 +281,62 @@ def plotCorrelators(measState, axP, axH):
     axH.set_yscale("log")
 
     return True
+
+def plotTunerFit(ax, probabilityPoints, trajPointPoints, fitResult, verification):
+    r"""!
+    \todo document
+    """
+
+    x, y, err = zip(*probabilityPoints)
+    ax.errorbar(np.asarray(x)+0.05, y, err, ls="", marker=".", label=r"min(1, $\exp{(dH)}$)")
+    x, y, err = zip(*trajPointPoints)
+    ax.errorbar(np.asarray(x)-0.05, y, err, ls="", marker=".", label="trajPoint")
+
+    if fitResult is not None:
+        x = np.linspace(0, ax.get_xlim()[1]*1.1, 1000)
+        bestFit, otherFits = fitResult.evalOn(x)
+        for y in otherFits:
+            ax.plot(x, y, c="k", alpha=0.5)
+        ax.plot(x, bestFit, c="k")
+
+    if verification:
+        # draw a rectangle just inside of the axes borders
+        ax.add_patch(Rectangle((0.01, 0.01), 0.98, 0.98, linewidth=2, transform=ax.transAxes,
+                               edgecolor="#E3D514", facecolor="none"))
+
+def plotTunerTrace(ax, records):
+    r"""!
+    \todo document
+    """
+
+    axNstep = ax
+    axProbTP = ax.twiny()
+
+    lastYMax = 0
+    axNstep.axhline(-0.5, ls=":", c="k", alpha=0.5)
+    for record in records:
+        if len(record) == 0:
+            continue
+
+        # y values for this record (~ trajectory index)
+        yMax = lastYMax + len(record)
+        y = np.arange(lastYMax, yMax)
+        lastYMax = yMax
+
+        lineProb, = axProbTP.plot(record.probabilities, y, ls="", marker="v", c="C0")
+        lineTP, = axProbTP.plot(record.trajPoints, y, ls="", marker="x", c="C1")
+        lineNstep, = axNstep.plot([record.nstep]*2, (y[0], y[-1]),
+                                  ls="-", marker="", linewidth=2, c="k")
+        axNstep.axhline(yMax-0.5, ls=":", c="k", alpha=0.5)
+
+    axNstep.xaxis.set_major_locator(MaxNLocator(integer=True))
+    axNstep.yaxis.set_major_locator(MaxNLocator(integer=True))
+    axNstep.set_xlabel(r"$N_{\mathrm{MD}}$")
+    axNstep.set_ylabel("trajectory")
+    axProbTP.set_xlabel(r"min(1, $\exp{(dH)}$) | trajPoint")
+
+    # manual legend so that all lines are shown
+    axNstep.legend([lineNstep, lineProb, lineTP],
+                   [r"$N_{\mathrm{MD}}$", r"min(1, $\exp{(dH)}$)", r"trajPoint"],
+                   bbox_to_anchor=(0, -0.08, 1, 0), loc="lower left", mode="expand",
+                   ncol=3, borderaxespad=0, handletextpad=0.05)
