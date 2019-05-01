@@ -163,7 +163,8 @@ def newRun(lattice, params, rng, makeAction, outfile, overwrite, definitions={})
     \param lattice Lattice to run simulation on, passed to `makeAction`.
     \param params Parameters passed to `makeAction`.
     \param rng Random number generator used for all random numbers needed during %HMC evolution.
-    \param makeAction Function to construct an action. Must be self-contained!
+    \param makeAction Function or source code of a function to construct an action.
+                      Must be self-contained!
     \param outfile Name (Path) of the output file. Must not exist unless `overwrite==True`.
     \param overwrite If `False`, nothing in the output file will be erased/overwritten.
                      If `True`, the file is removed and re-initialized, whereby all content is lost.
@@ -177,7 +178,7 @@ def newRun(lattice, params, rng, makeAction, outfile, overwrite, definitions={})
         getLogger(__name__).error("No output file given for HMC driver")
         raise ValueError("No output file")
 
-    makeActionSrc = sourceOfFunction(makeAction)
+    makeActionSrc = makeAction if isinstance(makeAction, str) else sourceOfFunction(makeAction)
     fileio.h5.initializeNewFile(outfile, overwrite, lattice, params, makeActionSrc,
                                 ["/configuration", "/checkpoint"])
 
