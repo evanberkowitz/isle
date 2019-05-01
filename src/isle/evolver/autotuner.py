@@ -546,6 +546,12 @@ class LeapfrogTuner(Evolver):  # pylint: disable=too-many-instance-attributes
     \warning Do not use configurations produced by this evolver to calculate observables!
     This evolver does not produce a Markov Chain as it is not reversible!
 
+    \attention This class does not support saving to / loading from HDF5.
+    This is because the tuner decides when its recording is written to file which does
+    in general not align with checkpoints written by the driver.
+    Thus, it would not be possible to load the state of the tuner exactly at a checkpoint
+    but only the most recently written recording.
+
     <B>Implementation</B><BR>
     Each time the evolve method is called, the configuration is integrated using leapfrog
     and currently selected parameters, trajectory length and number of integration steps ('nstep').
