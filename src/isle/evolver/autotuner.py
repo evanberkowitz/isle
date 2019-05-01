@@ -1007,7 +1007,7 @@ class LeapfrogTuner(Evolver):  # pylint: disable=too-many-instance-attributes
         \param h5group HDF5 group to save to.
         \param manager EvolverManager whose purview to save the evolver in.
         """
-        # TODO
+        raise NotImplementedError("Saving to HDF5 is not supported.")
 
     @classmethod
     def fromH5(cls, h5group, _manager, action, _lattice, rng):
@@ -1020,5 +1020,4 @@ class LeapfrogTuner(Evolver):  # pylint: disable=too-many-instance-attributes
         \param rng Central random number generator for the run.
         \returns A newly constructed leapfrog evolver.
         """
-        # TODO
-        return None
+        raise NotImplementedError("Loading from HDF5 is not supported.")
