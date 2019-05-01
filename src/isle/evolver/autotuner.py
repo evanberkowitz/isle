@@ -8,15 +8,11 @@ is meant to be accessed by users.
 
 from math import sqrt, exp, floor, ceil
 from logging import getLogger
-from itertools import chain
 
 import h5py as h5
 import numpy as np
 from scipy.stats import norm, skewnorm
-from scipy.optimize import least_squares, curve_fit
-
-import matplotlib.pyplot as plt
-import matplotlib.gridspec as gridspec
+from scipy.optimize import curve_fit
 
 from .evolver import Evolver
 from .selector import BinarySelector
