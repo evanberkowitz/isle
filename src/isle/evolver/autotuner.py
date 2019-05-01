@@ -22,7 +22,9 @@ from ..collection import extendListInDict
 from ..h5io import createH5Group, loadList
 
 
+## Probability to be inside the one sigma interval of a gaussian.
 ONE_SIGMA_PROB = 0.682689492
+## Probability to be inside the two sigma interval of a gaussian.
 TWO_SIGMA_PROB = 0.954499736
 
 
