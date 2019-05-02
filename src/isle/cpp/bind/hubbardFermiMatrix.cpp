@@ -8,6 +8,14 @@ using namespace isle;
 
 namespace bind {
     namespace {
+        void bindHoppingSpecific(py::class_<HubbardFermiMatrixDia> &) {
+            // nothing special in this case
+        }
+
+        void bindHoppingSpecific(py::class_<HubbardFermiMatrixExp> &hfmd) {
+            hfmd.def("expKappa", &HubbardFermiMatrixExp::expKappa);
+        }
+
         template <typename HFM>
         void bindHFM(py::module &mod, const char *const name) {
             py::class_<HFM> hfmd{mod, name};
@@ -28,6 +36,7 @@ namespace bind {
                 .def("muTilde", &HFM::muTilde)
                 .def("sigmaKappa", &HFM::sigmaKappa)
                 ;
+            bindHoppingSpecific(hfmd);
 
             mod.def("logdetQ",
                     static_cast<std::complex<double>(*)(const HFM&,
