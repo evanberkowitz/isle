@@ -599,6 +599,7 @@ namespace isle {
     }
 
     namespace {
+#ifndef NDEBUG
         void verifyResultOfSolveM(const HubbardFermiMatrixDia &hfm,
                                   const CDVector &phi,
                                   const Species species,
@@ -614,6 +615,7 @@ namespace isle {
                 }
             }
         }
+#endif
     }
 
     std::vector<CDVector> solveM(const HubbardFermiMatrixDia &hfm,
