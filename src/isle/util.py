@@ -6,10 +6,11 @@ from logging import getLogger
 
 try:
     # use dataclasses if available (Python3.7 or later)
-    from dataclasses import make_dataclass, field, asdict
+    from dataclasses import make_dataclass, field, asdict, replace
     _HAVE_DATACLASSES = True
 except ImportError:
-    # construct poor man's workaround
+# construct poor man's workaround
+    from copy import deepcopy
     _HAVE_DATACLASSES = False
     getLogger(__name__).info("Could not import dataclasses, using a workaround "
                              "for storing parameters")
@@ -146,7 +147,8 @@ def _makeParametersClass(fields):
                               ((key, type(value), field(default=value))
                                for key, value in fields.items()),
                               namespace={"asdict": asdict,
-                                         "tilde": _tilde},
+                                         "tilde": _tilde,
+                                         "replace": replace},
                               frozen=True)
 
     # Use a workaround that lacks almost all of dataclasses features.
@@ -157,6 +159,12 @@ def _makeParametersClass(fields):
 
         def asdict(self):
             return {key: getattr(self, key) for key in self._FIELDS}
+
+        def replace(self, **kwargs):
+            params = deepcopy(self)
+            for key, value in kwargs.items():
+                setattr(params, key, value)
+            return params
 
     # store all fields in class
     for key, value in fields.items():
@@ -187,6 +195,9 @@ def parameters(**kwargs):
             - `nt`: Number of time slices or isle.Lattice.
             - `beta`: Inverse temperature. Read from dataclass attribute 'beta'
                       if argument set to `None` (default).
+    - <B>replace</B>(**kwargs):
+           Works like `dataclasses.replace` but is provided as an instance member
+           for compatibility with the pre Python3.7 workaround.
 
     The new classes are automatically registered with YAML so they can
     be dumped. A loader is registered if yamlio is imported.
