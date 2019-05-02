@@ -6,6 +6,7 @@ Here are some example script showing how Isle can be used to perform HMC evoluti
 - \subpage thermalizationExample - Thermalize a configuration controlled through command line arguments.
 - \subpage changeExample - Continue an existing HMC run but swap out the evolver.
 - \subpage tuningExample - Automatically tune a leapfrog integrator for an optimum acceptance rate.
+- \subpage mpiTuningExample - Automatically tune a leapfrog integrator on multiple MPI ranks.
 - \subpage measureExample - Perform measurements on an ensemble of configurations.
 
 All scripts can be found in the directory `docs/examples`.
@@ -72,6 +73,20 @@ Note in particular that the RNG state can not be read from the file.
 
 The following code can be found in `docs/examples/tuning.py`.
 \include tuning.py
+
+
+
+\page mpiTuningExample Automatic Leapfrog Tuning with MPI
+
+This example extends the capabilities of \ref tuningExample by adding support to MPI.
+Most Isle-related code should be familiar from other examples.
+The script uses mpi4py.futures to dynamically assign ensembles to MPI ranks
+and tune the integrator for each ensemble separately.
+
+See the initial docstring in the code for usage information.
+
+The following code can be found in `docs/examples/mpiTuning.py`.
+\include mpiTuning.py
 
 
 
