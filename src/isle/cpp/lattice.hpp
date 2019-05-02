@@ -31,6 +31,14 @@ namespace isle {
               _hoppingMat(nx, nx), _positions(nx),
               name(name_), comment(comment_) { }
 
+        Lattice(const Lattice &other) = default;
+        ~Lattice() noexcept = default;
+
+        // these don't work because some members are const
+        Lattice &operator=(const Lattice &other) = delete;
+        Lattice(Lattice &&other) = delete;
+        Lattice &operator=(Lattice &&other) = delete;
+
         /// Get the hopping strengths from a given site to all others.
         /**
          * \param site Index of a site (`site < nx()`).
