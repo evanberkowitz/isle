@@ -1,0 +1,15 @@
+!lattice
+name: 'pentagon'
+comment: 'A regular pentagon.'
+nt: 0
+adjacency: [[0,1],[1,2],[2,3],[3,4],[4,0]]
+hopping: [1,1,1,1,1]
+positions: [
+    # A pentagon that rests in the xy-plane, centered on the origin, with vertices at e^{2 pi i k / 5} for integer k.
+    # In other words, five evenly-spaced points on the unit circle.
+    [1.0, 0, 0],
+    [+0.309017,+0.951057, 0],
+    [-0.809017,+0.587785, 0],
+    [-0.809017,-0.587785, 0],
+    [+0.309017,-0.951057, 0],
+]
