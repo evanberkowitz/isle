@@ -611,7 +611,7 @@ namespace isle {
                     std::ostringstream oss;
                     oss << "Check of result of solveM for right hand side " << i
                         << " exceeds tolerance: " << diff << '\n';
-                    getLogger("HubbardFermiMatrixExp").warning(oss.str());
+                    getLogger("HubbardFermiMatrixDia").warning(oss.str());
                 }
             }
         }
