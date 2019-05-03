@@ -606,7 +606,7 @@ namespace isle {
                                   const std::vector<CDVector> &res,
                                   const std::vector<CDVector> &rhs) {
             for (std::size_t i = 0; i < rhs.size(); ++i) {
-                const double diff = blaze::max(blaze::abs((hfm.M(phi, species) * res[i] - rhs[i]) / rhs[i]));
+                const double diff = blaze::max(blaze::abs(hfm.M(phi, species) * res[i] - rhs[i]));
                 if (diff > 1e-8) {
                     std::ostringstream oss;
                     oss << "Check of result of solveM for right hand side " << i
