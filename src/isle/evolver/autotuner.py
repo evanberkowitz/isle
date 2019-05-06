@@ -842,6 +842,7 @@ class LeapfrogTuner(Evolver):  # pylint: disable=too-many-instance-attributes
 
         log = getLogger(__name__)
         floatStep = self._nstepFromFit()
+        self.saveRecording()
         if floatStep is None:
             log.info("Fit unsuccessful in verification")
             self._cancelVerification(self._shiftNstep())
@@ -869,7 +870,6 @@ class LeapfrogTuner(Evolver):  # pylint: disable=too-many-instance-attributes
 
             getLogger(__name__).debug("Checking upper end of interval around floatStep")
             nextFloatStep = self._verificationIntStep(floatStep)
-            self.saveRecording()  # save also fit from above function
 
             if nextFloatStep is not None:
                 self._finalize(nextFloatStep)
@@ -885,7 +885,6 @@ class LeapfrogTuner(Evolver):  # pylint: disable=too-many-instance-attributes
 
             getLogger(__name__).debug("Checking lower end of interval around floatStep")
             nextFloatStep = self._verificationIntStep(floatStep)
-            self.saveRecording()  # save also fit from above function
 
             if nextFloatStep is not None:
                 # run with upper end of interval next
