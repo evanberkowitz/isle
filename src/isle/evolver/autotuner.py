@@ -744,7 +744,7 @@ class LeapfrogTuner(Evolver):  # pylint: disable=too-many-instance-attributes
         Double or half nstep to probe large or small acceptance rates.
         """
 
-        trajPoints = [trajPoint for point (_, trajPoint, _)
+        trajPoints = [trajPoint for (_, trajPoint, _)
                       in self.registrar.gather(length=self.currentParams()["length"])[1]]
         minStep = min(self.registrar.knownNsteps())
         maxStep = max(self.registrar.knownNsteps())
