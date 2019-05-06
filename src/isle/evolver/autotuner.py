@@ -341,6 +341,7 @@ class Registrar:
                 log.info("Skipping record %d, it is empty", idx)
                 break
             log.info("Saving record %d", idx)
+            log.debug("Record %d = %s", idx, record)
             record.save(h5group.create_group(str(idx)))
 
     def _saveFitResults(self, h5group):
