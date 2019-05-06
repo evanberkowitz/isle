@@ -74,6 +74,12 @@ def _confIntProbabilities(probabilities, quantileProb):
 
     mean = np.mean(probabilities)
     err = np.std(probabilities)
+
+    # Sometimes, all probabilities are (almost) identical, just return a small
+    # interval in order not to break later code (norm.interval would return NaN).
+    if err < 1e-6:
+        return mean-1e-6, mean+1e-6
+
     # endpoints of quantileProb confidence interval
     result = norm.interval(quantileProb, loc=mean, scale=err)
     return result[0], result[1]
