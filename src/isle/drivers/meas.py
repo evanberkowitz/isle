@@ -5,6 +5,7 @@ Driver to perform measurements on configurations stored in a file.
 """
 
 from logging import getLogger
+from pathlib import Path
 
 import h5py as h5
 
@@ -238,6 +239,7 @@ def _ensureIsValidOutfile(outfile, lattice, params, makeActionSrc):
         raise ValueError("Output file type no supported by Meas driver. "
                          f"Output file is '{outfile}'")
 
+    outfile = Path(outfile)
     if not outfile.exists():
         # the easy case, just make a new file
         fileio.h5.initializeNewFile(outfile, False, lattice, params, makeActionSrc)
