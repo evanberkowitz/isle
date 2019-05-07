@@ -29,16 +29,14 @@ class ConstStepLeapfrog(Evolver):
         self.rng = rng
         self.selector = BinarySelector(rng)
 
-    def evolve(self, phi, pi, actVal, _trajPoint):
+    def evolve(self, phi, actVal, _trajPoint):
         r"""!
         Run leapfrog integrator.
         \param phi Input configuration.
-        \param pi Input Momentum.
         \param actVal Value of the action at phi.
         \param _trajPoint \e ignored.
         \returns In order:
           - New configuration
-          - New momentum
           - Action evaluated at new configuration
           - Point along trajectory that was selected
         """
@@ -47,8 +45,8 @@ class ConstStepLeapfrog(Evolver):
         phi1, pi1, actVal1 = leapfrog(phi, pi, self.action, self.length, self.nstep)
         trajPoint = self.selector.selectTrajPoint(actVal+np.linalg.norm(pi)**2/2,
                                                   actVal1+np.linalg.norm(pi1)**2/2)
-        return (phi1, pi1, actVal1, trajPoint) if trajPoint == 1 \
-            else (phi, pi, actVal, trajPoint)
+        return (phi1, actVal1, trajPoint) if trajPoint == 1 \
+            else (phi, actVal, trajPoint)
 
     def save(self, h5group, manager):
         r"""!
@@ -113,16 +111,14 @@ class LinearStepLeapfrog(Evolver):
             next(self._lengthIter)
             next(self._nstepIter)
 
-    def evolve(self, phi, pi, actVal, _trajPoint):
+    def evolve(self, phi, actVal, _trajPoint):
         r"""!
         Run leapfrog integrator.
         \param phi Input configuration.
-        \param pi Input Momentum.
         \param actVal Value of the action at phi.
         \param _trajPoint \e ignored.
         \returns In order:
           - New configuration
-          - New momentum
           - Action evaluated at new configuration
           - Point along trajectory that was selected
         """
@@ -133,8 +129,8 @@ class LinearStepLeapfrog(Evolver):
                                       next(self._lengthIter), int(next(self._nstepIter)))
         trajPoint = self.selector.selectTrajPoint(actVal+np.linalg.norm(pi)**2/2,
                                                   actVal1+np.linalg.norm(pi1)**2/2)
-        return (phi1, pi1, actVal1, trajPoint) if trajPoint == 1 \
-            else (phi, pi, actVal, trajPoint)
+        return (phi1, actVal1, trajPoint) if trajPoint == 1 \
+            else (phi, actVal, trajPoint)
 
     def save(self, h5group, manager):
         r"""!

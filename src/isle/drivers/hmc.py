@@ -70,17 +70,16 @@ class HMC:
 
         for _ in _iterTrajectories(ntr):
             # get initial conditions for evolver
-            startPhi, startPi, startActVal = phi, Vector(self.rng.normal(0, 1, len(phi))+0j), actVal
+            startPhi, startActVal = phi, actVal
 
             try:
                 # get new fields
-                phi, _, actVal, trajPoint = evolver.evolve(startPhi, startPi, startActVal, trajPoint)
+                phi, actVal, trajPoint = evolver.evolve(startPhi, startActVal, trajPoint)
             except StopIteration:
                 # the evolver wants to stop,
                 # don't advance or save because no new config was produced
                 break
 
-            # TODO consistency checks
             # TODO inline meas
 
             # advance before saving because phi is a new configuration (no 0 is handled above)

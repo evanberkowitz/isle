@@ -12,16 +12,14 @@ class Evolver(metaclass=ABCMeta):
     """
 
     @abstractmethod
-    def evolve(self, phi, pi, actVal, trajPoint):
+    def evolve(self, phi, actVal, trajPoint):
         r"""!
         Evolve a configuration and momentum.
         \param phi Input configuration.
-        \param pi Input Momentum.
         \param actVal Value of the action at phi.
         \param trajPoint 0 if previous trajectory was rejected, 1 if it was accepted.
         \returns In order:
           - New configuration
-          - New momentum
           - Action evaluated at new configuration
           - Point along trajectory that was selected
         """

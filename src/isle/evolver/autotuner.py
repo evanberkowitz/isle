@@ -668,16 +668,14 @@ class LeapfrogTuner(Evolver):  # pylint: disable=too-many-instance-attributes
         ## Final tuned parameters, None if incomplete or unsuccessful.
         self._tunedParameters = None
 
-    def evolve(self, phi, pi, actVal, trajPoint):
+    def evolve(self, phi, actVal, trajPoint):
         r"""!
         Run one step of leapfrog integration and tune parameters.
         \param phi Input configuration.
-        \param pi Input Momentum.
         \param actVal Value of the action at phi.
         \param trajPoint 0 if previous trajectory was rejected, 1 if it was accepted.
         \returns In order:
           - New configuration
-          - New momentum
           - Action evaluated at new configuration
           - Point along trajectory that was selected
         """
@@ -715,7 +713,7 @@ class LeapfrogTuner(Evolver):  # pylint: disable=too-many-instance-attributes
             log.error("Tuning was unsuccessful within the given maximum number of runs")
             self._finalize(None)
 
-        return phi, pi, actVal, trajPoint
+        return phi, actVal, trajPoint
 
     def currentParams(self):
         r"""!

@@ -44,16 +44,14 @@ class TwoPiJumps(Evolver):
 
         self._action = _HubbardActionShortcut(action)
 
-    def evolve(self, phi, pi, actVal, trajPoint):
+    def evolve(self, phi, actVal, trajPoint):
         r"""!
         Evolve a configuration, momentum remains unchanged.
         \param phi Input configuration.
-        \param pi Input Momentum.
         \param actVal Value of the action at phi.
         \param trajPoint \e ignored.
         \returns In order:
           - New configuration
-          - New momentum
           - Action evaluated at new configuration
           - 0 if no jump was accepted, 1 if at least one was accepted (across all batches).
         """
@@ -79,7 +77,7 @@ class TwoPiJumps(Evolver):
             # else:
             #     nothing to do, variables are already set up
 
-        return phi, pi, actVal, trajPoint
+        return phi, actVal, trajPoint
 
     def save(self, h5group, _manager):
         r"""!
@@ -129,16 +127,14 @@ class UniformJump(Evolver):
         # absolute value of shift
         self._absShift = 2*np.pi/lattice.nt()
 
-    def evolve(self, phi, pi, actVal, trajPoint):
+    def evolve(self, phi, actVal, trajPoint):
         r"""!
         Evolve a configuration, momentum remains unchanged.
         \param phi Input configuration.
-        \param pi Input Momentum.
         \param actVal Value of the action at phi.
         \param trajPoint \e ignored.
         \returns In order:
           - New configuration
-          - New momentum
           - Action evaluated at new configuration
           - 0 if no jump was accepted, 1 if at least one was accepted (across all batches).
         """
@@ -153,7 +149,7 @@ class UniformJump(Evolver):
         else:
             trajPoint = 0
 
-        return phi, pi, actVal, trajPoint
+        return phi, actVal, trajPoint
 
     def save(self, _h5group, _manager):
         r"""!

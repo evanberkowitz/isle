@@ -77,16 +77,14 @@ class Alternator(Evolver):
                 return evolver
         return None
 
-    def evolve(self, phi, pi, actVal, trajPoint):
+    def evolve(self, phi, actVal, trajPoint):
         r"""!
         Delegate to a sub evolver next in line.
         \param phi Input configuration.
-        \param pi Input Momentum.
         \param actVal Value of the action at phi.
         \param trajPoint 0 if previous trajectory was rejected, 1 if it was accepted.
         \returns In order:
           - New configuration
-          - New momentum
           - Action evaluated on new configuration
           - Point along trajectory that was selected
         """
@@ -94,7 +92,7 @@ class Alternator(Evolver):
         subEvolver = self._pickCurrentEvolver()
         self._advance()
 
-        return subEvolver.evolve(phi, pi, actVal, trajPoint)
+        return subEvolver.evolve(phi, actVal, trajPoint)
 
     def save(self, h5group, manager):
         r"""!
