@@ -17,7 +17,7 @@ from scipy.optimize import curve_fit
 from .evolver import Evolver
 from .selector import BinarySelector
 from .leapfrog import ConstStepLeapfrog
-from .. import leapfrog
+from .. import Vector, leapfrog
 from ..collection import extendListInDict
 from ..h5io import createH5Group, loadList
 
@@ -640,6 +640,8 @@ class LeapfrogTuner(Evolver):  # pylint: disable=too-many-instance-attributes
         self.registrar = Registrar(initialLength, initialNstep)
         ## Action to integrate over. (*do not change!*)
         self.action = action
+        ## Random number generator for leapfrog evolution.
+        self.rng = rng
         ## Name of an HDF5 file to write the recording to.
         self.recordFname = recordFname
         ## Targeted acceptance rate. (*do not change!*)
@@ -684,7 +686,7 @@ class LeapfrogTuner(Evolver):  # pylint: disable=too-many-instance-attributes
         if self._finished:
             raise StopIteration()
 
-        phi, pi, actVal, trajPoint = self._doEvolve(phi, pi, actVal, trajPoint)
+        phi, actVal, trajPoint = self._doEvolve(phi, actVal, trajPoint)
 
         log = getLogger("atune")
         currentRecord = self.registrar.currentRecord()
@@ -722,12 +724,13 @@ class LeapfrogTuner(Evolver):  # pylint: disable=too-many-instance-attributes
         record = self.registrar.currentRecord()
         return {"length": record.length, "nstep": record.nstep}
 
-    def _doEvolve(self, phi0, pi0, actVal0, _trajPoint0):
+    def _doEvolve(self, phi0, actVal0, _trajPoint0):
         r"""!
         Do the leapfrog integration and record probability and trajectory point.
         """
 
         params = self.currentParams()
+        pi0 = Vector(self.rng.normal(0, 1, len(phi0))+0j)
         phi1, pi1, actVal1 = leapfrog(phi0, pi0, self.action, params["length"], params["nstep"])
         energy0 = actVal0 + pi0@pi0/2
         energy1 = actVal1 + pi1@pi1/2
@@ -736,8 +739,8 @@ class LeapfrogTuner(Evolver):  # pylint: disable=too-many-instance-attributes
         self.registrar.currentRecord().add(min(1, exp(np.real(energy0 - energy1))),
                                            trajPoint1)
 
-        return (phi1, pi1, actVal1, trajPoint1) if trajPoint1 == 1 \
-            else (phi0, pi0, actVal0, trajPoint1)
+        return (phi1, actVal1, trajPoint1) if trajPoint1 == 1 \
+            else (phi0, actVal0, trajPoint1)
 
     def _shiftNstep(self):
         r"""!
