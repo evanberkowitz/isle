@@ -7,7 +7,7 @@ import numpy as np
 
 from .evolver import Evolver
 from .selector import BinarySelector
-from .. import leapfrog
+from .. import Vector, leapfrog
 from ..collection import hingeRange
 
 
@@ -21,11 +21,12 @@ class ConstStepLeapfrog(Evolver):
         \param action Instance of isle.Action to use for molecular dynamics.
         \param length Length of the MD trajectory.
         \param nstep Number of MD steps per trajectory.
-        \param rng Central random number generator for the run. Used for accept/reject.
+        \param rng Central random number generator for the run.
         """
         self.action = action
         self.length = length
         self.nstep = nstep
+        self.rng = rng
         self.selector = BinarySelector(rng)
 
     def evolve(self, phi, pi, actVal, _trajPoint):
@@ -42,6 +43,7 @@ class ConstStepLeapfrog(Evolver):
           - Point along trajectory that was selected
         """
 
+        pi = Vector(self.rng.normal(0, 1, len(phi))+0j)
         phi1, pi1, actVal1 = leapfrog(phi, pi, self.action, self.length, self.nstep)
         trajPoint = self.selector.selectTrajPoint(actVal+np.linalg.norm(pi)**2/2,
                                                   actVal1+np.linalg.norm(pi1)**2/2)
@@ -95,6 +97,7 @@ class LinearStepLeapfrog(Evolver):
         self.lengthRange = lengthRange
         self.nstepRange = nstepRange
         self.ninterp = ninterp
+        self.rng = rng
         self.selector = BinarySelector(rng)
 
         self._lengthIter = hingeRange(*lengthRange, (lengthRange[1]-lengthRange[0])/ninterp)
@@ -125,6 +128,7 @@ class LinearStepLeapfrog(Evolver):
         """
         self._current += 1
 
+        pi = Vector(self.rng.normal(0, 1, len(phi))+0j)
         phi1, pi1, actVal1 = leapfrog(phi, pi, self.action,
                                       next(self._lengthIter), int(next(self._nstepIter)))
         trajPoint = self.selector.selectTrajPoint(actVal+np.linalg.norm(pi)**2/2,
