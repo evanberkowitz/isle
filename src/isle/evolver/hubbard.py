@@ -54,6 +54,8 @@ class TwoPiJumps(Evolver):
           - New configuration
           - Action evaluated at new configuration
           - 0 if no jump was accepted, 1 if at least one was accepted (across all batches).
+          - `None` (Weights for re-weighting for new configuration, not including the action.
+            No special weights here)
         """
 
         # nothing accepted yet
@@ -77,7 +79,7 @@ class TwoPiJumps(Evolver):
             # else:
             #     nothing to do, variables are already set up
 
-        return phi, actVal, trajPoint
+        return phi, actVal, trajPoint, None
 
     def save(self, h5group, _manager):
         r"""!
@@ -137,6 +139,8 @@ class UniformJump(Evolver):
           - New configuration
           - Action evaluated at new configuration
           - 0 if no jump was accepted, 1 if at least one was accepted (across all batches).
+          - `None` (Weights for re-weighting for new configuration, not including the action.
+            No special weights here)
         """
 
         shift = self.rng.choice((-1, +1)) * self._absShift
@@ -149,7 +153,7 @@ class UniformJump(Evolver):
         else:
             trajPoint = 0
 
-        return phi, actVal, trajPoint
+        return phi, actVal, trajPoint, None
 
     def save(self, _h5group, _manager):
         r"""!

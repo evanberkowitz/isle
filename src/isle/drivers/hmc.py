@@ -74,7 +74,7 @@ class HMC:
 
             try:
                 # get new fields
-                phi, actVal, trajPoint = evolver.evolve(startPhi, startActVal, trajPoint)
+                phi, actVal, trajPoint, weights = evolver.evolve(startPhi, startActVal, trajPoint)
             except StopIteration:
                 # the evolver wants to stop,
                 # don't advance or save because no new config was produced

@@ -39,14 +39,16 @@ class ConstStepLeapfrog(Evolver):
           - New configuration
           - Action evaluated at new configuration
           - Point along trajectory that was selected
+          - Weights for re-weighting for new configuration, not including the action.
+            `dict` or `None`.
         """
 
         pi = Vector(self.rng.normal(0, 1, len(phi))+0j)
         phi1, pi1, actVal1 = leapfrog(phi, pi, self.action, self.length, self.nstep)
         trajPoint = self.selector.selectTrajPoint(actVal+np.linalg.norm(pi)**2/2,
                                                   actVal1+np.linalg.norm(pi1)**2/2)
-        return (phi1, actVal1, trajPoint) if trajPoint == 1 \
-            else (phi, actVal, trajPoint)
+        return (phi1, actVal1, trajPoint, None) if trajPoint == 1 \
+            else (phi, actVal, trajPoint, None)
 
     def save(self, h5group, manager):
         r"""!
@@ -121,6 +123,8 @@ class LinearStepLeapfrog(Evolver):
           - New configuration
           - Action evaluated at new configuration
           - Point along trajectory that was selected
+          - Weights for re-weighting for new configuration, not including the action.
+            `dict` or `None`.
         """
         self._current += 1
 
@@ -129,8 +133,8 @@ class LinearStepLeapfrog(Evolver):
                                       next(self._lengthIter), int(next(self._nstepIter)))
         trajPoint = self.selector.selectTrajPoint(actVal+np.linalg.norm(pi)**2/2,
                                                   actVal1+np.linalg.norm(pi1)**2/2)
-        return (phi1, actVal1, trajPoint) if trajPoint == 1 \
-            else (phi, actVal, trajPoint)
+        return (phi1, actVal1, trajPoint, None) if trajPoint == 1 \
+            else (phi, actVal, trajPoint, None)
 
     def save(self, h5group, manager):
         r"""!

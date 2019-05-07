@@ -678,13 +678,15 @@ class LeapfrogTuner(Evolver):  # pylint: disable=too-many-instance-attributes
           - New configuration
           - Action evaluated at new configuration
           - Point along trajectory that was selected
+          - Weights for re-weighting for new configuration, not including the action.
+            `dict` or `None`.
         """
 
         # do not evolve any more, signal the driver to stop
         if self._finished:
             raise StopIteration()
 
-        phi, actVal, trajPoint = self._doEvolve(phi, actVal, trajPoint)
+        phi, actVal, trajPoint, weights = self._doEvolve(phi, actVal, trajPoint)
 
         log = getLogger("atune")
         currentRecord = self.registrar.currentRecord()
@@ -713,7 +715,7 @@ class LeapfrogTuner(Evolver):  # pylint: disable=too-many-instance-attributes
             log.error("Tuning was unsuccessful within the given maximum number of runs")
             self._finalize(None)
 
-        return phi, actVal, trajPoint
+        return phi, actVal, trajPoint, weights
 
     def currentParams(self):
         r"""!
@@ -737,8 +739,8 @@ class LeapfrogTuner(Evolver):  # pylint: disable=too-many-instance-attributes
         self.registrar.currentRecord().add(min(1, exp(np.real(energy0 - energy1))),
                                            trajPoint1)
 
-        return (phi1, actVal1, trajPoint1) if trajPoint1 == 1 \
-            else (phi0, actVal0, trajPoint1)
+        return (phi1, actVal1, trajPoint1, None) if trajPoint1 == 1 \
+            else (phi0, actVal0, trajPoint1, None)
 
     def _shiftNstep(self):
         r"""!

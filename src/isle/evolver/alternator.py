@@ -87,6 +87,8 @@ class Alternator(Evolver):
           - New configuration
           - Action evaluated on new configuration
           - Point along trajectory that was selected
+          - Weights for re-weighting for new configuration, not including the action.
+            `dict` or `None`.
         """
 
         subEvolver = self._pickCurrentEvolver()

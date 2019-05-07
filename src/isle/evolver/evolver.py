@@ -22,6 +22,8 @@ class Evolver(metaclass=ABCMeta):
           - New configuration
           - Action evaluated at new configuration
           - Point along trajectory that was selected
+          - Weights for re-weighting for new configuration, not including the action.
+            `dict` or `None`.
         """
 
     @abstractmethod
