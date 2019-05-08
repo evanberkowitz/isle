@@ -30,6 +30,19 @@ def createH5Group(base, name):
     # does not exists yet
     return base.create_group(name)
 
+def writeDict(h5group, dictionary):
+    """!
+    Write a `dict` into an HDF5 group by storing each dict element as a dataset.
+    """
+    for key, value in dictionary.items():
+        h5group[key] = value
+
+def loadDict(h5group):
+    """!
+    Load all datasets from an HDF5 group into a dictionary.
+    """
+    return {key: dset[()] for key, dset in h5group.items()}
+
 def writeMetadata(fname, lattice, params, makeActionSrc):
     """!
     Write metadata to HDF5 file.
@@ -90,7 +103,7 @@ def initializeNewFile(fname, overwrite, lattice, params, makeActionSrc, extraGro
 
     writeMetadata(fname, lattice, params, makeActionSrc)
 
-def writeTrajectory(h5group, label, phi, actVal, trajPoint):
+def writeTrajectory(h5group, label, phi, actVal, trajPoint, weights):
     r"""!
     Write a trajectory (endpoint) to a HDF5 group.
     Creates a new group with name 'label' and stores
@@ -104,6 +117,8 @@ def writeTrajectory(h5group, label, phi, actVal, trajPoint):
     \param trajPoint Point on the trajectory that was accepted.
                      `trajPoint==0` is the start point and values `>0` or `<0` are
                      `trajPoint` MD steps after or before the start point.
+    \param weights Weights for re-weighting for configuration `phi`, not including the action.
+                     `dict` or `None`.
 
     \returns The newly created HDF5 group containing the trajectory.
     """
@@ -112,6 +127,9 @@ def writeTrajectory(h5group, label, phi, actVal, trajPoint):
     grp["phi"] = phi
     grp["action"] = actVal
     grp["trajPoint"] = trajPoint
+    if weights:
+        writeDict(grp["weights"], weights)
+
     return grp
 
 def writeCheckpoint(h5group, label, rng, trajGrpName, evolver, evolverManager):
@@ -175,7 +193,13 @@ def loadConfiguration(h5group, trajIdx=-1, path="configuration"):
     idx = configs[-1][0]+trajIdx+1 if trajIdx < 0 else trajIdx
     # get the configuration group with the given index
     cfgGrp = next(pair[1] for pair in loadList(h5group[path]) if pair[0] == idx)
-    return Vector(cfgGrp["phi"][()]), cfgGrp["action"][()], cfgGrp["trajPoint"][()]
+    # load weights if present
+    try:
+        weights = loadDict(cfgGrp["weights"])
+    except KeyError:
+        weights = None
+
+    return Vector(cfgGrp["phi"][()]), cfgGrp["action"][()], cfgGrp["trajPoint"][()], weights
 
 def loadList(h5group, convert=int):
     r"""!

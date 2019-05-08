@@ -23,7 +23,7 @@ class HMC:
     """
 
     def __init__(self, lattice, params, rng, action, outfname, startIdx,
-                 definitions={}, propManager=None, new=False):
+                 definitions={}, propManager=None):
         """!
         Construct with given parameters.
         """
@@ -37,7 +37,6 @@ class HMC:
         self._trajIdx = startIdx
         self._propManager = propManager if propManager \
             else EvolverManager(outfname, definitions=definitions)
-        self._new = new
 
     def __call__(self, phi, evolver, ntr, saveFreq, checkpointFreq):
         r"""!
@@ -64,10 +63,6 @@ class HMC:
         trajPoint = 1  # point of last trajectory that was selected
         actVal = self.action.eval(phi)  # running action (without pi)
 
-        if self._new:
-            self._saveConditionally(phi, actVal, trajPoint, evolver, saveFreq, checkpointFreq)
-            self._new = False
-
         for _ in _iterTrajectories(ntr):
             # get initial conditions for evolver
             startPhi, startActVal = phi, actVal
@@ -84,24 +79,25 @@ class HMC:
 
             # advance before saving because phi is a new configuration (no 0 is handled above)
             self.advance()
-            self._saveConditionally(phi, actVal, trajPoint, evolver, saveFreq, checkpointFreq)
+            self._saveConditionally(phi, actVal, trajPoint, weights,
+                                    evolver, saveFreq, checkpointFreq)
 
         return phi, actVal, trajPoint
 
-    def saveFieldAndCheckpoint(self, phi, actVal, trajPoint, evolver):
+    def saveFieldAndCheckpoint(self, phi, actVal, trajPoint, weights, evolver):
         """!
         Write a trajectory (endpoint) and checkpoint to file.
         """
         with h5.File(self.outfname, "a") as outf:
-            cfgGrp = self._writeTrajectory(outf, phi, actVal, trajPoint)
+            cfgGrp = self._writeTrajectory(outf, phi, actVal, trajPoint, weights)
             self._writeCheckpoint(outf, cfgGrp, evolver)
 
-    def save(self, phi, actVal, trajPoint):
+    def save(self, phi, actVal, trajPoint, weights):
         """!
         Write a trajectory (endpoint) to file.
         """
         with h5.File(self.outfname, "a") as outf:
-            self._writeTrajectory(outf, phi, actVal, trajPoint)
+            self._writeTrajectory(outf, phi, actVal, trajPoint, weights)
 
     def advance(self, amount=1):
         """!
@@ -115,21 +111,22 @@ class HMC:
         """
         self._trajIdx = idx
 
-    def _saveConditionally(self, phi, actVal, trajPoint, evolver, saveFreq, checkpointFreq):
+    def _saveConditionally(self, phi, actVal, trajPoint, weights,
+                           evolver, saveFreq, checkpointFreq):
         """!Save the trajectory and checkpoint if frequencies permit."""
         if saveFreq != 0 and self._trajIdx % saveFreq == 0:
             if checkpointFreq != 0 and self._trajIdx % checkpointFreq == 0:
-                self.saveFieldAndCheckpoint(phi, actVal, trajPoint, evolver)
+                self.saveFieldAndCheckpoint(phi, actVal, trajPoint, weights, evolver)
             else:
-                self.save(phi, actVal, trajPoint)
+                self.save(phi, actVal, trajPoint, weights)
 
-    def _writeTrajectory(self, h5file, phi, actVal, trajPoint):
+    def _writeTrajectory(self, h5file, phi, actVal, trajPoint, weights):
         """!
         Write a trajectory (endpoint) to a HDF5 group.
         """
         try:
             return fileio.h5.writeTrajectory(h5file["configuration"], self._trajIdx,
-                                             phi, actVal, trajPoint)
+                                             phi, actVal, trajPoint, weights)
         except (ValueError, RuntimeError) as err:
             if "name already exists" in err.args[0]:
                 getLogger(__name__).error("Cannot write trajectory %d to file %s."
@@ -182,7 +179,7 @@ def newRun(lattice, params, rng, makeAction, outfile, overwrite, definitions={})
                                 ["/configuration", "/checkpoint"])
 
     return HMC(lattice, params, rng, callFunctionFromSource(makeActionSrc, lattice, params),
-               outfile, 0, definitions, new=True)
+               outfile, 0, definitions)
 
 
 def continueRun(infile, outfile, startIdx, overwrite, definitions={}):
