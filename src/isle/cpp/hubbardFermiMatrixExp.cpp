@@ -70,11 +70,21 @@ namespace isle {
                                                  const std::int8_t sigmaKappa)
         : HubbardFermiMatrixExp{lat.hopping()*beta/lat.nt(), muTilde, sigmaKappa} { }
 
-    const DMatrix &HubbardFermiMatrixExp::expKappa(const Species species) const {
-        if (species == Species::PARTICLE)
-            return _expKappap;
-        else
-            return _expKappah;
+    const DMatrix &HubbardFermiMatrixExp::expKappa(const Species species, const bool inv) const {
+        switch (species) {
+        case Species::PARTICLE:
+            if (inv) {
+                return _expKappapInv;
+            } else {
+                return _expKappap;
+            }
+        case Species::HOLE:
+            if (inv) {
+                return _expKappahInv;
+            } else {
+                return _expKappah;
+            }
+        }
     }
 
     void HubbardFermiMatrixExp::K(DSparseMatrix &k, const Species UNUSED(species)) const {
@@ -158,7 +168,8 @@ namespace isle {
         if (_sigmaKappa == -1)  // the exponentials are ivnerses of each other
             return 2*IdMatrix<double>(nx());
         else
-            return IdMatrix<double>(nx()) + expKappa(Species::PARTICLE)*expKappa(Species::HOLE);
+            return IdMatrix<double>(nx()) \
+                + expKappa(Species::PARTICLE, false)*expKappa(Species::HOLE, false);
     }
 
     void HubbardFermiMatrixExp::Tplus(CDMatrix &T,

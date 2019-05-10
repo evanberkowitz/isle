@@ -69,7 +69,7 @@ namespace isle {
          * \returns \f$\exp(-\tilde{\kappa} + \tilde{\mu})\f$ for particles
          *          and \f$\exp(-\sigma_{\tilde{\kappa}}\tilde{\kappa} - \tilde{\mu})\f$ for holes.
          */
-        const DMatrix &expKappa(const Species species) const;
+        const DMatrix &expKappa(const Species species, const bool inv) const;
 
         /// Store the diagonal block K of matrix M in the parameter.
         /**
@@ -246,14 +246,18 @@ namespace isle {
         };
 
     private:
-        DSparseMatrix _kappa;  ///< Hopping matrix.
+        DSparseMatrix _kappa;  ///< Hopping matrix (tilde).
         double _mu;  ///< Chemical potential.
         std::int8_t _sigmaKappa;  ///< Sign of kappa in M^dag.
 
-        /// exp(kappaTilde) for particles.
+        /// exp(-kappaTilde+muTilde) for particles.
         DMatrix _expKappap;
-        /// exp(sigmaKappa*kappaTilde) for holes.
+        /// exp(kappaTilde-muTilde) for particles.
+        DMatrix _expKappapInv;
+        /// exp(-sigmaKappa*kappaTilde-muTilde) for holes.
         DMatrix _expKappah;
+        /// exp(sigmaKappa*kappaTilde+muTilde) for holes.
+        DMatrix _expKappahInv;
     };
 
 
