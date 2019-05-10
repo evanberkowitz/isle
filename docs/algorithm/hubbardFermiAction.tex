@@ -216,17 +216,17 @@ Hence the determinant is
 \end{align}
 It is possible to move the inverse to $F$ by factoring in one $K$ and factoring out one $F$ and iterating:
 \begin{align}
-  \det M &= {(\det\,K)}^{N_t-1} \det F_{N_t-1}^{-1} \det(F_{N_t-1} K + K^{-1} F_{N_t-2} \cdots K^{-1}F_{1}K^{-1} F_{0})\\
-         &= {(\det\,K)}^{N_t-2} \det (F_{N_t-1}^{-1} F_{N_t-2}^{-1}) \det(F_{N_t-2} K F_{N_t-1} K + K^{-1} F_{N_t-3} \cdots K^{-1} F_{0})\\
-         &= \Big(\prod_{t=0}^{N_t-1} \det F_{t}^{-1}\Big) \det(1 + F_0^{-1} K F_1^{-1} K \cdots F_{N_t-2}^{-1} K F_{N_t-1}^{-1} K)\\
-         &= e^{-\i \Phi} \det(1 + A^{-1}),\label{eq:det_M_1}
+  \det M &= {(\det\,K)}^{N_t-1} \det F_{N_t-1} \det(F_{N_t-1}^{-1} K + K^{-1} F_{N_t-2} \cdots K^{-1}F_{1}K^{-1} F_{0})\\
+         &= {(\det\,K)}^{N_t-2} \det (F_{N_t-1} F_{N_t-2}) \det(F_{N_t-2}^{-1} K F_{N_t-1}^{-1} K + K^{-1} F_{N_t-3} \cdots K^{-1} F_{0})\\
+         &= \Big(\prod_{t=0}^{N_t-1} \det F_{t}\Big) \det(1 + F_0^{-1} K F_1^{-1} K \cdots F_{N_t-2}^{-1} K F_{N_t-1}^{-1} K)\\
+         &= e^{\i \Phi} \det(1 + A^{-1}),\label{eq:det_M_1}
 \end{align}
 where $\Phi \equiv \sum_{x,t} \phi_{x,t}$.
 Apply the logarithm to~\eqref{eq:det_M_1} to get the final result:
 \begin{resultbox}
   \vspace{-\baselineskip}
   \begin{align}
-    \log \det M &= -\i \Phi  + \log \det (1 + A^{-1}),\label{eq:det_M}\\
+    \log \det M &= \i \Phi  + \log \det (1 + A^{-1}),\label{eq:det_M}\\
     A^{-1} &\equiv F_0^{-1}K F_1^{-1}K \cdots F_{N_t-1}^{-1}K.\label{eq:def_Ainv}
   \end{align}
 \end{resultbox}
@@ -247,14 +247,25 @@ Applying them to~\eqref{eq:det_M_2} gives
 \begin{resultbox}
   \vspace{-\baselineskip}
   \begin{align}
-    \log \det \hat{M} &= \log \det (1 + \hat{A}),\label{eq:det_M_exp}\\
+    \log \det \hat{M}_p &= \log \det (1 + \hat{A}),\label{eq:det_M_exp}\\
     \hat{A} &\equiv \hat{F}_{N_t-1} \hat{F}_{N_t-2} \cdots \hat{F}_{1} \hat{F}_{0}.\label{eq:def_B}
   \end{align}
 \end{resultbox}
 
+\noindent
+Numerical experiments have shown that using equation~\eqref{eq:det_M_exp} can be unstable for holes and large values of $\beta$.
+For this reason, the hole determinant should be calculated using the following, which is based on~\eqref{eq:det_M_1} with appropriate substitutions for the exponential discretization:
+\begin{resultbox}
+  \vspace{-\baselineskip}
+  \begin{align}
+    \log \det \hat{M}_h &= -\i \Phi  - N_t \log \det e^{\sigma_{\tilde{\kappa}}\kappa+\mu} + \log \det (1 + \hat{A}^{-1}),\label{eq:det_M_exp_h}\\
+    \hat{A}^{-1} &\equiv \hat{F}_0^{-1} \hat{F}_1^{-1} \cdots \hat{F}_{N_t-1}^{-1}
+  \end{align}
+\end{resultbox}
+
+
 \subsection{Force}
 
-% TODO can be done using the new form of the action to get directly to the "result" in terms of A^-1
 The fermionic force at spacetime point $\mu\tau$ is given by
 \begin{align}
   {(\dot{\pi}_{\text{ferm}})}_{\mu\tau} = -\dpd{H_{\text{ferm}}}{\phi_{\mu\tau}} = -\dpd{S_\text{ferm}}{\phi_{\mu\tau}} =  \dpd{}{\phi_{\mu\tau}} \Big[\log \det M(\phi, \tilde{\kappa}, \tilde{\mu}) + \log \det M(-\phi, \sigma_{\tilde{\kappa}}\tilde{\kappa}, -\tilde{\mu})\Big].
