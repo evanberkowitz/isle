@@ -24,11 +24,22 @@ namespace isle {
         auto computeExponential(const DSparseMatrix &kappa,
                                 const double mu,
                                 const std::int8_t sigmaKappa,
-                                const Species species) {
-            if (species == Species::PARTICLE)
-                return expmSym(-kappa + mu*IdMatrix<double>(kappa.rows()));
-            else
-                return expmSym(-sigmaKappa*kappa - mu*IdMatrix<double>(kappa.rows()));
+                                const Species species,
+                                const bool inv) {
+            switch (species) {
+            case Species::PARTICLE:
+                if (inv) {
+                    return expmSym(kappa - mu*IdMatrix<double>(kappa.rows()));
+                } else {
+                    return expmSym(-kappa + mu*IdMatrix<double>(kappa.rows()));
+                }
+            case Species::HOLE:
+                if (inv) {
+                    return expmSym(sigmaKappa*kappa + mu*IdMatrix<double>(kappa.rows()));
+                } else {
+                    return expmSym(-sigmaKappa*kappa - mu*IdMatrix<double>(kappa.rows()));
+                }
+            }
         }
     }
 
@@ -40,8 +51,10 @@ namespace isle {
                                                  const double muTilde,
                                                  const std::int8_t sigmaKappa)
         : _kappa{kappaTilde}, _mu{muTilde}, _sigmaKappa{sigmaKappa},
-          _expKappap{computeExponential(kappaTilde, muTilde, sigmaKappa, Species::PARTICLE)},
-          _expKappah{computeExponential(kappaTilde, muTilde, sigmaKappa, Species::HOLE)}
+          _expKappap{computeExponential(kappaTilde, muTilde, sigmaKappa, Species::PARTICLE, false)},
+          _expKappapInv{computeExponential(kappaTilde, muTilde, sigmaKappa, Species::PARTICLE, true)},
+          _expKappah{computeExponential(kappaTilde, muTilde, sigmaKappa, Species::HOLE, false)},
+          _expKappahInv{computeExponential(kappaTilde, muTilde, sigmaKappa, Species::HOLE, true)}
     {
         if (kappaTilde.rows() != kappaTilde.columns())
             throw std::invalid_argument("Hopping matrix is not square.");
@@ -204,14 +217,18 @@ namespace isle {
 
     void HubbardFermiMatrixExp::updateKappaTilde(const SparseMatrix<double> &kappaTilde) {
         _kappa = kappaTilde;
-        _expKappap = computeExponential(kappaTilde, _mu, _sigmaKappa, Species::PARTICLE);
-        _expKappah = computeExponential(kappaTilde, _mu, _sigmaKappa, Species::HOLE);
+        _expKappap = computeExponential(kappaTilde, _mu, _sigmaKappa, Species::PARTICLE, false);
+        _expKappapInv = computeExponential(kappaTilde, _mu, _sigmaKappa, Species::PARTICLE, true);
+        _expKappah = computeExponential(kappaTilde, _mu, _sigmaKappa, Species::HOLE, false);
+        _expKappahInv = computeExponential(kappaTilde, _mu, _sigmaKappa, Species::HOLE, true);
     }
 
     void HubbardFermiMatrixExp::updateMuTilde(const double muTilde) {
         _mu = muTilde;
-        _expKappap = computeExponential(_kappa, _mu, _sigmaKappa, Species::PARTICLE);
-        _expKappah = computeExponential(_kappa, _mu, _sigmaKappa, Species::HOLE);
+        _expKappap = computeExponential(_kappa, _mu, _sigmaKappa, Species::PARTICLE, false);
+        _expKappap = computeExponential(_kappa, _mu, _sigmaKappa, Species::PARTICLE, true);
+        _expKappah = computeExponential(_kappa, _mu, _sigmaKappa, Species::HOLE, false);
+        _expKappah = computeExponential(_kappa, _mu, _sigmaKappa, Species::HOLE, true);
     }
 
     const SparseMatrix<double> &HubbardFermiMatrixExp::kappaTilde() const noexcept {
