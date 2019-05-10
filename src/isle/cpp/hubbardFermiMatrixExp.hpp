@@ -325,6 +325,10 @@ namespace isle {
 
     /// Compute \f$\log(\det(M))\f$.
     /**
+     * Uses one of two algorithms depending on whether species==PARTICLE or
+     * species==HOLE.
+     * See docs/algorithm/hubbardFermiAction.pdf for more details.
+     *
      * \param hfm %HubbardFermiMatrixExp to compute the determinant of.
      * \param phi Auxilliary field.
      * \param species Select whether to use particles or holes.

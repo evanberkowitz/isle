@@ -554,26 +554,60 @@ namespace isle {
         return toFirstLogBranch(ldet);
     }
 
+    namespace {
+        // Use version log(det(1+hat{A})).
+        std::complex<double> logdetM_p(const HubbardFermiMatrixExp &hfm,
+                                       const CDVector &phi) {
+            const auto NX = hfm.nx();
+            const auto NT = getNt(phi, NX);
+            const auto species = Species::PARTICLE;
+
+            // first factor F
+            CDMatrix f;
+            CDMatrix B = hfm.F(0, phi, species, false);
+            // other factors
+            for (std::size_t t = 1; t < NT; ++t) {
+                hfm.F(f, t, phi, species, false);
+                B = f*B;
+            }
+
+            B += IdMatrix<std::complex<double>>(NX);
+            return toFirstLogBranch(ilogdet(B));
+        }
+
+        // Use version -i Phi + N_t log(det(e^{sigmaKappa*kappa+mu})) + log(det(1+hat{A}^{-1})).
+        std::complex<double> logdetM_h(const HubbardFermiMatrixExp &hfm,
+                                       const CDVector &phi) {
+            const auto NX = hfm.nx();
+            const auto NT = getNt(phi, NX);
+
+            // build product of F^{-1}
+            auto f = hfm.F(0, phi, Species::HOLE, true);
+            CDMatrix aux = f;  // the matrix under the determinant
+            for (std::size_t t = 1; t < NT; ++t) {
+                hfm.F(f, t, phi, Species::HOLE, true);
+                aux = aux*f;
+            }
+            aux += IdMatrix<std::complex<double>>(NX);
+
+            // add Phi and return
+            return toFirstLogBranch(-static_cast<double>(NT)*logdet(hfm.expKappa(Species::HOLE, true))
+                                    - 1.0i*blaze::sum(phi)
+                                    + ilogdet(aux));
+        }
+    }
 
     std::complex<double> logdetM(const HubbardFermiMatrixExp &hfm,
                                  const CDVector &phi, const Species species) {
         if (hfm.muTilde() != 0)
             throw std::runtime_error("Called logdetM with mu != 0. This is not supported yet because the algorithm is unstable.");
 
-        const auto NX = hfm.nx();
-        const auto NT = getNt(phi, NX);
-
-        // first factor F
-        CDMatrix f;
-        CDMatrix B = hfm.F(0, phi, species, false);
-        // other factors
-        for (std::size_t t = 1; t < NT; ++t) {
-            hfm.F(f, t, phi, species, false);
-            B = f*B;
+        switch (species) {
+        case Species::PARTICLE:
+            return logdetM_p(hfm, phi);
+        case Species::HOLE:
+            return logdetM_h(hfm, phi);
         }
-
-        B += IdMatrix<std::complex<double>>(NX);
-        return toFirstLogBranch(ilogdet(B));
     }
 
     namespace {
@@ -625,7 +659,7 @@ namespace isle {
         // }
         // now res = y
 
-        // partial products of B
+        // partial products of B (== hat{A})
         std::vector<CDMatrix> partialB;
         partialB.reserve(NT-1);  // not storing the full B
         partialB.emplace_back(hfm.F(0, phi, species, false));
