@@ -139,20 +139,21 @@ class TestHubbardFermiMatrix(unittest.TestCase):
                           isle.logdetM(HFM(kappa, 1, 1), isle.CDVector(nx), isle.Species.PARTICLE),
                           msg="logdetM must throw a RuntimeError when called with mu != 0. If this bug has been fixed, update the unit test!")
 
-        for nt, mu, sigmaKappa, species, rep in itertools.product((4, 8, 32),
-                                                                  [0],
-                                                                  (-1, 1),
-                                                                  (isle.Species.PARTICLE, isle.Species.HOLE),
-                                                                  range(N_REP)):
-            hfm = HFM(kappa/nt, mu/nt, sigmaKappa)
+        for nt, beta,  mu, sigmaKappa, species, rep in itertools.product((4, 8, 32),
+                                                                         (3, 6, 10),
+                                                                         [0],
+                                                                         (-1, 1),
+                                                                         (isle.Species.PARTICLE, isle.Species.HOLE),
+                                                                         range(N_REP)):
+            hfm = HFM(kappa*beta/nt, mu*beta/nt, sigmaKappa)
             phi = _randomPhi(nx*nt)
 
             plain = isle.logdet(isle.Matrix(hfm.M(phi, species)))
             viaLU = isle.logdetM(hfm, phi, species)
 
-            self.assertAlmostEqual(plain, viaLU, places=10,
+            self.assertAlmostEqual(plain, viaLU, places=6,
                                    msg="Failed check log(det(M)) in repetition {}".format(rep)\
-                                   + "for nt={}, mu={}, sigmaKappa={}, species={}:".format(nt, mu, sigmaKappa, species)\
+                                   + "for nt={}, beta={}, mu={}, sigmaKappa={}, species={}:".format(nt, beta, mu, sigmaKappa, species)\
                                    + "\nplain = {}".format(plain) \
                                    + "\nviaLU = {}".format(viaLU))
 
