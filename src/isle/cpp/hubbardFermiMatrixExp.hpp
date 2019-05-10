@@ -71,6 +71,9 @@ namespace isle {
          */
         const DMatrix &expKappa(const Species species, const bool inv) const;
 
+        /// Return log(det(expKappa(species, inv)).
+        std::complex<double> logdetExpKappa(const Species species, const bool inv) const;
+
         /// Store the diagonal block K of matrix M in the parameter.
         /**
          * \param k Any old content is erased and the matrix is
@@ -258,6 +261,8 @@ namespace isle {
         DMatrix _expKappah;
         /// exp(sigmaKappa*kappaTilde+muTilde) for holes.
         DMatrix _expKappahInv;
+        /// log(det(_expKappahInv)).
+        std::complex<double> _logdetExpKappahInv;
     };
 
 

@@ -54,7 +54,8 @@ namespace isle {
           _expKappap{computeExponential(kappaTilde, muTilde, sigmaKappa, Species::PARTICLE, false)},
           _expKappapInv{computeExponential(kappaTilde, muTilde, sigmaKappa, Species::PARTICLE, true)},
           _expKappah{computeExponential(kappaTilde, muTilde, sigmaKappa, Species::HOLE, false)},
-          _expKappahInv{computeExponential(kappaTilde, muTilde, sigmaKappa, Species::HOLE, true)}
+          _expKappahInv{computeExponential(kappaTilde, muTilde, sigmaKappa, Species::HOLE, true)},
+          _logdetExpKappahInv{logdet(_expKappahInv)}
     {
         if (kappaTilde.rows() != kappaTilde.columns())
             throw std::invalid_argument("Hopping matrix is not square.");
@@ -85,6 +86,14 @@ namespace isle {
                 return _expKappah;
             }
         }
+    }
+
+    std::complex<double> HubbardFermiMatrixExp::logdetExpKappa(const Species species,
+                                                               const bool inv) const {
+        if (species == Species::HOLE && inv) {
+            return _logdetExpKappahInv;
+        }
+        throw std::runtime_error("logdetExpKappa is only implemented for holes and inv=true");
     }
 
     void HubbardFermiMatrixExp::K(DSparseMatrix &k, const Species UNUSED(species)) const {
@@ -591,7 +600,7 @@ namespace isle {
             aux += IdMatrix<std::complex<double>>(NX);
 
             // add Phi and return
-            return toFirstLogBranch(-static_cast<double>(NT)*logdet(hfm.expKappa(Species::HOLE, true))
+            return toFirstLogBranch(-static_cast<double>(NT)*hfm.logdetExpKappa(Species::HOLE, true)
                                     - 1.0i*blaze::sum(phi)
                                     + ilogdet(aux));
         }
