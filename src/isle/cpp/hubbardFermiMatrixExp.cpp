@@ -113,18 +113,16 @@ namespace isle {
         f = 0;
 
         // phi dependent part
-        if (species == Species::PARTICLE)
+        if ((species == Species::PARTICLE && !inv) || (species == Species::HOLE && inv))
             blaze::diagonal(f) = blaze::exp(1.i*spacevec(phi, tm1, NX));
         else
             blaze::diagonal(f) = blaze::exp(-1.i*spacevec(phi, tm1, NX));
 
         // kappa, mu dependent part
-        f = expKappa(species) * f;
-
-        if (inv) {
-            auto ipiv = std::make_unique<int[]>(NX);
-            invert(f, ipiv);
-        }
+        if (inv)
+            f = f * expKappa(species, inv);
+        else
+            f = expKappa(species, inv) * f;
     }
 
     CDMatrix HubbardFermiMatrixExp::F(const std::size_t tp, const CDVector &phi,
