@@ -639,6 +639,68 @@ namespace isle {
 #endif
     }
 
+//     std::vector<CDVector> solveM(const HubbardFermiMatrixExp &hfm,
+//                                  const CDVector &phi,
+//                                  const Species species,
+//                                  const std::vector<CDVector> &rhs) {
+//         if (hfm.muTilde() != 0)
+//             throw std::runtime_error("Exponential hopping is not supported for mu != 0");
+
+//         const std::size_t NX = hfm.nx();
+//         const std::size_t NT = getNt(phi, NX);
+//         std::vector<CDVector> res(rhs.size());  // the results
+
+//         // solve Ly = rhs
+//         CDMatrix f;
+
+//         // TODO causes nested parallel statement error
+//         // BLAZE_SERIAL_SECTION {  // we don't want the puny intra vector parallelization
+// // #pragma omp parallel for private(f)
+//             for (std::size_t i = 0; i < rhs.size(); ++i) {
+//                 res[i].resize(NX*NT);
+//                 spacevec(res[i], 0, NX) = blaze::serial(spacevec(rhs[i], 0, NX));  // t=0
+//                 for (std::size_t t = 1; t < NT; ++t) {  // other t's
+//                     hfm.F(f, t, phi, species, false);
+//                     spacevec(res[i], t, NX) = blaze::serial(spacevec(rhs[i], t, NX)
+//                                                             + f*spacevec(res[i], t-1, NX));
+//                 }
+//             }
+//         // }
+//         // now res = y
+
+//         // partial products of B (== hat{A})
+//         std::vector<CDMatrix> partialB;
+//         partialB.reserve(NT-1);  // not storing the full B
+//         partialB.emplace_back(hfm.F(0, phi, species, false));
+//         for (std::size_t t = 1; t < NT-1; ++t) {
+//             hfm.F(f, t, phi, species, false);
+//             partialB.emplace_back(f * partialB.back());
+//         }
+
+//         // invmat = (1+B)^-1
+//         hfm.F(f, NT-1, phi, species, false);
+//         CDMatrix invmat = IdMatrix<std::complex<double>>(NX) + f*partialB.back();
+//         auto ipiv = std::make_unique<int[]>(invmat.rows());
+//         invert(invmat, ipiv);
+
+//         // solve Ux = y inplace (in res)
+//         // BLAZE_SERIAL_SECTION {
+// // #pragma omp parallel for
+//             for (std::size_t i = 0; i < rhs.size(); ++i) {
+//                 spacevec(res[i], NT-1, NX) = invmat*spacevec(res[i], NT-1, NX);  // t = nt-1
+//                 for (std::size_t t = 0; t < NT-1; ++t) {  // other t's
+//                     spacevec(res[i], t, NX) -= partialB[t]*spacevec(res[i], NT-1, NX);
+//                 }
+//             }
+//         // }
+
+// #ifndef NDEBUG
+//         verifyResultOfSolveM(hfm, phi, species, res, rhs);
+// #endif  // ndef NDEBUG
+
+//         return res;
+//     }
+
     std::vector<CDVector> solveM(const HubbardFermiMatrixExp &hfm,
                                  const CDVector &phi,
                                  const Species species,
@@ -648,51 +710,52 @@ namespace isle {
 
         const std::size_t NX = hfm.nx();
         const std::size_t NT = getNt(phi, NX);
-        std::vector<CDVector> res(rhs.size());  // the results
+        using SpaceVector = blaze::CustomVector<std::complex<double>, blaze::unaligned, blaze::unpadded>;
+        // the results (vectors x in the end, z at intermediate stage)
+        std::vector<CDVector> res(rhs.size());
 
-        // solve Ly = rhs
-        CDMatrix f;
+        // construct all partial A^{-1} and the complete one
+        std::vector<CDMatrix> partialAinv;
+        partialAinv.reserve(NT);
 
-        // TODO causes nested parallel statement error
-        // BLAZE_SERIAL_SECTION {  // we don't want the puny intra vector parallelization
-// #pragma omp parallel for private(f)
-            for (std::size_t i = 0; i < rhs.size(); ++i) {
-                res[i].resize(NX*NT);
-                spacevec(res[i], 0, NX) = blaze::serial(spacevec(rhs[i], 0, NX));  // t=0
-                for (std::size_t t = 1; t < NT; ++t) {  // other t's
-                    hfm.F(f, t, phi, species, false);
-                    spacevec(res[i], t, NX) = blaze::serial(spacevec(rhs[i], t, NX)
-                                                            + f*spacevec(res[i], t-1, NX));
-                }
-            }
-        // }
-        // now res = y
-
-        // partial products of B (== hat{A})
-        std::vector<CDMatrix> partialB;
-        partialB.reserve(NT-1);  // not storing the full B
-        partialB.emplace_back(hfm.F(0, phi, species, false));
-        for (std::size_t t = 1; t < NT-1; ++t) {
-            hfm.F(f, t, phi, species, false);
-            partialB.emplace_back(f * partialB.back());
+        // auxillary variable holding one F at a time
+        partialAinv.emplace_back(hfm.F(0, phi, species, true));
+        for (std::size_t t = 1; t < NT; ++t) {
+            partialAinv.emplace_back(partialAinv[t-1]*hfm.F(t, phi, species, true));
         }
 
-        // invmat = (1+B)^-1
-        hfm.F(f, NT-1, phi, species, false);
-        CDMatrix invmat = IdMatrix<std::complex<double>>(NX) + f*partialB.back();
-        auto ipiv = std::make_unique<int[]>(invmat.rows());
-        invert(invmat, ipiv);
-
-        // solve Ux = y inplace (in res)
-        // BLAZE_SERIAL_SECTION {
-// #pragma omp parallel for
-            for (std::size_t i = 0; i < rhs.size(); ++i) {
-                spacevec(res[i], NT-1, NX) = invmat*spacevec(res[i], NT-1, NX);  // t = nt-1
-                for (std::size_t t = 0; t < NT-1; ++t) {  // other t's
-                    spacevec(res[i], t, NX) -= partialB[t]*spacevec(res[i], NT-1, NX);
-                }
+        // calculate all z's and store in res
+        for (std::size_t i = 0; i < rhs.size(); ++i) {
+            res[i].resize(NX*NT);
+            spacevec(res[i], 0, NX) = partialAinv[0] * spacevec(rhs[i], 0, NX);
+            for (std::size_t t = 1; t < NT; ++t) {
+                spacevec(res[i], t, NX) = partialAinv[t] * spacevec(rhs[i], t, NX)
+                    + spacevec(res[i], t-1, NX);
             }
-        // }
+        }
+        // now res = z
+
+        // LU-decompose all partial A^{-1} in place
+        // all pivots for all matrices in time-major order
+        std::vector<int> ipiv(NX*NT);
+        for (std::size_t t = 0; t < NT-1; ++t) {
+            blaze::getrf(partialAinv[t], &ipiv[t*NX]);
+        }
+        // NT-1 is special
+        partialAinv[NT-1] += IdMatrix<std::complex<double>>(NX);
+        blaze::getrf(partialAinv[NT-1], &ipiv[(NT-1)*NX]);
+
+        // solve for x
+        for (std::size_t i = 0; i < rhs.size(); ++i) {
+            SpaceVector vecLast{&spacevec(res[i], NT-1, NX)[0], NX};
+            // transpose because LAPACK wants column-major layout
+            blaze::getrs(partialAinv[NT-1], vecLast, 'T', &ipiv[(NT-1)*NX]);
+            for (std::size_t t = 0; t < NT-1; ++t) {
+                spacevec(res[i], t, NX) -= spacevec(res[i], NT-1, NX);
+                SpaceVector vec{&spacevec(res[i], t, NX)[0], NX};
+                blaze::getrs(partialAinv[t], vec, 'T', &ipiv[t*NX]);
+            }
+        }
 
 #ifndef NDEBUG
         verifyResultOfSolveM(hfm, phi, species, res, rhs);
