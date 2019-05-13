@@ -32,11 +32,11 @@ MU = [0, 1, 1.5]
 # types of hubbard fermi matrices
 HFMS = (isle.HubbardFermiMatrixDia, isle.HubbardFermiMatrixExp)
 
-def _randomPhi(n):
+def _randomPhi(n, real=True, imag=True):
     "Return a normally distributed random complex vector of n elements."
-    real = np.random.normal(RAND_MEAN, RAND_STD, n)
-    imag = np.random.normal(RAND_MEAN, RAND_STD, n)
-    return isle.Vector(real + 1j*imag)
+    r = np.random.normal(RAND_MEAN, RAND_STD, n) if real else 0
+    i = np.random.normal(RAND_MEAN, RAND_STD, n) if imag else 0
+    return isle.Vector(r + 1j*i)
 
 
 class TestHubbardFermiMatrix(unittest.TestCase):
@@ -146,12 +146,29 @@ class TestHubbardFermiMatrix(unittest.TestCase):
                                                                          (isle.Species.PARTICLE, isle.Species.HOLE),
                                                                          range(N_REP)):
             hfm = HFM(kappa*beta/nt, mu*beta/nt, sigmaKappa)
-            phi = _randomPhi(nx*nt)
 
+            phi = _randomPhi(nx*nt, imag=False)
             plain = isle.logdet(isle.Matrix(hfm.M(phi, species)))
             viaLU = isle.logdetM(hfm, phi, species)
+            self.assertAlmostEqual((plain-viaLU)/max(abs(plain), abs(viaLU)), 0, places=5,
+                                   msg="Failed check log(det(M)) in repetition {}".format(rep)\
+                                   + "for nt={}, beta={}, mu={}, sigmaKappa={}, species={}:".format(nt, beta, mu, sigmaKappa, species)\
+                                   + "\nplain = {}".format(plain) \
+                                   + "\nviaLU = {}".format(viaLU))
 
-            self.assertAlmostEqual(plain, viaLU, places=6,
+            phi = _randomPhi(nx*nt, real=False)
+            plain = isle.logdet(isle.Matrix(hfm.M(phi, species)))
+            viaLU = isle.logdetM(hfm, phi, species)
+            self.assertAlmostEqual((plain-viaLU)/max(abs(plain), abs(viaLU)), 0, places=5,
+                                   msg="Failed check log(det(M)) in repetition {}".format(rep)\
+                                   + "for nt={}, beta={}, mu={}, sigmaKappa={}, species={}:".format(nt, beta, mu, sigmaKappa, species)\
+                                   + "\nplain = {}".format(plain) \
+                                   + "\nviaLU = {}".format(viaLU))
+
+            phi = _randomPhi(nx*nt)
+            plain = isle.logdet(isle.Matrix(hfm.M(phi, species)))
+            viaLU = isle.logdetM(hfm, phi, species)
+            self.assertAlmostEqual((plain-viaLU)/max(abs(plain), abs(viaLU)), 0, places=5,
                                    msg="Failed check log(det(M)) in repetition {}".format(rep)\
                                    + "for nt={}, beta={}, mu={}, sigmaKappa={}, species={}:".format(nt, beta, mu, sigmaKappa, species)\
                                    + "\nplain = {}".format(plain) \
