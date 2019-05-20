@@ -313,15 +313,18 @@ This form is essentially identical to~\eqref{eq:force_v1} and thus the same algo
 
 \subsection{Solver}\label{sec:solver_v1}
 
-Linear systems of equations involving $M$ can be solved using an LU-decomposition and forward-/back-substitution.
+Linear systems of equations of the form
+\begin{align}
+  M x = b\label{eq:linear_system_v1}
+\end{align}
+can be solved using an LU-decomposition and forward-/back-substitution.
 It is straight-forward to derive expressions for the result using the algorithm presented in Section~\ref{sec:lu_v1}.
 
-\paragraph{Matrix-Vector Equation}
-Solve a system of equations for a single right hand side, i.e. $M x = b$, where $x$ and $b$ are vectors.
-Start by solving the auxiliary system $L y = b$:
+\paragraph{Diagonal Discretization}
+Begin by solving the auxiliary system $L y = b$:
 \begin{align}
-  y_0 &= b_0\\
-  y_i &= b_i + F_i K^{-1}y_{i-1} \quad \text{for} \quad i > 0
+  y_0 &= b_0\label{eq:y0_v1}\\
+  y_i &= b_i + F_i K^{-1}y_{i-1} \quad \text{for} \quad i > 0\label{eq:recursion_y_v1}
 \end{align}
 And then solve the original equations by solving $U x = y$:
 \begin{align}
@@ -329,7 +332,42 @@ And then solve the original equations by solving $U x = y$:
   x_i &= K^{-1} y_i - A_{0i}x_{N_t-1} \quad \text{for} \quad i < N_t-1,
 \end{align}
 where the definitions for $A$ and $A_{tt'}$ are given in~\eqref{eq:def_A} and~\eqref{eq:def_partial_A}, respectively.
-Note that $y$ always appears as $K^{-1}y$. Hence it is possible to reduce the number of required matrix-vector multiplications by storing $K^{-1}y$ instead of just $y$.
+
+\noindent
+Those equations, while formally a valid solution to equation~\eqref{eq:linear_system_v1}, are sub optimal because they involve $K^{-1}$ which is dense.
+Both for speed and numerical accuracy it is beneficial to modify those equations as follows.
+Expand the recursion~\eqref{eq:recursion_y_v1} to get
+\begin{align}
+  y_i &= b_i + (F_i K^{-1}) b_{i-1} + (F_{i} K^{-1} F_{i-1}K^{-1}) b_{i-2} + \cdots + (F_i K^{-1} \cdots F_1 K^{-1}) b_0\\
+      &= K A_{0i} \big[(F_0^{-1} K F_1^{-1} K \cdots F_i^{-1}) b_i + (F_0^{-1} K F_1^{-1} K \cdots F_{i-1}^{-1}) b_{i-1} + \cdots + (F_0^{-1}) b_0\big]\\
+  &\equiv K A_{0i} z_i.
+\end{align}
+Now substitute this for $y$ in equations~\eqref{eq:y0_v1} and~\eqref{eq:recursion_y_v1} to get the relations
+\begin{align}
+  z_0 &= F_0^{-1} b_0\\
+  z_i &= A_{0i}^{-1} K^{-1} b_i + z_{i-1} \quad \text{for} \quad i > 0.
+\end{align}
+Finally, the solution $x$ can be obtained as
+\begin{align}
+  (1 + A^{-1}) x_{N_t-1} &= z_{N_t-1}\\
+  A_{0i}^{-1} x_i &= z_i - x_{N_t-1} \quad \text{for} \quad i < N_t-1.
+\end{align}
+$x$ can best be calculated by constructing $A_{0i}^{-1}$ and $A^{-1}$ and solving the equations using a standard dense solver in order to avoid calculating the numerically less stable $A_{0i}$.
+Thus except for the one occurrence in $z_i$, $K^{-1}$ is no longer needed.
+
+\paragraph{Exponential Discretization}
+The equations for the exponential discretization can again be obtained via substitutions~\eqref{eq:exp_subs_K} and~\eqref{eq:exp_subs_F}.
+A solver based on the rearranged equations for the diagonal discretization was found to be more stable than based on the initial equations even though here $K \equiv \mathds{1}$.
+The result is
+\begin{align}
+  z_0 &= \hat{F}_0^{-1} b_0\\
+  z_i &= \hat{A}_{0i}^{-1} b_i + z_{i-1} \quad \text{for} \quad i > 0
+\end{align}
+and
+\begin{align}
+  (1 + \hat{A}^{-1}) x_{N_t-1} &= z_{N_t-1}\\
+  \hat{A}_{0i}^{-1} x_i &= z_i - x_{N_t-1} \quad \text{for} \quad i < N_t-1.
+\end{align}
 
 
 \clearpage
