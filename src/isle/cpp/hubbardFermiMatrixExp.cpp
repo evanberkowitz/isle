@@ -1,5 +1,10 @@
 #include "hubbardFermiMatrixExp.hpp"
 
+
+// TODO
+#include <iostream>
+
+
 #include <memory>
 #include <limits>
 #include <cmath>
@@ -624,120 +629,48 @@ namespace isle {
         void verifyResultOfSolveM(const HubbardFermiMatrixExp &hfm,
                                   const CDVector &phi,
                                   const Species species,
-                                  const std::vector<CDVector> &res,
-                                  const std::vector<CDVector> &rhs) {
-            for (std::size_t i = 0; i < rhs.size(); ++i) {
-                const double diff = blaze::max(blaze::abs(hfm.M(phi, species) * res[i] - rhs[i]));
-                if (diff > 1e-8) {
-                    std::ostringstream oss;
-                    oss << "Check of result of solveM for right hand side " << i
-                        << " exceeds tolerance: " << diff << '\n';
-                    getLogger("HubbardFermiMatrixExp").warning(oss.str());
-                }
+                                  const CDMatrix &res,
+                                  const CDMatrix &rhss) {
+            const double diff = blaze::max(blaze::abs(hfm.M(phi, species) * blaze::trans(res)
+                                                      - blaze::trans(rhss)));
+            if (diff > 1e-8) {
+                std::ostringstream oss;
+                oss << "Check of result of solveM exceeds tolerance: " << diff << '\n';
+                getLogger("HubbardFermiMatrixExp").warning(oss.str());
             }
         }
 #endif
     }
 
-//     std::vector<CDVector> solveM(const HubbardFermiMatrixExp &hfm,
-//                                  const CDVector &phi,
-//                                  const Species species,
-//                                  const std::vector<CDVector> &rhs) {
-//         if (hfm.muTilde() != 0)
-//             throw std::runtime_error("Exponential hopping is not supported for mu != 0");
-
-//         const std::size_t NX = hfm.nx();
-//         const std::size_t NT = getNt(phi, NX);
-//         std::vector<CDVector> res(rhs.size());  // the results
-
-//         // solve Ly = rhs
-//         CDMatrix f;
-
-//         // TODO causes nested parallel statement error
-//         // BLAZE_SERIAL_SECTION {  // we don't want the puny intra vector parallelization
-// // #pragma omp parallel for private(f)
-//             for (std::size_t i = 0; i < rhs.size(); ++i) {
-//                 res[i].resize(NX*NT);
-//                 spacevec(res[i], 0, NX) = blaze::serial(spacevec(rhs[i], 0, NX));  // t=0
-//                 for (std::size_t t = 1; t < NT; ++t) {  // other t's
-//                     hfm.F(f, t, phi, species, false);
-//                     spacevec(res[i], t, NX) = blaze::serial(spacevec(rhs[i], t, NX)
-//                                                             + f*spacevec(res[i], t-1, NX));
-//                 }
-//             }
-//         // }
-//         // now res = y
-
-//         // partial products of B (== hat{A})
-//         std::vector<CDMatrix> partialB;
-//         partialB.reserve(NT-1);  // not storing the full B
-//         partialB.emplace_back(hfm.F(0, phi, species, false));
-//         for (std::size_t t = 1; t < NT-1; ++t) {
-//             hfm.F(f, t, phi, species, false);
-//             partialB.emplace_back(f * partialB.back());
-//         }
-
-//         // invmat = (1+B)^-1
-//         hfm.F(f, NT-1, phi, species, false);
-//         CDMatrix invmat = IdMatrix<std::complex<double>>(NX) + f*partialB.back();
-//         auto ipiv = std::make_unique<int[]>(invmat.rows());
-//         invert(invmat, ipiv);
-
-//         // solve Ux = y inplace (in res)
-//         // BLAZE_SERIAL_SECTION {
-// // #pragma omp parallel for
-//             for (std::size_t i = 0; i < rhs.size(); ++i) {
-//                 spacevec(res[i], NT-1, NX) = invmat*spacevec(res[i], NT-1, NX);  // t = nt-1
-//                 for (std::size_t t = 0; t < NT-1; ++t) {  // other t's
-//                     spacevec(res[i], t, NX) -= partialB[t]*spacevec(res[i], NT-1, NX);
-//                 }
-//             }
-//         // }
-
-// #ifndef NDEBUG
-//         verifyResultOfSolveM(hfm, phi, species, res, rhs);
-// #endif  // ndef NDEBUG
-
-//         return res;
-//     }
-
-    std::vector<CDVector> solveM(const HubbardFermiMatrixExp &hfm,
-                                 const CDVector &phi,
-                                 const Species species,
-                                 const std::vector<CDVector> &rhs) {
+    CDMatrix solveM(const HubbardFermiMatrixExp &hfm, const CDVector &phi,
+                    const Species species, const CDMatrix &rhss) {
         if (hfm.muTilde() != 0)
             throw std::runtime_error("Exponential hopping is not supported for mu != 0");
 
         const std::size_t NX = hfm.nx();
         const std::size_t NT = getNt(phi, NX);
-        using SpaceVector = blaze::CustomVector<std::complex<double>, blaze::unaligned, blaze::unpadded>;
+        const std::size_t NRHS = rhss.rows();
         // the results (vectors x in the end, z at intermediate stage)
-        std::vector<CDVector> res(rhs.size());
+        CDMatrix res(rhss.rows(), rhss.columns());
 
         // construct all partial A^{-1} and the complete one
         std::vector<CDMatrix> partialAinv;
         partialAinv.reserve(NT);
-
-        // auxillary variable holding one F at a time
         partialAinv.emplace_back(hfm.F(0, phi, species, true));
         for (std::size_t t = 1; t < NT; ++t) {
             partialAinv.emplace_back(partialAinv[t-1]*hfm.F(t, phi, species, true));
         }
 
         // calculate all z's and store in res
-        for (std::size_t i = 0; i < rhs.size(); ++i) {
-            res[i].resize(NX*NT);
-            spacevec(res[i], 0, NX) = partialAinv[0] * spacevec(rhs[i], 0, NX);
-            for (std::size_t t = 1; t < NT; ++t) {
-                spacevec(res[i], t, NX) = partialAinv[t] * spacevec(rhs[i], t, NX)
-                    + spacevec(res[i], t-1, NX);
-            }
+        blaze::submatrix(res, 0, 0, NRHS, NX) = blaze::submatrix(rhss, 0, 0, NRHS, NX) * blaze::trans(partialAinv[0]);
+        for (std::size_t t = 1; t < NT; ++t) {
+            blaze::submatrix(res, 0, t*NX, NRHS, NX) = blaze::submatrix(rhss, 0, t*NX, NRHS, NX) * blaze::trans(partialAinv[t])
+                + blaze::submatrix(res, 0, (t-1)*NX, NRHS, NX);
         }
         // now res = z
 
         // LU-decompose all partial A^{-1} in place
-        // all pivots for all matrices in time-major order
-        std::vector<int> ipiv(NX*NT);
+        std::vector<int> ipiv(NX*NT);  // all pivots for all matrices in time-major order
         for (std::size_t t = 0; t < NT-1; ++t) {
             blaze::getrf(partialAinv[t], &ipiv[t*NX]);
         }
@@ -746,19 +679,18 @@ namespace isle {
         blaze::getrf(partialAinv[NT-1], &ipiv[(NT-1)*NX]);
 
         // solve for x
-        for (std::size_t i = 0; i < rhs.size(); ++i) {
-            SpaceVector vecLast{&spacevec(res[i], NT-1, NX)[0], NX};
-            // transpose because LAPACK wants column-major layout
-            blaze::getrs(partialAinv[NT-1], vecLast, 'T', &ipiv[(NT-1)*NX]);
-            for (std::size_t t = 0; t < NT-1; ++t) {
-                spacevec(res[i], t, NX) -= spacevec(res[i], NT-1, NX);
-                SpaceVector vec{&spacevec(res[i], t, NX)[0], NX};
-                blaze::getrs(partialAinv[t], vec, 'T', &ipiv[t*NX]);
-            }
+        CDMatrix matLast = blaze::submatrix(res, 0, (NT-1)*NX, NRHS, NX);
+        // transpose because LAPACK wants column-major layout
+        blaze::getrs(partialAinv[NT-1], matLast, 'T', &ipiv[(NT-1)*NX]);
+        blaze::submatrix(res, 0, (NT-1)*NX, NRHS, NX) = matLast;
+        for (std::size_t t = 0; t < NT-1; ++t) {
+            CDMatrix mat = blaze::submatrix(res, 0, t*NX, NRHS, NX) - matLast;
+            blaze::getrs(partialAinv[t], mat, 'T', &ipiv[t*NX]);
+            blaze::submatrix(res, 0, t*NX, NRHS, NX) = mat;
         }
 
 #ifndef NDEBUG
-        verifyResultOfSolveM(hfm, phi, species, res, rhs);
+        verifyResultOfSolveM(hfm, phi, species, res, rhss);
 #endif  // ndef NDEBUG
 
         return res;
