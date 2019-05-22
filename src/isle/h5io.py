@@ -128,7 +128,7 @@ def writeTrajectory(h5group, label, phi, actVal, trajPoint, weights):
     grp["action"] = actVal
     grp["trajPoint"] = trajPoint
     if weights:
-        writeDict(grp["weights"], weights)
+        writeDict(grp.create_group("weights"), weights)
 
     return grp
 
