@@ -16,18 +16,22 @@ class ConstStepLeapfrog(Evolver):
     A leapfrog evolver with constant parameters.
     """
 
-    def __init__(self, action, length, nstep, rng):
+    def __init__(self, action, length, nstep, rng, transform=None):
         r"""!
         \param action Instance of isle.Action to use for molecular dynamics.
         \param length Length of the MD trajectory.
         \param nstep Number of MD steps per trajectory.
         \param rng Central random number generator for the run.
+        \param transform (Instance of isle.evolver.transform.Transform)
+                         Used this to transform a configuration after MD integration
+                         but before Metropolis accept/reject.
         """
         self.action = action
         self.length = length
         self.nstep = nstep
         self.rng = rng
         self.selector = BinarySelector(rng)
+        self.transform = transform
 
     def evolve(self, phi, actVal, _trajPoint):
         r"""!
@@ -43,12 +47,24 @@ class ConstStepLeapfrog(Evolver):
             `dict` or `None`.
         """
 
+        # get start phi for MD integration
+        (phiMD, logdetJ) = (phi, 0) if self.transform is None else self.transform.backward(phi)
+
+        # do MD integration
         pi = Vector(self.rng.normal(0, 1, len(phi))+0j)
-        phi1, pi1, actVal1 = leapfrog(phi, pi, self.action, self.length, self.nstep)
-        trajPoint = self.selector.selectTrajPoint(actVal+np.linalg.norm(pi)**2/2,
-                                                  actVal1+np.linalg.norm(pi1)**2/2)
-        return (phi1, actVal1, trajPoint, None) if trajPoint == 1 \
-            else (phi, actVal, trajPoint, None)
+        phiMD1, pi1, actValMD1 = leapfrog(phiMD, pi, self.action, self.length, self.nstep)
+
+        # transform to MC manifold
+        (phi1, actVal1, logdetJ1) = (phiMD1, actValMD1, 0) if self.transform is None \
+            else self.transform.forward(phiMD1, actValMD1)
+
+        # accept/reject on MC manifold
+        trajPoint = self.selector.selectTrajPoint(actVal+np.linalg.norm(pi)**2/2+logdetJ,
+                                                  actVal1+np.linalg.norm(pi1)**2/2+logdetJ1)
+        extraWeights = None if self.transform is None\
+            else {"logdetJ": (logdetJ, logdetJ1)[trajPoint]}
+        return (phi1, actVal1, trajPoint, extraWeights) if trajPoint == 1 \
+            else (phi, actVal, trajPoint, extraWeights)
 
     def save(self, h5group, manager):
         r"""!
@@ -58,6 +74,9 @@ class ConstStepLeapfrog(Evolver):
         """
         h5group["length"] = self.length
         h5group["nstep"] = self.nstep
+        if self.transform is not None:
+            # TODO dispatch to the manager as well
+            self.transform.save(h5group.create_group("transform"), manager)
 
     @classmethod
     def fromH5(cls, h5group, _manager, action, _lattice, rng):
@@ -70,7 +89,12 @@ class ConstStepLeapfrog(Evolver):
         \param rng Central random number generator for the run.
         \returns A newly constructed leapfrog evolver.
         """
-        return cls(action, h5group["length"][()], h5group["nstep"][()], rng)
+        if "transform" in h5group:
+            # TODO get type from manager
+            transform = None
+        else:
+            transform = None
+        return cls(action, h5group["length"][()], h5group["nstep"][()], rng, transform)
 
 
 class LinearStepLeapfrog(Evolver):
