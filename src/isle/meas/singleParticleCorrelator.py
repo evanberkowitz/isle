@@ -38,16 +38,14 @@ class SingleParticleCorrelator(Measurement):
         self.species = species
         self._alpha = alpha
 
+        # need to know Nt to set those, do it in _getRHSs
+        self._rhss = None
+
     def __call__(self, phi, action, itr):
         """!Record the single-particle correlators."""
 
         nt = int(len(phi) / self.hfm.nx())
-
-        # Create a large set of sources:
-        rhss = [isle.Vector(spaceToSpacetime(irrep, time, nt))
-                for irrep in self.irreps for time in range(nt)]
-        # For the j^th spacetime vector of the i^th state, go to self.rhss[i * nt + j]
-        # In other words, time is the faster running index.
+        rhss = self._getRHSs(nt)
 
         # Solve M*x = b for all right-hand sides:
         if self._alpha == 1:
@@ -80,6 +78,20 @@ class SingleParticleCorrelator(Measurement):
         subGroup = createH5Group(h5group, self.savePath)
         subGroup["correlators"] = self.corr
         subGroup["irreps"] = self.irreps
+
+    def _getRHSs(self, nt):
+        """!
+        Get all right hand side vectors as a matrix.
+        For the j^th spacetime vector of the i^th state, go to self.rhss[i * nt + j]
+        In other words, time is the faster running index.
+        """
+
+        if self._rhss is None or self._rhss.rows() != nt*self.hfm.nx():
+            # Create a large set of sources:
+            self._rhss = isle.Matrix(np.array([isle.Vector(spaceToSpacetime(irrep, time, nt))
+                                               for irrep in self.irreps for time in range(nt)]))
+        return self._rhss
+
 
 def read(h5group):
     r"""!
