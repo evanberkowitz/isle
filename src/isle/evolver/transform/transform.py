@@ -12,13 +12,14 @@ class Transform(metaclass=ABCMeta):
     """
 
     @abstractmethod
-    def forward(self, phi):
+    def forward(self, phi, actVal):
         r"""!
         Transform a configuration from proposal to MC manifold.
         \param phi Configuration on proposal manifold.
+        \param actVal Value of the action at phi.
         \returns In order:
           - Configuration on MC manifold.
-          - Value of action at new configuration.
+          - Value of action at configuration on MC manifold.
           - \f$\log \det J\f$ where \f$J\f$ is the Jacobian of the transformation.
         """
 
