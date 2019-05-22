@@ -345,7 +345,7 @@ Expand the recursion~\eqref{eq:recursion_y_v1} to get
 Now substitute this for $y$ in equations~\eqref{eq:y0_v1} and~\eqref{eq:recursion_y_v1} to get the relations
 \begin{align}
   z_0 &= F_0^{-1} b_0\\
-  z_i &= A_{0i}^{-1} K^{-1} b_i + z_{i-1} \quad \text{for} \quad i > 0.
+  z_i &= A_{0(i-1)}^{-1} F_i^{-1} b_i + z_{i-1} \quad \text{for} \quad i > 0.
 \end{align}
 Finally, the solution $x$ can be obtained as
 \begin{align}
@@ -353,7 +353,7 @@ Finally, the solution $x$ can be obtained as
   A_{0i}^{-1} x_i &= z_i - x_{N_t-1} \quad \text{for} \quad i < N_t-1.
 \end{align}
 $x$ can best be calculated by constructing $A_{0i}^{-1}$ and $A^{-1}$ and solving the equations using a standard dense solver in order to avoid calculating the numerically less stable $A_{0i}$.
-Thus except for the one occurrence in $z_i$, $K^{-1}$ is no longer needed.
+In this form of the equations, $K^{-1}$ is no longer needed.
 
 \paragraph{Exponential Discretization}
 The equations for the exponential discretization can again be obtained via substitutions~\eqref{eq:exp_subs_K} and~\eqref{eq:exp_subs_F}.
