@@ -3,8 +3,10 @@ r"""!\file
 Measurement of single-particle correlator.
 """
 
+from logging import getLogger
+
 import numpy as np
-import scipy.linalg as la   # scipy is needed because np.linalg.eig and np.linalg.eigh do not guarantee an orthonormal eigenbasis.
+# import scipy.linalg as la   # scipy is needed because np.linalg.eig and np.linalg.eigh do not guarantee an orthonormal eigenbasis.
 
 import isle
 from .measurement import Measurement
@@ -22,6 +24,9 @@ class SingleParticleCorrelator(Measurement):
 
         self.hfm = hfm
         self.corr = []
+        self.species = species
+        self._alpha = alpha
+
         # self.irreps = np.transpose(la.orth(isle.Matrix(hfm.kappaTilde())))
         if projector is None:
             _, self.irreps = np.linalg.eigh(isle.Matrix(hfm.kappaTilde()))
@@ -29,17 +34,17 @@ class SingleParticleCorrelator(Measurement):
         else:
             self.irreps = projector.T
         # self.irreps = np.identity(self.hfm.nx())
-        if species == isle.Species.PARTICLE:
-            print("Single particle\n", self.irreps)
-        elif species == isle.Species.HOLE:
-            print("Single hole\n", self.irreps)
-        else:
-            print("Unknown species. :(")
-        self.species = species
-        self._alpha = alpha
 
         # need to know Nt to set those, do it in _getRHSs
         self._rhss = None
+
+        if species == isle.Species.PARTICLE:
+            getLogger(__name__).info("Initialized for particles, irreps:\n %s", self.irreps)
+        elif species == isle.Species.HOLE:
+            getLogger(__name__).info("Initialized for holes, irreps:\n %s", self.irreps)
+        else:
+            getLogger(__name__).error("Unknown species: %s", species)
+            raise ValueError(f"Unknown species: {species}")
 
     def __call__(self, phi, action, itr):
         """!Record the single-particle correlators."""
