@@ -6,6 +6,7 @@ Evolvers that perform molecular dynamics integration of configurations using lea
 import numpy as np
 
 from .evolver import Evolver
+from .transform import backwardTransform
 from .selector import BinarySelector
 from .. import Vector, leapfrog
 from ..collection import hingeRange
@@ -40,10 +41,8 @@ class ConstStepLeapfrog(Evolver):
         \returns EvolutionStage at the end of this evolution step.
         """
 
-        # TODO cmpute logdetJ if not stored but trafo is not None
         # get start phi for MD integration
-        (phiMD, logdetJ) = (stage.phi, 0) if self.transform is None\
-            else self.transform.backward(stage.phi), stage.logWeights["logdetJ"]
+        phiMD, logdetJ = backwardTransform(self.transform, stage)
 
         # do MD integration
         pi = Vector(self.rng.normal(0, 1, len(stage.phi))+0j)
@@ -56,7 +55,7 @@ class ConstStepLeapfrog(Evolver):
         # accept/reject on MC manifold
         trajPoint = self.selector.selectTrajPoint(stage.sumLogWeights()+np.linalg.norm(pi)**2/2,
                                                   actVal1+logdetJ1+np.linalg.norm(pi1)**2/2)
-        logWeights = None if self.transform is None\
+        logWeights = None if self.transform is None \
             else {"logdetJ": (logdetJ, logdetJ1)[trajPoint]}
         return stage.accept(phi1, actVal1, logWeights) if trajPoint == 1 \
             else stage.reject()
