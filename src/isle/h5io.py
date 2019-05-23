@@ -13,6 +13,7 @@ from . import Vector, isleVersion, pythonVersion, blazeVersion, pybind11Version
 from .random import readStateH5
 from .collection import listToSlice, parseSlice, subslice, normalizeSlice
 
+
 def createH5Group(base, name):
     r"""!
     Create a new HDF5 group if it does not yet exist.
@@ -155,14 +156,14 @@ def loadCheckpoint(h5group, label, evolverManager, action, lattice):
                           including its type.
     \param action Action to construct the evolver with.
     \param lattice Lattice to construct the evolver with.
-    \returns (RNG, configuration, evolver)
+    \returns (RNG, HDF5 group of configuration, evolver)
     """
 
     grp = h5group[str(label)]
     rng = readStateH5(grp["rngState"])
-    phi = Vector(grp["cfg/phi"][()])
+    cfgGrp = grp["cfg"]
     evolver = evolverManager.load(grp["evolver"], action, lattice, rng)
-    return rng, phi, evolver
+    return rng, cfgGrp, evolver
 
 def loadConfiguration(h5group, trajIdx=-1, path="configuration"):
     r"""!

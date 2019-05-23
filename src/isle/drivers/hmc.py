@@ -23,7 +23,7 @@ class HMC:
     """
 
     def __init__(self, lattice, params, rng, action, outfname, startIdx,
-                 definitions={}, propManager=None):
+                 definitions={}, evManager=None):
         """!
         Construct with given parameters.
         """
@@ -35,7 +35,7 @@ class HMC:
         self.outfname = str(outfname)
 
         self._trajIdx = startIdx
-        self._propManager = propManager if propManager \
+        self._evManager = evManager if evManager \
             else EvolverManager(outfname, definitions=definitions)
 
     def __call__(self, stage, evolver, ntr, saveFreq, checkpointFreq):
@@ -134,7 +134,7 @@ class HMC:
         """
         try:
             return fileio.h5.writeCheckpoint(h5file["checkpoint"], self._trajIdx,
-                                             self.rng, trajGrp.name, evolver, self._propManager)
+                                             self.rng, trajGrp.name, evolver, self._evManager)
         except (ValueError, RuntimeError) as err:
             if "name already exists" in err.args[0]:
                 getLogger(__name__).error("Cannot write checkpoint for trajectory %d to file %s."
@@ -222,9 +222,9 @@ def continueRun(infile, outfile, startIdx, overwrite, definitions={}):
                                     ["/configuration", "/checkpoint"])
 
     configurations, checkpoints = _loadIndices(infile)
-    propManager = EvolverManager(infile, definitions=definitions)
-    checkpointIdx, (rng, phi, evolver) = _loadCheckpoint(infile, startIdx, checkpoints,
-                                                         propManager, action, lattice)
+    evManager = EvolverManager(infile, definitions=definitions)
+    checkpointIdx, rng, stage, evolver = _loadCheckpoint(infile, startIdx, checkpoints,
+                                                         evManager, action, lattice)
 
     if outfile == infile:
         _ensureNoNewerConfigs(infile, checkpointIdx, checkpoints, configurations, overwrite)
@@ -232,8 +232,8 @@ def continueRun(infile, outfile, startIdx, overwrite, definitions={}):
     return (HMC(lattice, params, rng, action, outfile,
                 checkpointIdx,
                 definitions,
-                propManager if infile == outfile else None),  # need to re-init manager for new outfile
-            phi,
+                evManager if infile == outfile else None),  # need to re-init manager for new outfile
+            stage,
             evolver,
             _stride(configurations),
             _stride(checkpoints))
@@ -295,7 +295,7 @@ def _removeGreaterThan(fname, groupPath, maxIdx):
                 del grp[idx]
 
 
-def _loadCheckpoint(fname, startIdx, checkpoints, propManager, action, lattice):
+def _loadCheckpoint(fname, startIdx, checkpoints, evManager, action, lattice):
     """!
     Load a checkpoint from file allowing for negative indices.
     """
@@ -315,8 +315,10 @@ def _loadCheckpoint(fname, startIdx, checkpoints, propManager, action, lattice):
 
     # TODO load actVal and pass to HMC driver to avoid initial evaluation
     with h5.File(str(fname), "r") as h5f:
-        return startIdx, fileio.h5.loadCheckpoint(h5f["checkpoint"], startIdx,
-                                                  propManager, action, lattice)
+        rng, cfgGrp, evolver = fileio.h5.loadCheckpoint(h5f["checkpoint"], startIdx,
+                                                        evManager, action, lattice)
+        stage = EvolutionStage.fromH5(cfgGrp)
+        return startIdx, rng, stage, evolver
 
 def _iterTrajectories(ntr):
     """!
