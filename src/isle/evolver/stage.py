@@ -16,6 +16,7 @@ class EvolutionStage:
     and the correspondint imagianry part is used for re-weighting.
     Not the minus sign!
     """
+    # TODO is the minus correct?
 
     __slots__ = "phi", "trajPoint", "logWeights", "extra"
 
@@ -57,12 +58,12 @@ class EvolutionStage:
         """
         return self.__class__(phi, actVal, 1, logWeights, extra)
 
-    def reject(self, logWeights=None, extra=None):
+    def reject(self, extra=None):
         """!
         Return a new EvolutionStage which indicates rejection and reuses phi and actVal.
         `logWeights` and `extra` are always overwritten.
         """
-        return self.__class__(self.phi, self.actVal, 0, logWeights, extra)
+        return self.__class__(self.phi, self.actVal, 0, self.logWeights, extra)
 
     def sumLogWeights(self):
         """!
