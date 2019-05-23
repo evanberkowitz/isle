@@ -28,9 +28,7 @@ class Transform(metaclass=ABCMeta):
         r"""!
         Transform a configuration from MC to proposal manifold.
         \param phi Configuration on MC manifold.
-        \returns In order:
-          - Configuration on proposal manifold.
-          - \f$\log \det J\f$ where \f$J\f$ is the Jacobian of the *forward* transformation.
+        \returns Configuration on proposal manifold.
         """
 
     @abstractmethod

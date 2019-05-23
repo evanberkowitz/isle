@@ -28,11 +28,9 @@ class Identity(Transform):
         r"""!
         Transform a configuration from MC to proposal manifold.
         \param phi Configuration on MC manifold.
-        \returns In order:
-          - Configuration on proposal manifold.
-          - \f$\log \det J\f$ where \f$J\f$ is the Jacobian of the *forward* transformation.
+        \returns Configuration on proposal manifold.
         """
-        return phi, 0
+        return phi
 
     def save(self, h5group, manager):
         r"""!
