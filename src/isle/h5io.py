@@ -164,7 +164,6 @@ def loadCheckpoint(h5group, label, evolverManager, action, lattice):
     evolver = evolverManager.load(grp["evolver"], action, lattice, rng)
     return rng, phi, evolver
 
-# TODO return EvolutionStage
 def loadConfiguration(h5group, trajIdx=-1, path="configuration"):
     r"""!
     Load a configuration from HDF5.
@@ -175,7 +174,7 @@ def loadConfiguration(h5group, trajIdx=-1, path="configuration"):
                    plain index into the array of all configurations.
     \param path Path under `h5group` that contains configurations.
 
-    \returns (configuration, action value, trajectory point)
+    \returns (configuration, action value)
     """
 
     configs = loadList(h5group[path])
@@ -183,13 +182,7 @@ def loadConfiguration(h5group, trajIdx=-1, path="configuration"):
     idx = configs[-1][0]+trajIdx+1 if trajIdx < 0 else trajIdx
     # get the configuration group with the given index
     cfgGrp = next(pair[1] for pair in loadList(h5group[path]) if pair[0] == idx)
-    # load weights if present
-    try:
-        weights = loadDict(cfgGrp["weights"])
-    except KeyError:
-        weights = None
-
-    return Vector(cfgGrp["phi"][()]), cfgGrp["action"][()], cfgGrp["trajPoint"][()], weights
+    return Vector(cfgGrp["phi"][()]), cfgGrp["action"][()]
 
 def loadList(h5group, convert=int):
     r"""!
