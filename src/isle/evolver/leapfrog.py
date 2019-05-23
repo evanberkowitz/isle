@@ -101,7 +101,7 @@ class LinearStepLeapfrog(Evolver):
     values.
     """
 
-    def __init__(self, action, lengthRange, nstepRange, ninterp, rng, startPoint=0):
+    def __init__(self, action, lengthRange, nstepRange, ninterp, rng, startPoint=0, transform=None):
         r"""!
         \param action Instance of isle.Action to use for molecular dynamics.
         \param lengthRange Tuple of initial and final trajectory lengths.
@@ -109,6 +109,9 @@ class LinearStepLeapfrog(Evolver):
         \param ninterp Number of interpolating steps.
         \param rng Central random number generator for the run. Used for accept/reject.
         \param startPoint Iteration number to start at.
+        \param transform (Instance of isle.evolver.transform.Transform)
+                         Used this to transform a configuration after MD integration
+                         but before Metropolis accept/reject.
         """
 
         self.action = action
@@ -117,6 +120,7 @@ class LinearStepLeapfrog(Evolver):
         self.ninterp = ninterp
         self.rng = rng
         self.selector = BinarySelector(rng)
+        self.transform = transform
 
         self._lengthIter = hingeRange(*lengthRange, (lengthRange[1]-lengthRange[0])/ninterp)
         self._nstepIter = hingeRange(*nstepRange, (nstepRange[1]-nstepRange[0])/ninterp)
@@ -139,13 +143,25 @@ class LinearStepLeapfrog(Evolver):
         """
         self._current += 1
 
+        # get start phi for MD integration
+        phiMD, logdetJ = backwardTransform(self.transform, stage)
+
+        # do MD integration
         pi = Vector(self.rng.normal(0, 1, len(stage.phi))+0j)
-        phi1, pi1, actVal1 = leapfrog(stage.phi, pi, self.action,
-                                      next(self._lengthIter), int(next(self._nstepIter)))
-        if self.selector.selectTrajPoint(stage.sumLogWeights()+np.linalg.norm(pi)**2/2,
-                                         actVal1+np.linalg.norm(pi1)**2/2) == 1:
-            return stage.accept(phi1, actVal1)
-        return stage.reject()
+        phiMD1, pi1, actValMD1 = leapfrog(phiMD, pi, self.action,
+                                          next(self._lengthIter), int(next(self._nstepIter)))
+
+        # transform to MC manifold
+        (phi1, actVal1, logdetJ1) = (phiMD1, actValMD1, 0) if self.transform is None \
+            else self.transform.forward(phiMD1, actValMD1)
+
+        # accept/reject on MC manifold
+        trajPoint = self.selector.selectTrajPoint(stage.sumLogWeights()+np.linalg.norm(pi)**2/2,
+                                                  actVal1+logdetJ1+np.linalg.norm(pi1)**2/2)
+        logWeights = None if self.transform is None \
+            else {"logdetJ": (logdetJ, logdetJ1)[trajPoint]}
+        return stage.accept(phi1, actVal1, logWeights) if trajPoint == 1 \
+            else stage.reject()
 
     def save(self, h5group, manager):
         r"""!
@@ -159,6 +175,9 @@ class LinearStepLeapfrog(Evolver):
         h5group["maxNstep"] = self.nstepRange[1]
         h5group["ninterp"] = self.ninterp
         h5group["current"] = self._current
+        if self.transform is not None:
+            # TODO dispatch to the manager as well
+            self.transform.save(h5group.create_group("transform"), manager)
 
     @classmethod
     def fromH5(cls, h5group, _manager, action, _lattice, rng):
@@ -171,6 +190,11 @@ class LinearStepLeapfrog(Evolver):
         \param rng Central random number generator for the run.
         \returns A newly constructed leapfrog evolver.
         """
+        if "transform" in h5group:
+            # TODO get type from manager
+            transform = None
+        else:
+            transform = None
         return cls(action,
                    (h5group["minLength"][()], h5group["maxLength"][()]),
                    (h5group["minNstep"][()], h5group["maxNstep"][()]),
