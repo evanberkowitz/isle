@@ -56,3 +56,22 @@ class Transform(metaclass=ABCMeta):
         \param rng Central random number generator for the run.
         \returns A newly constructed transform.
         """
+
+
+def backwardTransform(transform, stage):
+    """!
+    Backwards transform a configuration in an EvolutionStage and compute
+    Jacobian for forwards tranform if necessary.
+    """
+
+    # there is no transform => Jacobian is zero
+    if transform is None:
+        return stage.phi, 0
+
+    # Jacobian is known and stored in EvolutionStage
+    if "logdetJ" in stage.logWeights:
+        return transform.backward(stage.phi, False)[0], \
+            stage.logWeights["logdetJ"]
+
+    # Jacobian is unknown
+    return transform.backward(stage.phi, True)
