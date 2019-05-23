@@ -1,5 +1,7 @@
 \page evolversdoc Evolvers
 
+\todo documen transforms
+
 Evolvers are the main component of HMC evolution.
 Their task is transforming one configuration into another one along the Markov chain.
 
@@ -28,6 +30,19 @@ Another example is isle.evolver.hubbard.TwoPiJumps which generates discrete shif
 configuration and uses knowledge of the action of the Hubbard model to compute the change in energy.
 It can do multiple updates and accept or reject each one individually all encapsulated
 in one call to `evolve`.
+
+Evolvers have to operate as mostly closed off units and can only communicate by means of
+the interface of the `evolve` method as mediated by the HMC driver.
+The argument and return value of `evolve`, isle.evolver.stage.EvolutionStage, allows
+storing custom MC weights in addition to the action.
+On top of this, there is a facility to store arbitrary data (as long as it can be written to HDF5)
+in the '`extra`' attribute.
+For both special cases it is important to keep in mind that users might use evolvers in ways
+not expected by the author.
+It is therefore advised to guard any usage of `EvolutionStage.logWeights` and
+`EvolutionStage.extra` to make sure MCMC proceeds correctly.
+As a good practice, all evolvers should use the `accept` and `reject` methods of
+`EvolutionStage` to clear out any unused extra attributes and help with detecting errors.
 
 
 ### Save / Load
