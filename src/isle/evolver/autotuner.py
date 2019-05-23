@@ -668,25 +668,18 @@ class LeapfrogTuner(Evolver):  # pylint: disable=too-many-instance-attributes
         ## Final tuned parameters, None if incomplete or unsuccessful.
         self._tunedParameters = None
 
-    def evolve(self, phi, actVal, trajPoint):
+    def evolve(self, stage):
         r"""!
         Run one step of leapfrog integration and tune parameters.
-        \param phi Input configuration.
-        \param actVal Value of the action at phi.
-        \param trajPoint 0 if previous trajectory was rejected, 1 if it was accepted.
-        \returns In order:
-          - New configuration
-          - Action evaluated at new configuration
-          - Point along trajectory that was selected
-          - Weights for re-weighting for new configuration, not including the action.
-            `dict` or `None`.
+        \param stage EvolutionStage at the beginning of this evolution step.
+        \returns EvolutionStage at the end of this evolution step.
         """
 
         # do not evolve any more, signal the driver to stop
         if self._finished:
             raise StopIteration()
 
-        phi, actVal, trajPoint, weights = self._doEvolve(phi, actVal, trajPoint)
+        stage = self._doEvolve(stage)
 
         log = getLogger("atune")
         currentRecord = self.registrar.currentRecord()
@@ -715,7 +708,7 @@ class LeapfrogTuner(Evolver):  # pylint: disable=too-many-instance-attributes
             log.error("Tuning was unsuccessful within the given maximum number of runs")
             self._finalize(None)
 
-        return phi, actVal, trajPoint, weights
+        return stage
 
     def currentParams(self):
         r"""!
@@ -724,23 +717,24 @@ class LeapfrogTuner(Evolver):  # pylint: disable=too-many-instance-attributes
         record = self.registrar.currentRecord()
         return {"length": record.length, "nstep": record.nstep}
 
-    def _doEvolve(self, phi0, actVal0, _trajPoint0):
+    def _doEvolve(self, stage):
         r"""!
         Do the leapfrog integration and record probability and trajectory point.
         """
 
         params = self.currentParams()
-        pi0 = Vector(self.rng.normal(0, 1, len(phi0))+0j)
-        phi1, pi1, actVal1 = leapfrog(phi0, pi0, self.action, params["length"], params["nstep"])
-        energy0 = actVal0 + pi0@pi0/2
+        pi0 = Vector(self.rng.normal(0, 1, len(stage.phi))+0j)
+        phi1, pi1, actVal1 = leapfrog(stage.phi, pi0, self.action,
+                                      params["length"], params["nstep"])
+        energy0 = stage.sumLogWeights() + pi0@pi0/2
         energy1 = actVal1 + pi1@pi1/2
         trajPoint1 = self._selector.selectTrajPoint(energy0, energy1)
 
         self.registrar.currentRecord().add(min(1, exp(np.real(energy0 - energy1))),
                                            trajPoint1)
 
-        return (phi1, actVal1, trajPoint1, None) if trajPoint1 == 1 \
-            else (phi0, actVal0, trajPoint1, None)
+        return stage.accept(phi1, actVal1) if trajPoint1 == 1 \
+            else stage.reject()
 
     def _shiftNstep(self):
         r"""!

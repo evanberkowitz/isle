@@ -33,25 +33,20 @@ class ConstStepLeapfrog(Evolver):
         self.selector = BinarySelector(rng)
         self.transform = transform
 
-    def evolve(self, phi, actVal, _trajPoint):
+    def evolve(self, stage):
         r"""!
         Run leapfrog integrator.
-        \param phi Input configuration.
-        \param actVal Value of the action at phi.
-        \param _trajPoint \e ignored.
-        \returns In order:
-          - New configuration
-          - Action evaluated at new configuration
-          - Point along trajectory that was selected
-          - Weights for re-weighting for new configuration, not including the action.
-            `dict` or `None`.
+        \param stage EvolutionStage at the beginning of this evolution step.
+        \returns EvolutionStage at the end of this evolution step.
         """
 
+        # TODO cmpute logdetJ if not stored but trafo is not None
         # get start phi for MD integration
-        (phiMD, logdetJ) = (phi, 0) if self.transform is None else self.transform.backward(phi)
+        (phiMD, logdetJ) = (stage.phi, 0) if self.transform is None\
+            else self.transform.backward(stage.phi), stage.logWeights["logdetJ"]
 
         # do MD integration
-        pi = Vector(self.rng.normal(0, 1, len(phi))+0j)
+        pi = Vector(self.rng.normal(0, 1, len(stage.phi))+0j)
         phiMD1, pi1, actValMD1 = leapfrog(phiMD, pi, self.action, self.length, self.nstep)
 
         # transform to MC manifold
@@ -59,12 +54,12 @@ class ConstStepLeapfrog(Evolver):
             else self.transform.forward(phiMD1, actValMD1)
 
         # accept/reject on MC manifold
-        trajPoint = self.selector.selectTrajPoint(actVal+np.linalg.norm(pi)**2/2+logdetJ,
-                                                  actVal1+np.linalg.norm(pi1)**2/2+logdetJ1)
-        extraWeights = None if self.transform is None\
+        trajPoint = self.selector.selectTrajPoint(stage.sumLogWeights()+np.linalg.norm(pi)**2/2,
+                                                  actVal1+logdetJ1+np.linalg.norm(pi1)**2/2)
+        logWeights = None if self.transform is None\
             else {"logdetJ": (logdetJ, logdetJ1)[trajPoint]}
-        return (phi1, actVal1, trajPoint, extraWeights) if trajPoint == 1 \
-            else (phi, actVal, trajPoint, extraWeights)
+        return stage.accept(phi1, actVal1, logWeights) if trajPoint == 1 \
+            else stage.reject()
 
     def save(self, h5group, manager):
         r"""!
@@ -137,28 +132,21 @@ class LinearStepLeapfrog(Evolver):
             next(self._lengthIter)
             next(self._nstepIter)
 
-    def evolve(self, phi, actVal, _trajPoint):
+    def evolve(self, stage):
         r"""!
         Run leapfrog integrator.
-        \param phi Input configuration.
-        \param actVal Value of the action at phi.
-        \param _trajPoint \e ignored.
-        \returns In order:
-          - New configuration
-          - Action evaluated at new configuration
-          - Point along trajectory that was selected
-          - Weights for re-weighting for new configuration, not including the action.
-            `dict` or `None`.
+        \param stage EvolutionStage at the beginning of this evolution step.
+        \returns EvolutionStage at the end of this evolution step.
         """
         self._current += 1
 
-        pi = Vector(self.rng.normal(0, 1, len(phi))+0j)
-        phi1, pi1, actVal1 = leapfrog(phi, pi, self.action,
+        pi = Vector(self.rng.normal(0, 1, len(stage.phi))+0j)
+        phi1, pi1, actVal1 = leapfrog(stage.phi, pi, self.action,
                                       next(self._lengthIter), int(next(self._nstepIter)))
-        trajPoint = self.selector.selectTrajPoint(actVal+np.linalg.norm(pi)**2/2,
-                                                  actVal1+np.linalg.norm(pi1)**2/2)
-        return (phi1, actVal1, trajPoint, None) if trajPoint == 1 \
-            else (phi, actVal, trajPoint, None)
+        if self.selector.selectTrajPoint(stage.sumLogWeights()+np.linalg.norm(pi)**2/2,
+                                         actVal1+np.linalg.norm(pi1)**2/2) == 1:
+            return stage.accept(phi1, actVal1)
+        return stage.reject()
 
     def save(self, h5group, manager):
         r"""!

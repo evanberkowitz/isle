@@ -12,18 +12,11 @@ class Evolver(metaclass=ABCMeta):
     """
 
     @abstractmethod
-    def evolve(self, phi, actVal, trajPoint):
+    def evolve(self, stage):
         r"""!
         Evolve a configuration and momentum.
-        \param phi Input configuration.
-        \param actVal Value of the action at phi.
-        \param trajPoint 0 if previous trajectory was rejected, 1 if it was accepted.
-        \returns In order:
-          - New configuration
-          - Action evaluated at new configuration
-          - Point along trajectory that was selected
-          - Weights for re-weighting for new configuration, not including the action.
-            `dict` or `None`.
+        \param stage EvolutionStage at the beginning of this evolution step.
+        \returns EvolutionStage at the end of this evolution step.
         """
 
     @abstractmethod
