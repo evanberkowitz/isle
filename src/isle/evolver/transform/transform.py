@@ -24,11 +24,14 @@ class Transform(metaclass=ABCMeta):
         """
 
     @abstractmethod
-    def backward(self, phi):
+    def backward(self, phi, jacobian=False):
         r"""!
         Transform a configuration from MC to proposal manifold.
         \param phi Configuration on MC manifold.
-        \returns Configuration on proposal manifold.
+        \returns
+            - Configuration on proposal manifold
+            - \f$\log \det J\f$ where \f$J\f$ is the Jacobian of the
+              *forwards* transformation. `None` if `jacobian==False`.
         """
 
     @abstractmethod
