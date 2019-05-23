@@ -4,8 +4,8 @@ Evolvers are the main component of HMC evolution.
 Their task is transforming one configuration into another one along the Markov chain.
 
 All evolvers must inherit from isle.evolver.Evolver and implement the abstract interface.
-- The <B>`evolve`</B> method takes an input configuration `phi` and conjugate momentum `pi`
-  and returns a new configuration and momentum.
+- The <B>`evolve`</B> method takes an input configuration `phi` and returns
+  a new configuration both stored in an instance of isle.evolver.stage.EvolutionStage.
 - <B>`save`</B> stores the current state of the evolver in an HDF5 group so the evolver can
   be reconstructed by `fromH5` later and resume evolution.
 - The classmethod <B>`fromH5`</B> constructs a new instance of the evolver from HDF5 based
@@ -19,13 +19,13 @@ They have to generate suitable proposals for new configurations and
 select one all in such a way that reversibility and detailed balance are maintained.
 Only the generation of the conjugate momenta is handled by the user.
 
-An examples of this is isle.evolver.ConstStepLeapfrog which uses leapfrog integration
+An examples of this is isle.evolver.leapfrog.ConstStepLeapfrog which uses leapfrog integration
 to generate a new `phi` and `pi` out of a starting configuration and momentum.
-Those new fields are either accepted or rejected by isle.evolver.BinarySelector which
+Those new fields are either accepted or rejected by isle.evolver.selector.BinarySelector which
 uses Metropolis accept/reject.
 
-Another example is isle.evolver.TwoPiJumps which generates discrete shifts in the
-configuration and uses knowledge of the action to compute the change in energy.
+Another example is isle.evolver.hubbard.TwoPiJumps which generates discrete shifts in the
+configuration and uses knowledge of the action of the Hubbard model to compute the change in energy.
 It can do multiple updates and accept or reject each one individually all encapsulated
 in one call to `evolve`.
 
