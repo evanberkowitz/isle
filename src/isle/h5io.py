@@ -30,6 +30,7 @@ def createH5Group(base, name):
     # does not exists yet
     return base.create_group(name)
 
+# TODO remove
 def writeDict(h5group, dictionary):
     """!
     Write a `dict` into an HDF5 group by storing each dict element as a dataset.
@@ -103,33 +104,21 @@ def initializeNewFile(fname, overwrite, lattice, params, makeActionSrc, extraGro
 
     writeMetadata(fname, lattice, params, makeActionSrc)
 
-def writeTrajectory(h5group, label, phi, actVal, trajPoint, weights):
+def writeTrajectory(h5group, label, stage):
     r"""!
     Write a trajectory (endpoint) to a HDF5 group.
-    Creates a new group with name 'label' and stores
-    Configuration, action, and whenther the trajectory was accepted.
+    Creates a new group with name 'label' and stores the EvolutionStage.
 
     \param h5group Base HDF5 group to store trajectory in.
     \param label Name of the subgroup of `h5group` to write to.
                  The subgroup must not already exist.
-    \param phi Configuration to save.
-    \param actVal Value of the action at configuration `phi`.
-    \param trajPoint Point on the trajectory that was accepted.
-                     `trajPoint==0` is the start point and values `>0` or `<0` are
-                     `trajPoint` MD steps after or before the start point.
-    \param weights Weights for re-weighting for configuration `phi`, not including the action.
-                     `dict` or `None`.
+    \param stage EvolutionStage to save.
 
     \returns The newly created HDF5 group containing the trajectory.
     """
 
     grp = h5group.create_group(str(label))
-    grp["phi"] = phi
-    grp["action"] = actVal
-    grp["trajPoint"] = trajPoint
-    if weights:
-        writeDict(grp.create_group("weights"), weights)
-
+    stage.save(grp)
     return grp
 
 def writeCheckpoint(h5group, label, rng, trajGrpName, evolver, evolverManager):
@@ -175,6 +164,7 @@ def loadCheckpoint(h5group, label, evolverManager, action, lattice):
     evolver = evolverManager.load(grp["evolver"], action, lattice, rng)
     return rng, phi, evolver
 
+# TODO return EvolutionStage
 def loadConfiguration(h5group, trajIdx=-1, path="configuration"):
     r"""!
     Load a configuration from HDF5.

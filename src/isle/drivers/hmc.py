@@ -9,7 +9,7 @@ import h5py as h5
 from .. import Vector, fileio, cli
 from ..meta import sourceOfFunction, callFunctionFromSource
 from ..util import verifyVersionsByException
-from ..evolver import EvolverManager
+from ..evolver import EvolverManager, EvolutionStage
 
 class HMC:
     r"""!
@@ -38,11 +38,11 @@ class HMC:
         self._propManager = propManager if propManager \
             else EvolverManager(outfname, definitions=definitions)
 
-    def __call__(self, phi, evolver, ntr, saveFreq, checkpointFreq):
+    def __call__(self, stage, evolver, ntr, saveFreq, checkpointFreq):
         r"""!
         Evolve configuration using %HMC.
 
-        \param phi Start configuration to evolve.
+        \param stage Start configuration or evolution stage to evolve.
         \param evolver Used to evolve configurations for Metropolis accept/reject.
         \param ntr Number of trajectories to generate.
                    May be `None` in which case production never stops unless the
@@ -51,8 +51,7 @@ class HMC:
         \param checkpointFreq Write a checkpoint every `checkpointFreq` trajectories.
                               Must be a multiple of `saveFreq`.
 
-        \returns (phi, actVal, trajPoint), field configuration, value of the action,
-                 and selected trajectory point of last trajectory.
+        \returns EvolutionStage of last trajectory.
         """
 
         if checkpointFreq != 0 and checkpointFreq % saveFreq != 0:
@@ -60,16 +59,14 @@ class HMC:
                                       " Got %d and %d, resp.", checkpointFreq, saveFreq)
             raise ValueError("checkpointFreq must be a multiple of saveFreq.")
 
-        trajPoint = 1  # point of last trajectory that was selected
-        actVal = self.action.eval(phi)  # running action (without pi)
+        if not isinstance(stage, EvolutionStage):
+            # make sure it an EvolutionStage
+            stage = EvolutionStage(stage, self.action.eval(stage), 1)
 
         for _ in _iterTrajectories(ntr):
-            # get initial conditions for evolver
-            startPhi, startActVal = phi, actVal
-
             try:
-                # get new fields
-                phi, actVal, trajPoint, weights = evolver.evolve(startPhi, startActVal, trajPoint)
+                # do evolution
+                stage = evolver.evolve(stage)
             except StopIteration:
                 # the evolver wants to stop,
                 # don't advance or save because no new config was produced
@@ -79,25 +76,24 @@ class HMC:
 
             # advance before saving because phi is a new configuration (no 0 is handled above)
             self.advance()
-            self._saveConditionally(phi, actVal, trajPoint, weights,
-                                    evolver, saveFreq, checkpointFreq)
+            self._saveConditionally(stage, evolver, saveFreq, checkpointFreq)
 
-        return phi, actVal, trajPoint
+        return stage
 
-    def saveFieldAndCheckpoint(self, phi, actVal, trajPoint, weights, evolver):
+    def saveFieldAndCheckpoint(self, stage, evolver):
         """!
         Write a trajectory (endpoint) and checkpoint to file.
         """
         with h5.File(self.outfname, "a") as outf:
-            cfgGrp = self._writeTrajectory(outf, phi, actVal, trajPoint, weights)
+            cfgGrp = self._writeTrajectory(outf, stage)
             self._writeCheckpoint(outf, cfgGrp, evolver)
 
-    def save(self, phi, actVal, trajPoint, weights):
+    def save(self, stage):
         """!
         Write a trajectory (endpoint) to file.
         """
         with h5.File(self.outfname, "a") as outf:
-            self._writeTrajectory(outf, phi, actVal, trajPoint, weights)
+            self._writeTrajectory(outf, stage)
 
     def advance(self, amount=1):
         """!
@@ -111,22 +107,20 @@ class HMC:
         """
         self._trajIdx = idx
 
-    def _saveConditionally(self, phi, actVal, trajPoint, weights,
-                           evolver, saveFreq, checkpointFreq):
+    def _saveConditionally(self, stage, evolver, saveFreq, checkpointFreq):
         """!Save the trajectory and checkpoint if frequencies permit."""
         if saveFreq != 0 and self._trajIdx % saveFreq == 0:
             if checkpointFreq != 0 and self._trajIdx % checkpointFreq == 0:
-                self.saveFieldAndCheckpoint(phi, actVal, trajPoint, weights, evolver)
+                self.saveFieldAndCheckpoint(stage, evolver)
             else:
-                self.save(phi, actVal, trajPoint, weights)
+                self.save(stage)
 
-    def _writeTrajectory(self, h5file, phi, actVal, trajPoint, weights):
+    def _writeTrajectory(self, h5file, stage):
         """!
         Write a trajectory (endpoint) to a HDF5 group.
         """
         try:
-            return fileio.h5.writeTrajectory(h5file["configuration"], self._trajIdx,
-                                             phi, actVal, trajPoint, weights)
+            return fileio.h5.writeTrajectory(h5file["configuration"], self._trajIdx, stage)
         except (ValueError, RuntimeError) as err:
             if "name already exists" in err.args[0]:
                 getLogger(__name__).error("Cannot write trajectory %d to file %s."
