@@ -45,6 +45,8 @@ namespace isle {
                     return expmSym(-sigmaKappa*kappa - mu*IdMatrix<double>(kappa.rows()));
                 }
             }
+            // Strictly speaking impossible to reach but gcc complains.
+            throw std::invalid_argument("Unknown species");
         }
     }
 
@@ -91,6 +93,8 @@ namespace isle {
                 return _expKappah;
             }
         }
+        // Strictly speaking impossible to reach but gcc complains.
+        throw std::invalid_argument("Unknown species");
     }
 
     std::complex<double> HubbardFermiMatrixExp::logdetExpKappa(const Species species,
@@ -622,6 +626,8 @@ namespace isle {
         case Species::HOLE:
             return logdetM_h(hfm, phi);
         }
+        // Strictly speaking impossible to reach but gcc complains.
+        throw std::invalid_argument("Unknown species");
     }
 
     namespace {
