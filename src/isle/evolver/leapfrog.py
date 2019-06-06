@@ -6,7 +6,7 @@ Evolvers that perform molecular dynamics integration of configurations using lea
 import numpy as np
 
 from .evolver import Evolver
-from .transform import backwardTransform
+from .transform import backwardTransform, forwardTransform
 from .selector import BinarySelector
 from .. import Vector, leapfrog
 from ..collection import hingeRange
@@ -49,8 +49,7 @@ class ConstStepLeapfrog(Evolver):
         phiMD1, pi1, actValMD1 = leapfrog(phiMD, pi, self.action, self.length, self.nstep)
 
         # transform to MC manifold
-        (phi1, actVal1, logdetJ1) = (phiMD1, actValMD1, 0) if self.transform is None \
-            else self.transform.forward(phiMD1, actValMD1)
+        phi1, actVal1, logdetJ1 = forwardTransform(self.transform, phiMD1, actValMD1)
 
         # accept/reject on MC manifold
         trajPoint = self.selector.selectTrajPoint(stage.sumLogWeights()+np.linalg.norm(pi)**2/2,
@@ -152,8 +151,7 @@ class LinearStepLeapfrog(Evolver):
                                           next(self._lengthIter), int(next(self._nstepIter)))
 
         # transform to MC manifold
-        (phi1, actVal1, logdetJ1) = (phiMD1, actValMD1, 0) if self.transform is None \
-            else self.transform.forward(phiMD1, actValMD1)
+        phi1, actVal1, logdetJ1 = forwardTransform(self.transform, phiMD1, actValMD1)
 
         # accept/reject on MC manifold
         trajPoint = self.selector.selectTrajPoint(stage.sumLogWeights()+np.linalg.norm(pi)**2/2,

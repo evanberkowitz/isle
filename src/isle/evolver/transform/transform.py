@@ -61,7 +61,7 @@ class Transform(metaclass=ABCMeta):
 def backwardTransform(transform, stage):
     """!
     Backwards transform a configuration in an EvolutionStage and compute
-    Jacobian for forwards tranform if necessary.
+    Jacobian for forwards transform if necessary.
     """
 
     # there is no transform => Jacobian is zero
@@ -75,3 +75,15 @@ def backwardTransform(transform, stage):
 
     # Jacobian is unknown
     return transform.backward(stage.phi, True)
+
+def forwardTransform(transform, phi, actVal):
+    """!
+    Forwards transform a configuration and compute Jacobian.
+    """
+
+    # there is no transform
+    if transform is None:
+        return phi, actVal, 0
+
+    # delegate to the actual transform
+    return transform.forward(phi, actVal)
