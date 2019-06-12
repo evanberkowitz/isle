@@ -14,7 +14,7 @@ class Transform(metaclass=ABCMeta):
     @abstractmethod
     def forward(self, phi, actVal):
         r"""!
-        Transform a configuration from proposal to MC manifold.
+        %Transform a configuration from proposal to MC manifold.
         \param phi Configuration on proposal manifold.
         \param actVal Value of the action at phi.
         \returns In order:
@@ -26,7 +26,7 @@ class Transform(metaclass=ABCMeta):
     @abstractmethod
     def backward(self, phi, jacobian=False):
         r"""!
-        Transform a configuration from MC to proposal manifold.
+        %Transform a configuration from MC to proposal manifold.
         \param phi Configuration on MC manifold.
         \returns
             - Configuration on proposal manifold
@@ -47,7 +47,7 @@ class Transform(metaclass=ABCMeta):
     @abstractmethod
     def fromH5(cls, h5group, manager, action, lattice, rng):
         r"""!
-        Construct a trasnform from HDF5.
+        Construct a transform from HDF5.
         Create and initialize a new instance from parameters stored via Transform.save().
         \param h5group HDF5 group to load parameters from.
         \param manager EvolverManager responsible for the HDF5 file.

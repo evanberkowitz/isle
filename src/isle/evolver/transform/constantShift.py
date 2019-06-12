@@ -27,7 +27,7 @@ class ConstantShift(Transform):
 
     def forward(self, phi, actVal):
         r"""!
-        Transform a configuration from proposal to MC manifold.
+        Shift by +shift.
         \param phi Configuration on proposal manifold.
         \param actVal Value of the action at phi.
         \returns In order:
@@ -39,7 +39,7 @@ class ConstantShift(Transform):
 
     def backward(self, phi, jacobian=False):
         r"""!
-        Transform a configuration from MC to proposal manifold.
+        Shift by -shift.
         \param phi Configuration on MC manifold.
         \returns
             - Configuration on proposal manifold
@@ -60,7 +60,7 @@ class ConstantShift(Transform):
     @classmethod
     def fromH5(cls, h5group, _manager, action, _lattice, _rng):
         r"""!
-        Construct a trasnform from HDF5.
+        Construct a transform from HDF5.
         Create and initialize a new instance from parameters stored via Identity.save().
         \param h5group HDF5 group to load parameters from.
         \param _manager EvolverManager responsible for the HDF5 file.
