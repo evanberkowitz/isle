@@ -21,24 +21,27 @@ class EvolverManager:
     Uses the file structure descriped in \ref filelayout.
     """
 
-    def __init__(self, fname, typeLocation="/meta/evolvers", definitions={}):
+    def __init__(self, fname, evolverTypeLocation="/meta/evolvers",
+                 transformTypeLocation="/meta/transforms", definitions={}):
         r"""!
         Initialize for a given file.
         \param fname Path to the file to manage.
-        \param typeLocation Path inside the file where evolver types are to be stored.
+        \param evolverTypeLocation Path inside the file where evolver types are to be stored.
+        \param transformTypeLocation Path inside the file where transform types are to be stored.
         \param definitions Dictionary of extra definitions to take into account when
                saving/loading evolvers.
         """
 
-        self.typeLocation = typeLocation
+        self.evolverTypeLocation = evolverTypeLocation
+        self.transformTypeLocation = transformTypeLocation
         self.extraDefinitions = definitions
-        # list of all currently existing evolvers in the file
+        # list of all currently existing evolvers and transforms in the file
         # index in this list is index in file
-        self._evolvers = self._loadTypes(Path(fname))
+        self._evolvers, self._transforms = self._loadTypes(Path(fname))
 
     def _loadTypes(self, fname):
         r"""!
-        Load all types of evolvers in file `fname`.
+        Load all types of evolvers and transforms in file `fname`.
         """
 
         if not fname.exists():
@@ -47,83 +50,130 @@ class EvolverManager:
 
         with h5.File(fname, "r") as h5f:
             try:
-                grp = h5f[self.typeLocation]
+                grp = h5f[self.evolverTypeLocation]
+                evolvers = [_retrieveTypeFrom(g, Evolver, self.extraDefinitions)
+                            for _, g in sorted(grp.items(), key=lambda p: int(p[0]))]
+                getLogger(__name__).info("Loaded evolver types from file %s:\n    %s",
+                                         fname,
+                                         "\n    ".join(f"{i}: {p}" for i, p in enumerate(evolvers)))
             except KeyError:
                 getLogger(__name__).info("No evolvers found in file %s", fname)
-                return []
+                evolvers = []
 
-            evolvers = [_retrieveTypeFrom(g, Evolver, self.extraDefinitions)
-                        for _, g in sorted(grp.items(), key=lambda p: int(p[0]))]
-        getLogger(__name__).info("Loaded evolver types from file %s:\n    %s",
-                                 fname,
-                                 "\n    ".join(f"{i}: {p}" for i, p in enumerate(evolvers)))
-        return evolvers
+            try:
+                grp = h5f[self.transformTypeLocation]
+                transforms = [_retrieveTypeFrom(g, Transform, self.extraDefinitions)
+                            for _, g in sorted(grp.items(), key=lambda p: int(p[0]))]
+                getLogger(__name__).info("Loaded transform types from file %s:\n    %s",
+                                         fname,
+                                         "\n    ".join(f"{i}: {p}" for i, p in enumerate(transforms)))
+            except KeyError:
+                getLogger(__name__).info("No transforms found in file %s", fname)
+                transforms = []
 
-    def saveType(self, evolver, h5file):
+        return evolvers, transforms
+
+    def _saveType(self, obj, baseClass, h5file):
         r"""!
         Save the type of an evolver if it is not already stored.
-        \param evolver Evolver object (<I>not</I> type!) to save.
+        \param obj Object (<I>not</I> type!) to save.
+        \param baseClass Base class of the type to save (Evolver or Transform).
         \param h5file File to save to.
-        \returns Index of the evolver type in the file.
+        \returns Index of the type in the file.
         """
 
-        typ = type(evolver)
+        if baseClass == Evolver:
+            collection = self._evolvers
+            location = self.evolverTypeLocation
+        elif baseClass == Transform:
+            collection = self._transforms
+            location = self.transformTypeLocation
+        else:
+            raise ValueError(f"Base class not supported: {baseClass}")
+
+        typ = type(obj)
 
         # check if it is already stored
-        for index, stored in enumerate(self._evolvers):
+        for index, stored in enumerate(collection):
             if stored.__name__ == typ.__name__:
                 return index
 
         # else: is not stored yet
-        index = len(self._evolvers)
-        self._evolvers.append(typ)
+        index = len(collection)
+        collection.append(typ)
 
-        grp = h5file.create_group(self.typeLocation+f"/{index}")
-        _storeTypeTo(evolver, grp, Evolver, self.extraDefinitions)
+        grp = h5file.create_group(location+f"/{index}")
+        _storeTypeTo(obj, grp, baseClass, self.extraDefinitions)
 
-        getLogger(__name__).info("Saved evolver number %d: %s", index, typ)
+        getLogger(__name__).info("Saved %s number %d: %s",
+                                 "evolver" if baseClass == Evolver else "transform",
+                                 index, typ)
 
         return index
 
-    def save(self, evolver, h5group):
+    def save(self, obj, h5group):
         r"""!
-        Save an evolver including its type.
-        \param evolver Evolver object to save.
-        \param h5group Group in the HDF5 file to save the evolver's parameters to.
-                       Stores the index of the evolver's type in the attribute `__index__`
-                       of the group.
+        Save an evolver or transform including its type.
+        \param obj Evolver or Transform object to save.
+        \param h5group Group in the HDF5 file to save parameters to.
+                       Stores the index of the type in the attribute `__index__` of the group.
         """
 
         # save the type
-        index = self.saveType(evolver, h5group.file)
+        if isinstance(obj, Evolver):
+            index = self._saveType(obj, Evolver, h5group.file)
+            h5group.attrs["__object_kind__"] = "Evolver"
+        elif isinstance(obj, Transform):
+            index = self._saveType(obj, Transform, h5group.file)
+            h5group.attrs["__object_kind__"] = "Transform"
+        else:
+            getLogger(__name__).error("Cannot save object of type %s", type(obj))
+            raise ValueError(f"Cannot save object {obj}")
 
         # save the parameters
-        evolver.save(h5group, self)
+        obj.save(h5group, self)
 
         # link to the type
         h5group.attrs["__index__"] = index
 
-    def loadType(self, index, h5file):
+    def loadEvolverType(self, index, h5file):
         r"""!
         Load an evolver type from file.
         \param index Index of the type to load. Corresponds to group name in the type location.
         \param h5file HDF5 file to load the type from.
         """
-        return _retrieveTypeFrom(h5file[self.typeLocation+f"/{index}"], Evolver)
+        return _retrieveTypeFrom(h5file[self.evolverTypeLocation+f"/{index}"], Evolver)
+
+    def loadTransformType(self, index, h5file):
+        r"""!
+        Load an Transform type from file.
+        \param index Index of the type to load. Corresponds to group name in the type location.
+        \param h5file HDF5 file to load the type from.
+        """
+        return _retrieveTypeFrom(h5file[self.transformTypeLocation+f"/{index}"], Transform)
 
     def load(self, h5group, action, lattice, rng):
         r"""!
-        Load an evolver's type and construct an instance from given group.
+        Load the type of an evolver or transform and construct an instance from given group.
         The type has to be stored in the 'type location' (see `__init__`) in the same file
         as `h5group`.
-        \param h5group Group in the file where evolver parameters are stored.
-        \param action Passed to evolver's constructor.
-        \param lattice Passed to evolver's constructor.
-        \param rng Passed to evolver's constructor.
+        \param h5group Group in the file where evolver/transform parameters are stored.
+        \param action Passed to evolver's/transform's constructor.
+        \param lattice Passed to evolver's/transform's constructor.
+        \param rng Passed to evolver's/transform's constructor.
         """
-        return self.loadType(h5group.attrs["__index__"][()], h5group.file) \
-                   .fromH5(h5group, self, action, lattice, rng)
+        kind = h5group.attrs["__object_kind__"]
+        if kind == "Evolver":
+            return self.loadEvolverType(int(h5group.attrs["__index__"]), h5group.file) \
+                       .fromH5(h5group, self, action, lattice, rng)
+        if kind == "Transform":
+            return self.loadTransformType(int(h5group.attrs["__index__"]), h5group.file) \
+                       .fromH5(h5group, self, action, lattice, rng)
 
+        getLogger(__name__).error("Cannot load object from file at location '%s', "
+                                  "unsupported kind: %s\n",
+                                  h5group.name, kind)
+        raise RuntimeError("Cannot load object from file, unsupported kind")
 
 def _storeTypeTo(obj, h5group, baseClass, definitions={}):
     r"""! \ingroup evolvers
