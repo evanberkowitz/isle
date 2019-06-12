@@ -159,7 +159,7 @@ def newRun(lattice, params, rng, makeAction, outfile, overwrite, definitions={})
     \param overwrite If `False`, nothing in the output file will be erased/overwritten.
                      If `True`, the file is removed and re-initialized, whereby all content is lost.
     \param definitions Dictionary of mapping names to custom types. Used to control how evolvers
-                       are stored for checkpoints. See evolvers.saveEvolverType().
+                       are stored for checkpoints.
 
     \returns A new HMC instance to control evolution initialized with given parameters.
     """
@@ -195,7 +195,7 @@ def continueRun(infile, outfile, startIdx, overwrite, definitions={}):
                         - (`infile!=outfile`): outfile is removed and re-initialized,
                           whereby all content is lost.
     \param definitions Dictionary of mapping names to custom types. Used to control how evolvers
-                       are stored for checkpoints. See evolvers.saveEvolverType().
+                       are stored for checkpoints.
 
     \returns In order:
         - Instance of HMC constructed from parameters found in `infile`.
