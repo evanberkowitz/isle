@@ -68,23 +68,21 @@ class ConstStepLeapfrog(Evolver):
         h5group["length"] = self.length
         h5group["nstep"] = self.nstep
         if self.transform is not None:
-            # TODO dispatch to the manager as well
-            self.transform.save(h5group.create_group("transform"), manager)
+            manager.save(self.transform, h5group.create_group("transform"))
 
     @classmethod
-    def fromH5(cls, h5group, _manager, action, _lattice, rng):
+    def fromH5(cls, h5group, manager, action, lattice, rng):
         r"""!
         Construct from HDF5.
         \param h5group HDF5 group to load parameters from.
-        \param _manager \e ignored.
+        \param manager EvolverManager responsible for the HDF5 file.
         \param action Action to use.
-        \param _lattice \e ignored.
+        \param lattice Lattice the simulation runs on.
         \param rng Central random number generator for the run.
-        \returns A newly constructed leapfrog evolver.
+        \returns A newly constructed evolver.
         """
         if "transform" in h5group:
-            # TODO get type from manager
-            transform = None
+            transform = manager.load(h5group[f"transform"], action, lattice, rng)
         else:
             transform = None
         return cls(action, h5group["length"][()], h5group["nstep"][()], rng, transform)
@@ -174,23 +172,21 @@ class LinearStepLeapfrog(Evolver):
         h5group["ninterp"] = self.ninterp
         h5group["current"] = self._current
         if self.transform is not None:
-            # TODO dispatch to the manager as well
-            self.transform.save(h5group.create_group("transform"), manager)
+            manager.save(self.transform, h5group.create_group("transform"))
 
     @classmethod
-    def fromH5(cls, h5group, _manager, action, _lattice, rng):
+    def fromH5(cls, h5group, manager, action, lattice, rng):
         r"""!
         Construct from HDF5.
         \param h5group HDF5 group to load parameters from.
-        \param _manager \e ignored.
+        \param manager EvolverManager responsible for the HDF5 file.
         \param action Action to use.
-        \param _lattice \e ignored.
+        \param lattice Lattice the simulation runs on.
         \param rng Central random number generator for the run.
-        \returns A newly constructed leapfrog evolver.
+        \returns A newly constructed evolver.
         """
         if "transform" in h5group:
-            # TODO get type from manager
-            transform = None
+            transform = manager.load(h5group[f"transform"], action, lattice, rng)
         else:
             transform = None
         return cls(action,
@@ -198,4 +194,5 @@ class LinearStepLeapfrog(Evolver):
                    (h5group["minNstep"][()], h5group["maxNstep"][()]),
                    h5group["ninterp"][()],
                    rng,
-                   h5group["current"][()])
+                   startPoint=h5group["current"][()],
+                   transform=transform)
