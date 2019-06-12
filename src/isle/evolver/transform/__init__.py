@@ -1,4 +1,4 @@
-r"""!\file
+r"""!
 \ingroup evolvers
 Transformations of configurations during MC evolution.
 """
