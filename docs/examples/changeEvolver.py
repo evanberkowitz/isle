@@ -57,7 +57,7 @@ def main():
     # This reads the indicated checkpoint (latest by default) from the file
     # and extracts the save and checkpoint frequencies based on how often data
     # was saved / checkpointed to the file before.
-    hmcState, phi, evolver, \
+    hmcState, evStage, evolver, \
         saveFreq, checkpointFreq = isle.drivers.hmc.continueRun(args.infile, args.outfile,
                                                                 args.initial, args.overwrite)
 
@@ -73,7 +73,7 @@ def main():
 
     # Run the driver with the input data and user specified parameters.
     getLogger(__name__).info("Starting evolution")
-    hmcState(phi, evolver, args.ntrajectories,
+    hmcState(evStage, evolver, args.ntrajectories,
              saveFreq=saveFreq, checkpointFreq=checkpointFreq)
 
 

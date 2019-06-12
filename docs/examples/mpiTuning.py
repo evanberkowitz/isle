@@ -134,7 +134,7 @@ def tuneForEnsemble(latticeYAML, paramsYAML, clArgs):
     # The number of steps (99) must be one less than the number of trajectories below.
     evolver = isle.evolver.LinearStepLeapfrog(hmcState.action, (1, 1), (20, 5), 99, rng)
     # Thermalize configuration for 100 trajectories without saving anything.
-    phi, *_ = hmcState(phi, evolver, 100, saveFreq=0, checkpointFreq=0)
+    stage = hmcState(phi, evolver, 100, saveFreq=0, checkpointFreq=0)
     # Reset the internal counter so we start saving configs at index 0.
     hmcState.resetIndex()
 
@@ -143,7 +143,7 @@ def tuneForEnsemble(latticeYAML, paramsYAML, clArgs):
     # constructor for a list of all supported parameters.
     evolver = isle.evolver.LeapfrogTuner(hmcState.action, 1, 1, rng, outputFile)
     # Run evolution with the tuner for an indefinite number of trajectories,
-    hmcState(phi, evolver, None, saveFreq=1, checkpointFreq=0)
+    hmcState(stage, evolver, None, saveFreq=1, checkpointFreq=0)
 
 
 def main():

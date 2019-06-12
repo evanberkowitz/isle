@@ -108,7 +108,7 @@ def tune(rng):
     # The number of steps (99) must be one less than the number of trajectories below.
     evolver = isle.evolver.LinearStepLeapfrog(hmcState.action, (1, 1), (20, 5), 99, rng)
     # Thermalize configuration for 100 trajectories without saving anything.
-    phi, *_ = hmcState(phi, evolver, 100, saveFreq=0, checkpointFreq=0)
+    evStage = hmcState(phi, evolver, 100, saveFreq=0, checkpointFreq=0)
     # Reset the internal counter so we start saving configs at index 0.
     hmcState.resetIndex()
 
@@ -123,7 +123,7 @@ def tune(rng):
     # Run evolution with the tuner for an indefinite number of trajectories,
     # LeapfrogTuner is in charge of terminating the run.
     # Checkpointing is not supported by the tuner, so checkpointFreq must be 0.
-    hmcState(phi, evolver, None, saveFreq=1, checkpointFreq=0)
+    hmcState(evStage, evolver, None, saveFreq=1, checkpointFreq=0)
 
 
 def produce(rng):
@@ -149,7 +149,7 @@ def produce(rng):
     # to continue from, so load configuration and evolver manually.
     with h5.File(TUNEFILE, "r") as h5f:
         # Load the last saved configuration.
-        phi, *_ = isle.h5io.loadConfiguration(h5f)
+        phi, _ = isle.h5io.loadConfiguration(h5f)
         # Construct a ConstStepLeapfrog evolver from tuned parameters.
         evolver = isle.evolver.LeapfrogTuner.loadTunedEvolver(h5f, hmcState.action, rng)
 

@@ -44,18 +44,11 @@ class TwoPiJumps(Evolver):
 
         self._action = _HubbardActionShortcut(action)
 
-    def evolve(self, phi, pi, actVal, trajPoint):
+    def evolve(self, stage):
         r"""!
         Evolve a configuration, momentum remains unchanged.
-        \param phi Input configuration.
-        \param pi Input Momentum.
-        \param actVal Value of the action at phi.
-        \param trajPoint \e ignored.
-        \returns In order:
-          - New configuration
-          - New momentum
-          - Action evaluated at new configuration
-          - 0 if no jump was accepted, 1 if at least one was accepted (across all batches).
+        \param stage EvolutionStage at the beginning of this evolution step.
+        \returns EvolutionStage at the end of this evolution step.
         """
 
         # nothing accepted yet
@@ -68,18 +61,14 @@ class TwoPiJumps(Evolver):
             shifts = self.rng.choice((-2*np.pi, +2*np.pi), self.batchSize, replace=True)
 
             # perform jumps
-            newPhi = np.array(phi, copy=True)
+            newPhi = np.array(stage.phi, copy=True)
             newPhi[sites] += shifts
-            newActVal = self._action.evalLocal(newPhi, sites, shifts, actVal)
+            newActVal = self._action.evalLocal(newPhi, sites, shifts, stage.actVal)
 
             # no need to put pi into check, it never changes in here
-            if self.selector.selectTrajPoint(actVal, newActVal) == 1:
-                phi, actVal = newPhi, newActVal
-                trajPoint = 1  # something has been accepted
-            # else:
-            #     nothing to do, variables are already set up
-
-        return phi, pi, actVal, trajPoint
+            if self.selector.selectTrajPoint(stage.actVal, newActVal) == 1:
+                return stage.accept(isle.Vector(newPhi), newActVal)
+            return stage.reject()
 
     def save(self, h5group, _manager):
         r"""!
@@ -129,31 +118,20 @@ class UniformJump(Evolver):
         # absolute value of shift
         self._absShift = 2*np.pi/lattice.nt()
 
-    def evolve(self, phi, pi, actVal, trajPoint):
+    def evolve(self, stage):
         r"""!
         Evolve a configuration, momentum remains unchanged.
-        \param phi Input configuration.
-        \param pi Input Momentum.
-        \param actVal Value of the action at phi.
-        \param trajPoint \e ignored.
-        \returns In order:
-          - New configuration
-          - New momentum
-          - Action evaluated at new configuration
-          - 0 if no jump was accepted, 1 if at least one was accepted (across all batches).
+        \param stage EvolutionStage at the beginning of this evolution step.
+        \returns EvolutionStage at the end of this evolution step.
         """
 
         shift = self.rng.choice((-1, +1)) * self._absShift
-        newPhi = np.array(phi, copy=False) + shift
-        newActVal = self._action.evalGlobal(newPhi, shift, actVal)
+        newPhi = np.array(stage.phi, copy=False) + shift
+        newActVal = self._action.evalGlobal(newPhi, shift, stage.actVal)
 
-        if self.selector.selectTrajPoint(actVal, newActVal) == 1:
-            phi, actVal = isle.Vector(newPhi), newActVal
-            trajPoint = 1
-        else:
-            trajPoint = 0
-
-        return phi, pi, actVal, trajPoint
+        if self.selector.selectTrajPoint(stage.actVal, newActVal) == 1:
+            return stage.accept(isle.Vector(newPhi), newActVal)
+        return stage.reject()
 
     def save(self, _h5group, _manager):
         r"""!

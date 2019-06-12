@@ -13,6 +13,7 @@ from . import Vector, isleVersion, pythonVersion, blazeVersion, pybind11Version
 from .random import readStateH5
 from .collection import listToSlice, parseSlice, subslice, normalizeSlice
 
+
 def createH5Group(base, name):
     r"""!
     Create a new HDF5 group if it does not yet exist.
@@ -29,6 +30,20 @@ def createH5Group(base, name):
                          +" name already exists in '{}/{}'").format(name, base.filename, base.name))
     # does not exists yet
     return base.create_group(name)
+
+# TODO remove
+def writeDict(h5group, dictionary):
+    """!
+    Write a `dict` into an HDF5 group by storing each dict element as a dataset.
+    """
+    for key, value in dictionary.items():
+        h5group[key] = value
+
+def loadDict(h5group):
+    """!
+    Load all datasets from an HDF5 group into a dictionary.
+    """
+    return {key: dset[()] for key, dset in h5group.items()}
 
 def writeMetadata(fname, lattice, params, makeActionSrc):
     """!
@@ -90,28 +105,21 @@ def initializeNewFile(fname, overwrite, lattice, params, makeActionSrc, extraGro
 
     writeMetadata(fname, lattice, params, makeActionSrc)
 
-def writeTrajectory(h5group, label, phi, actVal, trajPoint):
+def writeTrajectory(h5group, label, stage):
     r"""!
     Write a trajectory (endpoint) to a HDF5 group.
-    Creates a new group with name 'label' and stores
-    Configuration, action, and whenther the trajectory was accepted.
+    Creates a new group with name 'label' and stores the EvolutionStage.
 
     \param h5group Base HDF5 group to store trajectory in.
     \param label Name of the subgroup of `h5group` to write to.
                  The subgroup must not already exist.
-    \param phi Configuration to save.
-    \param actVal Value of the action at configuration `phi`.
-    \param trajPoint Point on the trajectory that was accepted.
-                     `trajPoint==0` is the start point and values `>0` or `<0` are
-                     `trajPoint` MD steps after or before the start point.
+    \param stage EvolutionStage to save.
 
     \returns The newly created HDF5 group containing the trajectory.
     """
 
     grp = h5group.create_group(str(label))
-    grp["phi"] = phi
-    grp["action"] = actVal
-    grp["trajPoint"] = trajPoint
+    stage.save(grp)
     return grp
 
 def writeCheckpoint(h5group, label, rng, trajGrpName, evolver, evolverManager):
@@ -148,14 +156,14 @@ def loadCheckpoint(h5group, label, evolverManager, action, lattice):
                           including its type.
     \param action Action to construct the evolver with.
     \param lattice Lattice to construct the evolver with.
-    \returns (RNG, configuration, evolver)
+    \returns (RNG, HDF5 group of configuration, evolver)
     """
 
     grp = h5group[str(label)]
     rng = readStateH5(grp["rngState"])
-    phi = Vector(grp["cfg/phi"][()])
+    cfgGrp = grp["cfg"]
     evolver = evolverManager.load(grp["evolver"], action, lattice, rng)
-    return rng, phi, evolver
+    return rng, cfgGrp, evolver
 
 def loadConfiguration(h5group, trajIdx=-1, path="configuration"):
     r"""!
@@ -167,7 +175,7 @@ def loadConfiguration(h5group, trajIdx=-1, path="configuration"):
                    plain index into the array of all configurations.
     \param path Path under `h5group` that contains configurations.
 
-    \returns (configuration, action value, trajectory point)
+    \returns (configuration, action value)
     """
 
     configs = loadList(h5group[path])
@@ -175,7 +183,7 @@ def loadConfiguration(h5group, trajIdx=-1, path="configuration"):
     idx = configs[-1][0]+trajIdx+1 if trajIdx < 0 else trajIdx
     # get the configuration group with the given index
     cfgGrp = next(pair[1] for pair in loadList(h5group[path]) if pair[0] == idx)
-    return Vector(cfgGrp["phi"][()]), cfgGrp["action"][()], cfgGrp["trajPoint"][()]
+    return Vector(cfgGrp["phi"][()]), cfgGrp["action"][()]
 
 def loadList(h5group, convert=int):
     r"""!

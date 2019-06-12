@@ -6,8 +6,9 @@ Evolvers that perform molecular dynamics integration of configurations using lea
 import numpy as np
 
 from .evolver import Evolver
+from .transform import backwardTransform, forwardTransform
 from .selector import BinarySelector
-from .. import leapfrog
+from .. import Vector, leapfrog
 from ..collection import hingeRange
 
 
@@ -16,37 +17,47 @@ class ConstStepLeapfrog(Evolver):
     A leapfrog evolver with constant parameters.
     """
 
-    def __init__(self, action, length, nstep, rng):
+    def __init__(self, action, length, nstep, rng, transform=None):
         r"""!
         \param action Instance of isle.Action to use for molecular dynamics.
         \param length Length of the MD trajectory.
         \param nstep Number of MD steps per trajectory.
-        \param rng Central random number generator for the run. Used for accept/reject.
+        \param rng Central random number generator for the run.
+        \param transform (Instance of isle.evolver.transform.Transform)
+                         Used this to transform a configuration after MD integration
+                         but before Metropolis accept/reject.
         """
         self.action = action
         self.length = length
         self.nstep = nstep
+        self.rng = rng
         self.selector = BinarySelector(rng)
+        self.transform = transform
 
-    def evolve(self, phi, pi, actVal, _trajPoint):
+    def evolve(self, stage):
         r"""!
         Run leapfrog integrator.
-        \param phi Input configuration.
-        \param pi Input Momentum.
-        \param actVal Value of the action at phi.
-        \param _trajPoint \e ignored.
-        \returns In order:
-          - New configuration
-          - New momentum
-          - Action evaluated at new configuration
-          - Point along trajectory that was selected
+        \param stage EvolutionStage at the beginning of this evolution step.
+        \returns EvolutionStage at the end of this evolution step.
         """
 
-        phi1, pi1, actVal1 = leapfrog(phi, pi, self.action, self.length, self.nstep)
-        trajPoint = self.selector.selectTrajPoint(actVal+np.linalg.norm(pi)**2/2,
-                                                  actVal1+np.linalg.norm(pi1)**2/2)
-        return (phi1, pi1, actVal1, trajPoint) if trajPoint == 1 \
-            else (phi, pi, actVal, trajPoint)
+        # get start phi for MD integration
+        phiMD, logdetJ = backwardTransform(self.transform, stage)
+
+        # do MD integration
+        pi = Vector(self.rng.normal(0, 1, len(stage.phi))+0j)
+        phiMD1, pi1, actValMD1 = leapfrog(phiMD, pi, self.action, self.length, self.nstep)
+
+        # transform to MC manifold
+        phi1, actVal1, logdetJ1 = forwardTransform(self.transform, phiMD1, actValMD1)
+
+        # accept/reject on MC manifold
+        trajPoint = self.selector.selectTrajPoint(stage.sumLogWeights()+np.linalg.norm(pi)**2/2,
+                                                  actVal1+logdetJ1+np.linalg.norm(pi1)**2/2)
+        logWeights = None if self.transform is None \
+            else {"logdetJ": (logdetJ, logdetJ1)[trajPoint]}
+        return stage.accept(phi1, actVal1, logWeights) if trajPoint == 1 \
+            else stage.reject()
 
     def save(self, h5group, manager):
         r"""!
@@ -56,19 +67,25 @@ class ConstStepLeapfrog(Evolver):
         """
         h5group["length"] = self.length
         h5group["nstep"] = self.nstep
+        if self.transform is not None:
+            manager.save(self.transform, h5group.create_group("transform"))
 
     @classmethod
-    def fromH5(cls, h5group, _manager, action, _lattice, rng):
+    def fromH5(cls, h5group, manager, action, lattice, rng):
         r"""!
         Construct from HDF5.
         \param h5group HDF5 group to load parameters from.
-        \param _manager \e ignored.
+        \param manager EvolverManager responsible for the HDF5 file.
         \param action Action to use.
-        \param _lattice \e ignored.
+        \param lattice Lattice the simulation runs on.
         \param rng Central random number generator for the run.
-        \returns A newly constructed leapfrog evolver.
+        \returns A newly constructed evolver.
         """
-        return cls(action, h5group["length"][()], h5group["nstep"][()], rng)
+        if "transform" in h5group:
+            transform = manager.load(h5group[f"transform"], action, lattice, rng)
+        else:
+            transform = None
+        return cls(action, h5group["length"][()], h5group["nstep"][()], rng, transform)
 
 
 class LinearStepLeapfrog(Evolver):
@@ -81,7 +98,7 @@ class LinearStepLeapfrog(Evolver):
     values.
     """
 
-    def __init__(self, action, lengthRange, nstepRange, ninterp, rng, startPoint=0):
+    def __init__(self, action, lengthRange, nstepRange, ninterp, rng, startPoint=0, transform=None):
         r"""!
         \param action Instance of isle.Action to use for molecular dynamics.
         \param lengthRange Tuple of initial and final trajectory lengths.
@@ -89,13 +106,18 @@ class LinearStepLeapfrog(Evolver):
         \param ninterp Number of interpolating steps.
         \param rng Central random number generator for the run. Used for accept/reject.
         \param startPoint Iteration number to start at.
+        \param transform (Instance of isle.evolver.transform.Transform)
+                         Used this to transform a configuration after MD integration
+                         but before Metropolis accept/reject.
         """
 
         self.action = action
         self.lengthRange = lengthRange
         self.nstepRange = nstepRange
         self.ninterp = ninterp
+        self.rng = rng
         self.selector = BinarySelector(rng)
+        self.transform = transform
 
         self._lengthIter = hingeRange(*lengthRange, (lengthRange[1]-lengthRange[0])/ninterp)
         self._nstepIter = hingeRange(*nstepRange, (nstepRange[1]-nstepRange[0])/ninterp)
@@ -110,27 +132,32 @@ class LinearStepLeapfrog(Evolver):
             next(self._lengthIter)
             next(self._nstepIter)
 
-    def evolve(self, phi, pi, actVal, _trajPoint):
+    def evolve(self, stage):
         r"""!
         Run leapfrog integrator.
-        \param phi Input configuration.
-        \param pi Input Momentum.
-        \param actVal Value of the action at phi.
-        \param _trajPoint \e ignored.
-        \returns In order:
-          - New configuration
-          - New momentum
-          - Action evaluated at new configuration
-          - Point along trajectory that was selected
+        \param stage EvolutionStage at the beginning of this evolution step.
+        \returns EvolutionStage at the end of this evolution step.
         """
         self._current += 1
 
-        phi1, pi1, actVal1 = leapfrog(phi, pi, self.action,
-                                      next(self._lengthIter), int(next(self._nstepIter)))
-        trajPoint = self.selector.selectTrajPoint(actVal+np.linalg.norm(pi)**2/2,
-                                                  actVal1+np.linalg.norm(pi1)**2/2)
-        return (phi1, pi1, actVal1, trajPoint) if trajPoint == 1 \
-            else (phi, pi, actVal, trajPoint)
+        # get start phi for MD integration
+        phiMD, logdetJ = backwardTransform(self.transform, stage)
+
+        # do MD integration
+        pi = Vector(self.rng.normal(0, 1, len(stage.phi))+0j)
+        phiMD1, pi1, actValMD1 = leapfrog(phiMD, pi, self.action,
+                                          next(self._lengthIter), int(next(self._nstepIter)))
+
+        # transform to MC manifold
+        phi1, actVal1, logdetJ1 = forwardTransform(self.transform, phiMD1, actValMD1)
+
+        # accept/reject on MC manifold
+        trajPoint = self.selector.selectTrajPoint(stage.sumLogWeights()+np.linalg.norm(pi)**2/2,
+                                                  actVal1+logdetJ1+np.linalg.norm(pi1)**2/2)
+        logWeights = None if self.transform is None \
+            else {"logdetJ": (logdetJ, logdetJ1)[trajPoint]}
+        return stage.accept(phi1, actVal1, logWeights) if trajPoint == 1 \
+            else stage.reject()
 
     def save(self, h5group, manager):
         r"""!
@@ -144,21 +171,28 @@ class LinearStepLeapfrog(Evolver):
         h5group["maxNstep"] = self.nstepRange[1]
         h5group["ninterp"] = self.ninterp
         h5group["current"] = self._current
+        if self.transform is not None:
+            manager.save(self.transform, h5group.create_group("transform"))
 
     @classmethod
-    def fromH5(cls, h5group, _manager, action, _lattice, rng):
+    def fromH5(cls, h5group, manager, action, lattice, rng):
         r"""!
         Construct from HDF5.
         \param h5group HDF5 group to load parameters from.
-        \param _manager \e ignored.
+        \param manager EvolverManager responsible for the HDF5 file.
         \param action Action to use.
-        \param _lattice \e ignored.
+        \param lattice Lattice the simulation runs on.
         \param rng Central random number generator for the run.
-        \returns A newly constructed leapfrog evolver.
+        \returns A newly constructed evolver.
         """
+        if "transform" in h5group:
+            transform = manager.load(h5group[f"transform"], action, lattice, rng)
+        else:
+            transform = None
         return cls(action,
                    (h5group["minLength"][()], h5group["maxLength"][()]),
                    (h5group["minNstep"][()], h5group["maxNstep"][()]),
                    h5group["ninterp"][()],
                    rng,
-                   h5group["current"][()])
+                   startPoint=h5group["current"][()],
+                   transform=transform)

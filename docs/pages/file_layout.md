@@ -39,6 +39,7 @@ Configuration files always contain three groups at the root level:
                  * `params`: YAML representation of the parameters dataclass object.
                              Stores user defined parameters, physical and otherwise. (String)
                  * `evolvers`: General information on evolvers, see below. (Group)
+                 * `transforms`: General information on transforms, see below. (Group)
                  * `version`: Group containing various versions of the software that was used
                               to make the file, most notably the version of Isle.
                               All versions are stored as strings.
@@ -49,22 +50,28 @@ Evolvers are stored in two different places in HDF5 files.
 The `/meta/evolvers` group contains an enumerated list of the types of evolvers
 and `/checkpoint/<itr>/evolver` contains the state of the evolver after the
 corresponding HMC trajectory.
+In addition, `/meta/transforms` contains an enumerated list of the types of transforms
+that are used by evolvers (if any).
 
-The types of evolvers are stored so they can be reconstructed at a later point in time
-to, for instance, continue an HMC run.
+The types of evolvers and transforms are stored so they can be reconstructed at a later point
+in time to, for instance, continue an HMC run.
 Types are saved on demand only; as long as no checkpoints are written, no types are saved.<br>
 There are two ways, the types can be stored:
-- If the evolver is built into Isle or passed to the EvolverManager instance via the
+- If the evolver/transform is built into Isle or passed to the EvolverManager instance via the
   `definitions` parameter (e.g. through the parameter `definitions` of `isle.drivers.meas.newRun`),
   only its name is stored in a dataset called `__name__`.
-- If the evolver is custom defined and not included in `definitions`, the full source code of the
-  evolver's definition is stored and `__name__` is set to `"__as_source__"`.
-  The dataset `__source__` contains the full source code of the evolver.
+- If the evolver/transform is custom defined and not included in `definitions`, the full source
+  code of the class definition is stored and `__name__` is set to `"__as_source__"`.
+  The dataset `__source__` contains the full source code.
 
-The group of the evolver state contains an attribute `__index__` which holds an integer
-indicating which entry in the types group contains the evolver's type.
-Any other content is determined by the evolver itself.
+The group of the evolver state (under `/checkpoint`) contains an attribute `__index__` which
+holds an integer indicating which entry in the types group contains the evolver's type.
+The attribute `__object__kind__` is set to `"Evolver"` to indicate to the EvolverManager how
+to read the HDF5 group.
+Any other content is determined by the evolver itself, including state of transforms.
 Evolvers are allowed to refer to the type definitions.
+The state of transforms is stored in a sub group of the evolver group and has an attribute
+`__object__kind__` containing `"Transform"` and an `__index__` analogously to the evolver.
 
 \see Additional information on %evolvers, in particular handling of types,
 can be found in \ref evolversdoc.
@@ -111,7 +118,8 @@ Here is an example of a combined configuration and measurement file:
 │  ├─ action (source of function)
 │  ├─ lattice (YAML)
 │  ├─ params (YAML)
-│  ├─ evolvers (group)
+│  ├─ evolvers (group, only if checkpoints are present)
+│  ├─ transforms (group, only if any transforms are used)
 │  └─ versions (group)
 │
 │  # measurements:
