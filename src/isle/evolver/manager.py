@@ -9,6 +9,7 @@ from pathlib import Path
 import h5py as h5
 
 from .evolver import Evolver
+from .transform import Transform
 from ..meta import classFromSource, sourceOfClass
 
 
@@ -26,7 +27,7 @@ class EvolverManager:
         \param fname Path to the file to manage.
         \param typeLocation Path inside the file where evolver types are to be stored.
         \param definitions Dictionary of extra definitions to take into account when
-               saving/loading evolvers. See saveEvolverType() and loadEvolverType().
+               saving/loading evolvers.
         """
 
         self.typeLocation = typeLocation
@@ -51,8 +52,8 @@ class EvolverManager:
                 getLogger(__name__).info("No evolvers found in file %s", fname)
                 return []
 
-            evolvers = [loadEvolverType(g, self.extraDefinitions)
-                         for _, g in sorted(grp.items(), key=lambda p: int(p[0]))]
+            evolvers = [_retrieveTypeFrom(g, Evolver, self.extraDefinitions)
+                        for _, g in sorted(grp.items(), key=lambda p: int(p[0]))]
         getLogger(__name__).info("Loaded evolver types from file %s:\n    %s",
                                  fname,
                                  "\n    ".join(f"{i}: {p}" for i, p in enumerate(evolvers)))
@@ -78,7 +79,7 @@ class EvolverManager:
         self._evolvers.append(typ)
 
         grp = h5file.create_group(self.typeLocation+f"/{index}")
-        saveEvolverType(evolver, grp, self.extraDefinitions)
+        _storeTypeTo(evolver, grp, Evolver, self.extraDefinitions)
 
         getLogger(__name__).info("Saved evolver number %d: %s", index, typ)
 
@@ -108,7 +109,7 @@ class EvolverManager:
         \param index Index of the type to load. Corresponds to group name in the type location.
         \param h5file HDF5 file to load the type from.
         """
-        return loadEvolverType(h5file[self.typeLocation+f"/{index}"])
+        return _retrieveTypeFrom(h5file[self.typeLocation+f"/{index}"], Evolver)
 
     def load(self, h5group, action, lattice, rng):
         r"""!
@@ -124,65 +125,73 @@ class EvolverManager:
                    .fromH5(h5group, self, action, lattice, rng)
 
 
-def saveEvolverType(evolver, h5group, definitions={}):
+def _storeTypeTo(obj, h5group, baseClass, definitions={}):
     r"""! \ingroup evolvers
-    Save an evolver's type to HDF5.
+    Save a class to HDF5.
 
     There are three possible scenarios:
-     - The evolver is built into Isle: Only its name is stored.
+     - The class is built into Isle: Only its name is stored.
        It can be reconstructed automatically.
-     - The evolver is custom defined and included in parameter `definitions`:
-       Only its name is stored. It needs to be passed to loadEvolverType() when
+     - The class is custom defined and included in parameter `definitions`:
+       Only its name is stored. It needs to be passed to _retrieveTypeFrom() when
        reconstructing.
-     - The evolver is custom defined and not included in `definitions`:
-       The full source code of the evolver's definition is stored.
-       This requries that the evolver is fully self-contained, i.e. not use
+     - The class is custom defined and not included in `definitions`:
+       The full source code of the class's definition is stored.
+       This requries that the class is fully self-contained, i.e. not use
        any symbols from outside its own definition (except for `isle`).
 
-    \see loadEvolverType to load evolvers saved with this function.
+    \see _retrieveTypeFrom to load evolvers saved with this function.
     """
 
-    if not isinstance(evolver, Evolver):
-        getLogger(__name__).error("Can only save instances of subclasses of "
-                                  "isle.evolver.Evolver, given %s",
-                                  type(evolver))
+    if not isinstance(obj, baseClass):
+        getLogger(__name__).error("Can only save instances of subclasses of %s, given %s",
+                                  baseClass, type(obj))
         raise ValueError("Not an evolver")
 
-    # get the name of the evolver's class
-    name = type(evolver).__name__
+    # get the name of the class
+    name = type(obj).__name__
     if name == "__as_source__":
-        getLogger(__name__).error("Evolvers must not be called __as_source__. "
+        getLogger(__name__).error("Classes must not be called __as_source__. "
                                   "That name is required for internal use.")
-        raise ValueError("Evolver must not be called __as_source__")
+        raise ValueError("Class must not be called __as_source__")
 
-    if evolver.__module__.startswith("isle.evolver") or type(evolver).__name__ in definitions:
+    if obj.__module__.startswith("isle.evolver") or type(obj).__name__ in definitions:
         # builtin or custom
         h5group["__name__"] = name
-        getLogger(__name__).info("Saved type of evolver %s via its name", name)
+        getLogger(__name__).info("Saved type %s via its name", name)
 
     else:
         # store source
         h5group["__name__"] = "__as_source__"
-        src = sourceOfClass(type(evolver))
+        src = sourceOfClass(type(obj))
         # attempt to reconstruct it to check for errors early
         import isle
-        classFromSource(src, {"isle": isle, "evolvers": isle.evolver, "Evolver": Evolver})
+        classFromSource(src, {"isle": isle,
+                              "evolver": isle.evolver,
+                              "evolver.evolver": isle.evolver.evolver,
+                              "Evolver": Evolver,
+                              "transform": isle.evolver.transform,
+                              "evolver.transform": isle.evolver.transform,
+                              "evolver.transform.transform": isle.evolver.transform,
+                              "Transform": isle.evolver.transform.Transform})
         h5group["__source__"] = src
-        getLogger(__name__).info("Saved type of evolver %s as source", name)
+        getLogger(__name__).info("Saved type %s as source", name)
 
-def loadEvolverType(h5group, definitions={}):
+def _retrieveTypeFrom(h5group, baseClass, definitions={}):
     r"""! \ingroup evolvers
-    Retrieves the class of an evolver from HDF5.
+    Retrieves a class from HDF5.
 
-    \param h5group HDF5 group containing name, (source), parameters of an evolver.
+    \param h5group HDF5 group containing name and optionally source a class.
+    \param baseClass Required base class of the class retrieved from HDF5.
     \param definitions Dict containing custom definitions. If it contains an entry
-                       with the name of the evolver, it is loaded based on that
+                       with the name of the class, it is loaded based on that
                        entry instead of from source code.
     \return Class loaded from file.
 
-    \see saveEvolverType() to save evolvers in a supported format.
+    \see _storeTypeTo() to save classes in a supported format.
     """
 
+    # name of the class
     name = h5group["__name__"][()]
 
     import isle  # get it here so it is not imported unless needed
@@ -193,29 +202,42 @@ def loadEvolverType(h5group, definitions={}):
                                   {"isle": isle,
                                    "evolver": isle.evolver,
                                    "evolver.evolver": isle.evolver.evolver,
-                                   "Evolver": Evolver})
+                                   "Evolver": Evolver,
+                                   "transform": isle.evolver.transform,
+                                   "evolver.transform": isle.evolver.transform,
+                                   "evolver.transform.transform": isle.evolver.transform,
+                                   "Transform": isle.evolver.transform.Transform})
         except ValueError:
-            getLogger(__name__).error("Source code for evolver does not define a class. "
-                                      "Cannot load evolver.")
-            raise RuntimeError("Cannot load evolver from source") from None
+            getLogger(__name__).error("Source code does not define a class. "
+                                      "Cannot load %s.", baseClass)
+            raise RuntimeError("Cannot load class from source") from None
 
     else:  # from name + known definition
         try:
-            # builtin, in the package that Evolver is defined in (i.e. this one)
-            # cls = getmodule(Evolver).__dict__[name]
-            cls = isle.evolver.__dict__[name]
+            # try and load a built in class
+            if baseClass == Evolver:
+                cls = isle.evolver.__dict__[name]
+            elif baseClass == Transform:
+                cls = isle.evolver.transform.__dict__[name]
+            else:
+                getLogger(__name__).error("Base class not supported when loading types in evolver"
+                                          "manager: %s", baseClass)
+                raise ValueError("Base class not supported")
+
         except KeyError:
             try:
                 # provided by user
                 cls = definitions[name]
             except KeyError:
                 getLogger(__name__).error(
-                    "Unable to load evolver of type '%s' from source. "
+                    "Unable to load class '%s' from source. "
                     "The type is neither built in nor provided through argument 'definitions'.",
                     name)
-                raise RuntimeError("Cannot load evolver from source") from None
+                raise RuntimeError("Cannot load type from source") from None
 
-    if not issubclass(cls, Evolver):
-        getLogger(__name__).error("Loaded type is not an evolver: %s", name)
+    if not issubclass(cls, baseClass):
+        getLogger(__name__).error("Loaded type is not derived from target base class: %s, base=%s",
+                                  name, baseClass)
+        raise RuntimeError("Loaded type is not derived from correct base class")
 
     return cls
