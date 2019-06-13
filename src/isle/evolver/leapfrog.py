@@ -52,8 +52,13 @@ class ConstStepLeapfrog(Evolver):
         phi1, actVal1, logdetJ1 = forwardTransform(self.transform, phiMD1, actValMD1)
 
         # accept/reject on MC manifold
-        trajPoint = self.selector.selectTrajPoint(stage.sumLogWeights()+np.linalg.norm(pi)**2/2,
-                                                  actVal1+logdetJ1+np.linalg.norm(pi1)**2/2)
+        energy0 = stage.sumLogWeights()+np.linalg.norm(pi)**2/2
+        if "logdetJ" not in stage.logWeights:
+            # initial logdetJ might not be stored in stage
+            energy0 += logdetJ
+        energy1 = actVal1+logdetJ1+np.linalg.norm(pi1)**2/2
+        trajPoint = self.selector.selectTrajPoint(energy0, energy1)
+
         logWeights = None if self.transform is None \
             else {"logdetJ": (logdetJ, logdetJ1)[trajPoint]}
         return stage.accept(phi1, actVal1, logWeights) if trajPoint == 1 \
@@ -152,8 +157,13 @@ class LinearStepLeapfrog(Evolver):
         phi1, actVal1, logdetJ1 = forwardTransform(self.transform, phiMD1, actValMD1)
 
         # accept/reject on MC manifold
-        trajPoint = self.selector.selectTrajPoint(stage.sumLogWeights()+np.linalg.norm(pi)**2/2,
-                                                  actVal1+logdetJ1+np.linalg.norm(pi1)**2/2)
+        energy0 = stage.sumLogWeights()+np.linalg.norm(pi)**2/2
+        if "logdetJ" not in stage.logWeights:
+            # initial logdetJ might not be stored in stage
+            energy0 += logdetJ
+        energy1 = actVal1+logdetJ1+np.linalg.norm(pi1)**2/2
+        trajPoint = self.selector.selectTrajPoint(energy0, energy1)
+
         logWeights = None if self.transform is None \
             else {"logdetJ": (logdetJ, logdetJ1)[trajPoint]}
         return stage.accept(phi1, actVal1, logWeights) if trajPoint == 1 \
