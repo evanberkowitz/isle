@@ -39,6 +39,30 @@ By a similar exercise one may show
 which I have checked explicitly for \f$j=3\f$.
 // TODO: check commutation rules with the tight-binding Hamiltonian and interaction terms.
 
+Single-particle and single-hole operators \f$\mathcal{O}\f$ with a definite third component of spin \f$s_3\f$ obeys the eigenvalue equation
+\f[
+    [ S_x^3, \mathcal{O}_y ] = s_3 \mathcal{O}_y \delta_{xy}.
+\f]
+This equation is satisfied when
+\f$(\mathcal{O},s_3) = (a, +\frac{1}{2})\f$,
+\f$(\mathcal{O},s_3) = (a^\dagger, -\frac{1}{2})\f$,
+\f$(\mathcal{O},s_3) = (b, +\frac{1}{2})\f$, and
+\f$(\mathcal{O},s_3) = (b^\dagger, -\frac{1}{2})\f$.
+
+Single-particle and single-hole operators \f$\mathcal{O}\f$ with a definite electric charge \f$q\f$ obeys the eigenvalue equation
+\f[
+    [ \rho_x, \mathcal{O}_y ] = q \mathcal{O}_y \delta_{xy}.
+\f]
+Since \f$\rho = 1-2S^0\f$, we can check the commutator with \f$2S^0\f$.
+I have checked that this equation is satisfied when
+\f$(\mathcal{O},q) = (a, +1)\f$,
+\f$(\mathcal{O},q) = (a^\dagger, -1)\f$,
+\f$(\mathcal{O},q) = (b, -1)\f$, and
+\f$(\mathcal{O},q) = (b^\dagger, +1)\f$.
+Note that the signs are different.
+Presumably there are eigenoperators for \f$S^{1,2}\f$ that are linear combinations of \f$a\f$ and \f$b\f$ with some \f$i\f$s and daggers, but I cannot be bothered to find them.
+
+
 # Correlation Functions
 
 Now we can write correlation functions
@@ -93,9 +117,15 @@ and \f$C^{03}_{xy}\f$, requiring
 \f{align}{
     \left\langle S^{0}_{x} S^{3}_{y}{}^\dagger \right\rangle
     &= \frac{1}{4} \left\langle \left[ a_x a_x^\dagger - b_x b_x^\dagger +1 \right] \left[ a_x a_x^\dagger + b_x b_x^\dagger -1 \right] \right\rangle \\
-    &= \frac{1}{4} \left\langle P_{xx}P_yy - P_{xy}P_{yx} + P_{xx}H_{yy} - H_{xx}P_{yy} - H_{xx} H_{yy} + H_{xy} H_{yx} + P_{xy} - P_{xx} + P_{yy} - H_{xy} + H_{xx} + H_{yy} - 1\right\rangle
+    &= \frac{1}{4} \left\langle P_{xx}P_{yy} - P_{xy}P_{yx} + P_{xx}H_{yy} - H_{xx}P_{yy} - H_{xx} H_{yy} + H_{xy} H_{yx} + P_{xy} - P_{xx} + P_{yy} - H_{xy} + H_{xx} + H_{yy} - 1\right\rangle
 \f}
 while \f$C^{21}_{xy}\f$ and \f$C^{30}_{xy}\f$ are defined analogously.
+Once the all-dagger or no-dagger operators are dropped, it is easy to see that
+\f{align}{
+    \left\langle S^1_x S^2_y{}^\dagger \right\rangle &= - \left\langle S^2_x S^1_y{}^\dagger\right\rangle
+\f}
+but unfortunately no such simple relation holds between (0,3) and (3,0).
+
 Note that 1 and 2 cannot mix with 0 or 3 because each term would not have the right constituent operator content to contract completely.
 
 
