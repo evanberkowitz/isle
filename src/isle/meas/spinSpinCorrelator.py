@@ -11,7 +11,7 @@ and where \f$c\f$ is a doublet of operators,
 \f[
     c_{xs} = \left(\begin{array}{c} a_x \\ (-\sigma_\kappa)^x b_x^\dagger \end{array}\right)
 \f]
-where \f$\sigma_\kappa\f$ is +1 on bipartite lattices and -1 on non-bipartite lattices, following the convention of Isle.
+where \f$\sigma_\kappa\f$ is +1 on bipartite lattices and must be -1 on non-bipartite lattices, following the convention of Isle (bipartite graphs can also have \f$\sigma_\kappa=-1\f$).
 In Buividovich, Smith, Ulybyshev, and von Smekal [1807.07025](https://arxiv.org/abs/1807.07025) [PRB 98 235129](https://doi.org/10.1103/PhysRevB.98.235129) they also define, just after (1),
 the electric charge operator
 \f[
@@ -104,6 +104,17 @@ so that there are terms with four \f$a\f$ operators, and so-called disconnected 
     &= \frac{1}{4} \left\langle P_{xx}P_{yy} - P_{yx} P_{xy} + P_{xx} H_{yy} + P_{xy} - P_{xx} - P_{yy} + (P \leftrightarrow H) + 1 \right\rangle
 \f}
 
+We can also calculate the charge-charge correlator,
+\f{align}{
+    \left\langle \rho_x \rho_y^\dagger \right\rangle
+     = \left\langle (1-2S_x^0) (1-2S_y^0) \right\rangle
+    &= \left\langle 1 - 2 S_x^0 - 2 S_y^0 + 4 S_x^0 S_y^0 \right\rangle  \\
+    &= \left\langle 1 -(a_x a_x^\dagger - b_x b_x^\dagger + 1) - (a_y a_y^\dagger - b_y b_y^\dagger + 1) + (a_x a_x^\dagger - b_x b_x^\dagger + 1)(a_y a_y^\dagger - b_y b_y^\dagger + 1) \right\rangle \\
+    &= \left\langle a_x a_x^\dagger a_y a_y^\dagger - a_x a_x^\dagger b_y b_y^\dagger - b_x b_x^\dagger a_y a_y^\dagger + b_x b_x^\dagger b_y b_y^\dagger \right\rangle \\
+    &= \left\langle a_x (\delta_{yx} - a_y a_x^\dagger ) a_y^\dagger - a_x a_x^\dagger b_y b_y^\dagger - b_x b_x^\dagger a_y a_y^\dagger + b_x (\delta_{yx} - b_y b_x^\dagger) b_y^\dagger \right\rangle \\
+    &= \left\langle P_{xx}P_{yy} - P_{xy}P_{yx} + P_{xy}\delta_{yx} - P_{xx}H_{yy} + (P \leftrightarrow H) \right\rangle
+\f}
+
 Something left undefined in Buividovich et al. are the mixed correlators, \f$C^{12}_{xy}\f$, which requires
 \f{align}{
     \left\langle S^{1}_{x} S^{2}_{y}{}^\dagger \right\rangle
@@ -126,8 +137,82 @@ Once the all-dagger or no-dagger operators are dropped, it is easy to see that
 \f}
 but unfortunately no such simple relation holds between (0,3) and (3,0).
 
-Note that 1 and 2 cannot mix with 0 or 3 because each term would not have the right constituent operator content to contract completely.
+Note that 1 and 2 cannot mix with 0 or 3 because each term would not have the right constituent operator content to contract completely.  This is very curious, and seems kind of broken.
+I think if we had a spin chemical potential that mixed \f$a\f$ and \f$b\f$ operators, such as \f$\mu S^1\f$, we would not be able to split the operators into two species, because the bilinear piece would allow one species to mix with the other while propagating,
+so that the contractions, rather than considering \f$a\f$ and \f$b\f$ separately, would consider \f$c\f$ operators with more entries and the chemical potential would introduce an off-diagonal component.
+Working out the details of this is a question for a different time, however.
 
+
+# Order Parameters
+
+In Meng and Wessel ([PRB 78, 224416 (2008)](http://dx.doi.org/10.1103/PhysRevB.78.224416)), they define the equal-time structure factor
+\f[
+    S_{AF} = \frac{1}{V}\sum_{xy} \epsilon_x \epsilon_y \left\langle S^3_x S^3_y \right\rangle
+\f]
+where \f$\epsilon_x=\pm1\f$ depending on the parity of the site (they study a square lattice), and each sum is over space, \f$V\f$ is the spatial volume, and \f$S_{AF}\f$ is extensive so that \f$S_{AF}/V\f$ scales like a constant towards the infinite volume limit.
+When this order parameter is nonzero, the system is said to exhibit *antiferromagnetic* or *Néel* order.
+
+This definition of \f$S_{AF}\f$ is what we get when we take the equal-time limit of our correlator,
+\f[
+    S_{AF} = U_{\Lambda x}C^{33}_{xy}(0) U^\dagger_{y \Lambda'}
+\f]
+where \f$U\f$ and its dagger are unitary matrices that diagonalize the hopping matrix
+and pick the irreps \f$\Lambda\f$ and \f$\Lambda'\f$ to be those that correspond to sign-alternating but otherwise constant normalized wavefunctions (the normalization provides a \f$1/\sqrt{V}\f$).
+Put another way, we can fourier transform in both spatial coordinates and take the highest frequency mode for each (which is the zero momentum doubler).
+Such an alternating irrep is always there on a bipartite lattice.
+
+What's nice is that using our correlator formulation we get access to a lot more order parameters (picking different irreps) at once,
+and that our definition generalizes to non-bipartite lattices immediately (diagonalizing the hopping matrix is what is fundamental about the fourier transform).
+
+We can construct the CDW order parameter similarly, substituting the charge density operator for \f$S^3\f$.
+Similarly, we can build whole correlators and the order parameters are the zero-time correlators on the diagonal in the irrep basis.
+
+In principle we can construct a four-by-four matrix of correlators (3 spins + the charge) for diagonalization.
+In practice this may not be cost effective / sensible, especially if the different operators are separately conserved.
+If they mix into one another, one should indeed perform this diagonalization.
+
+There is another subtlety in terms of projection: what should we do if the graph is not orientable?
+In other words, if we can parallel transport a spin-z-up particle around and wind up with a spin-z-down particle, the story told above doesn't make sense.
+In that case we must have omitted something about the spin connection, which is currently beyond the scope of our code.
+
+Buividovich et al. study a slightly different order parameter, the squared sum (see their equation 14).
+In their discussion they say that they would like the order parameter to be the difference of spins between the sublattices, presumably
+\f[
+    \left\langle \left(\sum_{x \in A} - \sum_{x\in B}\right) S^3_x \right\rangle
+\f]
+but without introducing a bias and extrapolating the bias to zero (as in spontaneous symmetry breaking), while going to the thermodynamic limit, one finds the order parameter vanishes.
+Instead, they study "the square of the total spin per sublattice",
+\f[
+    \left\langle \left(\sum_{x \in A} S^3_x \right)^2 + \left(\sum_{x \in A} S^3_x \right)^2 \right\rangle,
+\f]
+which is two of the three terms you would get if you squared the straight A-B difference.
+The reason for the omission of the cross-terms is apparently the clarity of the signal; the physical justification is not provided.
+It is not clear how they distinguish this from an indication of the square of the magnetization per sublattice,
+\f[
+    \left\langle \left(\sum_{x \in A} + \sum_{x\in B}\right) S^3_x \right\rangle \longrightarrow \left\langle \left(\sum_{x \in A} S^3_x \right)^2 + \left(\sum_{x \in A} S^3_x \right)^2 \right\rangle
+\f]
+(note the plus sign between the sums on the left).
+If you wish to construct their order parameter, you need matrices that are projectors to just A or just B, not to irreps, and then to sum.
+That is,
+\f[
+    \left\langle \left(\sum_{x \in A} S^3_x \right)^2 + \left(\sum_{x \in A} S^3_x \right)^2 \right\rangle
+    =
+    U_{\Lambda x'}\left(A_{x'x} C^{33}_{xy} A_{yy'} + B_{x'x} C^{33}_{xy} B_{yy'}\right) U^\dagger_{y' \Lambda'},
+\f]
+where the irreps are both the constant-everywhere irrep.  Note the lack of \f$ACB\f$ and \f$BCA\f$ terms.
+
+They also study the squared magnetization, (16),
+\f{align}{
+    \left\langle (m^i)^2 \right\rangle
+    &= \left\langle \left(\frac{1}{V} \sum_x S^i_x \right)^2 \right\rangle \\
+    &= \frac{1}{V} U_{\Lambda x}C^{ii}_{xy}(0) U^\dagger_{y \Lambda'}
+\f}
+which can be expressed as an irrep-projected equal-time spin-spin correlator, just like the \f$S_{AF}\f$ of Meng and Wessel,
+but rather than taking the doubler, simply take the 0-momentum projection on each index.
+
+### Summary
+
+Because we do not assume a bipartite graph, we implement Meng and Wessel's \f$S_{AF}\f$ and Buividovich et al.'s \f$\left\langle (m^i)^2 \right\rangle\f$, and associated order parameters constructed in good irreps.
 
 """
 
