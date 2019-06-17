@@ -242,3 +242,20 @@ def rollTemporally(timeVector, time, fermionic=True):
             nt = len(timeVector)
             result[nt+time:] *= -1
     return result
+
+def temporalRoller(nt, dt, fermionic=True):
+    r"""!
+    A matrix that, when applied to a temporal vector of length nt, rotates by t.
+    \param nt The number of time slices.
+    \param dt How many time slices to rotate by.
+    \param fermionic If true, use antiperiodic boundary conditions.
+    \returns An `nt * nt` matrix `R`, such that `R@(v[t]) = v[t+dt]` with correct boundary conditions.
+    """
+    shift = dt % nt
+    result = np.ones(nt)
+    if fermionic:
+        completeOrbits = dt // nt # integer division does the right thing, even if dt is negative.
+        if 1 == completeOrbits % 2:
+            result *= -1
+        result[nt-shift:]*=-1
+    return np.roll(np.diag(result), shift, axis=0)
