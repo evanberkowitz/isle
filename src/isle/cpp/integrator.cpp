@@ -97,15 +97,15 @@ namespace isle {
     }
 
     std::tuple<CDVector, std::complex<double>>
-    rungeKutta4(const CDVector &phi,
-                const action::Action *action,
-                const double length,
-                const std::size_t nsteps,
-                std::complex<double> actVal,
-                const int n,
-                const double direction,
-                int attempts,
-                const double imActTolerance) {
+    rungeKutta4Flow(const CDVector &phi,
+                    const action::Action *action,
+                    const double length,
+                    const std::size_t nsteps,
+                    std::complex<double> actVal,
+                    const int n,
+                    const double direction,
+                    int attempts,
+                    const double imActTolerance) {
 
         if (n != 0 && n != 1) {
             throw std::invalid_argument("n must be 0 or 1");

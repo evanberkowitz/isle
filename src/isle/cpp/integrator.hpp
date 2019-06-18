@@ -33,8 +33,11 @@ namespace isle {
              std::size_t nsteps,
              double direction=+1);
 
-    /// Perform Runge Kutta (RK4) integration,
+    /// Perform Runge Kutta (RK4) integration for holomorphic flow.
     /**
+     * Flow a configuration using the holomorphic flow equation
+     * \f[\dot{\phi} = {(\nabla_{\phi} S[\phi])}^{\ast}\f]
+     *
      * \param phi Starting configuration.
      * \param action Action to integrate over.
      * \param length Length of the trajectory. The size of each step is `length/nsteps`.
@@ -50,15 +53,15 @@ namespace isle {
      *           - value of action at final phi
      */
     std::tuple<CDVector, std::complex<double>>
-    rungeKutta4(const CDVector &phi,
-                const action::Action *action,
-                double length,
-                std::size_t nsteps,
-                std::complex<double> actVal=std::complex<double>(std::nan(""), std::nan("")),
-                int n=0,
-                double direction=+1,
-                int attempts=10,
-                double imActTolerance=0.001);
+    rungeKutta4Flow(const CDVector &phi,
+                    const action::Action *action,
+                    double length,
+                    std::size_t nsteps,
+                    std::complex<double> actVal=std::complex<double>(std::nan(""), std::nan("")),
+                    int n=0,
+                    double direction=+1,
+                    int attempts=10,
+                    double imActTolerance=0.001);
 }  // namespace isle
 
 #endif  // ndef INTEGRATOR_HPP
