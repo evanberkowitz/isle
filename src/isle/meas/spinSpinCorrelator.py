@@ -62,6 +62,16 @@ I have checked that this equation is satisfied when
 Note that the signs are different.
 Presumably there are eigenoperators for \f$S^{1,2}\f$ that are linear combinations of \f$a\f$ and \f$b\f$ with some \f$i\f$s and daggers, but I cannot be bothered to find them.
 
+One may also construct spin raising and lowering operators in the standard way,
+\f{align}{
+    S^+_x = S^1_x + i S^2_x &= (-\sigma_\kappa)^x a_x b_x \\
+    S^-_x = S^1_x - i S^2_x &= (-\sigma_\kappa)^x b^\dagger_x a^\dagger_x
+\f}
+which obey the eigenvalue relations
+\f[
+    [S_x^3, S^\pm_y ] = \pm S^\pm_y \delta_{xy},
+\f]
+which can be shown using the single-particle and single-hole eigenvalue equations and the identity \f$[A, BC] = [A,B]C + B[A,C]\f$.
 
 # Correlation Functions
 
@@ -142,6 +152,19 @@ I think if we had a spin chemical potential that mixed \f$a\f$ and \f$b\f$ opera
 so that the contractions, rather than considering \f$a\f$ and \f$b\f$ separately, would consider \f$c\f$ operators with more entries and the chemical potential would introduce an off-diagonal component.
 Working out the details of this is a question for a different time, however.
 
+We can also think of correlators between \f$S^+\f$ and \f$S^-\f$,
+\f{align}{
+    \left\langle S^+_x S^-_y \right\rangle
+        &= (-\sigma_\kappa)^{x+y}\left\langle a_x b_x b^\dagger_y a^\dagger_y \right\rangle \\
+        &= (-\sigma_\kappa)^{x+y}\left\langle P_{xy} H_{xy}\right\rangle    \\
+    \left\langle S^-_x S^+_y \right\rangle
+        &= (-\sigma_\kappa)^{x+y}\left\langle b^\dagger_x a^\dagger_x a_y b_y  \right\rangle \\
+        &= (-\sigma_\kappa)^{x+y}\left\langle (\delta_{yx}- b_y b^\dagger_x)(\delta_{yx} - a_y a^\dagger_x)  \right\rangle \\
+        &= (-\sigma_\kappa)^{x+y}\left\langle (\delta_{yx}- H_{yx})(\delta_{yx} - P_{yx})  \right\rangle \\
+\f}
+# TODO: These have a name; I should find it.
+At half filling on a bipartite lattice, the cost to create or destroy a spin from the vacuum should be equal and the correlators should match, in the limit of large statistics.
+
 
 # Order Parameters
 
@@ -157,7 +180,7 @@ This definition of \f$S_{AF}\f$ is what we get when we take the equal-time limit
     S_{AF} = U_{\Lambda x}C^{33}_{xy}(0) U^\dagger_{y \Lambda'}
 \f]
 where \f$U\f$ and its dagger are unitary matrices that diagonalize the hopping matrix
-and pick the irreps \f$\Lambda\f$ and \f$\Lambda'\f$ to be those that correspond to sign-alternating but otherwise constant normalized wavefunctions (the normalization provides a \f$1/\sqrt{V}\f$).
+and pick the irreps \f$\Lambda\f$ and \f$\Lambda'\f$ to be those that correspond to sign-alternating but otherwise constant normalized wavefunctions (the normalizations each provide a \f$1/\sqrt{V}\f$).
 Put another way, we can fourier transform in both spatial coordinates and take the highest frequency mode for each (which is the zero momentum doubler).
 Such an alternating irrep is always there on a bipartite lattice.
 
@@ -166,6 +189,14 @@ and that our definition generalizes to non-bipartite lattices immediately (diago
 
 We can construct the CDW order parameter similarly, substituting the charge density operator for \f$S^3\f$.
 Similarly, we can build whole correlators and the order parameters are the zero-time correlators on the diagonal in the irrep basis.
+
+In Lang's 2010 thesis he defines the antiferromagnetic susceptibility \f$\chi_{AF}\f$ [see eq. (1.16)] which we can extract from
+\f[
+    \chi_{AF} = - U_{\Lambda x} C^{+-}_{xy}(0) U^\dagger_{y \Lambda'}
+\f]
+where the irreps are the sign-alternating irreps.
+I have reproduced his exact result [from the first line in (1.16)] on two spatial sites for a variety of \f$U\f$s and \f$\beta\f$s.
+In (1.16) carefully take note of the signs, and of the fact that the sums are over \f$\ell\neq\ell'\f$.
 
 In principle we can construct a four-by-four matrix of correlators (3 spins + the charge) for diagonalization.
 In practice this may not be cost effective / sensible, especially if the different operators are separately conserved.
@@ -183,19 +214,19 @@ In their discussion they say that they would like the order parameter to be the 
 but without introducing a bias and extrapolating the bias to zero (as in spontaneous symmetry breaking), while going to the thermodynamic limit, one finds the order parameter vanishes.
 Instead, they study "the square of the total spin per sublattice",
 \f[
-    \left\langle \left(\sum_{x \in A} S^3_x \right)^2 + \left(\sum_{x \in A} S^3_x \right)^2 \right\rangle,
+    \left\langle \left(\sum_{x \in A} S^3_x \right)^2 + \left(\sum_{x \in B} S^3_x \right)^2 \right\rangle,
 \f]
 which is two of the three terms you would get if you squared the straight A-B difference.
 The reason for the omission of the cross-terms is apparently the clarity of the signal; the physical justification is not provided.
 It is not clear how they distinguish this from an indication of the square of the magnetization per sublattice,
 \f[
-    \left\langle \left(\sum_{x \in A} + \sum_{x\in B}\right) S^3_x \right\rangle \longrightarrow \left\langle \left(\sum_{x \in A} S^3_x \right)^2 + \left(\sum_{x \in A} S^3_x \right)^2 \right\rangle
+    \left\langle \left(\sum_{x \in A} + \sum_{x\in B}\right) S^3_x \right\rangle \longrightarrow \left\langle \left(\sum_{x \in A} S^3_x \right)^2 + \left(\sum_{x \in B} S^3_x \right)^2 \right\rangle
 \f]
 (note the plus sign between the sums on the left).
 If you wish to construct their order parameter, you need matrices that are projectors to just A or just B, not to irreps, and then to sum.
 That is,
 \f[
-    \left\langle \left(\sum_{x \in A} S^3_x \right)^2 + \left(\sum_{x \in A} S^3_x \right)^2 \right\rangle
+    \left\langle \left(\sum_{x \in A} S^3_x \right)^2 + \left(\sum_{x \in B} S^3_x \right)^2 \right\rangle
     =
     U_{\Lambda x'}\left(A_{x'x} C^{33}_{xy} A_{yy'} + B_{x'x} C^{33}_{xy} B_{yy'}\right) U^\dagger_{y' \Lambda'},
 \f]
@@ -223,20 +254,101 @@ import numpy as np
 
 import isle
 from .measurement import Measurement
-from ..util import spaceToSpacetime, rollTemporally
+from ..util import spaceToSpacetime, temporalRoller
 from ..h5io import createH5Group
 
-class spinSpinCorrelator(Measurement):
+class SpinSpinCorrelator(Measurement):
     r"""!
     \ingroup meas
     Tabulate spin-spin correlators.
     """
 
-    def __init__(savePath, configSlice):
+    def __init__(self, particleAllToAll, holeAllToAll, savePath, configSlice=(None, None, None), projector=None, sigmaKappa=-1):
         super().__init__(savePath, configSlice)
+
+        # The correlation functions encoded here are between bilinear operators.
+        # Since the individual constituents are fermionic, the bilinear is bosonic.
+        self.fermionic = False
+
+
+        self.sigmaKappa = sigmaKappa
+
+        self.particle=particleAllToAll
+        self.hole=holeAllToAll
+
+        self.rho_rho = []
+        self.S1_S1 = []
+        self.S3_S3 = []
+        self.Splus_Sminus = []
+        self.Sminus_Splus = []
+
+        if projector is None:
+            # TODO: warn when diagonalizing the hopping matrix.
+            _, self.irreps = np.linalg.eigh(isle.Matrix(allToAll.hfm.kappaTilde()))
+            self.irreps = self.irreps.T
+        else:
+            self.irreps = projector.T
+
+        self.irreps = np.matrix(self.irreps)
+
 
     def __call__(self, phi, action, itr):
         """!Record the spin-spin correlators."""
+
+        P = self.particle(phi, action, itr)
+        H = self.hole(phi, action, itr)
+
+        nx = P.shape[0]
+        nt = P.shape[1]
+
+        d = np.eye(nx*nt).reshape(*P.shape) # A Kronecker delta
+
+        # TODO: store some einsum paths
+
+        PxxPyy = np.einsum("xfxf,yiyi->xfyi", P, P, optimize="optimal")
+        PxxHyy = np.einsum("xfxf,yiyi->xfyi", P, H, optimize="optimal")
+        dxxdyy = np.einsum("xfxf,yiyi->xfyi", d, d, optimize="optimal")
+        HxxPyy = np.einsum("xfxf,yiyi->xfyi", H, P, optimize="optimal")
+        HxxHyy = np.einsum("xfxf,yiyi->xfyi", H, H, optimize="optimal")
+
+        PxyPyx = np.einsum("xfyi,yixf->xfyi", P, P, optimize="optimal")
+        Pxydyx = np.einsum("xfyi,yixf->xfyi", P, d, optimize="optimal")
+        Hxydyx = np.einsum("xfyi,yixf->xfyi", H, d, optimize="optimal")
+        HxyHyx = np.einsum("xfyi,yixf->xfyi", H, H, optimize="optimal")
+
+        PyxHyx = np.einsum("yixf,yixf->xfyi", P, H, optimize="optimal")
+        Pyxdyx = np.einsum("yixf,yixf->xfyi", P, d, optimize="optimal")
+        Hyxdyx = np.einsum("yixf,yixf->xfyi", H, d, optimize="optimal")
+        dyxdyx = np.einsum("yixf,yixf->xfyi", d, d, optimize="optimal")
+
+        PxyHxy = np.einsum("xfyi,xfyi->xfyi", P, H, optimize="optimal")
+        Pxydyx = np.einsum("xfyi,yixf->xfyi", P, d, optimize="optimal")
+        Hxydyx = np.einsum("xfyi,yixf->xfyi", H, d, optimize="optimal")
+
+        Pxxdyy = np.einsum("xfxf,yiyi->xfyi", P, d)
+        dxxPyy = np.einsum("xfxf,yiyi->xfyi", d, P)
+        Hxxdyy = np.einsum("xfxf,yiyi->xfyi", H, d)
+        dxxHyy = np.einsum("xfxf,yiyi->xfyi", d, H)
+
+        rho_rho = (PxxPyy + HxxHyy) - (PxyPyx + HxyHyx) + (Pxydyx + Hxydyx) - (PxxHyy+HxxPyy)
+        S1_S1 = 0.25*(PxyHxy+ dyxdyx - Pyxdyx - Hyxdyx)
+        S3_S3 = 0.25*((PxxPyy + HxxHyy) - (PxyPyx + HxyHyx) + (PxxHyy + HxxPyy) + (Pxydyx+Hxydyx) - (Pxxdyy+Hxxdyy) - (dxxPyy+dxxHyy) + dxxdyy)
+        Splus_Sminus = PxyHxy
+        Sminus_Splus = (dyxdyx - Pyxdyx - Hyxdyx + PyxHyx)
+
+        self._roll = np.array([temporalRoller(nt, -t, fermionic=self.fermionic) for t in range(nt)])
+
+        # Project to irreps:
+        # rho_rho = np.einsum("idf,bx,xfyi,ya->bad", self._roll, self.irreps, rhoxrhoy, self.irreps.H) / nt
+
+        # Just leave with spatial indices:
+        for observable, storage in zip(
+                (rho_rho,       S1_S1,      S3_S3,      Splus_Sminus,       Sminus_Splus),
+                (self.rho_rho,  self.S1_S1, self.S3_S3, self.Splus_Sminus,  self.Sminus_Splus)
+                ):
+            time_averaged = np.einsum("idf,xfyi->xyd", self._roll, observable) / nt
+            storage.append(time_averaged)
+
 
     def save(self, h5group):
         r"""!
