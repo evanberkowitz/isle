@@ -259,3 +259,13 @@ def temporalRoller(nt, dt, fermionic=True):
             result *= -1
         result[nt-shift:]*=-1
     return np.roll(np.diag(result), shift, axis=0)
+
+def signAlternator(nx, sigmaKappa=-1):
+    # The quantity (-sigmaKappa)^x shows up very frequently.
+    if sigmaKappa == -1:
+        return np.ones(nx)
+    elif sigmaKappa == +1:
+        # NOTE: correctness depends on the even-odd indexing corresponding to the bipartition.
+        return np.diag([ +1 if np.mod(x,2) == 0 else -1 for x in range(nx) ])
+    else:
+        ... # TODO: raise an error.
