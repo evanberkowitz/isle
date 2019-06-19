@@ -31,7 +31,6 @@ def createH5Group(base, name):
     # does not exists yet
     return base.create_group(name)
 
-# TODO remove
 def writeDict(h5group, dictionary):
     """!
     Write a `dict` into an HDF5 group by storing each dict element as a dataset.
