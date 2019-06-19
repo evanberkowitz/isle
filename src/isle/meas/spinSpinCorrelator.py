@@ -382,17 +382,17 @@ class SpinSpinCorrelator(Measurement):
         r"""!
         \param h5group Base HDF5 group. Data is stored in subgroup `h5group/self.savePath`.
         """
-        ...
+        subGroup = createH5Group(h5group, self.savePath)
+        subGroup["irreps"] = self.irreps
+        subGroup["rho_rho"] = self.rho_rho
+        subGroup["S1_S1"] = self.S1_S1
+        subGroup["S3_S3"] = self.S3_S3
+        subgroup["Splus_Sminus"] = self.Splus_Sminus
+        subgroup["Sminus_SPlus"] = self.Sminus_Splus
+
 
 def read(h5group):
     r"""!
     \param h5group HDF5 group which contains the data of this measurement.
     """
-
-    subGroup = createH5Group(h5group, self.savePath)
-    subGroup["irreps"] = self.irreps
-    subGroup["rho_rho"] = self.rho_rho
-    subGroup["S1_S1"] = self.S1_S1
-    subGroup["S3_S3"] = self.S3_S3
-    subgroup["Splus_Sminus"] = self.Splus_Sminus
-    subgroup["Sminus_SPlus"] = self.Sminus_Splus
+    ...
