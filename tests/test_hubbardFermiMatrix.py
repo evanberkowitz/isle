@@ -215,9 +215,9 @@ class TestHubbardFermiMatrix(unittest.TestCase):
             hfm = HFM(kappa/nt, mu/nt, sigmaKappa)
             phi = _randomPhi(nx*nt)
             M = hfm.M(phi, species)
-            rhss = [_randomPhi(nx*nt) for _ in range(2)]
+            rhss = np.array([_randomPhi(nx*nt) for _ in range(2)])
 
-            res = isle.solveM(hfm, phi, species, rhss)
+            res = np.array(isle.solveM(hfm, phi, species, rhss), copy=False)
             chks = [np.max(np.abs(M*r-rhs)) for r, rhs in zip(res, rhss)]
             for chk in chks:
                 self.assertAlmostEqual(chk, 0, places=10,
