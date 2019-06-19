@@ -297,8 +297,8 @@ class SpinSpinCorrelator(Measurement):
     def __call__(self, stage, itr):
         """!Record the spin-spin correlators."""
 
-        P = self.particle(stage.phi, stage.actVal, itr)
-        H = self.hole(stage.phi, stage.actVal, itr)
+        P = self.particle(stage, itr)
+        H = self.hole(stage, itr)
 
         nx = P.shape[0]
         nt = P.shape[1]
@@ -364,7 +364,7 @@ class SpinSpinCorrelator(Measurement):
                 (self.rho_rho,  self.S1_S1, self.S3_S3, self.Splus_Sminus,  self.Sminus_Splus)
                 ):
 
-            print(f"Time averaging {name}...")
+            # print(f"Time averaging {name}...")
             # Just leave with spatial indices:
             # time_averaged = np.einsum("idf,xfyi->xyd", self._roll, observable) / nt
 

@@ -40,7 +40,7 @@ class SingleParticleCorrelator(Measurement):
     def __call__(self, stage, itr):
         """!Record the single-particle correlators."""
 
-        S = self._inverter(stage.phi, stage.actVal, itr)
+        S = self._inverter(stage, itr)
 
         if self.nt is None:
             self.nt = len(stage.phi) // self.nx
