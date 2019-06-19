@@ -200,9 +200,23 @@ namespace isle {
     }
 
     /// Return true if hopping matrix is bipartite, false otherwise.
+    /**
+     * A lattice is only considered bipartite in Isle if the graph defined by the
+     * hopping matrix is bipartite and the site labels alternate.
+     * That is, all even sites must be on one sublattice and all odd sites must
+     * be on the other sublattice.
+     * This function only returns `true` if both conditions are satisfied.
+     */
     bool isBipartite(const SparseMatrix<double> &hoppingMatrix);
 
     /// Return true if hopping matrix of lat is bipartite, false otherwise.
+    /**
+     * A lattice is only considered bipartite in Isle if the graph defined by the
+     * hopping matrix is bipartite and the site labels alternate.
+     * That is, all even sites must be on one sublattice and all odd sites must
+     * be on the other sublattice.
+     * This function only returns `true` if both conditions are satisfied.
+     */
     bool isBipartite(const Lattice &lat);
 
 }  // namespace isle
