@@ -37,6 +37,7 @@ The formation of potentials and correlators are left for analysis.
 
 import numpy as np
 
+import isle
 from .measurement import Measurement
 from ..h5io import createH5Group
 
@@ -62,14 +63,14 @@ class Polyakov(Measurement):
             elif self.basis == isle.action.HFABasis.SPIN:
                 self.forward = 1
         except:
-            getLogger(__name__).exception("Unknown basis.", self.irreps)
+            getLogger(__name__).exception(f"Unknown basis, {self.basis}.")
 
 
     def __call__(self, stage, itr):
         """!Record the sum_t phi_xt and the Polyakov loops."""
-        self.Phi.append(np.sum(np.reshape(stage.phi, (self.nt, -1)), axis=0))
+        self.Phi_x.append(np.sum(np.reshape(stage.phi, (self.nt, -1)), axis=0))
         self.P.append(
-            np.exp(self.forward*self.Phi[-1])
+            np.exp(self.forward*self.Phi_x[-1])
         )
 
     def save(self, h5group):
@@ -79,13 +80,13 @@ class Polyakov(Measurement):
         \param h5group Base HDF5 group. Data is stored in subgroup `h5group/self.savePath`.
         """
         subGroup = createH5Group(h5group, self.savePath)
-        subGroup["Phi_x"] = self.Phi
+        subGroup["Phi_x"] = self.Phi_x
         subGroup["Polyakov"] = self.P
 
 
     def read(h5group):
         r"""!
-        Read Phi and phiSquared from a file.
+        Read Phi_x and the Polyakov loops from a file.
         \param h5group HDF5 group which contains the data of this measurement.
         """
         return h5group["Phi_x"][()], h5group["Polyakov"][()]
