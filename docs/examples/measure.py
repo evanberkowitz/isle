@@ -59,8 +59,9 @@ def main():
         isle.meas.Logdet(hfm, "logdet"),
         # \sum_i phi_i
         isle.meas.TotalPhi("field"),
-        # copy the action into the output file
-        isle.meas.Action("action"),
+        # collect all weights and store them in consolidated datasets instead of
+        # spread out over many HDF5 groups
+        isle.meas.CollectWeights("weights"),
         # single particle correlator for particles / spin up
         isle.meas.SingleParticleCorrelator(hfm, isle.Species.PARTICLE,
                                            "correlation_functions/single_particle",
