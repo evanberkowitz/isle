@@ -66,7 +66,7 @@ class SingleParticleCorrelator(Measurement):
         subGroup = createH5Group(h5group, self.savePath)
         subGroup["correlators"] = self.correlators
         subGroup["irreps"] = self.irreps
-        subGroup["einsum_path"] = self._path
+        # subGroup["einsum_path"] = self._path # TODO: store the optimization; this line of code doesn't work.
 
 def read(h5group):
     r"""!
