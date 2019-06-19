@@ -12,3 +12,4 @@ from .collectWeights import CollectWeights  # (unused import) pylint: disable=W0
 from .logdet import Logdet  # (unused import) pylint: disable=W0611
 from .singleParticleCorrelator import SingleParticleCorrelator  # (unused import) pylint: disable=W0611
 from .totalPhi import TotalPhi  # (unused import) pylint: disable=W0611
+from .spinSpinCorrelator import SpinSpinCorrelator

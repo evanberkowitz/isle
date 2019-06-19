@@ -231,6 +231,7 @@ That is,
     U_{\Lambda x'}\left(A_{x'x} C^{33}_{xy} A_{yy'} + B_{x'x} C^{33}_{xy} B_{yy'}\right) U^\dagger_{y' \Lambda'},
 \f]
 where the irreps are both the constant-everywhere irrep.  Note the lack of \f$ACB\f$ and \f$BCA\f$ terms.
+The CDW parameter \f$q^2\f$ in Buividovich et al. is constructed similarly but with the charge operator.
 
 They also study the squared magnetization, (16),
 \f{align}{
@@ -285,17 +286,19 @@ class SpinSpinCorrelator(Measurement):
         if projector is None:
             # TODO: warn when diagonalizing the hopping matrix.
             _, self.irreps = np.linalg.eigh(isle.Matrix(allToAll.hfm.kappaTilde()))
-            self.irreps = self.irreps.T
+            self.irreps = self.irreps
         else:
-            self.irreps = projector.T
+            self.irreps = projector
 
         self.irreps = np.matrix(self.irreps)
+
+        self._einsum_paths = {}
 
     def __call__(self, stage, itr):
         """!Record the spin-spin correlators."""
 
-        P = self.particle(phi, action, itr)
-        H = self.hole(phi, action, itr)
+        P = self.particle(stage.phi, stage.actVal, itr)
+        H = self.hole(stage.phi, stage.actVal, itr)
 
         nx = P.shape[0]
         nt = P.shape[1]
@@ -303,31 +306,49 @@ class SpinSpinCorrelator(Measurement):
         d = np.eye(nx*nt).reshape(*P.shape) # A Kronecker delta
 
         # TODO: store some einsum paths
+        if "xfxf,yiyi->xfyi" not in self._einsum_paths:
+            self._einsum_paths["xfxf,yiyi->xfyi"], _ = np.einsum_path("xfxf,yiyi->xfyi", d, d, optimize="optimal")
+            print("Optimized xfxf,yiyi->xfyi")
+        PxxPyy = np.einsum("xfxf,yiyi->xfyi", P, P, optimize=self._einsum_paths["xfxf,yiyi->xfyi"])
+        PxxHyy = np.einsum("xfxf,yiyi->xfyi", P, H, optimize=self._einsum_paths["xfxf,yiyi->xfyi"])
+        dxxdyy = np.einsum("xfxf,yiyi->xfyi", d, d, optimize=self._einsum_paths["xfxf,yiyi->xfyi"])
+        HxxPyy = np.einsum("xfxf,yiyi->xfyi", H, P, optimize=self._einsum_paths["xfxf,yiyi->xfyi"])
+        HxxHyy = np.einsum("xfxf,yiyi->xfyi", H, H, optimize=self._einsum_paths["xfxf,yiyi->xfyi"])
 
-        PxxPyy = np.einsum("xfxf,yiyi->xfyi", P, P, optimize="optimal")
-        PxxHyy = np.einsum("xfxf,yiyi->xfyi", P, H, optimize="optimal")
-        dxxdyy = np.einsum("xfxf,yiyi->xfyi", d, d, optimize="optimal")
-        HxxPyy = np.einsum("xfxf,yiyi->xfyi", H, P, optimize="optimal")
-        HxxHyy = np.einsum("xfxf,yiyi->xfyi", H, H, optimize="optimal")
+        if "xfyi,yixf->xfyi" not in self._einsum_paths:
+            self._einsum_paths["xfyi,yixf->xfyi"], _ = np.einsum_path("xfyi,yixf->xfyi", d, d, optimize="optimal")
+            print("Optimized xfyi,yixf->xfyi")
 
-        PxyPyx = np.einsum("xfyi,yixf->xfyi", P, P, optimize="optimal")
-        Pxydyx = np.einsum("xfyi,yixf->xfyi", P, d, optimize="optimal")
-        Hxydyx = np.einsum("xfyi,yixf->xfyi", H, d, optimize="optimal")
-        HxyHyx = np.einsum("xfyi,yixf->xfyi", H, H, optimize="optimal")
+        PxyPyx = np.einsum("xfyi,yixf->xfyi", P, P, optimize=self._einsum_paths["xfyi,yixf->xfyi"])
+        Pxydyx = np.einsum("xfyi,yixf->xfyi", P, d, optimize=self._einsum_paths["xfyi,yixf->xfyi"])
+        Hxydyx = np.einsum("xfyi,yixf->xfyi", H, d, optimize=self._einsum_paths["xfyi,yixf->xfyi"])
+        HxyHyx = np.einsum("xfyi,yixf->xfyi", H, H, optimize=self._einsum_paths["xfyi,yixf->xfyi"])
 
-        PyxHyx = np.einsum("yixf,yixf->xfyi", P, H, optimize="optimal")
-        Pyxdyx = np.einsum("yixf,yixf->xfyi", P, d, optimize="optimal")
-        Hyxdyx = np.einsum("yixf,yixf->xfyi", H, d, optimize="optimal")
-        dyxdyx = np.einsum("yixf,yixf->xfyi", d, d, optimize="optimal")
+        if "yixf,yixf->xfyi" not in self._einsum_paths:
+            self._einsum_paths["yixf,yixf->xfyi"], _ = np.einsum_path("yixf,yixf->xfyi", d, d, optimize="optimal")
+            print("Optimized yixf,yixf->xfyi")
 
-        PxyHxy = np.einsum("xfyi,xfyi->xfyi", P, H, optimize="optimal")
-        Pxydyx = np.einsum("xfyi,yixf->xfyi", P, d, optimize="optimal")
-        Hxydyx = np.einsum("xfyi,yixf->xfyi", H, d, optimize="optimal")
+        PyxHyx = np.einsum("yixf,yixf->xfyi", P, H, optimize=self._einsum_paths["yixf,yixf->xfyi"])
+        Pyxdyx = np.einsum("yixf,yixf->xfyi", P, d, optimize=self._einsum_paths["yixf,yixf->xfyi"])
+        Hyxdyx = np.einsum("yixf,yixf->xfyi", H, d, optimize=self._einsum_paths["yixf,yixf->xfyi"])
+        dyxdyx = np.einsum("yixf,yixf->xfyi", d, d, optimize=self._einsum_paths["yixf,yixf->xfyi"])
 
-        Pxxdyy = np.einsum("xfxf,yiyi->xfyi", P, d)
-        dxxPyy = np.einsum("xfxf,yiyi->xfyi", d, P)
-        Hxxdyy = np.einsum("xfxf,yiyi->xfyi", H, d)
-        dxxHyy = np.einsum("xfxf,yiyi->xfyi", d, H)
+        if "xfyi,xfyi->xfyi" not in self._einsum_paths:
+            self._einsum_paths["xfyi,xfyi->xfyi"], _ = np.einsum_path("xfyi,xfyi->xfyi", d, d, optimize="optimal")
+            print("Optimized xfyi,xfyi->xfyi")
+
+        PxyHxy = np.einsum("xfyi,xfyi->xfyi", P, H, optimize=self._einsum_paths["xfyi,xfyi->xfyi"])
+        Pxydyx = np.einsum("xfyi,yixf->xfyi", P, d, optimize=self._einsum_paths["xfyi,xfyi->xfyi"])
+        Hxydyx = np.einsum("xfyi,yixf->xfyi", H, d, optimize=self._einsum_paths["xfyi,xfyi->xfyi"])
+
+        if "xfxf,yiyi->xfyi" not in self._einsum_paths:
+            self._einsum_paths["xfxf,yiyi->xfyi"], _ = np.einsum_path("xfxf,yiyi->xfyi", d, d, optimize="optimal")
+            print("Optimized xfxf,yiyi->xfyi")
+
+        Pxxdyy = np.einsum("xfxf,yiyi->xfyi", P, d, optimize=self._einsum_paths["xfxf,yiyi->xfyi"])
+        dxxPyy = np.einsum("xfxf,yiyi->xfyi", d, P, optimize=self._einsum_paths["xfxf,yiyi->xfyi"])
+        Hxxdyy = np.einsum("xfxf,yiyi->xfyi", H, d, optimize=self._einsum_paths["xfxf,yiyi->xfyi"])
+        dxxHyy = np.einsum("xfxf,yiyi->xfyi", d, H, optimize=self._einsum_paths["xfxf,yiyi->xfyi"])
 
         rho_rho = (PxxPyy + HxxHyy) - (PxyPyx + HxyHyx) + (Pxydyx + Hxydyx) - (PxxHyy+HxxPyy)
         S1_S1 = 0.25*(PxyHxy+ dyxdyx - Pyxdyx - Hyxdyx)
@@ -337,15 +358,23 @@ class SpinSpinCorrelator(Measurement):
 
         self._roll = np.array([temporalRoller(nt, -t, fermionic=self.fermionic) for t in range(nt)])
 
-        # Project to irreps:
-        # rho_rho = np.einsum("idf,bx,xfyi,ya->bad", self._roll, self.irreps, rhoxrhoy, self.irreps.H) / nt
-
-        # Just leave with spatial indices:
-        for observable, storage in zip(
+        for name, observable, storage in zip(
+                ("rho_rho",     "S1_S1",    "S3_S3",    "Splus_Sminus",     "Sminus_Splus"),
                 (rho_rho,       S1_S1,      S3_S3,      Splus_Sminus,       Sminus_Splus),
                 (self.rho_rho,  self.S1_S1, self.S3_S3, self.Splus_Sminus,  self.Sminus_Splus)
                 ):
-            time_averaged = np.einsum("idf,xfyi->xyd", self._roll, observable) / nt
+
+            print(f"Time averaging {name}...")
+            # Just leave with spatial indices:
+            # time_averaged = np.einsum("idf,xfyi->xyd", self._roll, observable) / nt
+
+            # Project to irreps:
+            if "idf,bx,xfyi,ya->bad" not in self._einsum_paths:
+                self._einsum_paths["idf,bx,xfyi,ya->bad"], _ = np.einsum_path("idf,bx,xfyi,ya->bad", self._roll, self.irreps, observable, self.irreps.H, optimize="optimal")
+                print("Optimized time averaging and irrep projection.")
+
+            time_averaged = np.einsum("idf,bx,xfyi,ya->bad", self._roll, self.irreps.H, observable, self.irreps, optimize=self._einsum_paths["idf,bx,xfyi,ya->bad"]) / nt
+
             storage.append(time_averaged)
 
 
@@ -359,4 +388,11 @@ def read(h5group):
     r"""!
     \param h5group HDF5 group which contains the data of this measurement.
     """
-    ...
+
+    subGroup = createH5Group(h5group, self.savePath)
+    subGroup["irreps"] = self.irreps
+    subGroup["rho_rho"] = self.rho_rho
+    subGroup["S1_S1"] = self.S1_S1
+    subGroup["S3_S3"] = self.S3_S3
+    subgroup["Splus_Sminus"] = self.Splus_Sminus
+    subgroup["Sminus_SPlus"] = self.Sminus_Splus
