@@ -1,3 +1,5 @@
+#!/usr/bin/env python3
+
 """!
 Example script to perform measurements on configurations.
 
@@ -14,6 +16,7 @@ import isle.drivers
 # Import built in measurements (not included in above).
 import isle.meas
 
+import numpy as np
 
 def main():
     # Initialize Isle.
@@ -68,16 +71,24 @@ def main():
         # collect all weights and store them in consolidated datasets instead of
         # spread out over many HDF5 groups
         isle.meas.CollectWeights("weights"),
+        # polyakov loop
+        isle.meas.Polyakov(params.basis, lat.nt(), "polyakov", configSlice=s_[::10]),
         # single particle correlator for particles / spin up
-        isle.meas.SingleParticleCorrelator(hfm, allToAll[isle.Species.PARTICLE],
+        isle.meas.SingleParticleCorrelator(allToAll[isle.Species.PARTICLE],
                                            "correlation_functions/single_particle",
                                            configSlice=s_[::10],
                                            projector=projector),
         # single particle correlator for holes / spin down
-        isle.meas.SingleParticleCorrelator(hfm, allToAll[isle.Species.HOLE],
+        isle.meas.SingleParticleCorrelator(allToAll[isle.Species.HOLE],
                                            "correlation_functions/single_hole",
                                            configSlice=s_[::10],
                                            projector=projector),
+        isle.meas.SpinSpinCorrelator(allToAll[isle.Species.PARTICLE],
+                                            allToAll[isle.Species.HOLE],
+                                            "correlation_functions/spin_spin",
+                                            configSlice=s_[::10],
+                                            projector=projector,
+                                            sigmaKappa=params.sigmaKappa)
     ]
 
     # Run the measurements on all configurations in the input file.
