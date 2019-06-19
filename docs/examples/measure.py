@@ -44,6 +44,12 @@ def main():
         hfm = isle.HubbardFermiMatrixExp(kappaTilde, muTilde, params.sigmaKappa)
 
     # Define measurements to run.
+    species =   (isle.Species.PARTICLE, isle.Species.HOLE)
+    allToAll = {s: isle.meas.propagator.AllToAll(hfm, s) for s in species}
+
+    vals, vecs = np.linalg.eigh(isle.Matrix(hfm.kappaTilde()))
+    projector = np.matrix(vecs)
+
     #
     # The measurements are run on each configuration in the slice passed to 'configSlice'.
     # It defaults to 'all configurations' in e.g. the Logdet measurement.
@@ -63,13 +69,15 @@ def main():
         # spread out over many HDF5 groups
         isle.meas.CollectWeights("weights"),
         # single particle correlator for particles / spin up
-        isle.meas.SingleParticleCorrelator(hfm, isle.Species.PARTICLE,
+        isle.meas.SingleParticleCorrelator(hfm, allToAll[isle.Species.PARTICLE],
                                            "correlation_functions/single_particle",
-                                           configSlice=s_[::10]),
+                                           configSlice=s_[::10],
+                                           projector=projector),
         # single particle correlator for holes / spin down
-        isle.meas.SingleParticleCorrelator(hfm, isle.Species.HOLE,
+        isle.meas.SingleParticleCorrelator(hfm, allToAll[isle.Species.HOLE],
                                            "correlation_functions/single_hole",
-                                           configSlice=s_[::10]),
+                                           configSlice=s_[::10],
+                                           projector=projector),
     ]
 
     # Run the measurements on all configurations in the input file.

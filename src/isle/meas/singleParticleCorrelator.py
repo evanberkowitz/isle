@@ -31,9 +31,9 @@ class SingleParticleCorrelator(Measurement):
 
         if projector is None:
             _, self.irreps = np.linalg.eigh(isle.Matrix(allToAll.hfm.kappaTilde()))
-            self.irreps = self.irreps.T
+            self.irreps = self.irreps
         else:
-            self.irreps = projector.T
+            self.irreps = projector
 
         self.irreps = np.matrix(self.irreps)
 
@@ -47,7 +47,7 @@ class SingleParticleCorrelator(Measurement):
         if self._roll is None:
             self._roll = np.array([temporalRoller(self.nt, -t) for t in range(self.nt)])
 
-        self._tensors = (self._roll, self.irreps, S, self.irreps.H)
+        self._tensors = (self._roll, self.irreps.H, S, self.irreps)
 
         if self._path is None:
             self._path, _ = np.einsum_path(self._indices, *self._tensors, optimize='optimal')
