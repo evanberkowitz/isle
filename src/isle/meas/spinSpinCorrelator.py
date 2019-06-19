@@ -291,8 +291,7 @@ class SpinSpinCorrelator(Measurement):
 
         self.irreps = np.matrix(self.irreps)
 
-
-    def __call__(self, phi, action, itr):
+    def __call__(self, stage, itr):
         """!Record the spin-spin correlators."""
 
         P = self.particle(phi, action, itr)

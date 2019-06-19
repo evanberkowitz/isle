@@ -13,6 +13,7 @@ from .. import fileio, cli
 from ..collection import inSlice, withStart, withStop, withStep
 from ..meta import callFunctionFromSource
 from ..util import verifyVersionsByException
+from ..evolver import EvolutionStage
 
 
 class Measure:
@@ -105,13 +106,13 @@ class Measure:
             # apply measurements to all configs
             with cli.trackProgress(len(configurations), "Measurements", updateRate=1000) as pbar:
                 for itr, grp in configurations:
-                    # read config and action
-                    phi = grp["phi"][()]
-                    action = grp["action"][()]
+                    # load trajectory
+                    stage = EvolutionStage.fromH5(grp)
+
                     # measure
                     for imeas, measurement in enumerate(measurements):
                         if inSlice(itr, measurement.configSlice):
-                            measurement(phi, action, itr)
+                            measurement(stage, itr)
                         elif itr >= measurement.configSlice.stop:
                             # this measurement is done => drop it
                             del measurements[imeas]

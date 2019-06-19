@@ -65,9 +65,9 @@ class Polyakov(Measurement):
             getLogger(__name__).exception("Unknown basis.", self.irreps)
 
 
-    def __call__(self, phi, action, itr):
+    def __call__(self, stage, itr):
         """!Record the sum_t phi_xt and the Polyakov loops."""
-        self.Phi.append(np.sum(phi.reshape(self.nt, -1), axis=0))
+        self.Phi.append(np.sum(np.reshape(stage.phi, (self.nt, -1)), axis=0))
         self.P.append(
             np.exp(self.forward*self.Phi[-1])
         )

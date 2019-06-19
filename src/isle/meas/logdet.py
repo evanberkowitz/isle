@@ -24,15 +24,15 @@ class Logdet(Measurement):
                        isle.Species.HOLE: []}
         self.alpha = alpha
 
-    def __call__(self, phi, action, itr):
+    def __call__(self, stage, itr):
         """!Record logdet."""
         if self.alpha == 1:
             for species, logdet in self.logdet.items():
-                logdet.append(isle.logdetM(self.hfm, phi, species))
+                logdet.append(isle.logdetM(self.hfm, stage.phi, species))
         else:
             for species, logdet in self.logdet.items():
                 # use dense, slow numpy routine to get stable result
-                ld = np.linalg.slogdet(isle.Matrix(self.hfm.M(-1j*phi, species)))
+                ld = np.linalg.slogdet(isle.Matrix(self.hfm.M(-1j*stage.phi, species)))
                 logdet.append(np.log(ld[0]) + ld[1])
 
     def save(self, h5group):

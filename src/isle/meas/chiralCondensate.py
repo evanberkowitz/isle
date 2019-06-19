@@ -27,16 +27,16 @@ class ChiralCondensate(Measurement):
         # need to know Nt to set those, do it in _getRHSs
         self._rhss = None
 
-    def __call__(self, phi, action, itr):
+    def __call__(self, stage, itr):
         """!Record the chiral condensate."""
 
         nx = self.hfm.nx()
-        nt = int(len(phi) / nx)
+        nt = int(len(stage.phi) / nx)
         rhss = self._getRHSs(nt)
 
         # Solve M*x = b for different right-hand sides,
         # Normalize by spacetime volume
-        res = np.array(isle.solveM(self.hfm, phi, self.species, rhss), copy=False) / (nx*nt)
+        res = np.array(isle.solveM(self.hfm, stage.phi, self.species, rhss), copy=False) / (nx*nt)
 
         self.chiCon.append(np.mean([np.dot(rhs, r) for rhs, r in zip(rhss, res)]))
 

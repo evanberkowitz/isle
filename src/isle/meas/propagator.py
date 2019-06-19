@@ -29,16 +29,16 @@ class AllToAll:
     # As it stands, it seems different instances share the same memoization,
     # so we get the same propagator for particles as we get for holes,
     # which is obviously problematic.
-    def __call__(self, phi, action, itr):
+    def __call__(self, stage, itr):
         """!Compute the all-to-all propagator.
         \returns (Minverse)_{yfxi}, a 4D tensor where y/f is the space/time at the sink and x/i the space/time at the source.
         """
 
-        if np.mod(len(phi), self.nx) != 0:
+        if np.mod(len(stage.phi), self.nx) != 0:
             getLogger(__name__).error(f"Field configuration does not partition evenly into spatial slices of size nx={nx}")
             # TODO: do something more drastic?  Exit?
 
-        nt = int(len(phi) / self.nx)
+        nt = int(len(stage.phi) / self.nx)
 
         # A large set of sources, one for each spacetime point, an identity matrix.
         # Just as a reminder, it's time-major (space is faster).
@@ -46,7 +46,7 @@ class AllToAll:
 
         # Solve M*x = b for all right-hand sides:
         if self._alpha == 1:
-            res = np.array(isle.solveM(self.hfm, phi, self.species, rhss), copy=False)
+            res = np.array(isle.solveM(self.hfm, stage.phi, self.species, rhss), copy=False)
             # As explained in the documentation of isle.solveM,
             # the first index counts the right-hand side M was solved against,
             # the second index is a spacetime index.
@@ -54,7 +54,7 @@ class AllToAll:
             # Because rhss is the identity matrix, we can now think of it as a spacetime label as well.
             res = res.T
         else:
-            res = np.linalg.solve(isle.Matrix(self.hfm.M(-1j*phi, self.species)), np.array(rhss).T).T
+            res = np.linalg.solve(isle.Matrix(self.hfm.M(-1j*stage.phi, self.species)), np.array(rhss).T).T
 
         # Now we transform the propagator into a four-index object with space, time, space, and time indices.
         propagator = res.reshape([nt, self.nx, nt, self.nx])

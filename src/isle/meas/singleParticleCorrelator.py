@@ -37,13 +37,13 @@ class SingleParticleCorrelator(Measurement):
 
         self.irreps = np.matrix(self.irreps)
 
-    def __call__(self, phi, action, itr):
+    def __call__(self, stage, itr):
         """!Record the single-particle correlators."""
 
-        S = self._inverter(phi, action, itr)
+        S = self._inverter(stage.phi, stage.actVal, itr)
 
         if self.nt is None:
-            self.nt = len(phi) // self.nx
+            self.nt = len(stage.phi) // self.nx
         if self._roll is None:
             self._roll = np.array([temporalRoller(self.nt, -t) for t in range(self.nt)])
 
