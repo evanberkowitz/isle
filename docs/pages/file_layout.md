@@ -171,6 +171,14 @@ These nodes contain a mapping with the following keys:
                This allows those files to be reused easily but users have to make sure
                to set `nt` manually after reading a lattice from YAML.
 
+Note that the order the lattice sites appear in is irrelevant for the correctness of the
+lattice, Isle can handle any order.
+If the lattice is bipartite however, some algorithms might rely on sites to be numbered
+in a certain way, namely all even sites should be on one sublattice and all odd sites on the other.
+As a safeguard, `isle.isBipartite` checks the labeling in addition to pure bipartiteness.
+Bipartite lattices should thus be encoded appropriately to allow for the use of
+potentially faster algorithms.
+
 Here is an example of a lattice with four sites in a hexagonal alignment.
 This is taken from /resources/lattices/four_sites.yml.<br>
 In this lattice, site 0 is connected to site 1 with hopping strength 1 and to
@@ -196,5 +204,5 @@ nt: 32
 ```
 
 \see isle.yamlio.loadLattice for a convenient way to read lattices from YAML files.<br>
-     Thanks to the custom node, lattices can be loaded via `yaml.safe_load(lattice_string)`
+     Thanks to the custom node, lattices can also be loaded via `yaml.safe_load(lattice_string)`
      and saved via `yaml.dump(lattice)`.
