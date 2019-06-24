@@ -146,7 +146,7 @@ namespace isle {
                     oss << "Imaginary part of the action deviates by " << actDiff
                         << ", (tolerance = " << imActTolerance
                         << ") at step " <<  i;
-                    getLogger("rungeKutta4").error(oss.str());
+                    getLogger("rungeKutta4Flow").error(oss.str());
                     throw std::runtime_error("Imaginary part of action deviates too much");
                 }
             }
