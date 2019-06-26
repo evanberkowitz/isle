@@ -4,6 +4,7 @@ Routines for working with HDF5.
 
 from logging import getLogger
 from pathlib import Path
+from itertools import chain
 
 import yaml
 import h5py as h5
@@ -298,3 +299,54 @@ def loadActionWeightsFor(dset, base="/"):
         subRange = subslice(actionRange, neededRange)
 
     return np.exp(-1j * np.imag(action[subRange]))
+
+def loadLogWeights(h5obj, base="/", full=False, weightsGroup="weights"):
+    r"""!
+    Load logarithmic weights from an HDF5 file given via an HDF5 object in that file.
+
+    Reads the weights from `{base}/{weights}` if it exists.
+    This group can be created using the measurement CollectWeights.
+    Otherwise, read weights from saved configurations.
+    If that is not possible either, raise `RuntimeError`.
+
+    \param h5obj An arbitrary HDF5 object in the file to read the weights from.
+    \param base Path in HDF5 file under which the data is stored.
+    \param full If True, always read from configurations group instead of collected weights.
+    \returns (weights, configRange) where
+             - weights: `dict` to numpy arrays of values of the weights.
+             - configRange: `slice` indicating the range of configurations
+                            the weights were loaded for.
+    \throws RuntimeError if neither weights nor configuration groups exist in the file.
+    """
+
+    baseGroup = h5obj.file[base]
+    log = getLogger(__name__)
+
+    if not full and weightsGroup in baseGroup:
+        wgrp = baseGroup[weightsGroup]
+        log.info("Loading weights from %s/%s", h5obj.filename, wgrp.name)
+        logWeights = loadDict(wgrp)
+        cRange = normalizeSlice(parseSlice(wgrp.attrs["configurations"],
+                                           minComponents=3),
+                                0, next(iter(logWeights.values())).shape[0])
+        return logWeights, cRange
+
+    if "configuration" in baseGroup:
+        log.info("Loading weights from %s/%s", h5obj.filename, baseGroup["configuration"].name)
+        indices, groups = zip(*loadList(baseGroup["configuration"]))
+        logWeights = {name: np.empty(len(indices), dtype=complex)
+                      for name in chain(("action",),
+                                        groups[0]["logWeights"] if "logWeights" in groups[0] else ())}
+        for i, grp in enumerate(groups):
+            for name in logWeights.keys():
+                if name == "action":
+                    logWeights[name][i] = grp["action"][()]
+                else:
+                    logWeights[name][i] = grp["logWeights/"+name][()]
+        cRange = listToSlice(indices)
+
+        return logWeights, cRange
+
+    getLogger(__name__).error("Cannot load weights from file %s, no configurations or "
+                              "separate weights group found", baseGroup.filename)
+    raise RuntimeError("No action found in file")
