@@ -55,10 +55,10 @@ Single-particle and single-hole operators \f$\mathcal{O}\f$ with a definite elec
 \f]
 Since \f$\rho = 1-2S^0\f$, we can check the commutator with \f$2S^0\f$.
 I have checked that this equation is satisfied when
-\f$(\mathcal{O},q) = (a, +1)\f$,
-\f$(\mathcal{O},q) = (a^\dagger, -1)\f$,
-\f$(\mathcal{O},q) = (b, -1)\f$, and
-\f$(\mathcal{O},q) = (b^\dagger, +1)\f$.
+\f$(\mathcal{O},q) = (a, -1)\f$,
+\f$(\mathcal{O},q) = (a^\dagger, +1)\f$,
+\f$(\mathcal{O},q) = (b, +1)\f$, and
+\f$(\mathcal{O},q) = (b^\dagger, -1)\f$.
 Note that the signs are different.
 Presumably there are eigenoperators for \f$S^{1,2}\f$ that are linear combinations of \f$a\f$ and \f$b\f$ with some \f$i\f$s and daggers, but I cannot be bothered to find them.
 
@@ -164,6 +164,41 @@ We can also think of correlators between \f$S^+\f$ and \f$S^-\f$,
 \f}
 # TODO: These have a name; I should find it.
 At half filling on a bipartite lattice, the cost to create or destroy a spin from the vacuum should be equal and the correlators should match, in the limit of large statistics.
+
+# Conserved Quantities
+
+When the Hamiltonian takes a Hubbard-Coulomb-like form,
+\f[
+    H = \sum_{xy} a_x^\dagger K_{xy} a_y + b_x^\dagger K_{xy} b_y + \frac{1}{2} \sum_{xy} \rho_x V_{xy} \rho_y
+\f]
+some of the bilinears may be conserved.  For example, we can calculate the commutator
+\f{align}{
+    [H, \rho_z]
+        &= \left[\sum_{xy} a_x^\dagger K_{xy} a_y + b_x^\dagger K_{xy} b_y, \rho_z\right]   \\
+        &= \sum_x - a_x^\dagger K_{xz} a_z + \sum_y a_z^\dagger K_{zy} a_y - \sigma_\kappa (a \leftrightarrow b) \\
+\f}
+where we immediately dropped the interaction term since the charge operator commutes with itself.
+If we sum \f$z\f$ over all space the two terms cancel, so that the total charge is conserved.
+One similarly finds the total spins conserved,
+\f[
+    \left[H, \sum_z S^i_z \right] = 0
+\f]
+for \f$i\in\{1,2,3\}\f$.
+When the operators are conserved, their correlation functions are constant,
+\f{align}{
+    C^{\rho\rho}_{++}(\tau)
+        &= \frac{1}{\mathcal{Z}}\textrm{tr}\left[ \rho_+(\tau) \rho_+(0) e^{-\beta H}\right] \\
+        &= \frac{1}{\mathcal{Z}}\textrm{tr}\left[ e^{+H \tau }\rho_+(0) e^{-H\tau} \rho_+(0) e^{-\beta H}\right] \\
+        &= \frac{1}{\mathcal{Z}}\textrm{tr}\left[ \rho_+(0) e^{-H\tau} \rho_+(0) e^{-(\beta-\tau) H}\right] \\
+        &= \frac{1}{\mathcal{Z}}\textrm{tr}\left[ \rho_+(0) \rho_+(0) e^{-\beta H}\right]
+\f}
+where we used the fact that \f$\rho_+\f$ commutes with the Hamiltonian in the last step.
+We can turn this relation on its head and get an estimate for the equal-time correlator \f$\left\langle\rho_+\rho_+\right\rangle\f$ by averaging \f$C^{\rho\rho}_{++}(\tau)\f$ over the temporal separation \f$\tau\f$,
+\f[
+    \left\langle \rho_+ \rho_+ \right\rangle = \frac{1}{N_t} \sum_\tau C^{\rho\rho}_{++}(\tau)
+\f]
+This same observation holds for the total spin operators \f$S^i_+\f$ (and therefore also for \f$S^\pm_+\f$), with the Hamiltonian shown above.
+On small test examples one observes numerically that the correlators are flat with the exponential discretization and seem linear with time in the diagonal discretization; averaging properly still yields good values.
 
 
 # Order Parameters
@@ -351,7 +386,7 @@ class SpinSpinCorrelator(Measurement):
         dxxHyy = np.einsum("xfxf,yiyi->xfyi", d, H, optimize=self._einsum_paths["xfxf,yiyi->xfyi"])
 
         rho_rho = (PxxPyy + HxxHyy) - (PxyPyx + HxyHyx) + (Pxydyx + Hxydyx) - (PxxHyy+HxxPyy)
-        S1_S1 = 0.25*(PxyHxy+ dyxdyx - Pyxdyx - Hyxdyx)
+        S1_S1 = 0.25*(PxyHxy+ dyxdyx - Pyxdyx - Hyxdyx + PyxHyx)
         S3_S3 = 0.25*((PxxPyy + HxxHyy) - (PxyPyx + HxyHyx) + (PxxHyy + HxxPyy) + (Pxydyx+Hxydyx) - (Pxxdyy+Hxxdyy) - (dxxPyy+dxxHyy) + dxxdyy)
         Splus_Sminus = PxyHxy
         Sminus_Splus = (dyxdyx - Pyxdyx - Hyxdyx + PyxHyx)
