@@ -323,6 +323,7 @@ def loadLogWeights(h5obj, base="/", full=False, weightsGroup="weights"):
     log = getLogger(__name__)
 
     if not full and weightsGroup in baseGroup:
+        # load content of weights group as it is without any fancy checks
         wgrp = baseGroup[weightsGroup]
         log.info("Loading weights from %s/%s", h5obj.filename, wgrp.name)
         logWeights = loadDict(wgrp)
@@ -334,18 +335,20 @@ def loadLogWeights(h5obj, base="/", full=False, weightsGroup="weights"):
     if "configuration" in baseGroup:
         log.info("Loading weights from %s/%s", h5obj.filename, baseGroup["configuration"].name)
         indices, groups = zip(*loadList(baseGroup["configuration"]))
+
+        # prepare dict for all waights that are present (logWeights might not exist)
         logWeights = {name: np.empty(len(indices), dtype=complex)
-                      for name in chain(("action",),
+                      for name in chain(("actVal",),
                                         groups[0]["logWeights"] if "logWeights" in groups[0] else ())}
+        # load weights one trajectory at a time
         for i, grp in enumerate(groups):
             for name in logWeights.keys():
-                if name == "action":
-                    logWeights[name][i] = grp["action"][()]
+                if name == "actVal":
+                    logWeights[name][i] = grp["actVal"][()]
                 else:
                     logWeights[name][i] = grp["logWeights/"+name][()]
-        cRange = listToSlice(indices)
 
-        return logWeights, cRange
+        return logWeights, listToSlice(indices)
 
     getLogger(__name__).error("Cannot load weights from file %s, no configurations or "
                               "separate weights group found", baseGroup.filename)
