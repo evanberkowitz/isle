@@ -76,7 +76,7 @@ class EvolutionStage:
         Save contents to an HDF5 group.
         """
         h5group["phi"] = self.phi
-        h5group["action"] = self.actVal
+        h5group["actVal"] = self.actVal
         h5group["trajPoint"] = self.trajPoint
 
         # write additional weights is there are any
@@ -100,7 +100,7 @@ class EvolutionStage:
         logWeights = {key: dset[()] for key, dset in h5group["logWeights"].items()} \
             if "logWeights" in h5group else None
         return cls(Vector(h5group["phi"][()]),
-                   h5group["action"][()],
+                   h5group["actVal"][()],
                    h5group["trajPoint"][()],
                    logWeights,
                    extra)
