@@ -83,7 +83,7 @@ class EvolutionStage:
         if len(self.logWeights) > 1:
             wgrp = h5group.create_group("logWeights")
             for key, val in self.nonActWeigths():
-                wgrp[key] = val
+                wgrp[key] = complex(val)
 
         if self.extra:
             egrp = h5group.create_group("extra")

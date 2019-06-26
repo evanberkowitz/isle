@@ -11,7 +11,7 @@ from .measurement import Measurement
 class CollectWeights(Measurement):
     r"""!
     \ingroup meas
-    Collect all log weights from individual trajectories and store them 
+    Collect all log weights from individual trajectories and store them
     in a consolidated way.
     """
 
@@ -37,7 +37,7 @@ class CollectWeights(Measurement):
                                      "Found %s at trajectory %d.", weightNames, itr)
             self.logWeights = {name: [] for name in weightNames}
         for key, val in stage.logWeights.items():
-            self.logWeights[key].append(val)
+            self.logWeights[key].append(complex(val))
 
     def save(self, h5group):
         r"""!
