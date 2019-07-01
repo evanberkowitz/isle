@@ -118,3 +118,13 @@ class Alternator(Evolver):
             subEvolver = manager.load(h5group[f"sub{idx}"], action, lattice, rng)
             alternator.add(count, subEvolver)
         return alternator
+
+    def report(self):
+        r"""!
+        Return a string summarizing the evolution since the evolver
+        was constructed including by fromH5.
+        """
+        reports = "\n".join(f"  {i}. frequency = {count}\n"
+                            "\n".join("    "+line for line in evolver.report().split("\n"))
+                            for i, (count, evolver) in enumerate(zip(self._counts, self._subEvolvers)))
+        return f"<Alternator> (0x{id(self):x})\n{reports}"
