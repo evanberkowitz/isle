@@ -41,3 +41,10 @@ class Evolver(metaclass=ABCMeta):
         \param rng Central random number generator for the run.
         \returns A newly constructed evolver.
         """
+
+    @abstractmethod
+    def report(self):
+        r"""!
+        Return a string summarizing the evolution since the evolver
+        was constructed including by fromH5.
+        """
