@@ -183,7 +183,7 @@ def loadConfiguration(h5group, trajIdx=-1, path="configuration"):
     idx = configs[-1][0]+trajIdx+1 if trajIdx < 0 else trajIdx
     # get the configuration group with the given index
     cfgGrp = next(pair[1] for pair in loadList(h5group[path]) if pair[0] == idx)
-    return Vector(cfgGrp["phi"][()]), cfgGrp["action"][()]
+    return Vector(cfgGrp["phi"][()]), cfgGrp["actVal"][()]
 
 def loadList(h5group, convert=int):
     r"""!
