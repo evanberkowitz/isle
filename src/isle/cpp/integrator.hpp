@@ -40,7 +40,9 @@ namespace isle {
      *
      * \param phi Starting configuration.
      * \param action Action to integrate over.
-     * \param length Length of the trajectory. The size of each step is `length/nsteps`.
+     * \param flowTime Length of the trajectory / total flow time.
+     *                 The size of each step is initially `length/nsteps` but can be refined if needed.
+     *                 The actual flow time is shorter if refinement happens.
      * \param nsteps Number of integration steps.
      * \param actVal Value of the action at initial field (can be left out).
      * \param n one of (`0`, `1`), type of RK integrator.
@@ -51,11 +53,13 @@ namespace isle {
      * \returns Tuple of (in order)
      *           - final configuration phi
      *           - value of action at final phi
+     *           - number of integrator refinements
+     *           - actual total flow time taking refinements into account
      */
-    std::tuple<CDVector, std::complex<double>>
+    std::tuple<CDVector, std::complex<double>, int, double>
     rungeKutta4Flow(const CDVector &phi,
                     const action::Action *action,
-                    double length,
+                    double flowTime,
                     std::size_t nsteps,
                     std::complex<double> actVal=std::complex<double>(std::nan(""), std::nan("")),
                     int n=0,

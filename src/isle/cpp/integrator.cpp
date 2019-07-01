@@ -96,22 +96,24 @@ namespace isle {
         }
     }
 
-    std::tuple<CDVector, std::complex<double>>
+    std::tuple<CDVector, std::complex<double>, int, double>
     rungeKutta4Flow(const CDVector &phi,
                     const action::Action *action,
-                    const double length,
+                    const double flowTime,
                     const std::size_t nsteps,
                     std::complex<double> actVal,
                     const int n,
                     const double direction,
-                    int attempts,
+                    const int attempts,
                     const double imActTolerance) {
 
         if (n != 0 && n != 1) {
             throw std::invalid_argument("n must be 0 or 1");
         }
 
-        double epsilon = length / static_cast<double>(nsteps);
+        double actualFlowTime = 0.0;
+        int refinements = 0;
+        double epsilon = flowTime / static_cast<double>(nsteps);
 
         if (std::isnan(real(actVal)) || std::isnan(imag(actVal))) {
             actVal = action->eval(phi);
@@ -137,10 +139,11 @@ namespace isle {
             auto const actDiff = abs(exp(1.0i*(imag(actVal)-imag(actValAux))) - 1.0);
             if (actDiff > imActTolerance) {
                 // Imag part of action deviates too much, do not advance integrator.
-                if (attempts > 0) {
+                if (refinements < attempts) {
                     // There are attempts left, make integration finer.
-                    attempts--;
+                    refinements++;
                     epsilon /= 10.0;
+                    // Drop phiAux and actValAux to re-run the current step.
                 } else {
                     std::ostringstream oss;
                     oss << "Imaginary part of the action deviates by " << actDiff
@@ -156,10 +159,11 @@ namespace isle {
                 // Quickly set phiOut = phiAux and leave phiAux in a bad but fast to assign-to state.
                 swap(phiOut, phiAux);
                 actValOut = actValAux;
+                actualFlowTime += epsilon;
             }
         }
 
-        return std::make_tuple(phiOut, actValOut);
+        return std::make_tuple(phiOut, actValOut, refinements, actualFlowTime);
     }
 
 }  // namespace isle
