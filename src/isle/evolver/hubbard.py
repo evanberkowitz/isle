@@ -107,7 +107,9 @@ class TwoPiJumps(Evolver):
         Return a string summarizing the evolution since the evolver
         was constructed including by fromH5.
         """
-        # TODO
+        return f"""<TwoPiJumps> (0x{id(self):x})
+  nBatches = {self.nBatches}, batchSize = {self.batchSize}
+  acceptance rate per batch = {np.mean(self.acceptedPerBatch)}"""
 
 
 class UniformJump(Evolver):
@@ -128,6 +130,7 @@ class UniformJump(Evolver):
 
         self.rng = rng
         self.selector = BinarySelector(rng)
+        self.accepted = []
 
         # use this to evaluate action
         self._action = _HubbardActionShortcut(action)
@@ -146,7 +149,9 @@ class UniformJump(Evolver):
         newActVal = self._action.evalGlobal(newPhi, shift, stage.actVal)
 
         if self.selector.selectTrajPoint(stage.actVal, newActVal) == 1:
+            self.accepted.append(1)
             return stage.accept(isle.Vector(newPhi), newActVal)
+        self.accepted.append(0)
         return stage.reject()
 
     def save(self, _h5group, _manager):
@@ -169,6 +174,15 @@ class UniformJump(Evolver):
         \returns A newly constructed TwoPiJumps evolver.
         """
         return cls(action, lattice, rng)
+
+    def report(self):
+        r"""!
+        Return a string summarizing the evolution since the evolver
+        was constructed including by fromH5.
+        """
+        return f"""<UniformJump> (0x{id(self):x})
+  shift = 2 pi / Nt = {self._absShift}
+  acceptance rate = {np.mean(self.accepted)}"""
 
 
 class _HubbardActionShortcut:
@@ -271,10 +285,3 @@ class _HubbardActionShortcut:
 
         # Some part of the action does not allow for the shortcut.
         return self._action.eval(newPhi)
-
-    def report(self):
-        r"""!
-        Return a string summarizing the evolution since the evolver
-        was constructed including by fromH5.
-        """
-        # TODO
