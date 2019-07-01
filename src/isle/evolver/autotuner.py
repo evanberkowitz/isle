@@ -1030,3 +1030,11 @@ class LeapfrogTuner(Evolver):  # pylint: disable=too-many-instance-attributes
         \returns A newly constructed leapfrog evolver.
         """
         raise NotImplementedError("Loading from HDF5 is not supported.")
+
+    def report(self):
+        r"""!
+        Return a string summarizing the evolution since the evolver
+        was constructed including by fromH5.
+        """
+        return f"""<Autotuner> (0x{id(self):x})
+  record file = {self.recordFname}"""
