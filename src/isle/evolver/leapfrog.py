@@ -33,6 +33,7 @@ class ConstStepLeapfrog(Evolver):
         self.rng = rng
         self.selector = BinarySelector(rng)
         self.transform = transform
+        self.trajPoints = []
 
     def evolve(self, stage):
         r"""!
@@ -58,6 +59,7 @@ class ConstStepLeapfrog(Evolver):
             energy0 += logdetJ
         energy1 = actVal1+logdetJ1+np.linalg.norm(pi1)**2/2
         trajPoint = self.selector.selectTrajPoint(energy0, energy1)
+        self.trajPoints.append(trajPoint)
 
         logWeights = None if self.transform is None \
             else {"logdetJ": (logdetJ, logdetJ1)[trajPoint]}
@@ -92,6 +94,15 @@ class ConstStepLeapfrog(Evolver):
             transform = None
         return cls(action, h5group["length"][()], h5group["nstep"][()], rng, transform)
 
+    def report(self):
+        r"""!
+        Return a string summarizing the evolution since the evolver
+        was constructed including by fromH5.
+        """
+        return f"""<ConstStepLeapfrog> (0x{id(self):x})
+  length = {self.length}, nstep = {self.nstep}
+  acceptance rate = {np.mean(self.trajPoints)}"""
+
 
 class LinearStepLeapfrog(Evolver):
     r"""! \ingroup evolvers
@@ -123,6 +134,7 @@ class LinearStepLeapfrog(Evolver):
         self.rng = rng
         self.selector = BinarySelector(rng)
         self.transform = transform
+        self.trajPoints = []
 
         self._lengthIter = hingeRange(*lengthRange, (lengthRange[1]-lengthRange[0])/ninterp)
         self._nstepIter = hingeRange(*nstepRange, (nstepRange[1]-nstepRange[0])/ninterp)
@@ -163,6 +175,7 @@ class LinearStepLeapfrog(Evolver):
             energy0 += logdetJ
         energy1 = actVal1+logdetJ1+np.linalg.norm(pi1)**2/2
         trajPoint = self.selector.selectTrajPoint(energy0, energy1)
+        self.trajPoints.append(trajPoint)
 
         logWeights = None if self.transform is None \
             else {"logdetJ": (logdetJ, logdetJ1)[trajPoint]}
@@ -206,3 +219,12 @@ class LinearStepLeapfrog(Evolver):
                    rng,
                    startPoint=h5group["current"][()],
                    transform=transform)
+
+    def report(self):
+        r"""!
+        Return a string summarizing the evolution since the evolver
+        was constructed including by fromH5.
+        """
+        return f"""<LinearStepLeapfrog> (0x{id(self):x})
+  lengthRange = {self.lengthRange}, nstepRange = {self.nstepRange}, ninterp = {self.ninterp}
+  acceptance rate = {np.mean(self.trajPoints)}"""
