@@ -124,7 +124,7 @@ class Alternator(Evolver):
         Return a string summarizing the evolution since the evolver
         was constructed including by fromH5.
         """
-        reports = "\n".join(f"  {i}. frequency = {count}\n"
+        reports = "\n".join(f"  {i}. frequency = {count}\n"+
                             "\n".join("    "+line for line in evolver.report().split("\n"))
                             for i, (count, evolver) in enumerate(zip(self._counts, self._subEvolvers)))
         return f"<Alternator> (0x{id(self):x})\n{reports}"
