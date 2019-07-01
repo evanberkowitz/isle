@@ -78,6 +78,7 @@ class HMC:
             self.advance()
             self._saveConditionally(stage, evolver, saveFreq, checkpointFreq)
 
+        _report(evolver)
         return stage
 
     def saveFieldAndCheckpoint(self, stage, evolver):
@@ -339,3 +340,7 @@ def _iterTrajectories(ntr):
                 yield count
                 count += 1
                 pbar.advance()
+
+def _report(evolver):
+    """!Log a report after evolution."""
+    getLogger(__name__).info("Evolution stopped, evolver:\n%s", evolver.report())
