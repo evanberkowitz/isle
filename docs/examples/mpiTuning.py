@@ -29,8 +29,8 @@ import isle
 # Import drivers (not included in above).
 import isle.drivers
 
-BASE_PATH = Path(__file__).resolve().parent
-LATTICE_FILE = BASE_PATH/"../../resources/lattices/four_sites.yml"
+
+LATTICE = "four_sites"
 
 
 BASE_PARAMS = isle.util.parameters(
@@ -61,7 +61,7 @@ def iterParams(*args):
     """
 
     # Load the lattice once in the master process.
-    lattice = isle.fileio.yaml.loadLattice(LATTICE_FILE)
+    lattice = isle.LATTICES[LATTICE]
 
     # Run time depends on nt, so vary nt first such that processes that get scheduled
     # close to each other in time have similar run times.

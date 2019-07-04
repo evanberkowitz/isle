@@ -13,8 +13,8 @@ import isle
 import isle.drivers
 
 
-# Load lattice from this file.
-LATTICE = Path(__file__).resolve().parent/"../../resources/lattices/four_sites.yml"
+# Name of the built in lattice.
+LATTICE = "four_sites"
 
 ### Specify parameters.
 # Compared to fullHMCEvolution.py, we are skipping the algorithmic parameters
@@ -90,7 +90,7 @@ def main():
     args = _init()
 
     # Load the spatial lattice.
-    lat = isle.fileio.yaml.loadLattice(LATTICE)
+    lat = isle.LATTICES[LATTICE]
     # Store nt.
     lat.nt(NT)
 

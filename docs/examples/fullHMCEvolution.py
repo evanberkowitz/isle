@@ -15,8 +15,8 @@ import isle.drivers
 ### Specify input / output files
 # Write all data to this file.
 OUTFILE = "hmc-example.out.h5"
-# Load lattice from this file.
-LATTICE = Path(__file__).resolve().parent/"../../resources/lattices/four_sites.yml"
+# Name of the lattice.
+LATTICE = "four_sites"
 
 ### Specify parameters.
 # isle.util.parameters takes arbitrary keyword arguments, constructs a new dataclass,
@@ -83,7 +83,11 @@ def main():
     log = getLogger("HMC")
 
     # Load the spatial lattice.
-    lat = isle.fileio.yaml.loadLattice(LATTICE)
+    # Note: This command loads a lattice that is distributed together with Isle.
+    #       In order to load custom lattices from a file, use
+    #       either  isle.LATTICES.loadExternal(filename)
+    #       or  isle.fileio.yaml.loadLattice(filename)
+    lat = isle.LATTICES[LATTICE]
     # Lattice files usually only contain information on the spatial lattice
     # to be more flexible. Set the number of time slices here.
     lat.nt(NT)
