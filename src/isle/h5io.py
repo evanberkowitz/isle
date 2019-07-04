@@ -228,7 +228,7 @@ def loadActionValuesFrom(h5obj, full=False, base="/"):
 
     if action is None and "configuration" in h5f:
         indices, groups = zip(*loadList(h5f["configuration"]))
-        action = np.array([grp["action"][()] for grp in groups])
+        action = np.array([grp["actVal"][()] for grp in groups])
         cRange = listToSlice(indices)
 
     if action is None:
