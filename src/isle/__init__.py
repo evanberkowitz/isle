@@ -4,16 +4,16 @@ Base Python package of isle.
 Contains Python modules and imports everything from C++ extension into the isle namespace.
 """
 
-from .cpp_wrappers import *
-from . import checks
-from . import cli
-from . import collection
-from . import fileio
-from . import meta
-from . import evolver
-from . import random
-from . import util
-import isle.action
+from .cpp_wrappers import *  # (unused import) pylint: disable=wildcard-import, unused-wildcard-import
+from . import checks  # (unused import) pylint: disable=unused-import
+from . import cli  # (unused import) pylint: disable=unused-import
+from . import collection  # (unused import) pylint: disable=unused-import
+from . import fileio  # (unused import) pylint: disable=unused-import
+from . import meta  # (unused import) pylint: disable=unused-import
+from . import evolver  # (unused import) pylint: disable=unused-import
+from . import random  # (unused import) pylint: disable=unused-import
+from . import util  # (unused import) pylint: disable=unused-import
+import isle.action  # (unused import) pylint: disable=unused-import
 
 __version__ = str(isleVersion)
 
