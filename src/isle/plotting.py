@@ -29,6 +29,7 @@ import numpy as np
 import h5py as h5
 
 import isle.meas
+from isle.collection import neighbors
 ## \endcond DO_NOT_DOCUMENT
 
 def setupMPL():
@@ -56,7 +57,7 @@ def placeholder(ax):
     ax.plot(ax.get_xlim(), ax.get_ylim(), c="k", alpha=0.5)
 
 def oneDimKDE(dat, bandwidth=0.2, nsamples=1024, kernel="gaussian"):
-    """!
+    r"""!
     Perform a 1D kenrel density estimation on some data.
     \returns Tuple of sampling points and densities.
              Or return (None, None) if scikit-learn is not available.
@@ -74,6 +75,53 @@ def oneDimKDE(dat, bandwidth=0.2, nsamples=1024, kernel="gaussian"):
         return samplePts[:, 0], dens
 
     return None, None
+
+def polarDensity(data, innerRadius, outerRadius, kde,
+                 bins=None, bandwidth=None, kernel=None):
+    r"""!
+    Calculate density of data for a plot in polar coordinates.
+    \param data 1D array-like.
+    \param innerRadius Radius of the base line for showing the density.
+                       Corresponds to density=0.
+    \param outerRadius Maximum radius, corresponds to density=1.
+    \param kde If `True`, perfom a KDE to estimate the density, otherwise use a histogram.
+    \param bins Number of histogram bins or number of KDE samples.
+    \param bandwidth *KDE only*. Bandwidth of the kernel.
+    \param kernel *KDE only*. The kind of kernel to use. See `sklearn.neighbors.KernelDensity`.
+    \returns Two lists:
+             - Angles of the points where the density was estimated. Range: `[-pi, pi]`
+             - Radii computed from the density.
+    """
+
+    log = getLogger(__name__)
+
+    if kde:
+        bandwidth = 0.01 if not bandwidth else bandwidth
+        bins = int(np.sqrt(len(data))) if not bins else bins
+        kernel = "gaussian" if not kernel else kernel
+
+        xlist, ytmp = oneDimKDE(np.concatenate((data, data+2*np.pi, data-2*np.pi)),
+                                bandwidth, bins, kernel)
+        # Multiply by 3 because twoDDat has 3 replicas of the data,
+        # so the normalisation of dens is off by that factor.
+        ylist = innerRadius + (outerRadius-innerRadius)*ytmp*3
+
+    else:
+        if bandwidth is not None:
+            log.warning("polarDensity: Argument 'bandwidth' has no effect when kde==False")
+        if kernel is not None:
+            log.warning("polarDensity: Argument 'kernel' has no effect when kde==False")
+        if not bins:
+            bins = int(np.sqrt(len(data)))
+
+        hist, bin_edges = np.histogram(data, bins, (-np.pi, np.pi), density=True)
+        # angle, outer radius pairs
+        points = [((high+low)/2,  # assumes that there are no bins on the -pi, pi boundary
+                   innerRadius + (outerRadius-innerRadius)*val)
+                  for val, (low, high) in zip(hist, neighbors(bin_edges))]
+        xlist, ylist = zip(*points)
+
+    return xlist, ylist
 
 def runningAverage(data, binsize):
     """!
