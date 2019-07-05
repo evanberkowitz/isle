@@ -62,6 +62,10 @@ namespace isle {
     }
 
     bool isBipartite(const SparseMatrix<double> &hoppingMatrix) {
+        if (hoppingMatrix.rows() == 0) {
+            return false;
+        }
+
         std::vector<color> colors(hoppingMatrix.rows(), unspecified);
         // 0 is even => must be colored as latA
         colors[0] = latA;
