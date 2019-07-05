@@ -174,6 +174,33 @@ def polarHistogram(ax, data, kde=False, bins=None, bandwidth=None, kernel=None,
 
     return lines
 
+def setPolarTicks(ax, which="both"):
+    r"""!
+    Set the ticks for a polar Axes.
+    """
+
+    allowedWhich = ("both", "x", "y", "none")
+    if which not in allowedWhich:
+        getLogger(__name__).error("Invalid value for argument 'which': '%s'\n"
+                                  "Supported values are %s",
+                                  which, allowedWhich)
+        raise ValueError(f"Invalid value for argument 'which': '{which}'")
+
+    if which in ("both", "x"):
+        ax.set_xticks([0, np.pi/4, np.pi/2, np.pi*3/4, np.pi,
+                       np.pi*5/4, 3*np.pi/2, np.pi*7/4])
+        ax.xaxis.set_ticklabels([r"0",
+                                 r"$\frac{1}{4}\pi$",
+                                 r"$\frac{1}{2}\pi$",
+                                 r"$\frac{3}{4}\pi$",
+                                 r"$\pi$",
+                                 r"$-\frac{3}{4}\pi$",
+                                 r"$-\frac{1}{2}\pi$",
+                                 r"$-\frac{1}{4}\pi$"])
+
+    if which in ("both", "y"):
+        ax.set_yticks([])
+
 
 def plotTotalPhi(measState, axPhi, axPhiHist):
     """!Plot MC history and histogram of total Phi."""
