@@ -224,6 +224,38 @@ def subslice(large, small):
         else start + math.ceil((small.stop - small.start)/small.step)*step
     return slice(start, stop, step)
 
+def neighbors(iterator, wrapAround=False):
+    r"""!
+    An iterator which iterates over pairs of neighbors in an iterable.
+    For example,
+    ```{.py}
+    list(neighbors(range(0, 3), True))
+    ```
+    is equal to
+    ```
+    [(0, 1), (1, 2), (2, 3), (3, 0)]
+    ```
+    where the last tuple is only present if `wrapAround == True`.
+    """
+
+    if not hasattr(iterator, "next"):
+        iterator = iter(iterator)
+
+    try:
+        first = next(iterator)
+    except StopIteration:
+        # no pairs if there are no elements in iterable
+        return
+
+    # the loop body never executes if iterable has only a single element
+    a = first
+    for b in iterator:
+        yield a, b
+        a = b
+
+    if wrapAround:
+        yield a, first
+
 def extendListInDict(dictionary, key, values):
     r"""!
     Extend a list contained in a dictionary or insert as a new item.
