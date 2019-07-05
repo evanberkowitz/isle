@@ -33,7 +33,7 @@ def _overviewFigure():
     axTP = fig.add_subplot(gspec[0, 0:2])
     axAct = fig.add_subplot(gspec[0, 2:4])
     axPhase = fig.add_subplot(gspec[1, 2])
-    axPhase2D = fig.add_subplot(gspec[1, 3])
+    axPhase2D = fig.add_subplot(gspec[1, 3], projection="polar")
     axText = fig.add_subplot(gspec[2, :])
 
     gspecPhi = gridspec.GridSpecFromSubplotSpec(1, 2, wspace=0,

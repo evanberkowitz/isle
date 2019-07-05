@@ -327,22 +327,15 @@ def plotPhase(action, axPhase, axPhase2D):
         axPhase.set_ylabel(r"Density")
 
         # show 2D histogram
-        weight = np.exp(-1j*theta)
-        x, y = np.real(weight), np.imag(weight)
-
-        view = [-1.05, 1.05]
-        hist = axPhase2D.hist2d(x, y, bins=51, range=[view, view], normed=1)
-        axPhase2D.set_xlim(view)
-        axPhase2D.set_ylim(view)
-        axPhase2D.set_aspect(1)
-        axPhase2D.get_figure().colorbar(hist[3], ax=axPhase2D)
-
-        # indicate the average weight
-        axPhase2D.scatter([np.mean(x)], [np.mean(y)], c="w", marker="x")
-
-        axPhase2D.set_title(r"$w = e^{-i \theta}$")
-        axPhase2D.set_xlabel(r"$\mathrm{Re}(w)$")
-        axPhase2D.set_ylabel(r"$\mathrm{Im}(w)$")
+        polarHistogram(axPhase2D, theta, _DO_KDE, bins=50, ls="-", marker=".", fill=True,
+                       edgecolor="C1", facealpha=0.3)
+        average = np.mean(np.exp(-1j*theta))
+        axPhase2D.plot((np.angle(average),), (np.abs(average),), ls="", marker="x",
+                       c=mpl.rcParams["text.color"], markersize=10)
+        setPolarTicks(axPhase2D)
+        axPhase2D.set_ylim((0, 2.1))  # the outerRadius of the plot is 2
+        axPhase2D.set_ylabel(r"$\theta$", labelpad=20)
+        axPhase2D.yaxis.set_label_position("right")
 
     else:
         placeholder(axPhase)
