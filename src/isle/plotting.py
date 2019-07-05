@@ -134,6 +134,46 @@ def runningAverage(data, binsize):
         density[i] = np.mean(data[j-binsize:j])
     return indices, density
 
+def polarHistogram(ax, data, kde=False, bins=None, bandwidth=None, kernel=None,
+                   innerRadius=1, outerRadius=2,
+                   ls=None, marker=".", fill=False,
+                   edgecolor=None, facecolor=None, edgealpha=None, facealpha=None):
+    r"""!
+    Plot a polar histogram into an Axes.
+    """
+
+    xlist, ylist = polarDensity(data, innerRadius, outerRadius, kde,
+                                bins, bandwidth, kernel)
+
+    # draw base-line circle
+    baselines, = ax.plot(list(xlist)+[xlist[0]], [innerRadius]*(len(xlist)+1), c=edgecolor)
+
+    # the above is the first plot command, use it to set the color if not specified
+    if edgecolor is None:
+        edgecolor = baselines.get_color()
+    if facecolor is None:
+        facecolor = baselines.get_color()
+
+    # lines connecting baseline to markers
+    if ls != "":
+        for x, y in zip(xlist, ylist):
+            ax.plot((x, x), (innerRadius, y), ls=ls, c=edgecolor, alpha=edgealpha)
+
+    # fill area between baseline and markers
+    if fill:
+        ax.fill_between(list(xlist)+[xlist[0]],
+                        [innerRadius]*(len(xlist)+1),
+                        list(ylist)+[ylist[0]],
+                        facecolor=facecolor, alpha=facealpha)
+
+    # show markers at the outer tips of the bins
+    if marker:
+        lines = ax.plot(xlist, ylist, ls="", marker=marker, c=edgecolor, alpha=edgealpha)
+    else:
+        lines = []
+
+    return lines
+
 
 def plotTotalPhi(measState, axPhi, axPhiHist):
     """!Plot MC history and histogram of total Phi."""
@@ -233,6 +273,7 @@ def plotAction(action, ax):
     ax.set_ylabel(r"$\mathrm{Re}(S(\phi))$")
     ax.legend()
 
+# TODO include all weights including jacobian
 def plotPhase(action, axPhase, axPhase2D):
     """!Plot MC history and 2D histogram of the phase."""
     if action is None:
