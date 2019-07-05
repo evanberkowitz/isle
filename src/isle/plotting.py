@@ -56,7 +56,8 @@ def placeholder(ax):
                    labelbottom=False, labeltop=False, labelleft=False, labelright=False)
     ax.plot(ax.get_xlim(), ax.get_ylim(), c="k", alpha=0.5)
 
-def oneDimKDE(dat, bandwidth=0.2, nsamples=1024, kernel="gaussian"):
+def oneDimKDE(dat, bandwidth=0.2, nsamples=1024, kernel="gaussian",
+              sampleRange=None):
     r"""!
     Perform a 1D kenrel density estimation on some data.
     \returns Tuple of sampling points and densities.
@@ -67,7 +68,8 @@ def oneDimKDE(dat, bandwidth=0.2, nsamples=1024, kernel="gaussian"):
         # make 2D array shape (len(totalPhi), 1)
         twoDDat = np.array(dat)[:, np.newaxis]
         # make 2D set of sampling points
-        samplePts = np.linspace(np.min(dat)*1.1, np.max(dat)*1.1, nsamples)[:, np.newaxis]
+        sampleRange = sampleRange if sampleRange else (np.min(dat)*1.1, np.max(dat)*1.1)
+        samplePts = np.linspace(*sampleRange, nsamples)[:, np.newaxis]
         # estimate density
         dens = np.exp(KernelDensity(kernel=kernel, bandwidth=bandwidth)
                       .fit(twoDDat)
@@ -101,7 +103,7 @@ def polarDensity(data, innerRadius, outerRadius, kde,
         kernel = "gaussian" if not kernel else kernel
 
         xlist, ytmp = oneDimKDE(np.concatenate((data, data+2*np.pi, data-2*np.pi)),
-                                bandwidth, bins, kernel)
+                                bandwidth, bins, kernel, (-np.pi, np.pi))
         # Multiply by 3 because twoDDat has 3 replicas of the data,
         # so the normalisation of dens is off by that factor.
         ylist = innerRadius + (outerRadius-innerRadius)*ytmp*3
