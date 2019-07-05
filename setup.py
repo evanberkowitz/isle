@@ -60,5 +60,5 @@ setup(
     entry_points={
         "console_scripts": ["isle=isle.scripts.base_command:main"]
     },
-    package_data={"": ["resources"]}
+    package_data={"isle": ["resources/lattices/*.yml"]}
 )
