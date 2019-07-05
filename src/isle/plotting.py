@@ -54,7 +54,8 @@ def placeholder(ax):
     ax.tick_params(axis="both", which="both",
                    bottom=False, top=False, left=False, right=False,
                    labelbottom=False, labeltop=False, labelleft=False, labelright=False)
-    ax.plot(ax.get_xlim(), ax.get_ylim(), c="k", alpha=0.5)
+    if ax.name != "polar":
+        ax.plot(ax.get_xlim(), ax.get_ylim(), c="k", alpha=0.5)
 
 def oneDimKDE(dat, bandwidth=0.2, nsamples=1024, kernel="gaussian",
               sampleRange=None):
