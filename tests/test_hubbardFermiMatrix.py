@@ -18,13 +18,11 @@ RAND_MEAN = 0
 RAND_STD = 0.2
 N_REP = 1 # number of repetitions
 
-LAT_DIR = core.TEST_PATH/"../resources/lattices"
-# lattices to test matrix with
-LATTICES = [LAT_DIR/"c20.yml",
-            LAT_DIR/"tube_3-3_1.yml",
-            LAT_DIR/"one_site.yml",
-            LAT_DIR/"two_sites.yml",
-            LAT_DIR/"triangle.yml"]
+LATTICES = ["c20",
+            "tube_3-3_1",
+            "one_site",
+            "two_sites",
+            "triangle"]
 
 # test with these values of chemical potential
 MU = [0, 1, 1.5]
@@ -124,11 +122,10 @@ class TestHubbardFermiMatrix(unittest.TestCase):
         "Test construction of sparse matrix for different lattices and parameters."
 
         logger = core.get_logger()
-        for latfile in LATTICES:
-            logger.info("Testing constructor of HubbardFermiMatrix* for lattice %s", latfile)
-            with open(latfile, "r") as f:
-                lat = yaml.safe_load(f)
-                self._testConstruction(lat.hopping())
+        for latname in LATTICES:
+            logger.info("Testing constructor of HubbardFermiMatrix* for lattice %s", latname)
+            lat = isle.LATTICES[latname]
+            self._testConstruction(lat.hopping())
 
     def _test_logdetM(self, HFM, kappa):
         "Test log(det(M))."
@@ -195,9 +192,9 @@ class TestHubbardFermiMatrix(unittest.TestCase):
     def test_3_logdet(self):
         "Test log(det(M)) and log(deg(Q))."
         logger = core.get_logger()
-        for latfile in LATTICES:
-            logger.info("Testing log(det(M)) and log(det(Q)) %s", latfile)
-            lat = isle.yamlio.loadLattice(latfile)
+        for latname in LATTICES:
+            logger.info("Testing log(det(M)) and log(det(Q)) %s", latname)
+            lat = isle.LATTICES[latname]
             for HFM in HFMS:
                 self._test_logdetM(HFM, lat.hopping())
                 self._test_logdetQ(HFM, lat.hopping())
@@ -228,9 +225,9 @@ class TestHubbardFermiMatrix(unittest.TestCase):
     def test_4_solver(self):
         "Test Ax=b solvers."
         logger = core.get_logger()
-        for latfile in LATTICES:
-            logger.info("Testing solveM on %s", latfile)
-            lat = isle.yamlio.loadLattice(latfile)
+        for latname in LATTICES:
+            logger.info("Testing solveM on %s", latname)
+            lat = isle.LATTICES[latname]
             for HFM in HFMS:
                 self._test_solveM(HFM, lat.hopping())
 

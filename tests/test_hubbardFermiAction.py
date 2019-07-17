@@ -18,12 +18,11 @@ RAND_MEAN = 0
 RAND_STD = 0.2
 N_REP = 1 # number of repetitions
 
-LAT_DIR = core.TEST_PATH/"../resources/lattices"
 # lattices to test matrix with
-LATTICES = [LAT_DIR/"tube_3-3_1.yml",
-            LAT_DIR/"one_site.yml",
-            LAT_DIR/"two_sites.yml",
-            LAT_DIR/"triangle.yml"]
+LATTICES = ["tube_3-3_1",
+            "one_site",
+            "two_sites",
+            "triangle"]
 
 # test with these values for parameters
 NT = (8, 16)
@@ -113,8 +112,8 @@ class TestHubbardFermiAction(unittest.TestCase):
     def test_1_eval(self):
         "Test eval functions of all versions of the action."
 
-        for latfile in LATTICES:
-            lat = isle.yamlio.loadLattice(latfile)
+        for latname in LATTICES:
+            lat = isle.LATTICES[latname]
             for hopping, basis, nt, beta, mu, sigmaKappa in _forAllParams():
                 lat.nt(nt)
                 self._testVariantsEval(lat, hopping, basis, beta, mu, sigmaKappa)
@@ -184,8 +183,8 @@ class TestHubbardFermiAction(unittest.TestCase):
     def test_2_force(self):
         "Test force functions of all versions of the action."
 
-        for latfile in LATTICES:
-            lat = isle.yamlio.loadLattice(latfile)
+        for latname in LATTICES:
+            lat = isle.LATTICES[latname]
             for hopping, basis, nt, beta, mu, sigmaKappa in _forAllParams():
                 lat.nt(nt)
                 self._testVariantsForce(lat, hopping, basis, beta, mu, sigmaKappa)

@@ -9,19 +9,17 @@ import yaml
 import isle
 from . import core
 
-# lattices to test on
-LAT_DIR = core.TEST_PATH/"../resources/lattices"
 # second entry in tuples is True for bipartite lattices
-LATTICES = [(LAT_DIR/"one_site.yml", True),
-            (LAT_DIR/"two_sites.yml", True),
-            (LAT_DIR/"triangle.yml", False),
-            (LAT_DIR/"four_sites.yml", True),
-            (LAT_DIR/"tetrahedron.yml", False),
-            (LAT_DIR/"c20.yml", False),
-            (LAT_DIR/"c60_ipr.yml", False),
-            (LAT_DIR/"tube_3-3_1.yml", True),
-            (LAT_DIR/"tube_4-2_2.yml", True),
-            (LAT_DIR/"graphene_7_5.yml", True)]
+LATTICES = [("one_site", True),
+            ("two_sites", True),
+            ("triangle", False),
+            ("four_sites", True),
+            ("tetrahedron", False),
+            ("c20", False),
+            ("c60_ipr", False),
+            ("tube_3-3_1", True),
+            ("tube_4-2_2", True),
+            ("graphene_7_5", True)]
 
 ILL_LABELED_LATTICE = """
 !lattice
@@ -70,9 +68,8 @@ class TestLattice(unittest.TestCase):
         "Test function isBipartite."
 
         # test files with correctly alternating labels
-        for latfile, isBP in LATTICES:
-            with open(latfile, "r") as f:
-                lat = yaml.safe_load(f.read())
+        for latname, isBP in LATTICES:
+            lat = isle.LATTICES[latname]
             self.assertEqual(isle.isBipartite(lat), isBP)
 
         # test ill-labeled
