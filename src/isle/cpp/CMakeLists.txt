@@ -32,8 +32,10 @@ add_library(${LIBNAME} MODULE ${SOURCE})
 target_compile_definitions(${LIBNAME} PUBLIC -DISLE_LIBNAME=${LIBNAME})
 
 # set standard
-set_target_properties(${LIBNAME} PROPERTIES CXX_STANDARD 14
-  CXX_STANDARD_REQUIRED ON)
+set_target_properties(${LIBNAME} PROPERTIES
+  CXX_STANDARD 14
+  CXX_STANDARD_REQUIRED ON
+  INTERPROCEDURAL_OPTIMIZATION True)
 
 # warnings
 set(GCC_CLANG_WARNINGS -Wall -Wextra -Wshadow -Wnon-virtual-dtor -Wpedantic
