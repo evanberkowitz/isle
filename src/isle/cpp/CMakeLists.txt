@@ -34,8 +34,12 @@ target_compile_definitions(${LIBNAME} PUBLIC -DISLE_LIBNAME=${LIBNAME})
 # set standard
 set_target_properties(${LIBNAME} PROPERTIES
   CXX_STANDARD 14
-  CXX_STANDARD_REQUIRED ON
-  INTERPROCEDURAL_OPTIMIZATION True)
+  CXX_STANDARD_REQUIRED ON)
+
+if ("${CMAKE_BUILD_TYPE}" STREQUAL "RELEASE")
+  set_target_properties(${LIBNAME} PROPERTIES
+    INTERPROCEDURAL_OPTIMIZATION True)
+endif ()
 
 # warnings
 set(GCC_CLANG_WARNINGS -Wall -Wextra -Wshadow -Wnon-virtual-dtor -Wpedantic
