@@ -80,7 +80,7 @@ def readMetadata(fname):
             versions = {name: val[()] for name, val in metaGrp["version"].items()}
         except KeyError as exc:
             getLogger(__name__).error("Cannot read metadata from file %s: %s",
-                                              str(fname), str(exc))
+                                      str(fname), str(exc))
             raise
     return lattice, params, makeActionSrc, versions
 
@@ -217,23 +217,23 @@ def loadActionValuesFrom(h5obj, full=False, base="/"):
     \throws RuntimeError if neither `/action/action` nor `/configuration` exist in the file.
     """
 
-    h5f = h5obj.file[base]
+    grp = h5obj.file[base]
     action = None
 
-    if not full and "action" in h5f:
-        action = h5f["action/action"][()]
-        cRange = normalizeSlice(parseSlice(h5f["action"].attrs["configurations"],
+    if not full and "action" in grp:
+        action = grp["action/action"][()]
+        cRange = normalizeSlice(parseSlice(grp["action"].attrs["configurations"],
                                            minComponents=3),
                                 0, action.shape[0])
 
-    if action is None and "configuration" in h5f:
-        indices, groups = zip(*loadList(h5f["configuration"]))
+    if action is None and "configuration" in grp:
+        indices, groups = zip(*loadList(grp["configuration"]))
         action = np.array([grp["actVal"][()] for grp in groups])
         cRange = listToSlice(indices)
 
     if action is None:
         getLogger(__name__).error("Cannot load action, no configurations or "
-                                  "separate action found in file %s.", h5f.filename)
+                                  "separate action found in file %s.", grp.file.filename)
         raise RuntimeError("No action found in file")
 
     return action, cRange
