@@ -21,7 +21,7 @@ namespace isle {
                 const auto nt = getNt(phi, nx);
 
                 if (nt < 2)
-                    throw std::runtime_error("nt < 2 in HubbardFermiAction algorithm variant 1 not supported");
+                    throw std::invalid_argument("nt < 2 in HubbardFermiAction algorithm variant 1 not supported");
 
                 // build A^-1 and partial products on the left of (1+A^-1)^-1
                 std::vector<CDMatrix> lefts;  // in reverse order
