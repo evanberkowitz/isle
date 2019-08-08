@@ -312,7 +312,7 @@ def plotPhase(action, axPhase, axPhase2D):
         placeholder(axPhase2D)
         return
 
-    theta = np.imag(action)
+    theta = -np.imag(action)  # minus because the weight is exp(-1j*Im(S))
 
     if np.max(np.abs(theta)) > 1e-13:
         # show 1D histogram + KDE
@@ -329,7 +329,7 @@ def plotPhase(action, axPhase, axPhase2D):
         # show 2D histogram
         polarHistogram(axPhase2D, theta, _DO_KDE, bins=50, ls="-", marker=".", fill=True,
                        edgecolor="C1", facealpha=0.3)
-        average = np.mean(np.exp(-1j*theta))
+        average = np.mean(np.exp(1j*theta))
         axPhase2D.plot((np.angle(average),), (np.abs(average),), ls="", marker="x",
                        c=mpl.rcParams["text.color"], markersize=10)
         setPolarTicks(axPhase2D)
