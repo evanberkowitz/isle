@@ -143,6 +143,7 @@ namespace isle {
                     // There are attempts left, make integration finer.
                     refinements++;
                     epsilon /= 10.0;
+                    --i;  // redo this step
                     // Drop phiAux and actValAux to re-run the current step.
                 } else {
                     std::ostringstream oss;
