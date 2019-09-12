@@ -236,14 +236,14 @@ def plotTotalPhi(measState, axPhi, axPhiHist):
 
     # show histograms + KDE
     axPhiHist.hist(np.real(totalPhi), label="totalPhi, real part, histogram",
-                   orientation="horizontal", bins=max(len(totalPhi), 1000)//100, density=True,
+                   orientation="horizontal", bins=max(len(totalPhi)//100, 10), density=True,
                    facecolor="C0", alpha=0.7)
     samplePts, dens = oneDimKDE(np.real(totalPhi), bandwidth=3/5)
     if dens is not None:
         axPhiHist.plot(dens, samplePts, color="C0", label="totalPhi, real part, kde")
     if np.max(np.imag(totalPhi)) > 0:
         axPhiHist.hist(np.imag(totalPhi), label="totalPhi, imag part, histogram",
-                       orientation="horizontal", bins=len(totalPhi)//100,
+                       orientation="horizontal", bins=max(len(totalPhi)//100, 10),
                        density=True, facecolor="C1", alpha=0.7)
         samplePts, dens = oneDimKDE(np.imag(totalPhi), bandwidth=3/5)
         if dens is not None:
