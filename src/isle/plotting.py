@@ -300,7 +300,7 @@ def plotAction(action, ax):
     ax.plot(np.real(action), c="C0", alpha=0.8, label=r"$\mathrm{Re}(S)$")
     ax.plot(np.imag(action), c="C1", alpha=0.8, label=r"$\mathrm{Im}(S)$")
     ax.set_xlabel(r"$i_{\mathrm{tr}}$")
-    ax.set_ylabel(r"$\mathrm{Re}(S(\phi))$")
+    ax.set_ylabel(r"$S(\phi)$")
     ax.legend()
 
 # TODO include all weights including jacobian
