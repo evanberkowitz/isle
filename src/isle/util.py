@@ -261,11 +261,17 @@ def temporalRoller(nt, dt, fermionic=True):
     return np.roll(np.diag(result), shift, axis=0)
 
 def signAlternator(nx, sigmaKappa=-1):
-    # The quantity (-sigmaKappa)^x shows up very frequently.
+    """
+    Return a unit matrix of size `nx` by `nx` if `sigmaKappa==+1`.
+    If `sigmaKappa==-1`, return a diagonal matrix with +1 in even rows
+    and -1 on odd rows.
+
+    This matrix corresponds to (-sigmaKappa)^x iff the lattice is bipartite and partition
+    A has even indices, and B odd indices.
+    """
+
     if sigmaKappa == -1:
         return np.eye(nx)
-    elif sigmaKappa == +1:
-        # NOTE: correctness depends on the even-odd indexing corresponding to the bipartition.
-        return np.diag([ +1 if np.mod(x,2) == 0 else -1 for x in range(nx) ])
-    else:
-        ... # TODO: raise an error.
+    if sigmaKappa == +1:
+        return np.diag([+1 if np.mod(x, 2) == 0 else -1 for x in range(nx)])
+    raise ValueError(f"sigmaKappa must be +1 or -1; is {sigmaKappa}")
