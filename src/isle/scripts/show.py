@@ -119,7 +119,6 @@ def _lattice(infname, lattice):
 
     ax = fig.add_subplot(111, projection="3d")
     ax.set_title(lattice.name)
-    ax.axis("equal")
 
     # draw edges
     hopping = lattice.hopping()
