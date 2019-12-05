@@ -226,6 +226,12 @@ def loadActionValuesFrom(h5obj, full=False, base="/"):
                                            minComponents=3),
                                 0, action.shape[0])
 
+    if not full and "weights" in grp:
+        action = grp["weights/actVal"][()]
+        cRange = normalizeSlice(parseSlice(grp["weights"].attrs["configurations"],
+                                           minComponents=3),
+                                0, action.shape[0])
+
     if action is None and "configuration" in grp:
         indices, groups = zip(*loadList(grp["configuration"]))
         action = np.array([grp["actVal"][()] for grp in groups])
