@@ -288,31 +288,36 @@ def plotTrajPoints(measState, ax):
     ax.legend(loc="lower center")
 
 
-def plotAction(action, ax):
-    """!Plot real and imaginary parts of the action."""
-    if action is None:
+def plotWeights(weights, ax):
+    """!Plot real and imaginary parts of the weights."""
+    if weights is None:
         # no data - empty frame
         ax.set_title(r"Action")
         placeholder(ax)
         return
 
+    action = weights["actVal"]
     ax.set_title(f"Action, average = {np.mean(np.real(action)):1.3e} + {np.mean(np.imag(action)):1.3e} i")
     ax.plot(np.real(action), c="C0", alpha=0.8, label=r"$\mathrm{Re}(S)$")
     ax.plot(np.imag(action), c="C1", alpha=0.8, label=r"$\mathrm{Im}(S)$")
+    if len(weights) > 1:
+        for i, (name, values) in enumerate(filter(lambda pair: pair[0] != "actVal", weights.items())):
+            ax.plot(np.real(values), c=f"C{2*i+2}", alpha=0.8, label=rf"$\mathrm{{Re}}({name})$")
+            ax.plot(np.imag(values), c=f"C{2*i+3}", alpha=0.8, label=rf"$\mathrm{{Im}}({name})$")
     ax.set_xlabel(r"$i_{\mathrm{tr}}$")
     ax.set_ylabel(r"$S(\phi)$")
     ax.legend()
 
-# TODO include all weights including jacobian
-def plotPhase(action, axPhase, axPhase2D):
+
+def plotPhase(weights, axPhase, axPhase2D):
     """!Plot MC history and 2D histogram of the phase."""
-    if action is None:
+    if weights is None:
         # no data - empty frame
         placeholder(axPhase)
         placeholder(axPhase2D)
         return
 
-    theta = -np.imag(action)  # minus because the weight is exp(-1j*Im(S))
+    theta = -np.imag(sum(weights.values()))  # minus because the weight is exp(-1j*Im(S))
 
     if np.max(np.abs(theta)) > 1e-13:
         # show 1D histogram + KDE

@@ -52,9 +52,9 @@ def _nconfig(fname):
             return len(h5f["action"])
     return None
 
-def _loadAction(measState):
+def _loadLogWeights(measState):
     """!Load action from previous measurement or compute from configurations."""
-    return isle.h5io.loadActionValues(measState.infile)[0]
+    return isle.h5io.loadLogWeights(measState.infile)[0]
 
 def _formatParams(params):
     """!Format parameters as a multi line string."""
@@ -94,9 +94,9 @@ def _overview(infname, lattice, params, makeActionSrc):
     # plot a bunch of stuff
     isle.plotting.plotTotalPhi(measState, axPhi, axPhiHist)
     isle.plotting.plotTrajPoints(measState, axTP)
-    action = _loadAction(measState)
-    isle.plotting.plotAction(action, axAct)
-    isle.plotting.plotPhase(action, axPhase, axPhase2D)
+    weights = _loadLogWeights(measState)
+    isle.plotting.plotWeights(weights, axAct)
+    isle.plotting.plotPhase(weights, axPhase, axPhase2D)
 
     # show metadata at bottom of figure
     axText.axis("off")
