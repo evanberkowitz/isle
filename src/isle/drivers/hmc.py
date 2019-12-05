@@ -60,7 +60,7 @@ class HMC:
             raise ValueError("checkpointFreq must be a multiple of saveFreq.")
 
         if not isinstance(stage, EvolutionStage):
-            # make sure it an EvolutionStage
+            # make sure it is an EvolutionStage
             stage = EvolutionStage(stage, self.action.eval(stage), 1)
 
         for _ in _iterTrajectories(ntr):
