@@ -77,7 +77,7 @@ namespace isle {
                                       "alternate. All sites with an even index must "
                                       "be on one sublattice and sites with an odd "
                                       "index on the other sublattice. "
-                                      "Marking the lattice as 'bot bipartite'.");
+                                      "Marking the lattice as 'not bipartite'.");
         }
 
         return bipartite && alternating;
