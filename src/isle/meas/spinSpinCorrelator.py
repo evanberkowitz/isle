@@ -290,7 +290,7 @@ import numpy as np
 
 import isle
 from .measurement import Measurement
-from ..util import spaceToSpacetime, temporalRoller
+from ..util import temporalRoller
 from ..h5io import createH5Group
 
 class SpinSpinCorrelator(Measurement):
@@ -340,10 +340,11 @@ class SpinSpinCorrelator(Measurement):
 
         d = np.eye(nx*nt).reshape(*P.shape) # A Kronecker delta
 
+        log = getLogger(__name__)
         # TODO: store some einsum paths
         if "xfxf,yiyi->xfyi" not in self._einsum_paths:
             self._einsum_paths["xfxf,yiyi->xfyi"], _ = np.einsum_path("xfxf,yiyi->xfyi", d, d, optimize="optimal")
-            print("Optimized xfxf,yiyi->xfyi")
+            log.info("Optimized Einsum path xfxf,yiyi->xfyi")
         PxxPyy = np.einsum("xfxf,yiyi->xfyi", P, P, optimize=self._einsum_paths["xfxf,yiyi->xfyi"])
         PxxHyy = np.einsum("xfxf,yiyi->xfyi", P, H, optimize=self._einsum_paths["xfxf,yiyi->xfyi"])
         dxxdyy = np.einsum("xfxf,yiyi->xfyi", d, d, optimize=self._einsum_paths["xfxf,yiyi->xfyi"])
@@ -352,7 +353,7 @@ class SpinSpinCorrelator(Measurement):
 
         if "xfyi,yixf->xfyi" not in self._einsum_paths:
             self._einsum_paths["xfyi,yixf->xfyi"], _ = np.einsum_path("xfyi,yixf->xfyi", d, d, optimize="optimal")
-            print("Optimized xfyi,yixf->xfyi")
+            log.info("Optimized Einsum path xfyi,yixf->xfyi")
 
         PxyPyx = np.einsum("xfyi,yixf->xfyi", P, P, optimize=self._einsum_paths["xfyi,yixf->xfyi"])
         Pxydyx = np.einsum("xfyi,yixf->xfyi", P, d, optimize=self._einsum_paths["xfyi,yixf->xfyi"])
@@ -361,7 +362,7 @@ class SpinSpinCorrelator(Measurement):
 
         if "yixf,yixf->xfyi" not in self._einsum_paths:
             self._einsum_paths["yixf,yixf->xfyi"], _ = np.einsum_path("yixf,yixf->xfyi", d, d, optimize="optimal")
-            print("Optimized yixf,yixf->xfyi")
+            log.info("Optimized Einsum path yixf,yixf->xfyi")
 
         PyxHyx = np.einsum("yixf,yixf->xfyi", P, H, optimize=self._einsum_paths["yixf,yixf->xfyi"])
         Pyxdyx = np.einsum("yixf,yixf->xfyi", P, d, optimize=self._einsum_paths["yixf,yixf->xfyi"])
@@ -370,7 +371,7 @@ class SpinSpinCorrelator(Measurement):
 
         if "xfyi,xfyi->xfyi" not in self._einsum_paths:
             self._einsum_paths["xfyi,xfyi->xfyi"], _ = np.einsum_path("xfyi,xfyi->xfyi", d, d, optimize="optimal")
-            print("Optimized xfyi,xfyi->xfyi")
+            log.info("Optimized Einsum path xfyi,xfyi->xfyi")
 
         PxyHxy = np.einsum("xfyi,xfyi->xfyi", P, H, optimize=self._einsum_paths["xfyi,xfyi->xfyi"])
         Pxydyx = np.einsum("xfyi,yixf->xfyi", P, d, optimize=self._einsum_paths["xfyi,xfyi->xfyi"])
@@ -378,7 +379,7 @@ class SpinSpinCorrelator(Measurement):
 
         if "xfxf,yiyi->xfyi" not in self._einsum_paths:
             self._einsum_paths["xfxf,yiyi->xfyi"], _ = np.einsum_path("xfxf,yiyi->xfyi", d, d, optimize="optimal")
-            print("Optimized xfxf,yiyi->xfyi")
+            log.info("Optimized Einsum path xfxf,yiyi->xfyi")
 
         Pxxdyy = np.einsum("xfxf,yiyi->xfyi", P, d, optimize=self._einsum_paths["xfxf,yiyi->xfyi"])
         dxxPyy = np.einsum("xfxf,yiyi->xfyi", d, P, optimize=self._einsum_paths["xfxf,yiyi->xfyi"])
@@ -406,7 +407,7 @@ class SpinSpinCorrelator(Measurement):
             # Project to irreps:
             if "idf,bx,xfyi,ya->bad" not in self._einsum_paths:
                 self._einsum_paths["idf,bx,xfyi,ya->bad"], _ = np.einsum_path("idf,bx,xfyi,ya->bad", self._roll, self.irreps, observable, self.irreps.H, optimize="optimal")
-                print("Optimized time averaging and irrep projection.")
+                log.info("Optimized Einsum path for time averaging and irrep projection.")
 
             time_averaged = np.einsum("idf,bx,xfyi,ya->bad", self._roll, self.irreps.H, observable, self.irreps, optimize=self._einsum_paths["idf,bx,xfyi,ya->bad"]) / nt
 
