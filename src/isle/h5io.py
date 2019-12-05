@@ -306,7 +306,7 @@ def loadActionWeightsFor(dset, base="/"):
 
     return np.exp(-1j * np.imag(action[subRange]))
 
-def loadLogWeights(h5obj, base="/", full=False, weightsGroup="weights"):
+def loadLogWeightsFrom(h5obj, full=False, base="/", weightsGroup="weights"):
     r"""!
     Load logarithmic weights from an HDF5 file given via an HDF5 object in that file.
 
@@ -359,3 +359,25 @@ def loadLogWeights(h5obj, base="/", full=False, weightsGroup="weights"):
     getLogger(__name__).error("Cannot load weights from file %s, no configurations or "
                               "separate weights group found", baseGroup.filename)
     raise RuntimeError("No action found in file")
+
+def loadLogWeights(fname, full=False, base="/"):
+    r"""!
+    Load logarithmic weights from an HDF5 file given via an HDF5 object in that file.
+
+    Reads the weights from `{base}/{weights}` if it exists.
+    This group can be created using the measurement CollectWeights.
+    Otherwise, read weights from saved configurations.
+    If that is not possible either, raise `RuntimeError`.
+
+    \param fname Name of the file to load action from.
+    \param base Path in HDF5 file under which the data is stored.
+    \param full If True, always read from configurations group instead of collected weights.
+    \returns (weights, configRange) where
+             - weights: `dict` to numpy arrays of values of the weights.
+             - configRange: `slice` indicating the range of configurations
+                            the weights were loaded for.
+    \throws RuntimeError if neither weights nor configuration groups exist in the file.
+    """
+
+    with h5.File(fname, "r") as h5f:
+        return loadLogWeightsFrom(h5f, full, base)
