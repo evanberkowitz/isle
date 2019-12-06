@@ -38,7 +38,7 @@ class HMC:
         self._evManager = evManager if evManager \
             else EvolverManager(outfname, definitions=definitions)
 
-    def __call__(self, stage, evolver, ntr, saveFreq, checkpointFreq):
+    def __call__(self, stage, evolver, ntr, saveFreq, checkpointFreq, maxNtr=None):
         r"""!
         Evolve configuration using %HMC.
 
@@ -50,6 +50,8 @@ class HMC:
         \param saveFreq Save configurations every `saveFreq` trajectories.
         \param checkpointFreq Write a checkpoint every `checkpointFreq` trajectories.
                               Must be a multiple of `saveFreq`.
+        \param maxNtr If not `None` and `ntr is None`, stop after at most `maxNtr`
+                      trajectories. Ignored if `ntr is not None`.
 
         \returns EvolutionStage of last trajectory.
         """
@@ -63,7 +65,7 @@ class HMC:
             # make sure it is an EvolutionStage
             stage = EvolutionStage(stage, self.action.eval(stage), 1)
 
-        for _ in _iterTrajectories(ntr):
+        for _ in _iterTrajectories(ntr, maxNtr):
             try:
                 # do evolution
                 stage = evolver.evolve(stage)
@@ -321,13 +323,12 @@ def _loadCheckpoint(fname, startIdx, checkpoints, evManager, action, lattice):
         stage = EvolutionStage.fromH5(cfgGrp)
         return startIdx, rng, stage, evolver
 
-def _iterTrajectories(ntr):
+def _iterTrajectories(ntr, maxNtr):
     """!
     Iterator for production.
     Either iterate ntr times or infinitely long if ntr is None.
     Shows a progressbar in both cases.
     """
-    # TODO allow max iteration for ntr is None
 
     if ntr is not None:
         yield from cli.progressRange(ntr, message="HMC evolution",
@@ -339,6 +340,10 @@ def _iterTrajectories(ntr):
             while True:
                 yield count
                 count += 1
+                if maxNtr is not None and count >= maxNtr:
+                    getLogger(__name__).warning("Reached maximum number of trajectories for "
+                                                "'unbounded' evolution.")
+                    return
                 pbar.advance()
 
 def _report(evolver):
