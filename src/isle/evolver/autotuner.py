@@ -846,8 +846,14 @@ class LeapfrogTuner(Evolver):  # pylint: disable=too-many-instance-attributes
                     return
 
         if nextStep > self.maxNstep:
-            # TODO
-            raise RuntimeError(f"nstep is too large: {nextStep}")
+            attemptedStep = nextStep
+            nextStep = self.maxNstep
+            while self.registrar.seenBefore(nstep=nextStep):
+                if nextStep == 1:
+                    raise RuntimeError("Exhausted all nstep values between 1 and maximum")
+                nextStep -= 1
+            log.warning("Tried to use nstep=%d which is above maximum of %d. Lowered to %d",
+                        attemptedStep, self.maxNstep, nextStep)
 
         self.registrar.newRecord(self.currentParams()["length"], nextStep)
         getLogger("atune").debug("New nstep: %d", nextStep)
