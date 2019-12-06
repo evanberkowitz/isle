@@ -401,7 +401,15 @@ def plotCorrelators(measState, axP, axH):
 
 def plotTunerFit(ax, probabilityPoints, trajPointPoints, fitResult, verification):
     r"""!
-    \todo document
+    Plot a single fit result of the tuner.
+    \param ax Matplotlib Axes to plot to.
+    \param probabilityPoints List of tuples of values for the probability weight.
+                             Tuples contain elements (nMD, mean, error).
+    \param trajPointPoints List of tuples of values for the trajectory point.
+                           Tuples contain elements (nMD, mean, error).
+    \param fitResult A isle.evolver.autotuner.Fitter.Result object.
+    \param verification `True` if the fit was done to verify an existing hypothesis,
+                        `False` if it was done during search.
     """
 
     x, y, err = zip(*probabilityPoints)
@@ -423,7 +431,9 @@ def plotTunerFit(ax, probabilityPoints, trajPointPoints, fitResult, verification
 
 def plotTunerTrace(ax, records):
     r"""!
-    \todo document
+    Plot the history of tuning.
+    \param ax Matplotlib Axes to plot to.
+    \param records List of isle.evolver.autotuner.Registrar.Record objects.
     """
 
     axNstep = ax
