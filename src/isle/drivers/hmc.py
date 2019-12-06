@@ -316,7 +316,6 @@ def _loadCheckpoint(fname, startIdx, checkpoints, evManager, action, lattice):
                                   startIdx)
         raise ValueError("No checkpoint matching start index")
 
-    # TODO load actVal and pass to HMC driver to avoid initial evaluation
     with h5.File(str(fname), "r") as h5f:
         rng, cfgGrp, evolver = fileio.h5.loadCheckpoint(h5f["checkpoint"], startIdx,
                                                         evManager, action, lattice)
