@@ -17,6 +17,7 @@ from scipy.optimize import curve_fit
 from .evolver import Evolver
 from .selector import BinarySelector
 from .leapfrog import ConstStepLeapfrog
+from .transform import backwardTransform, forwardTransform
 from .. import Vector, leapfrog
 from ..collection import extendListInDict
 from ..h5io import createH5Group, loadList
@@ -604,7 +605,8 @@ class LeapfrogTuner(Evolver):  # pylint: disable=too-many-instance-attributes
                  rng, recordFname, *,
                  targetAccRate=0.61, targetConfIntProb=0.125, targetConfIntTP=None,
                  maxNstep=1000, runsPerParam=(10, 100), maxRuns=12,
-                 startParams=None, artificialPoints=None):
+                 startParams=None, artificialPoints=None,
+                 transform=None):
         r"""!
         Set up a leapfrog tuner.
 
@@ -634,6 +636,9 @@ class LeapfrogTuner(Evolver):  # pylint: disable=too-many-instance-attributes
         \param artificialPoints List of points to insert into the fit regardless of
                                 measured acceptance rate or probability.
                                 Each element is a tuple `(nstep, value, error)`.
+        \param transform (Instance of isle.evolver.transform.Transform)
+                         Used this to transform a configuration after MD integration
+                         but before Metropolis accept/reject.
         """
 
         ## Record progress.
@@ -656,6 +661,8 @@ class LeapfrogTuner(Evolver):  # pylint: disable=too-many-instance-attributes
         self.runsPerParam = runsPerParam
         ## Maxiumum number of different parameters to try.
         self.maxRuns = maxRuns
+        ## The transform for accept/reject.
+        self.transform = transform
 
         ## Perform fits.
         self._fitter = Fitter(startParams, artificialPoints, maxNstep)
@@ -723,17 +730,31 @@ class LeapfrogTuner(Evolver):  # pylint: disable=too-many-instance-attributes
         """
 
         params = self.currentParams()
-        pi0 = Vector(self.rng.normal(0, 1, len(stage.phi))+0j)
-        phi1, pi1, actVal1 = leapfrog(stage.phi, pi0, self.action,
-                                      params["length"], params["nstep"])
-        energy0 = stage.sumLogWeights() + pi0@pi0/2
-        energy1 = actVal1 + pi1@pi1/2
+
+        # get start phi for MD integration
+        phiMD, logdetJ = backwardTransform(self.transform, stage)
+        if "logdetJ" not in stage.logWeights:
+            stage.logWeights["logdetJ"] = logdetJ
+
+        # do MD integration
+        pi = Vector(self.rng.normal(0, 1, len(stage.phi))+0j)
+        phiMD1, pi1, actValMD1 = leapfrog(phiMD, pi, self.action,
+                                          params["length"], params["nstep"])
+
+        # transform to MC manifold
+        phi1, actVal1, logdetJ1 = forwardTransform(self.transform, phiMD1, actValMD1)
+
+        # accept/reject on MC manifold
+        energy0 = stage.sumLogWeights()+np.linalg.norm(pi)**2/2
+        energy1 = actVal1+logdetJ1+np.linalg.norm(pi1)**2/2
         trajPoint1 = self._selector.selectTrajPoint(energy0, energy1)
 
         self.registrar.currentRecord().add(min(1, exp(np.real(energy0 - energy1))),
                                            trajPoint1)
 
-        return stage.accept(phi1, actVal1) if trajPoint1 == 1 \
+        logWeights = None if self.transform is None \
+            else {"logdetJ": (logdetJ, logdetJ1)[trajPoint1]}
+        return stage.accept(phi1, actVal1, logWeights) if trajPoint1 == 1 \
             else stage.reject()
 
     def _shiftNstep(self):
