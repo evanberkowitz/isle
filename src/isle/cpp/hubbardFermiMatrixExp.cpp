@@ -1,10 +1,5 @@
 #include "hubbardFermiMatrixExp.hpp"
 
-
-// TODO
-#include <iostream>
-
-
 #include <memory>
 #include <limits>
 #include <cmath>
