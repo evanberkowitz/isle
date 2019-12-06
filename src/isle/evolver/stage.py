@@ -13,10 +13,8 @@ class EvolutionStage:
 
     Stores the configuration and corresponding weight.
     `exp(-real(stage.sumLogWeights()))` is the weight used for accept/reject
-    and the correspondint imagianry part is used for re-weighting.
-    Not the minus sign!
+    and the correspondint imaginary part is used for re-weighting.
     """
-    # TODO is the minus correct?
 
     __slots__ = "phi", "trajPoint", "logWeights", "extra"
 
