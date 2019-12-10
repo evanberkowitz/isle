@@ -357,7 +357,7 @@ def loadLogWeightsFrom(h5obj, full=False, base="/", weightsGroup="weights"):
         return logWeights, listToSlice(indices)
 
     getLogger(__name__).error("Cannot load weights from file %s, no configurations or "
-                              "separate weights group found", baseGroup.filename)
+                              "separate weights group found", baseGroup.file.filename)
     raise RuntimeError("No action found in file")
 
 def loadLogWeights(fname, full=False, base="/"):
