@@ -44,7 +44,7 @@ class ConstStepLeapfrog(Evolver):
 
         # get start phi for MD integration
         phiMD, logdetJ = backwardTransform(self.transform, stage)
-        if "logdetJ" not in stage.logWeights:
+        if self.transform is not None and "logdetJ" not in stage.logWeights:
             stage.logWeights["logdetJ"] = logdetJ
 
         # do MD integration
@@ -158,7 +158,7 @@ class LinearStepLeapfrog(Evolver):
 
         # get start phi for MD integration
         phiMD, logdetJ = backwardTransform(self.transform, stage)
-        if "logdetJ" not in stage.logWeights:
+        if self.transform is not None and "logdetJ" not in stage.logWeights:
             stage.logWeights["logdetJ"] = logdetJ
 
         # do MD integration
