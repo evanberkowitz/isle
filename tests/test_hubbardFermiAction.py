@@ -15,18 +15,19 @@ from . import rand
 SEED = 8613
 RAND_MEAN = 0
 RAND_STD = 0.2
-N_REP = 1 # number of repetitions
+N_REP = 5 # number of repetitions
 
 # lattices to test matrix with
 LATTICES = [isle.LATTICES[name] for name in ("tube_3-3_1",
                                              "one_site",
                                              "two_sites",
+                                             "ribbon_3agnr7",
                                              "triangle")]
 
 # test with these values for parameters
 NT = (8, 16)
 MU = (0, )
-BETA = (1, )
+BETA = (1, 4)
 
 def _randomPhi(n, realOnly):
     "Return a normally distributed random complex vector of n elements."
@@ -71,7 +72,7 @@ class TestHubbardFermiAction(unittest.TestCase):
 
             self.assertAlmostEqual(
                 actv1.eval(phi), actv2.eval(phi), places=10,
-                msg=f"Failed check of evaluation of action in repetition {rep}"\
+                msg=f"Failed check of evaluation of action in repetition {rep} "\
                 + f"for lat={lat.name}, nt={lat.nt()}, mu={mu}, sigmaKappa={sigmaKappa}, "\
                 + f"beta={beta}, hopping={hopping}, basis={basis}")
 
@@ -103,7 +104,7 @@ class TestHubbardFermiAction(unittest.TestCase):
 
             self.assertAlmostEqual(
                 actnoshort.eval(phi), actshort.eval(phi), places=10,
-                msg=f"Failed check of shortcut in evaluation of action in repetition {rep}"\
+                msg=f"Failed check of shortcut in evaluation of action in repetition {rep} "\
                 + f"for lat={lat.name}, nt={lat.nt()}, mu={mu}, sigmaKappa={sigmaKappa}, "\
                 + f"beta={beta}, hopping={hopping}, basis={basis}")
 
@@ -141,7 +142,7 @@ class TestHubbardFermiAction(unittest.TestCase):
 
             self.assertAlmostEqual(
                 np.max(np.abs(actv1.force(phi)-actv2.force(phi))), 0, places=10,
-                msg=f"Failed check of force from action in repetition {rep}"\
+                msg=f"Failed check of force from action in repetition {rep} "\
                 + f"for lat={lat.name}, nt={lat.nt()}, mu={mu}, sigmaKappa={sigmaKappa}, "\
                 + f"beta={beta}, hopping={hopping}, basis={basis}")
 
@@ -173,7 +174,7 @@ class TestHubbardFermiAction(unittest.TestCase):
 
             self.assertAlmostEqual(
                 np.max(np.abs(actnoshort.force(phi)-actshort.force(phi))), 0, places=10,
-                msg=f"Failed check of shortcut in evaluation of force in repetition {rep}"\
+                msg=f"Failed check of shortcut in evaluation of force in repetition {rep} "\
                 + f"for lat={lat.name}, nt={lat.nt()}, mu={mu}, sigmaKappa={sigmaKappa}, "\
                 + f"beta={beta}, hopping={hopping}, basis={basis}")
 
