@@ -96,7 +96,7 @@ class TestHubbardFermiAction(unittest.TestCase):
                                                       sigmaKappa,
                                                       hopping,
                                                       basis,
-                                                      isle.action.HFAVariant.TWO,
+                                                      isle.action.HFAVariant.ONE,
                                                       True)
 
         for rep in range(N_REP):
@@ -166,7 +166,7 @@ class TestHubbardFermiAction(unittest.TestCase):
                                                       sigmaKappa,
                                                       hopping,
                                                       basis,
-                                                      isle.action.HFAVariant.TWO,
+                                                      isle.action.HFAVariant.ONE,
                                                       True)
 
         for rep in range(N_REP):
