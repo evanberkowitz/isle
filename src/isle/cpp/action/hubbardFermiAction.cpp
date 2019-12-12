@@ -175,7 +175,7 @@ namespace isle {
 
             if (_shortcutForHoles) {
                 const auto fp = forceVariant1Part(_hfm, phi, _kp, Species::PARTICLE);
-                return -1.i*(fp + blaze::conj(fp));
+                return -1.i*(fp - blaze::conj(fp));
             }
             else {
                 return -1.i*(forceVariant1Part(_hfm, phi, _kp, Species::PARTICLE)
@@ -246,7 +246,7 @@ namespace isle {
 
             if (_shortcutForHoles) {
                 const auto fp = forceVariant1Part(_hfm, phi, _kp, Species::PARTICLE);
-                return -1.i*(fp + blaze::conj(fp));
+                return -1.i*(fp - blaze::conj(fp));
             }
             else {
                 return -1.i*(forceVariant1Part(_hfm, phi, _kp, Species::PARTICLE)
