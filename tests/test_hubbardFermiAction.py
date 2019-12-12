@@ -6,7 +6,6 @@ import unittest
 from itertools import product
 
 import numpy as np
-import yaml
 
 import isle
 from . import core
