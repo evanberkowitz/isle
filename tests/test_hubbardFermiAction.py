@@ -19,10 +19,10 @@ RAND_STD = 0.2
 N_REP = 1 # number of repetitions
 
 # lattices to test matrix with
-LATTICES = ["tube_3-3_1",
-            "one_site",
-            "two_sites",
-            "triangle"]
+LATTICES = [isle.LATTICES[name] for name in ("tube_3-3_1",
+                                             "one_site",
+                                             "two_sites",
+                                             "triangle")]
 
 # test with these values for parameters
 NT = (8, 16)
@@ -112,8 +112,7 @@ class TestHubbardFermiAction(unittest.TestCase):
     def test_1_eval(self):
         "Test eval functions of all versions of the action."
 
-        for latname in LATTICES:
-            lat = isle.LATTICES[latname]
+        for lat in LATTICES:
             for hopping, basis, nt, beta, mu, sigmaKappa in _forAllParams():
                 lat.nt(nt)
                 self._testVariantsEval(lat, hopping, basis, beta, mu, sigmaKappa)
@@ -183,8 +182,7 @@ class TestHubbardFermiAction(unittest.TestCase):
     def test_2_force(self):
         "Test force functions of all versions of the action."
 
-        for latname in LATTICES:
-            lat = isle.LATTICES[latname]
+        for lat in LATTICES:
             for hopping, basis, nt, beta, mu, sigmaKappa in _forAllParams():
                 lat.nt(nt)
                 self._testVariantsForce(lat, hopping, basis, beta, mu, sigmaKappa)
