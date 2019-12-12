@@ -73,6 +73,15 @@ which obey the eigenvalue relations
 \f]
 which can be shown using the single-particle and single-hole eigenvalue equations and the identity \f$[A, BC] = [A,B]C + B[A,C]\f$.
 
+Something I have not seen elsewhere is the construction of the number operators in a similar fashion,
+\f{align}{
+    \delta_{xx} - N^p_x &= S^0_x + S^3_x = a_x a^\dagger_x = \delta_{xx} - a^\dagger_x a_x
+    \\
+    N^h_x &= S^0_x - S^3_x = -b_x b^\dagger_x + \delta_{xx} = -\delta_{xx} + b^\dagger_x b_x + \delta_{xx} = b^\dagger_x b_x.
+\f}
+We can of course drop the constant term in the first definition.
+
+
 # Correlation Functions
 
 Now we can write correlation functions
@@ -164,6 +173,20 @@ We can also think of correlators between \f$S^+\f$ and \f$S^-\f$,
 \f}
 # TODO: These have a name; I should find it.
 At half filling on a bipartite lattice, the cost to create or destroy a spin from the vacuum should be equal and the correlators should match, in the limit of large statistics.
+
+We can similarly build correlators between \f$N^p\f$ and itself or \f$N^h\f$,
+\f{align}{
+    \left\langle N^p_x N^h_y{}^\dagger \right\rangle
+        &=  \left\langle a_x a^\dagger_x b_y b^\dagger_y \right\rangle \\
+        &=  \left\langle P_{xx} H_{yy} \right\rangle
+        \\
+    \left\langle N^p_x N^p_x{}^\dagger \right\rangle
+        &=  \left\langle a_x a^\dagger_x a_y a^\dagger_y \right\rangle \\
+        &=  \left\langle a_x (\delta_{yx} - a_y a^\dagger_x) a^\dagger_y \right\rangle \\
+        &=  \left\langle a_x a^\dagger_y - a_x a_y a^\dagger_x a^\dagger_y \right\rangle \\
+        &=  \left\langle P_{xy} - P_{xy}P_{yx} + P_{xx}P_{yy} \right\rangle
+\f}
+and we can interchange the p/h superscripts by changing the \f$P\f$ and \f$H\f$ propagators.
 
 # Conserved Quantities
 
@@ -312,11 +335,7 @@ class SpinSpinCorrelator(Measurement):
         self.particle=particleAllToAll
         self.hole=holeAllToAll
 
-        self.rho_rho = []
-        self.S1_S1 = []
-        self.S3_S3 = []
-        self.Splus_Sminus = []
-        self.Sminus_Splus = []
+        self.data = {k: [] for k in ["rho_rho", "S1_S1", "S3_S3", "Splus_Sminus", "Sminus_Splus", "Np_Nh", "Nh_Np", "Np_Np", "Nh_Nh", "Q2S0_Q2S0"]}
 
         if projector is None:
             # TODO: warn when diagonalizing the hopping matrix.
@@ -369,13 +388,19 @@ class SpinSpinCorrelator(Measurement):
         Hyxdyx = np.einsum("yixf,yixf->xfyi", H, d, optimize=self._einsum_paths["yixf,yixf->xfyi"])
         dyxdyx = np.einsum("yixf,yixf->xfyi", d, d, optimize=self._einsum_paths["yixf,yixf->xfyi"])
 
+        if "yixf,xfyi->xfyi" not in self._einsum_paths:
+            self._einsum_paths["yixf,xfyi->xfyi"], _ = np.einsum_path("yixf,xfyi->xfyi", d, d, optimize="optimal")
+            log.info("Optimized yixf,xfyi->xfyi")
+
+        PyxHxy = np.einsum("yixf,xfyi->xfyi", P, H, optimize=self._einsum_paths["yixf,xfyi->xfyi"])
+
         if "xfyi,xfyi->xfyi" not in self._einsum_paths:
             self._einsum_paths["xfyi,xfyi->xfyi"], _ = np.einsum_path("xfyi,xfyi->xfyi", d, d, optimize="optimal")
             log.info("Optimized Einsum path xfyi,xfyi->xfyi")
 
         PxyHxy = np.einsum("xfyi,xfyi->xfyi", P, H, optimize=self._einsum_paths["xfyi,xfyi->xfyi"])
-        Pxydyx = np.einsum("xfyi,yixf->xfyi", P, d, optimize=self._einsum_paths["xfyi,xfyi->xfyi"])
-        Hxydyx = np.einsum("xfyi,yixf->xfyi", H, d, optimize=self._einsum_paths["xfyi,xfyi->xfyi"])
+        Pxydyx = np.einsum("xfyi,xfyi->xfyi", P, d, optimize=self._einsum_paths["xfyi,xfyi->xfyi"])
+        Hxydyx = np.einsum("xfyi,xfyi->xfyi", H, d, optimize=self._einsum_paths["xfyi,xfyi->xfyi"])
 
         if "xfxf,yiyi->xfyi" not in self._einsum_paths:
             self._einsum_paths["xfxf,yiyi->xfyi"], _ = np.einsum_path("xfxf,yiyi->xfyi", d, d, optimize="optimal")
@@ -386,19 +411,21 @@ class SpinSpinCorrelator(Measurement):
         Hxxdyy = np.einsum("xfxf,yiyi->xfyi", H, d, optimize=self._einsum_paths["xfxf,yiyi->xfyi"])
         dxxHyy = np.einsum("xfxf,yiyi->xfyi", d, H, optimize=self._einsum_paths["xfxf,yiyi->xfyi"])
 
-        rho_rho = (PxxPyy + HxxHyy) - (PxyPyx + HxyHyx) + (Pxydyx + Hxydyx) - (PxxHyy+HxxPyy)
-        S1_S1 = 0.25*(PxyHxy+ dyxdyx - Pyxdyx - Hyxdyx + PyxHyx)
-        S3_S3 = 0.25*((PxxPyy + HxxHyy) - (PxyPyx + HxyHyx) + (PxxHyy + HxxPyy) + (Pxydyx+Hxydyx) - (Pxxdyy+Hxxdyy) - (dxxPyy+dxxHyy) + dxxdyy)
-        Splus_Sminus = PxyHxy
-        Sminus_Splus = (dyxdyx - Pyxdyx - Hyxdyx + PyxHyx)
+        data = dict()
+        data["rho_rho"] = (PxxPyy + HxxHyy) - (PxyPyx + HxyHyx) + (Pxydyx + Hxydyx) - (PxxHyy+HxxPyy)
+        data["S1_S1"] = 0.25*(PxyHxy+ dyxdyx - Pyxdyx - Hyxdyx + PyxHyx)
+        data["S3_S3"] = 0.25*((PxxPyy + HxxHyy) - (PxyPyx + HxyHyx) + (PxxHyy + HxxPyy) + (Pxydyx+Hxydyx) - (Pxxdyy+Hxxdyy) - (dxxPyy+dxxHyy) + dxxdyy)
+        data["Splus_Sminus"] = PxyHxy
+        data["Sminus_Splus"] = (dyxdyx - Pyxdyx - Hyxdyx + PyxHyx)
+        data["Np_Nh"] = PxxHyy
+        data["Nh_Np"] = HxxPyy
+        data["Np_Np"] = Pxydyx + PxxPyy - PxyPyx
+        data["Nh_Nh"] = Hxydyx + HxxHyy - HxyHyx
+        data["Q2S0_Q2S0"] = 2*(Hxydyx-PyxHxy)
 
         self._roll = np.array([temporalRoller(nt, -t, fermionic=self.fermionic) for t in range(nt)])
 
-        for name, observable, storage in zip(
-                ("rho_rho",     "S1_S1",    "S3_S3",    "Splus_Sminus",     "Sminus_Splus"),
-                (rho_rho,       S1_S1,      S3_S3,      Splus_Sminus,       Sminus_Splus),
-                (self.rho_rho,  self.S1_S1, self.S3_S3, self.Splus_Sminus,  self.Sminus_Splus)
-                ):
+        for correlator in self.data:
 
             # print(f"Time averaging {name}...")
             # Just leave with spatial indices:
@@ -406,12 +433,12 @@ class SpinSpinCorrelator(Measurement):
 
             # Project to irreps:
             if "idf,bx,xfyi,ya->bad" not in self._einsum_paths:
-                self._einsum_paths["idf,bx,xfyi,ya->bad"], _ = np.einsum_path("idf,bx,xfyi,ya->bad", self._roll, self.irreps, observable, self.irreps.H, optimize="optimal")
+                self._einsum_paths["idf,bx,xfyi,ya->bad"], _ = np.einsum_path("idf,bx,xfyi,ya->bad", self._roll, self.irreps, data[correlator], self.irreps.H, optimize="optimal")
                 log.info("Optimized Einsum path for time averaging and irrep projection.")
 
-            time_averaged = np.einsum("idf,bx,xfyi,ya->bad", self._roll, self.irreps.H, observable, self.irreps, optimize=self._einsum_paths["idf,bx,xfyi,ya->bad"]) / nt
+            time_averaged = np.einsum("idf,bx,xfyi,ya->bad", self._roll, self.irreps.H, data[correlator], self.irreps, optimize=self._einsum_paths["idf,bx,xfyi,ya->bad"]) / nt
 
-            storage.append(time_averaged)
+            self.data[correlator].append(time_averaged)
 
 
     def save(self, h5group):
@@ -420,11 +447,8 @@ class SpinSpinCorrelator(Measurement):
         """
         subGroup = createH5Group(h5group, self.savePath)
         subGroup["irreps"] = self.irreps
-        subGroup["rho_rho"] = self.rho_rho
-        subGroup["S1_S1"] = self.S1_S1
-        subGroup["S3_S3"] = self.S3_S3
-        subGroup["Splus_Sminus"] = self.Splus_Sminus
-        subGroup["Sminus_SPlus"] = self.Sminus_Splus
+        for field in self.data:
+            subGroup[field] = self.data[field]
 
 
 def read(h5group):
