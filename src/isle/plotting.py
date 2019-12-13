@@ -60,6 +60,15 @@ def oneDimKDE(data, bandwidth=0.2, nsamples=1024, kernel="gaussian",
               sampleRange=None, period=None, failureIsError=True):
     r"""!
     Perform a 1D kernel density estimation on some data.
+    \param data 1d array-like.
+    \param bandwidth Size of the kernel.
+    \param nsamples Number of points to estimate the density on.
+    \param kernel The kind of kernel to use. See `sklearn.neighbors.KernelDensity`.
+    \param sampleRange `tuple` of min and max of range to sample on.
+                       Defaults to `(min(data), max(data))`.
+    \param period If not `None`, the data is assumed to be periodic with this period length.
+    \param failureIsError If `False`, the function returns `(None, None)` if scikit-learn
+                          is not available. Raises a `RuntimeError` if `True`.
     \returns Tuple of sampling points and densities.
     """
 
