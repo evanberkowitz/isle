@@ -57,15 +57,17 @@ def placeholder(ax):
         ax.plot(ax.get_xlim(), ax.get_ylim(), c="k", alpha=0.5)
 
 def oneDimKDE(data, bandwidth=0.2, nsamples=1024, kernel="gaussian",
-              sampleRange=None, period=None, failureIsError=True):
+              sampleRange=None, samplePoints=None, period=None, failureIsError=True):
     r"""!
     Perform a 1D kernel density estimation on some data.
-    \param data 1d array-like.
+    \param data 1D array-like.
     \param bandwidth Size of the kernel.
     \param nsamples Number of points to estimate the density on.
     \param kernel The kind of kernel to use. See `sklearn.neighbors.KernelDensity`.
     \param sampleRange `tuple` of min and max of range to sample on.
                        Defaults to `(min(data), max(data))`.
+    \param samplePoints 1D array-like of points to sample KDE on. If set, `nsamples` and
+                        `sampleRange` are ignored.
     \param period If not `None`, the data is assumed to be periodic with this period length.
     \param failureIsError If `False`, the function returns `(None, None)` if scikit-learn
                           is not available. Raises a `RuntimeError` if `True`.
@@ -75,9 +77,12 @@ def oneDimKDE(data, bandwidth=0.2, nsamples=1024, kernel="gaussian",
     if _DO_KDE:
         # make 2D array of shape (len(data), 1)
         twoDData = np.expand_dims(np.asarray(data), -1)
-        # make set of 2D sampling points
-        sampleRange = sampleRange if sampleRange else (np.min(data), np.max(data))
-        samplePts = np.expand_dims(np.linspace(*sampleRange, nsamples), -1)
+        if samplePoints is None:
+            # make set of 1D sampling points
+            sampleRange = sampleRange if sampleRange else (np.min(data), np.max(data))
+            samplePoints = np.linspace(*sampleRange, nsamples)
+        # turn 2D
+        samplePoints = np.expand_dims(samplePoints, -1)
 
         if period is not None:
             twoDData = np.r_[twoDData-period, twoDData, twoDData+period]
@@ -90,8 +95,8 @@ def oneDimKDE(data, bandwidth=0.2, nsamples=1024, kernel="gaussian",
         # estimate density
         dens = np.exp(KernelDensity(kernel=kernel, bandwidth=bandwidth)
                       .fit(twoDData)
-                      .score_samples(samplePts))
-        return samplePts[:, 0], dens*renorm
+                      .score_samples(samplePoints))
+        return samplePoints[:, 0], dens*renorm
 
     if not failureIsError:
         return None, None
@@ -121,7 +126,7 @@ def polarDensity(data, innerRadius, outerRadius, kde,
         bandwidth = 0.01 if not bandwidth else bandwidth
         kernel = "gaussian" if not kernel else kernel
 
-        xlist, ytmp = oneDimKDE(data, bandwidth, bins, kernel, (-np.pi, np.pi),
+        xlist, ytmp = oneDimKDE(data, bandwidth, bins, kernel, sampleRange=(-np.pi, np.pi),
                                 period=2*np.pi, failureIsError=False)
         ylist = innerRadius + (outerRadius-innerRadius)*ytmp
 
