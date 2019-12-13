@@ -12,7 +12,6 @@ try:
     import matplotlib as mpl
     import matplotlib.pyplot as plt
     from matplotlib.ticker import MultipleLocator, MaxNLocator
-    from matplotlib.lines import Line2D
     from matplotlib.patches import Rectangle
 
 except ImportError:
@@ -57,27 +56,38 @@ def placeholder(ax):
     if ax.name != "polar":
         ax.plot(ax.get_xlim(), ax.get_ylim(), c="k", alpha=0.5)
 
-def oneDimKDE(dat, bandwidth=0.2, nsamples=1024, kernel="gaussian",
-              sampleRange=None):
+def oneDimKDE(data, bandwidth=0.2, nsamples=1024, kernel="gaussian",
+              sampleRange=None, period=None, failureIsError=True):
     r"""!
-    Perform a 1D kenrel density estimation on some data.
+    Perform a 1D kernel density estimation on some data.
     \returns Tuple of sampling points and densities.
-             Or return (None, None) if scikit-learn is not available.
     """
 
     if _DO_KDE:
-        # make 2D array shape (len(totalPhi), 1)
-        twoDDat = np.array(dat)[:, np.newaxis]
-        # make 2D set of sampling points
-        sampleRange = sampleRange if sampleRange else (np.min(dat)*1.1, np.max(dat)*1.1)
-        samplePts = np.linspace(*sampleRange, nsamples)[:, np.newaxis]
+        # make 2D array of shape (len(data), 1)
+        twoDData = np.expand_dims(np.asarray(data), -1)
+        # make set of 2D sampling points
+        sampleRange = sampleRange if sampleRange else (np.min(data), np.max(data))
+        samplePts = np.expand_dims(np.linspace(*sampleRange, nsamples), -1)
+
+        if period is not None:
+            twoDData = np.r_[twoDData-period, twoDData, twoDData+period]
+            # The above increased the number of points 3-fold which multiplies the density by 1/3.
+            # Renormalize to the original number of data points by multiplying by 3.
+            renorm = 3
+        else:
+            renorm = 1  # number of points is unchanged here
+
         # estimate density
         dens = np.exp(KernelDensity(kernel=kernel, bandwidth=bandwidth)
-                      .fit(twoDDat)
+                      .fit(twoDData)
                       .score_samples(samplePts))
-        return samplePts[:, 0], dens
+        return samplePts[:, 0], dens*renorm
 
-    return None, None
+    if not failureIsError:
+        return None, None
+    getLogger(__name__).error("KDE not supported, please install scikit-learn.")
+    raise RuntimeError("KDE not supported")
 
 def polarDensity(data, innerRadius, outerRadius, kde,
                  bins=None, bandwidth=None, kernel=None):
@@ -96,20 +106,18 @@ def polarDensity(data, innerRadius, outerRadius, kde,
              - Radii computed from the density.
     """
 
-    log = getLogger(__name__)
-
     if kde:
-        bandwidth = 0.01 if not bandwidth else bandwidth
         bins = int(np.sqrt(len(data))) if not bins else bins
+        # Set defaults here to allow histogram code to detect if those arguments are set.
+        bandwidth = 0.01 if not bandwidth else bandwidth
         kernel = "gaussian" if not kernel else kernel
 
-        xlist, ytmp = oneDimKDE(np.concatenate((data, data+2*np.pi, data-2*np.pi)),
-                                bandwidth, bins, kernel, (-np.pi, np.pi))
-        # Multiply by 3 because twoDDat has 3 replicas of the data,
-        # so the normalisation of dens is off by that factor.
-        ylist = innerRadius + (outerRadius-innerRadius)*ytmp*3
+        xlist, ytmp = oneDimKDE(data, bandwidth, bins, kernel, (-np.pi, np.pi),
+                                period=2*np.pi, failureIsError=False)
+        ylist = innerRadius + (outerRadius-innerRadius)*ytmp
 
     else:
+        log = getLogger(__name__)
         if bandwidth is not None:
             log.warning("polarDensity: Argument 'bandwidth' has no effect when kde==False")
         if kernel is not None:
@@ -238,14 +246,14 @@ def plotTotalPhi(measState, axPhi, axPhiHist):
     axPhiHist.hist(np.real(totalPhi), label="totalPhi, real part, histogram",
                    orientation="horizontal", bins=max(len(totalPhi)//100, 10), density=True,
                    facecolor="C0", alpha=0.7)
-    samplePts, dens = oneDimKDE(np.real(totalPhi), bandwidth=3/5)
+    samplePts, dens = oneDimKDE(np.real(totalPhi), bandwidth=3/5, failureIsError=False)
     if dens is not None:
         axPhiHist.plot(dens, samplePts, color="C0", label="totalPhi, real part, kde")
     if np.max(np.imag(totalPhi)) > 0:
         axPhiHist.hist(np.imag(totalPhi), label="totalPhi, imag part, histogram",
                        orientation="horizontal", bins=max(len(totalPhi)//100, 10),
                        density=True, facecolor="C1", alpha=0.7)
-        samplePts, dens = oneDimKDE(np.imag(totalPhi), bandwidth=3/5)
+        samplePts, dens = oneDimKDE(np.imag(totalPhi), bandwidth=3/5, failureIsError=False)
         if dens is not None:
             axPhiHist.plot(dens, samplePts, color="C1", label="totalPhi, imag part, kde")
 
@@ -323,7 +331,7 @@ def plotPhase(weights, axPhase, axPhase2D):
         # show 1D histogram + KDE
         axPhase.hist(theta, bins=max(len(theta)//100, 10), density=True,
                      facecolor="C1", alpha=0.7)
-        samplePts, dens = oneDimKDE(theta, bandwidth=1/5)
+        samplePts, dens = oneDimKDE(theta, bandwidth=1/5, failureIsError=False)
         if dens is not None:
             axPhase.plot(samplePts, dens, color="C1")
 
