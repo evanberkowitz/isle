@@ -688,7 +688,7 @@ class LeapfrogTuner(Evolver):  # pylint: disable=too-many-instance-attributes
 
         stage = self._doEvolve(stage)
 
-        log = getLogger("atune")
+        log = getLogger(__name__)
         currentRecord = self.registrar.currentRecord()
 
         # check if the minimum number of runs has been reached
@@ -856,7 +856,7 @@ class LeapfrogTuner(Evolver):  # pylint: disable=too-many-instance-attributes
                         attemptedStep, self.maxNstep, nextStep)
 
         self.registrar.newRecord(self.currentParams()["length"], nextStep)
-        getLogger("atune").debug("New nstep: %d", nextStep)
+        getLogger(__name__).debug("New nstep: %d", nextStep)
 
     def _verificationIntStep(self, oldFloatStep):
         r"""!
