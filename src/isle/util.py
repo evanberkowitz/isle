@@ -3,17 +3,7 @@ Some general utilities.
 """
 
 from logging import getLogger
-
-try:
-    # use dataclasses if available (Python3.7 or later)
-    from dataclasses import make_dataclass, field, asdict, replace
-    _HAVE_DATACLASSES = True
-except ImportError:
-# construct poor man's workaround
-    from copy import deepcopy
-    _HAVE_DATACLASSES = False
-    getLogger(__name__).info("Could not import dataclasses, using a workaround "
-                             "for storing parameters")
+import dataclasses
 
 import yaml
 import numpy as np
@@ -123,7 +113,7 @@ def binnedArray(data, binsize):
 
 def _makeParametersClass(fields):
     r"""!
-    Construct a new class for parameters. Uses either a dataclass or custom workaround.
+    Construct a new dataclass for parameters.
     """
     def _tilde(self, value, nt, beta=None):
         if beta is None:
@@ -141,39 +131,13 @@ def _makeParametersClass(fields):
 
         return value*beta/nt
 
-    if _HAVE_DATACLASSES:
-        # use nifty built in dataclass
-        return make_dataclass("Parameters",
-                              ((key, type(value), field(default=value))
-                               for key, value in fields.items()),
-                              namespace={"asdict": asdict,
-                                         "tilde": _tilde,
-                                         "replace": replace},
-                              frozen=True)
-
-    # Use a workaround that lacks almost all of dataclasses features.
-    # Just stores a bunch of variables in a class.
-    class Parameters:
-        # store a list of all field names for asdict
-        _FIELDS = list(fields.keys())
-
-        def asdict(self):
-            return {key: getattr(self, key) for key in self._FIELDS}
-
-        def replace(self, **kwargs):
-            params = deepcopy(self)
-            for key, value in kwargs.items():
-                setattr(params, key, value)
-            return params
-
-    # store all fields in class
-    for key, value in fields.items():
-        setattr(Parameters, key, value)
-
-    # add tilde method
-    setattr(Parameters, "tilde", _tilde)
-
-    return Parameters
+    return dataclasses.make_dataclass("Parameters",
+                                      ((key, type(value), dataclasses.field(default=value))
+                                       for key, value in fields.items()),
+                                      namespace={"asdict": dataclasses.asdict,
+                                                 "tilde": _tilde,
+                                                 "replace": dataclasses.replace},
+                                      frozen=True)
 
 def parameters(**kwargs):
     r"""!
