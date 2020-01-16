@@ -123,19 +123,21 @@ namespace isle {
         const std::size_t NT = getNt(phi, NX);
         const std::size_t tm1 = tp==0 ? NT-1 : tp-1;  // t' - 1
         resizeMatrix(f, NX);
-        f = 0;
 
-        // phi dependent part
-        if ((species == Species::PARTICLE && !inv) || (species == Species::HOLE && inv))
-            blaze::diagonal(f) = blaze::exp(1.i*spacevec(phi, tm1, NX));
-        else
-            blaze::diagonal(f) = blaze::exp(-1.i*spacevec(phi, tm1, NX));
+        // the sign in the exponential of phi
+        auto const sign = ((species == Species::PARTICLE && !inv)
+                           || (species == Species::HOLE && inv))
+            ? +1.0i
+            : -1.0i;
 
-        // kappa, mu dependent part
         if (inv)
-            f = f * expKappa(species, inv);
+            // f = e^phi * e^kappa  (up to signs in exponents)
+            f = expand(exp(sign*spacevec(phi, tm1, NX)), NX)
+                % expKappa(species, inv);
         else
-            f = expKappa(species, inv) * f;
+            // f = e^kappa * e^phi  (up to signs in exponents)
+            f = expKappa(species, inv)
+                % expand(trans(exp(sign*spacevec(phi, tm1, NX))), NX);
     }
 
     CDMatrix HubbardFermiMatrixExp::F(const std::size_t tp, const CDVector &phi,

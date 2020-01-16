@@ -123,6 +123,7 @@ namespace isle {
         const std::size_t tm1 = tp==0 ? NT-1 : tp-1;  // t' - 1
         resizeMatrix(f, NX);
 
+        // TODO use blaze::expand like in HFMExp
         if ((inv && species == Species::PARTICLE) || (species == Species::HOLE && !inv))
             blaze::diagonal(f) = blaze::exp(-1.i*spacevec(phi, tm1, NX));
         else
