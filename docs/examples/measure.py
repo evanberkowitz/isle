@@ -88,7 +88,12 @@ def main():
                                             "correlation_functions/spin_spin",
                                             configSlice=s_[::10],
                                             projector=projector,
-                                            sigmaKappa=params.sigmaKappa)
+                                            sigmaKappa=params.sigmaKappa),
+        isle.meas.DeterminantCorrelators(allToAll[isle.Species.PARTICLE],
+                                            allToAll[isle.Species.HOLE],
+                                            "correlation_functions/det",
+                                            configSlice=s_[::10],
+                                            )
     ]
 
     # Run the measurements on all configurations in the input file.

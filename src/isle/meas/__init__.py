@@ -14,3 +14,4 @@ from .singleParticleCorrelator import SingleParticleCorrelator  # (unused import
 from .totalPhi import TotalPhi  # (unused import) pylint: disable=W0611
 from .polyakov import Polyakov
 from .spinSpinCorrelator import SpinSpinCorrelator
+from .determinantCorrelators import DeterminantCorrelators
