@@ -994,7 +994,8 @@ class LeapfrogTuner(Evolver):  # pylint: disable=too-many-instance-attributes
         return ConstStepLeapfrog(self.action,
                                  params["length"],
                                  params["nstep"],
-                                 self._selector.rng if rng is None else rng)
+                                 self._selector.rng if rng is None else rng,
+                                 transform=self.transform)
 
     @classmethod
     def loadTunedParameters(cls, h5group):
