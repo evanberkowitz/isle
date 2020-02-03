@@ -37,7 +37,7 @@ def _makeParser():
                                    epilog=EPILOG)
 
     # add all sub parsers
-    subp = parser.add_subparsers(title="Commands", dest="cmd", required=True)
+    subp = parser.add_subparsers(title="Commands", dest="cmd")
     for command, (description, argFn, defaultLog) in commands.items():
         subParser = subp.add_parser(command, epilog=EPILOG,
                                     description=description)
