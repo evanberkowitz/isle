@@ -5,7 +5,15 @@ Memoization decorators let us compute expensive functions once and store the res
 so that if the function is called again with the same arguments the result is just returned.
 """
 
-class one_value_by():
+
+import inspect
+import typing
+import weakref
+from dataclasses import dataclass
+from logging import getLogger
+
+
+class MemoizeMethod:
     r"""!
     Memoize the result of a function call based on given arguments.
 
@@ -43,35 +51,49 @@ class one_value_by():
           can still be expensive.
     """
 
-    def __init__(self, *variables_as_strings):
-        ## Names of variables.
-        self.variables = variables_as_strings
 
-        if not self.variables:
-            raise ValueError("You must specify at least one argument by which to memoize.")
+    @dataclass
+    class MemoizedData:
+        argvals: typing.Dict[str, typing.Any]
+        result: typing.Any
 
-        ## Where the arguments are in the function definition.
-        self.indices = list()
-        ## Recent values of the arguments to check against.
-        self.recent = None
-        ## Cached value so we don't evaluate an expensive function too much
-        self.value = None
+    def __init__(self, *argnames):
+        self.argnames = argnames
+        self._instanceData = weakref.WeakKeyDictionary()
 
     def __call__(self, function):
-        """!Apply the decorator to a function."""
+        memo = self  # Using 'self' inside of wrapper is confusing; 'memo' is the instance of Memoize.
+        signature = inspect.signature(function)
 
-        self.indices = [function.__code__.co_varnames.index(v) for v in self.variables]
+        def wrapper(instance, *args, **kwargs):
+            memoized = memo._getOrInsertInstanceData(instance)
+            actualArguments = _bindArguments(signature, instance, *args, **kwargs)
 
-        def wrapper(*arguments):
-            if self.recent is not None:  # Check that we've evaluated at all in the past.
+            if memoized.argvals is not None:
+                if all(memoized.argvals[argname] == actualArguments[argname] for argname in memo.argnames):
+                    return memoized.result
 
-                # If all the self.recent match the arguments, we can use the memoized value.
-                if all(self.recent[i] == arguments[i] for i in self.indices):
-                    return self.value
-
-            # If an argument differs from the recent evaluation, (or it's our first evaluation)
-            self.recent = {i: arguments[i] for i in self.indices}   # We store the arguments to compare with next time
-            self.value = function(*arguments)                       # and evaluate the function and store the result,
-            return self.value                                       # returning the new value.
+            memoized.argvals = {argname: actualArguments[argname] for argname in memo.argnames}
+            memoized.result = function(instance, *args, **kwargs)
+            return memoized.result
 
         return wrapper
+
+    def _getOrInsertInstanceData(self, instance):
+        try:
+            return self._instanceData[instance]
+        except KeyError:
+            getLogger(__name__).debug("Inserting new instance for memoization: %s\n in memoization object %s",
+                                      instance, self)
+            self._instanceData[instance] = self.MemoizedData(None, None)
+            return self._instanceData[instance]
+
+
+def _bindArguments(signature, *args, **kwargs):
+    r"""!
+    Bind the given arguments including default values to a function signature and return
+    an ordered mapping from argument names to values.
+    """
+    boundArguments = signature.bind(*args, **kwargs)
+    boundArguments.apply_defaults()
+    return boundArguments.arguments
