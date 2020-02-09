@@ -1,5 +1,5 @@
 r"""!\file
-Utilities for memoization.
+\brief Utilities for memoizing function results.
 
 Memoization decorators let us compute expensive functions once and store the result,
 so that if the function is called again with the same arguments the result is just returned.
@@ -15,35 +15,49 @@ from logging import getLogger
 
 class MemoizeMethod:
     r"""!
-    Memoize the result of a function call based on given arguments.
+    Decorator that memoizes the result of a method call based on given arguments.
 
-    <B>Example</B><br>
+    @warning This decorator works only on bound methods not free functions.
+
+    The most recent result of calling the decorated method is cached and returned on subsequent
+    calls if the specified arguments match those of the cached call.
+    This can help avoid repeating expensive calculations in a way that is transparent to the user.
+    It is important that all relevant arguments are checked though, so as not to re-use results erroneously.
+
+    <B>Example: Memoize by one argument</B><br>
     ```{.py}
-    # Memoize by argument a
-    @one_value_by("b")
-    def f(a, b, foo):
-        print("evaluated f")
-        return a+1, b-1, foo+foo
+    class C:
+        @MemoizeMethod("a")
+        def f(self, a, b):
+            print(f"evaluate f({a}, {b})")
 
-    print("f(1,1,'bar') -->", f(1,1,"bar"), "   (evaluated)")
-    print("f(1,1,'bar') -->", f(1,1,"bar"), "   (re-used)")
-    print("f(1,2,'bar') -->", f(1,2,"bar"), "   (evaluated)")
-    print("f(1,2,'bar') -->", f(1,2,"bar"), "   (re-used)")
-    print("f(1,1,'bar') -->", f(1,1,"bar"), "   (evaluated, even though it was recently evaluated)")
-    print("f(2,1,'bar') -->", f(2,1,"bar"), "   (re-used, even though a changed, because memoization was by b)")
+    c1 = C()
+    c1.f(0, 1)  # evaluated
+    c1.f(0, 1)  # re-used
+    c1.f(0, 2)  # re-used; careful, this might be wrong!
+    c1.f(1, 1)  # evaluated, a has changed
+    c1.f(1, 1)  # re-used
+    c1.f(0, 1)  # evaluated, only the most recent result is stored
 
-    # Memoize by a and b
-    @one_value_by("b", "a")
-    def f(a, b, foo):
-        print("evaluated f")
-        return a+1, b-1, foo+foo
+    c2 = C()
+    c2.f(0, 1)  # evaluated, c1 and c2 do not share memoized results
+    c1.f(0, 1)  # re-used from earlier call to c1.f
+    ```
 
-    print("f(1,1,'bar') -->", f(1,1,"bar"), "   (evaluated)")
-    print("f(1,1,'bar') -->", f(1,1,"bar"), "   (re-used)")
-    print("f(1,2,'bar') -->", f(1,2,"bar"), "   (evaluated)")
-    print("f(1,2,'bar') -->", f(1,2,"bar"), "   (re-used)")
-    print("f(1,1,'bar') -->", f(1,1,"bar"), "   (evaluated, even though it was recently evaluated)")
-    print("f(2,1,'bar') -->", f(2,1,"bar"), "   (evaluated, unlike before, because we care about a now)")
+    <B>Example: Memoize by two arguments</B><br>
+    ```{.py}
+    class C:
+        @MemoizeMethod("a", "b")
+        def f(self, a, b):
+            print(f"evaluate f({a}, {b})")
+
+    c1 = C()
+    c1.f(0, 1)  # evaluated
+    c1.f(0, 1)  # re-used
+    c1.f(0, 2)  # evaluated (b changed)
+    c1.f(1, 2)  # evaluated (a changed)
+    c1.f(1, 2)  # re-used
+    c1.f(0, 2)  # evaluated, only the most recent result is stored
     ```
 
     \note The efficiency of this decorator depends on the equality operator (`==`).
@@ -51,35 +65,66 @@ class MemoizeMethod:
           can still be expensive.
     """
 
+    #
+    # *** Implementation notes ***
+    #
+    # Using the decorator syntax like in the examples applies the MemoizeMethod decorator to
+    # the function at *class* creation time, i.e. before it is bound to an instance.
+    # This means that all instances of a class share the same instance of MemoizedMethod
+    # for each of their decorated methods.
+    # It is thus necessary to distinguish the different instances and store arguments
+    # and return values for each one separately.
+    #
+    # This is achieved by keeping weak references to all instances on which the
+    # decorated method get called in the attribute _instanceData.
+    # This happens when the method gets called and not when the instance is created.
+    #
 
     @dataclass
     class MemoizedData:
-        argvals: typing.Dict[str, typing.Any]
+        """!
+        Store values of arguments and the return value of the memoized function.
+        """
+        # Mapping from argument names to values.
+        argvals: typing.Union[None, typing.Dict[str, typing.Any]]
+        # Return value.
         result: typing.Any
 
     def __init__(self, *argnames):
+        r"""!
+        \param argnames [`str`] Names of arguments to memoize by.
+        """
         self.argnames = argnames
         self._instanceData = weakref.WeakKeyDictionary()
 
-    def __call__(self, function):
+    def __call__(self, method):
+        """!
+        Apply decorator to a method.
+        """
+
         memo = self  # Using 'self' inside of wrapper is confusing; 'memo' is the instance of Memoize.
-        signature = self._getSignature(function)
+        signature = self._getSignature(method)
 
         def wrapper(instance, *args, **kwargs):
             memoized = memo._getOrInsertInstanceData(instance)
             actualArguments = _bindArguments(signature, instance, *args, **kwargs)
 
-            if memoized.argvals is not None:
+            if memoized.argvals is not None:  # Has the function been called before?
                 if all(memoized.argvals[argname] == actualArguments[argname] for argname in memo.argnames):
+                    # The previous call was equivalent to the current one.
                     return memoized.result
 
             memoized.argvals = {argname: actualArguments[argname] for argname in memo.argnames}
-            memoized.result = function(instance, *args, **kwargs)
+            memoized.result = method(instance, *args, **kwargs)
             return memoized.result
 
         return wrapper
 
     def _getSignature(self, function):
+        """!
+        Return the signature of a function and make sure it is compatible with self.argnames.
+        """
+
         signature = inspect.signature(function)
         for name in self.argnames:
             if name not in signature.parameters:
@@ -90,10 +135,15 @@ class MemoizeMethod:
         return signature
 
     def _getOrInsertInstanceData(self, instance):
+        """!
+        Return the MemoizationData object for given instance.
+        Creates a new one if `instance` has not been seen before.
+        """
+
         try:
             return self._instanceData[instance]
         except KeyError:
-            getLogger(__name__).debug("Inserting new instance for memoization: %s\n in memoization object %s",
+            getLogger(__name__).debug("Inserting new instance for memoization: %s\n  in memoization object %s",
                                       instance, self)
             self._instanceData[instance] = self.MemoizedData(None, None)
             return self._instanceData[instance]
