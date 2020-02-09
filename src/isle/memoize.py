@@ -63,7 +63,7 @@ class MemoizeMethod:
 
     def __call__(self, function):
         memo = self  # Using 'self' inside of wrapper is confusing; 'memo' is the instance of Memoize.
-        signature = inspect.signature(function)
+        signature = self._getSignature(function)
 
         def wrapper(instance, *args, **kwargs):
             memoized = memo._getOrInsertInstanceData(instance)
@@ -78,6 +78,16 @@ class MemoizeMethod:
             return memoized.result
 
         return wrapper
+
+    def _getSignature(self, function):
+        signature = inspect.signature(function)
+        for name in self.argnames:
+            if name not in signature.parameters:
+                getLogger(__name__).error("Argument name '%s' not in signature of function %s\n  signature: %s",
+                                          name, function, signature)
+                raise NameError(f"Argument name {name} if not part of function signature")
+
+        return signature
 
     def _getOrInsertInstanceData(self, instance):
         try:
