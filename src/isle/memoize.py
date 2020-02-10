@@ -6,6 +6,7 @@ so that if the function is called again with the same arguments the result is ju
 """
 
 
+import functools
 import inspect
 import typing
 import weakref
@@ -105,6 +106,7 @@ class MemoizeMethod:
         memo = self  # Using 'self' inside of wrapper is confusing; 'memo' is the instance of Memoize.
         signature = self._getSignature(method)
 
+        @functools.wraps(method)
         def wrapper(instance, *args, **kwargs):
             memoized = memo._getOrInsertInstanceData(instance)
             actualArguments = _bindArguments(signature, instance, *args, **kwargs)
