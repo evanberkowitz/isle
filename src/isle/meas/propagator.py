@@ -7,9 +7,7 @@ import numpy as np
 from logging import getLogger
 
 import isle
-from ..util import spaceToSpacetime
-from ..h5io import createH5Group
-from .. import memoize
+from ..memoize import MemoizeMethod
 
 class AllToAll:
     r"""!
@@ -17,6 +15,11 @@ class AllToAll:
     Tabulate single-particle or hole all-to-all propagator.
     Given a field phi, return the inverse of the species-appropriate fermion matrix M[phi].
     The result is a four-index object Minverse[xf,tf,xi,ti].
+
+    \note The result of the most recent call is cached.
+          This result gets re-used automatically if the value of the action, trajectory point, and trajectory index
+          of subsequent calls are the same.
+          The actual configuration is not taken into account!
     """
 
     def __init__(self, hfm, species, alpha=1):
@@ -25,18 +28,17 @@ class AllToAll:
         self.species = species
         self._alpha = alpha
 
-    # @memoize.one_value_by("action", "itr") # TODO: make this memoization work.
-    # As it stands, it seems different instances share the same memoization,
-    # so we get the same propagator for particles as we get for holes,
-    # which is obviously problematic.
+    @MemoizeMethod(lambda stage, itr: (stage.logWeights["actVal"], stage.trajPoint, itr))
     def __call__(self, stage, itr):
-        """!Compute the all-to-all propagator.
+        r"""!
+        Compute the all-to-all propagator.
         \returns (Minverse)_{yfxi}, a 4D tensor where y/f is the space/time at the sink and x/i the space/time at the source.
         """
 
         if np.mod(len(stage.phi), self.nx) != 0:
-            getLogger(__name__).error(f"Field configuration does not partition evenly into spatial slices of size nx={nx}")
-            # TODO: do something more drastic?  Exit?
+            getLogger(__name__).error("Field configuration does not partition evenly into spatial slices of size nx=%d",
+                                      self.nx)
+            raise ValueError("Invalid field configuration")
 
         nt = int(len(stage.phi) / self.nx)
 
