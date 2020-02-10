@@ -88,16 +88,19 @@ class MemoizeMethod:
         """!
         Store values of arguments and the return value of the memoized function.
         """
-        # Mapping from argument names to values.
-        argvals: typing.Union[None, typing.Dict[str, typing.Any]]
+        # Stored values of arguments as processed by argumentKey.
+        # Can be `_Empty`, meaning that the method has not been called yet.
+        argvals: typing.Any
         # Return value.
         result: typing.Any
 
-    def __init__(self, *argnames):
+    def __init__(self, argumentKeyFn):
         r"""!
-        \param argnames [`str`] Names of arguments to memoize by.
+        \param argumentKeyFn Callable which is applied to the arguments of the decorated method
+                             (except for `self`) before comparing to the cache.
         """
-        self.argnames = argnames
+        self.argumentKeyFn = argumentKeyFn
+        self._argumentKeyFnParams = inspect.signature(self.argumentKeyFn).parameters
         self._instanceData = weakref.WeakKeyDictionary()
 
     def __call__(self, method):
@@ -106,37 +109,44 @@ class MemoizeMethod:
         """
 
         memo = self  # Using 'self' inside of wrapper is confusing; 'memo' is the instance of Memoize.
-        signature = self._getSignature(method)
+        methodSignature = self._getMethodSignature(method)
 
         @functools.wraps(method)
         def wrapper(instance, *args, **kwargs):
             memoized = memo._getOrInsertInstanceData(instance)
-            actualArguments = _bindArguments(signature, instance, *args, **kwargs)
+            actualArguments = _bindArguments(methodSignature, instance, *args, **kwargs)
+            argumentKey = memo.argumentKeyFn(**memo._keyArguments(actualArguments))
 
-            if memoized.argvals is not None:  # Has the function been called before?
-                if all(memoized.argvals[argname] == actualArguments[argname] for argname in memo.argnames):
+            if memoized.argvals is not _Empty:  # Has the function been called before?
+                if memoized.argvals == argumentKey:
                     # The previous call was equivalent to the current one.
                     return memoized.result
 
-            memoized.argvals = {argname: actualArguments[argname] for argname in memo.argnames}
+            memoized.argvals = argumentKey
             memoized.result = method(instance, *args, **kwargs)
             return memoized.result
 
         return wrapper
 
-    def _getSignature(self, function):
+    def _keyArguments(self, allArguments):
         """!
-        Return the signature of a function and make sure it is compatible with self.argnames.
+        Return the arguments for the key functions based on all arguments passed to method.
+        """
+        return {name: allArguments[name] for name in self._argumentKeyFnParams}
+
+    def _getMethodSignature(self, method):
+        """!
+        Return and verify the signature of `method`.
         """
 
-        signature = inspect.signature(function)
-        for name in self.argnames:
-            if name not in signature.parameters:
-                getLogger(__name__).error("Argument name '%s' not in signature of function %s\n  signature: %s",
-                                          name, function, signature)
-                raise NameError(f"Argument name {name} if not part of function signature")
-
-        return signature
+        methodSig = inspect.signature(method)
+        for name in self._argumentKeyFnParams:
+            if name not in methodSig.parameters:
+                getLogger(__name__).error("Argument name '%s' used in key function not in signature"
+                                          " of function %s\n  signature: %s",
+                                          name, method, methodSig)
+                raise TypeError(f"Argument name {name} if not part of function signature")
+        return methodSig
 
     def _getOrInsertInstanceData(self, instance):
         """!
@@ -149,7 +159,7 @@ class MemoizeMethod:
         except KeyError:
             getLogger(__name__).debug("Inserting new instance for memoization: %s\n  in memoization object %s",
                                       instance, self)
-            self._instanceData[instance] = self.MemoizedData(None, None)
+            self._instanceData[instance] = self.MemoizedData(_Empty, None)
             return self._instanceData[instance]
 
 
@@ -161,3 +171,21 @@ def _bindArguments(signature, *args, **kwargs):
     boundArguments = signature.bind(*args, **kwargs)
     boundArguments.apply_defaults()
     return boundArguments.arguments
+
+
+class _EmptyType:
+    """!
+    Indicates that some variable has not been set yet.
+    """
+
+    def __repr__(self):
+        return "Empty"
+
+    def __bool__(self):
+        return False
+
+    def __reduce__(self):
+        return "Empty"
+
+
+_Empty = _EmptyType()
