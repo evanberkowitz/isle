@@ -36,8 +36,9 @@ class AllToAll:
         """
 
         if np.mod(len(stage.phi), self.nx) != 0:
-            getLogger(__name__).error(f"Field configuration does not partition evenly into spatial slices of size nx={nx}")
-            # TODO: do something more drastic?  Exit?
+            getLogger(__name__).error("Field configuration does not partition evenly into spatial slices of size nx=%d",
+                                      self.nx)
+            raise ValueError("Invalid field configuration")
 
         nt = int(len(stage.phi) / self.nx)
 
