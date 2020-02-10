@@ -11,6 +11,7 @@ from . import checks  # (unused import) pylint: disable=unused-import
 from . import cli  # (unused import) pylint: disable=unused-import
 from . import collection  # (unused import) pylint: disable=unused-import
 from . import fileio  # (unused import) pylint: disable=unused-import
+from . import memoize  # (unused import) pylint: disable=unused-import
 from . import meta  # (unused import) pylint: disable=unused-import
 from . import evolver  # (unused import) pylint: disable=unused-import
 from . import random  # (unused import) pylint: disable=unused-import
