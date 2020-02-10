@@ -60,5 +60,6 @@ setup(
     entry_points={
         "console_scripts": ["isle=isle.scripts.base_command:main"]
     },
-    package_data={"isle": ["resources/lattices/*.yml"]}
+    package_data={"isle": ["resources/lattices/*.yml"]},
+    install_requires=["numpy", "PyYAML", "h5py", "pybind11", "scipy"],
 )
