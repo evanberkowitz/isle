@@ -71,7 +71,7 @@ class TestHubbardFermiAction(unittest.TestCase):
             phi = _randomPhi(lat.lattSize(), False)
 
             self.assertAlmostEqual(
-                actv1.eval(phi), actv2.eval(phi), places=10,
+                actv1.eval(phi), actv2.eval(phi), places=9,
                 msg=f"Failed check of evaluation of action in repetition {rep} "\
                 + f"for lat={lat.name}, nt={lat.nt()}, mu={mu}, sigmaKappa={sigmaKappa}, "\
                 + f"beta={beta}, hopping={hopping}, basis={basis}")
