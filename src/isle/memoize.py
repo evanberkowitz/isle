@@ -18,7 +18,9 @@ class MemoizeMethod:
     r"""!
     Decorator that memoizes the result of a method call based on given arguments.
 
-    @warning This decorator works only on bound methods not free functions.
+    \warning This decorator works only on bound methods not free functions.
+
+    \note Classes using this decorator on their methods must support hashing.
 
     The most recent result of calling the decorated method is cached and returned on subsequent
     calls if the specified arguments match those of the cached call.
