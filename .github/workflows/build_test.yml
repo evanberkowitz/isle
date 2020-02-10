@@ -1,4 +1,4 @@
-name: Build & test Isle
+name: Test
 
 on: [push]
 
@@ -19,13 +19,13 @@ jobs:
     - name: Install dependencies
       run: |
         sudo apt-get install g++-9 libblas-dev liblapack-dev
-        
+
         wget https://bitbucket.org/blaze-lib/blaze/downloads/blaze-3.6.tar.gz
         echo "Extracting blaze"
         gzip -d blaze-3.6.tar.gz
         tar -xf blaze-3.6.tar ./blaze-3.6/blaze
         mv blaze-3.6 blaze
-        
+
         python${{ matrix.python-version }} -m pip install --upgrade pip
         pip install -r requirements.txt
     - name: Install dataclasses
