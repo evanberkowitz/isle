@@ -30,7 +30,7 @@ class MemoizeMethod:
     <B>Example: Memoize by one argument</B><br>
     ```{.py}
     class C:
-        @MemoizeMethod("a")
+        @MemoizeMethod(lambda a: a)
         def f(self, a, b):
             print(f"evaluate f({a}, {b})")
 
@@ -50,7 +50,7 @@ class MemoizeMethod:
     <B>Example: Memoize by two arguments</B><br>
     ```{.py}
     class C:
-        @MemoizeMethod("a", "b")
+        @MemoizeMethod(lambda a, b: (a, b))
         def f(self, a, b):
             print(f"evaluate f({a}, {b})")
 
@@ -61,6 +61,24 @@ class MemoizeMethod:
     c1.f(1, 2)  # evaluated (a changed)
     c1.f(1, 2)  # re-used
     c1.f(0, 2)  # evaluated, only the most recent result is stored
+    ```
+
+    <B>Example: Memoize by derived properties</B><br>
+    ```{.py}
+    class C:
+        @MemoizeMethod(lambda s: len(s))
+        def f(self, s, x):
+            print(f"evaluate f({s}, {x})")
+            return len(s) + x
+
+    c1 = C()
+    c1.f("foo", 1)     # evaluated
+    c1.f("foo", 1)     # re-used
+    c1.f("bar", 1)     # re-used, only len(s) matters
+    c1.f("bar", 2)     # re-used
+    c1.f("foobar", 2)  # evaluated (len(s) changed)
+    c1.f("bazbar", 2)  # re-used
+    c1.f("foo", 2)     # evaluated, only the most recent result is stored
     ```
 
     \note The efficiency of this decorator depends on the equality operator (`==`).
