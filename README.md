@@ -1,3 +1,5 @@
+![Test](https://github.com/jl-wynen/isle/workflows/Test/badge.svg?branch=devel)
+
 Simulating carbon nanostructures.
 
 # Short Summary
