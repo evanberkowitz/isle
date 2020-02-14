@@ -32,7 +32,7 @@ project(isle CXX)
 # look for 3rd party packages
 find_package(OpenMP REQUIRED)
 find_package(Pybind11 REQUIRED)
-find_package(blaze 3.4 REQUIRED)
+find_package(blaze 3.6 REQUIRED)
 
 get_filename_component(SOURCE_DIR "src/isle/cpp"
   REALPATH BASE_DIR "${CMAKE_SOURCE_DIR}")
