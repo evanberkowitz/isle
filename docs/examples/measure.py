@@ -73,6 +73,12 @@ def main():
         isle.meas.CollectWeights("weights"),
         # polyakov loop
         isle.meas.Polyakov(params.basis, lat.nt(), "polyakov", configSlice=s_[::10]),
+        # one-point functions
+        isle.meas.onePointFunctions(allToAll[isle.Species.PARTICLE],
+                                            allToAll[isle.Species.HOLE],
+                                            "correlation_functions/one_point",
+                                            configSlice=s_[::10],
+                                            transform=None),
         # single particle correlator for particles / spin up
         isle.meas.SingleParticleCorrelator(allToAll[isle.Species.PARTICLE],
                                            "correlation_functions/single_particle",
