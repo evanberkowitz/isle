@@ -73,9 +73,9 @@ namespace isle {
 
         template <int N>
         CDVector rk4Step(const CDVector &phi,
-                     const action::Action *action,
-                     const double epsilon,
-                     const double direction) {
+                         const action::Action *action,
+                         const double epsilon,
+                         const double direction) {
 
             using p = RK4Params<N>;
 
@@ -94,77 +94,117 @@ namespace isle {
 
             return phi + p::omega1*k1 + p::omega2*k2 + p::omega3*k3 + p::omega4*k4;
         }
+
+        std::pair<CDVector, std::complex<double>>
+        rk4Step(const CDVector &phi,
+                const action::Action *action,
+                const double epsilon,
+                const double direction,
+                const int n) {
+
+            const auto phiOut = n == 0
+                ? rk4Step<0>(phi, action, epsilon, direction)
+                : rk4Step<1>(phi, action, epsilon, direction);
+            const auto actValOut = action->eval(phiOut);
+            return {std::move(phiOut), actValOut};
+        }
+
+        double reduceStepSize(const double stepSize,
+                              const double adaptAttenuation,
+                              const double minStepSize,
+                              const double error,
+                              const double imActTolerance,
+                              const double currentFlowTime) {
+            // step size if either > minStepSize or exactly minStepSize
+            if (stepSize == minStepSize) {
+                std::ostringstream oss;
+                oss << "Cannot reduce step size to preserve imaginary part "
+                    "of the action, minimum stepsize reached. "
+                    "Action deviates by " << error
+                    << ", (tolerance = " << imActTolerance
+                    << ") after flow time " <<  currentFlowTime;
+                getLogger("rungeKutta4Flow").error(oss.str());
+                throw std::runtime_error("Imaginary part of action deviates too much");
+            }
+
+            return std::max(
+                stepSize*adaptAttenuation*std::pow(imActTolerance/error, 1.0/5.0),
+                minStepSize);
+        }
+
+        double increaseStepSize(const double stepSize,
+                                const double adaptAttenuation,
+                                const double error,
+                                const double imActTolerance) {
+            // max(x, 1) makes sure the step size never decreases
+            // min(x, 2) makes sure the step size does not grow too large
+            return stepSize * std::min(
+                std::max(
+                    adaptAttenuation*std::pow(imActTolerance/error, 1.0/4.0),
+                    1.0),
+                2.0);
+        }
     }
 
-    std::tuple<CDVector, std::complex<double>, int, double>
-    rungeKutta4Flow(const CDVector &phi,
+    std::tuple<CDVector, std::complex<double>>
+    rungeKutta4Flow(CDVector phi,
                     const action::Action *action,
                     const double flowTime,
-                    const std::size_t nsteps,
+                    double stepSize,
                     std::complex<double> actVal,
                     const int n,
                     const double direction,
-                    const int attempts,
+                    const double adaptAttenuation,
+                    const double adaptThreshold,
+                    double minStepSize,
                     const double imActTolerance) {
 
         if (n != 0 && n != 1) {
             throw std::invalid_argument("n must be 0 or 1");
         }
 
-        double actualFlowTime = 0.0;
-        int refinements = 0;
-        double epsilon = flowTime / static_cast<double>(nsteps);
-
         if (std::isnan(real(actVal)) || std::isnan(imag(actVal))) {
             actVal = action->eval(phi);
         }
 
-        // results
-        CDVector phiOut = phi;
-        auto actValOut = actVal;
+        if (std::isnan(minStepSize)) {
+            minStepSize = std::max(stepSize / 1000.0, 1e-12);
+        }
 
-        // need to keep two copies in order to revert if integration becomes unstable
-        CDVector phiAux = phi;
-
-        for (std::size_t i = 0; i < nsteps; ++i) {
-            // do one step
-            if (n == 0) {
-                phiAux = rk4Step<0>(phiOut, action, epsilon, direction);
-            }
-            else {
-                phiAux = rk4Step<1>(phiOut, action, epsilon, direction);
-            }
-            auto actValAux = action->eval(phiAux);
-
-            auto const actDiff = abs(exp(1.0i*(imag(actVal)-imag(actValAux))) - 1.0);
-            if (actDiff > imActTolerance) {
-                // Imag part of action deviates too much, do not advance integrator.
-                if (refinements < attempts) {
-                    // There are attempts left, make integration finer.
-                    refinements++;
-                    epsilon /= 10.0;
-                    --i;  // redo this step
-                    // Drop phiAux and actValAux to re-run the current step.
-                } else {
-                    std::ostringstream oss;
-                    oss << "Imaginary part of the action deviates by " << actDiff
-                        << ", (tolerance = " << imActTolerance
-                        << ") at step " <<  i;
-                    getLogger("rungeKutta4Flow").error(oss.str());
-                    throw std::runtime_error("Imaginary part of action deviates too much");
+        for (double currentFlowTime = 0.0; currentFlowTime < flowTime;) {
+            // make sure we don't integrate for longer than flowTime
+            if (currentFlowTime + stepSize > flowTime) {
+                stepSize = flowTime - currentFlowTime;
+                if (stepSize < minStepSize) {
+                    // really short step left to go -> just skip it
+                    break;
                 }
             }
 
+            const auto attempt = rk4Step(phi, action, stepSize, direction, n);
+            const auto error = abs(exp(1.0i*(imag(actVal)-imag(attempt.second))) - 1.0);
+
+            if (error > imActTolerance) {
+                stepSize = reduceStepSize(stepSize, adaptAttenuation,
+                                          minStepSize, error,
+                                          imActTolerance, currentFlowTime);
+                // repeat current step
+            }
+
             else {
-                // everything is fine => advance state
-                // Quickly set phiOut = phiAux and leave phiAux in a bad but fast to assign-to state.
-                swap(phiOut, phiAux);
-                actValOut = actValAux;
-                actualFlowTime += epsilon;
+                // attempt was successful -> advance
+                currentFlowTime += stepSize;
+                phi = std::move(attempt.first);
+                actVal = attempt.second;
+
+                if (error < adaptThreshold*imActTolerance) {
+                    stepSize = increaseStepSize(stepSize, adaptAttenuation,
+                                                error, imActTolerance);
+                }
             }
         }
 
-        return std::make_tuple(phiOut, actValOut, refinements, actualFlowTime);
+        return std::make_tuple(phi, actVal);
     }
 
 }  // namespace isle
