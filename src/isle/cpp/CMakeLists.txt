@@ -38,16 +38,15 @@ set_target_properties(${LIBNAME} PROPERTIES
 
 if ("${CMAKE_BUILD_TYPE}" STREQUAL "RELEASE")
   include(CheckIPOSupported)
-  check_ipo_supported(RESULT result OUTPUT output)
+  check_ipo_supported(RESULT result)
   if (${result})
     set_target_properties(${LIBNAME} PROPERTIES
       INTERPROCEDURAL_OPTIMIZATION True)
     message(STATUS "Enabling link time optimization")
   else()
-    message(STATUS "Cannot enable link time optimization: '${output}'")
+    message(STATUS "Cannot enable link time optimization")
   endif ()
   unset(result)
-  unset(output)
 endif ()
 
 # warnings
