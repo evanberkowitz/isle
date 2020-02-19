@@ -97,7 +97,7 @@ def initializeNewFile(fname, overwrite, lattice, params, makeActionSrc, extraGro
             getLogger(__name__).info("Output file %s exists -- overwriting", fname)
         else:
             getLogger(__name__).error("Output file %s exists and not allowed to overwrite", fname)
-            raise RuntimeError("Ouput file exists")
+            raise RuntimeError("Output file exists")
 
     with h5.File(str(fname), "w-") as h5f:
         for group in extraGroups:
