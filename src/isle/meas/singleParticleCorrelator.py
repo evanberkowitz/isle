@@ -35,8 +35,6 @@ class SingleParticleCorrelator(Measurement):
         else:
             self.irreps = projector
 
-        self.irreps = np.matrix(self.irreps)
-
     def __call__(self, stage, itr):
         """!Record the single-particle correlators."""
 
@@ -47,7 +45,7 @@ class SingleParticleCorrelator(Measurement):
         if self._roll is None:
             self._roll = np.array([temporalRoller(self.nt, -t) for t in range(self.nt)])
 
-        self._tensors = (self._roll, self.irreps.H, S, self.irreps)
+        self._tensors = (self._roll, self.irreps.T.conj(), S, self.irreps)
 
         if self._path is None:
             self._path, _ = np.einsum_path(self._indices, *self._tensors, optimize='optimal')

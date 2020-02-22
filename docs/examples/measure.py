@@ -50,8 +50,7 @@ def main():
     species =   (isle.Species.PARTICLE, isle.Species.HOLE)
     allToAll = {s: isle.meas.propagator.AllToAll(hfm, s) for s in species}
 
-    vals, vecs = np.linalg.eigh(isle.Matrix(hfm.kappaTilde()))
-    projector = np.matrix(vecs)
+    _, projector = np.linalg.eigh(isle.Matrix(hfm.kappaTilde()))
 
     #
     # The measurements are run on each configuration in the slice passed to 'configSlice'.

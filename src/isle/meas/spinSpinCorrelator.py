@@ -344,8 +344,6 @@ class SpinSpinCorrelator(Measurement):
         else:
             self.irreps = projector
 
-        self.irreps = np.matrix(self.irreps)
-
         self._einsum_paths = {}
 
     def __call__(self, stage, itr):
@@ -436,7 +434,9 @@ class SpinSpinCorrelator(Measurement):
                 self._einsum_paths["idf,bx,xfyi,ya->bad"], _ = np.einsum_path("idf,bx,xfyi,ya->bad", self._roll, self.irreps, data[correlator], self.irreps.H, optimize="optimal")
                 log.info("Optimized Einsum path for time averaging and irrep projection.")
 
-            time_averaged = np.einsum("idf,bx,xfyi,ya->bad", self._roll, self.irreps.H, data[correlator], self.irreps, optimize=self._einsum_paths["idf,bx,xfyi,ya->bad"]) / nt
+            time_averaged = np.einsum("idf,bx,xfyi,ya->bad", self._roll, self.irreps.T.conj(),
+                                      data[correlator], self.irreps,
+                                      optimize=self._einsum_paths["idf,bx,xfyi,ya->bad"]) / nt
 
             self.data[correlator].append(time_averaged)
 
