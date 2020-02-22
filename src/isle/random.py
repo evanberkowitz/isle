@@ -55,6 +55,8 @@ class RNGWrapper(ABC):
         \param size Output shape. If the given shape is, e.g., (m, n, k), then m * n * k
                     samples are drawn. Default is None, in which case a single value is returned.
         \param replace Whether the sample is with or without replacement.
+        \param p The probabilities associated with each entry in a. If not given the sample
+                 assumes a uniform distribution over all entries in a.
         """
         pass
 
@@ -121,7 +123,7 @@ class NumpyRNG(RNGWrapper):
                 + 1j*self._state.normal(mean, std, size)
         return self._state.normal(mean, std, size)
 
-    def choice(self, a, size=None, replace=True):
+    def choice(self, a, size=None, replace=True, p=None):
         r"""!
         Generate a random sample from a given 1-D array
         \param a If an np.ndarray or equivalent, a random sample is generated from
@@ -129,9 +131,11 @@ class NumpyRNG(RNGWrapper):
         \param size Output shape. If the given shape is, e.g., (m, n, k), then m * n * k
                     samples are drawn. Default is None, in which case a single value is returned.
         \param replace Whether the sample is with or without replacement.
+        \param p The probabilities associated with each entry in a. If not given the sample
+                 assumes a uniform distribution over all entries in a.
         """
 
-        return self._state.choice(a, size=size, replace=replace)
+        return self._state.choice(a, size=size, replace=replace, p=p)
 
     def writeH5(self, group):
         r"""!
