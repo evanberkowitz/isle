@@ -1,9 +1,6 @@
 #include "integrator.hpp"
 
 #include <cmath>
-#include <sstream>
-
-#include "bind/logging.hpp"
 
 using namespace std::complex_literals;
 
@@ -113,20 +110,7 @@ namespace isle {
                               const double adaptAttenuation,
                               const double minStepSize,
                               const double error,
-                              const double imActTolerance,
-                              const double currentFlowTime) {
-            // step size if either > minStepSize or exactly minStepSize
-            if (stepSize == minStepSize) {
-                std::ostringstream oss;
-                oss << "Cannot reduce step size to preserve imaginary part "
-                    "of the action, minimum stepsize reached. "
-                    "Action deviates by " << error
-                    << ", (tolerance = " << imActTolerance
-                    << ") after flow time " <<  currentFlowTime;
-                getLogger("rungeKutta4Flow").error(oss.str());
-                throw std::runtime_error("Imaginary part of action deviates too much");
-            }
-
+                              const double imActTolerance) {
             return std::max(
                 stepSize*adaptAttenuation*std::pow(imActTolerance/error, 1.0/5.0),
                 minStepSize);
@@ -146,7 +130,7 @@ namespace isle {
         }
     }
 
-    std::tuple<CDVector, std::complex<double>>
+    std::tuple<CDVector, std::complex<double>, double>
     rungeKutta4Flow(CDVector phi,
                     const action::Action *action,
                     const double flowTime,
@@ -171,7 +155,8 @@ namespace isle {
             minStepSize = std::max(stepSize / 1000.0, 1e-12);
         }
 
-        for (double currentFlowTime = 0.0; currentFlowTime < flowTime;) {
+        double currentFlowTime;
+        for (currentFlowTime = 0.0; currentFlowTime < flowTime;) {
             // make sure we don't integrate for longer than flowTime
             if (currentFlowTime + stepSize > flowTime) {
                 stepSize = flowTime - currentFlowTime;
@@ -185,9 +170,11 @@ namespace isle {
             const auto error = abs(exp(1.0i*(imag(actVal)-imag(attempt.second))) - 1.0);
 
             if (error > imActTolerance) {
+                if (stepSize == minStepSize) {
+                    break;
+                }
                 stepSize = reduceStepSize(stepSize, adaptAttenuation,
-                                          minStepSize, error,
-                                          imActTolerance, currentFlowTime);
+                                          minStepSize, error, imActTolerance);
                 // repeat current step
             }
 
@@ -204,7 +191,7 @@ namespace isle {
             }
         }
 
-        return std::make_tuple(phi, actVal);
+        return std::make_tuple(phi, actVal, currentFlowTime);
     }
 
 }  // namespace isle

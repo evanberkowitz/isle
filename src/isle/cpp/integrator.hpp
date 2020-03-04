@@ -41,8 +41,8 @@ namespace isle {
      * The step size is adjusted to keep the intergation error
      * below the given tolerance.
      * The error is estiamted using the imaginary part of the action.
-     * If the resulting step size is too small, integration fails by
-     * throwing a `std::runtime_error`.
+     * If the resulting step size is too small, integration stops
+     * and returns the last point that could be reached within error bounds.
      *
      * Let \f$\Delta = |e^{i \text{Im} S_{i+1}} - e^{i \text{Im} S_i}|\f$
      * be the error of the imaginary part of the action and
@@ -68,8 +68,9 @@ namespace isle {
      * \returns Tuple of (in order)
      *           - final configuration phi
      *           - value of action at final phi
+     *           - reached flow time in [0, `flowTime`]
      */
-    std::tuple<CDVector, std::complex<double>>
+    std::tuple<CDVector, std::complex<double>, double>
     rungeKutta4Flow(CDVector phi,
                     const action::Action *action,
                     double flowTime,
