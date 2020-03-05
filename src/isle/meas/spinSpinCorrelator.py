@@ -431,7 +431,7 @@ class SpinSpinCorrelator(Measurement):
 
             # Project to irreps:
             if "idf,bx,xfyi,ya->bad" not in self._einsum_paths:
-                self._einsum_paths["idf,bx,xfyi,ya->bad"], _ = np.einsum_path("idf,bx,xfyi,ya->bad", self._roll, self.irreps, data[correlator], self.irreps.H, optimize="optimal")
+                self._einsum_paths["idf,bx,xfyi,ya->bad"], _ = np.einsum_path("idf,bx,xfyi,ya->bad", self._roll, self.irreps, data[correlator], self.irreps.conj().T, optimize="optimal")
                 log.info("Optimized Einsum path for time averaging and irrep projection.")
 
             time_averaged = np.einsum("idf,bx,xfyi,ya->bad", self._roll, self.irreps.T.conj(),
