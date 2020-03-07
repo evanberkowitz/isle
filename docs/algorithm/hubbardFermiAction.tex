@@ -123,7 +123,7 @@ The fermion matrix discussed in the previous section is an approximation of
 with
 \begin{align}
   {\hat{K}}_{x'x} &\equiv \delta_{x'x}\\
-  {\hat{F}_{t'}(\phi, \tilde{\kappa}, \tilde{\mu})}_{x'x} &\equiv {(e^{-\tilde{\kappa}+\tilde{\mu}})}_{x'x} e^{\i \phi_{x(t'-1)}} = {(e^{-\tilde{\kappa}+\tilde{\mu}} F_{t'}(\phi) )}_{x'x}.
+  {\hat{F}_{t'}(\phi, \tilde{\kappa}, \tilde{\mu})}_{x'x} &\equiv {(e^{\tilde{\kappa}-\tilde{\mu}})}_{x'x} e^{\i \phi_{x(t'-1)}} = {(e^{\tilde{\kappa}-\tilde{\mu}} F_{t'}(\phi) )}_{x'x}.
 \end{align}
 And the combination
 \begin{align}
@@ -132,9 +132,9 @@ And the combination
 \end{align}
 with
 \begin{align}
-  {\hat{P}(\tilde{\kappa}, \tilde{\mu}, \sigma_{\tilde{\kappa}})}_{x'x} &= \delta_{x'x} + {(e^{-\tilde{\kappa}+\tilde{\mu}} e^{-\sigma_{\tilde{\kappa}}\tilde{\kappa} - \tilde{\mu}})}_{x'x}\\
-  {\hat{T}^+_{t'}(\phi, \tilde{\kappa}, \tilde{\mu}, \sigma_{\tilde{\kappa}})}_{x'x} &= - \mathcal{B}_{t'} {\hat{F}_{t'}(\phi, \tilde{\kappa}, \tilde{\mu})}_{x'x} = - \mathcal{B}_{t'} {(e^{-\tilde{\kappa}+\tilde{\mu}})}_{x'x} e^{\i \phi_{x(t'-1)}}\\
-  {\hat{T}^-_{t'}(\phi, \tilde{\kappa}, \tilde{\mu}, \sigma_{\tilde{\kappa}})}_{x'x} &= - \mathcal{B}_{t'+1} {\hat{F}^T_{t'+1}(-\phi, \sigma_{\tilde{\kappa}}\tilde{\kappa}, -\tilde{\mu})}_{x'x} = - \mathcal{B}_{t'+1} e^{-\i \phi_{x't'}} {(e^{-\sigma_{\tilde{\kappa}}\tilde{\kappa}-\tilde{\mu}})}_{x'x}
+  {\hat{P}(\tilde{\kappa}, \tilde{\mu}, \sigma_{\tilde{\kappa}})}_{x'x} &= \delta_{x'x} + {(e^{\tilde{\kappa}-\tilde{\mu}} e^{\sigma_{\tilde{\kappa}}\tilde{\kappa} + \tilde{\mu}})}_{x'x}\\
+  {\hat{T}^+_{t'}(\phi, \tilde{\kappa}, \tilde{\mu}, \sigma_{\tilde{\kappa}})}_{x'x} &= - \mathcal{B}_{t'} {\hat{F}_{t'}(\phi, \tilde{\kappa}, \tilde{\mu})}_{x'x} = - \mathcal{B}_{t'} {(e^{+\tilde{\kappa}-\tilde{\mu}})}_{x'x} e^{\i \phi_{x(t'-1)}}\\
+  {\hat{T}^-_{t'}(\phi, \tilde{\kappa}, \tilde{\mu}, \sigma_{\tilde{\kappa}})}_{x'x} &= - \mathcal{B}_{t'+1} {\hat{F}^T_{t'+1}(-\phi, \sigma_{\tilde{\kappa}}\tilde{\kappa}, -\tilde{\mu})}_{x'x} = - \mathcal{B}_{t'+1} e^{-\i \phi_{x't'}} {(e^{\sigma_{\tilde{\kappa}}\tilde{\kappa}+\tilde{\mu}})}_{x'x}
 \end{align}
 Since both $\hat{M}$ and $\hat{Q}$ have the same block structure as $M$ and $Q$, most of the following derivations treat only the diagonal discretization from Section~\ref{sec:dia_disc}.
 Based on those, results for the exponential discretization are derived where they differ.
