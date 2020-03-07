@@ -137,7 +137,7 @@ class TestHubbardFermiMatrix(unittest.TestCase):
                           msg="logdetM must throw a RuntimeError when called with mu != 0. If this bug has been fixed, update the unit test!")
 
         for nt, beta,  mu, sigmaKappa, species, rep in itertools.product((4, 8, 32),
-                                                                         (3, 6, 10),
+                                                                         (3, 6),
                                                                          [0],
                                                                          (-1, 1),
                                                                          (isle.Species.PARTICLE, isle.Species.HOLE),
