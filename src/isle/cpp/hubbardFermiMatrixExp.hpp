@@ -26,8 +26,8 @@ namespace isle {
      *
      * Neither the full matrices nor any of their blocks are stored explicitly. Instead,
      * each block is to be constructed when needed which might be expensive.
-     * The only exception is \f$e^{\tilde{\kappa}-\tilde{\mu}}\f$ which is cached
-     * after it has been requested through HubbardFermiMatrixExp::expKappa() for the first time.
+     * The only exception is \f$e^{\tilde{\kappa}-\tilde{\mu}}\f$ which is stored for particles and holes, both
+     * as the matrices themselves and their inverses.
      *
      * The result of an LU-decomposition of \f$\hat{Q}\f$ is stored in HubbardFermiMatrixExp::LU
      * to save memory and give easier access to the components compared to a `blaze::Matrix`.
