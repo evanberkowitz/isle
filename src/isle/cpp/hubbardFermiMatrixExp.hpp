@@ -253,13 +253,13 @@ namespace isle {
         double _mu;  ///< Chemical potential.
         std::int8_t _sigmaKappa;  ///< Sign of kappa in M^dag.
 
-        /// exp(-kappaTilde+muTilde) for particles.
-        DMatrix _expKappap;
         /// exp(kappaTilde-muTilde) for particles.
+        DMatrix _expKappap;
+        /// exp(-kappaTilde+muTilde) for particles.
         DMatrix _expKappapInv;
-        /// exp(-sigmaKappa*kappaTilde-muTilde) for holes.
-        DMatrix _expKappah;
         /// exp(sigmaKappa*kappaTilde+muTilde) for holes.
+        DMatrix _expKappah;
+        /// exp(-sigmaKappa*kappaTilde-muTilde) for holes.
         DMatrix _expKappahInv;
         /// log(det(_expKappahInv)).
         std::complex<double> _logdetExpKappahInv;
