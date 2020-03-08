@@ -26,7 +26,7 @@ namespace isle {
      *
      * Neither the full matrices nor any of their blocks are stored explicitly. Instead,
      * each block is to be constructed when needed which might be expensive.
-     * The only exception is \f$e^{-\tilde{\kappa}+\tilde{\mu}}\f$ which is cached
+     * The only exception is \f$e^{\tilde{\kappa}-\tilde{\mu}}\f$ which is cached
      * after it has been requested through HubbardFermiMatrixExp::expKappa() for the first time.
      *
      * The result of an LU-decomposition of \f$\hat{Q}\f$ is stored in HubbardFermiMatrixExp::LU
@@ -64,10 +64,11 @@ namespace isle {
         HubbardFermiMatrixExp &operator=(HubbardFermiMatrixExp &&) = default;
         ~HubbardFermiMatrixExp() = default;
 
-        /// Return the exponential of the hopping amtrix and chemical potential.
+        /// Return the exponential of the hopping matrix and chemical potential.
         /**
-         * \returns \f$\exp(-\tilde{\kappa} + \tilde{\mu})\f$ for particles
-         *          and \f$\exp(-\sigma_{\tilde{\kappa}}\tilde{\kappa} - \tilde{\mu})\f$ for holes.
+         * \returns \f$\exp(\tilde{\kappa} - \tilde{\mu})\f$ for particles
+         *          and \f$\exp(\sigma_{\tilde{\kappa}}\tilde{\kappa} + \tilde{\mu})\f$ for holes
+         *          or the inverses if `inv == true`.
          */
         const DMatrix &expKappa(const Species species, const bool inv) const;
 
