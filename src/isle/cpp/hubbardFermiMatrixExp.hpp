@@ -26,8 +26,8 @@ namespace isle {
      *
      * Neither the full matrices nor any of their blocks are stored explicitly. Instead,
      * each block is to be constructed when needed which might be expensive.
-     * The only exception is \f$e^{-\tilde{\kappa}+\tilde{\mu}}\f$ which is cached
-     * after it has been requested through HubbardFermiMatrixExp::expKappa() for the first time.
+     * The only exception is \f$e^{\tilde{\kappa}-\tilde{\mu}}\f$ which is stored for particles and holes, both
+     * as the matrices themselves and their inverses.
      *
      * The result of an LU-decomposition of \f$\hat{Q}\f$ is stored in HubbardFermiMatrixExp::LU
      * to save memory and give easier access to the components compared to a `blaze::Matrix`.
@@ -64,10 +64,11 @@ namespace isle {
         HubbardFermiMatrixExp &operator=(HubbardFermiMatrixExp &&) = default;
         ~HubbardFermiMatrixExp() = default;
 
-        /// Return the exponential of the hopping amtrix and chemical potential.
+        /// Return the exponential of the hopping matrix and chemical potential.
         /**
-         * \returns \f$\exp(-\tilde{\kappa} + \tilde{\mu})\f$ for particles
-         *          and \f$\exp(-\sigma_{\tilde{\kappa}}\tilde{\kappa} - \tilde{\mu})\f$ for holes.
+         * \returns \f$\exp(\tilde{\kappa} - \tilde{\mu})\f$ for particles
+         *          and \f$\exp(\sigma_{\tilde{\kappa}}\tilde{\kappa} + \tilde{\mu})\f$ for holes
+         *          or the inverses if `inv == true`.
          */
         const DMatrix &expKappa(const Species species, const bool inv) const;
 
@@ -253,13 +254,13 @@ namespace isle {
         double _mu;  ///< Chemical potential.
         std::int8_t _sigmaKappa;  ///< Sign of kappa in M^dag.
 
-        /// exp(-kappaTilde+muTilde) for particles.
-        DMatrix _expKappap;
         /// exp(kappaTilde-muTilde) for particles.
+        DMatrix _expKappap;
+        /// exp(-kappaTilde+muTilde) for particles.
         DMatrix _expKappapInv;
-        /// exp(-sigmaKappa*kappaTilde-muTilde) for holes.
-        DMatrix _expKappah;
         /// exp(sigmaKappa*kappaTilde+muTilde) for holes.
+        DMatrix _expKappah;
+        /// exp(-sigmaKappa*kappaTilde-muTilde) for holes.
         DMatrix _expKappahInv;
         /// log(det(_expKappahInv)).
         std::complex<double> _logdetExpKappahInv;

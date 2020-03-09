@@ -29,15 +29,15 @@ namespace isle {
             switch (species) {
             case Species::PARTICLE:
                 if (inv) {
-                    return expmSym(kappa - mu*IdMatrix<double>(kappa.rows()));
-                } else {
                     return expmSym(-kappa + mu*IdMatrix<double>(kappa.rows()));
+                } else {
+                    return expmSym(kappa - mu*IdMatrix<double>(kappa.rows()));
                 }
             case Species::HOLE:
                 if (inv) {
-                    return expmSym(sigmaKappa*kappa + mu*IdMatrix<double>(kappa.rows()));
-                } else {
                     return expmSym(-sigmaKappa*kappa - mu*IdMatrix<double>(kappa.rows()));
+                } else {
+                    return expmSym(sigmaKappa*kappa + mu*IdMatrix<double>(kappa.rows()));
                 }
             }
             // Strictly speaking impossible to reach but gcc complains.
@@ -590,7 +590,7 @@ namespace isle {
             return toFirstLogBranch(ilogdet(B));
         }
 
-        // Use version -i Phi + N_t log(det(e^{sigmaKappa*kappa+mu})) + log(det(1+hat{A}^{-1})).
+        // Use version -i Phi - N_t log(det(e^{-sigmaKappa*kappa-mu})) + log(det(1+hat{A}^{-1})).
         std::complex<double> logdetM_h(const HubbardFermiMatrixExp &hfm,
                                        const CDVector &phi) {
             const auto NX = hfm.nx();
