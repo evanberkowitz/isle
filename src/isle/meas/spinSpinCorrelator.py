@@ -11,21 +11,21 @@ and where \f$c\f$ is a doublet of operators,
 \f[
     c_{xs} = \left(\begin{array}{c} a_x \\ (-\sigma_\kappa)^x b_x^\dagger \end{array}\right)
 \f]
-where \f$\sigma_\kappa\f$ is +1 on bipartite lattices and must be -1 on non-bipartite lattices, following the convention of Isle (bipartite graphs can also have \f$\sigma_\kappa=-1\f$).
+where \f$\sigma_\kappa\f$ is +1 on bipartite lattices and must be –1 on non-bipartite lattices, following the convention of Isle (bipartite graphs can also have \f$\sigma_\kappa=–1\f$).
 In Buividovich, Smith, Ulybyshev, and von Smekal [1807.07025](https://arxiv.org/abs/1807.07025) [PRB 98 235129](https://doi.org/10.1103/PhysRevB.98.235129) they also define, just after (1),
 the electric charge operator
 \f[
-    \rho_x = c_{x,\uparrow}^\dagger c_{x,\uparrow} + c_{x,\downarrow}^\dagger c_{x,\downarrow} - 1
+    \rho_x = c_{x,\uparrow}^\dagger c_{x,\uparrow} + c_{x,\downarrow}^\dagger c_{x,\downarrow} – 1
 \f]
-which can be rewritten as \f$ \rho_x = 1-2 S^0_x\f$, where the \f$0^{th}\f$ Pauli matrix is the \f$2\times2\f$ identity matrix.  The \f$S\f$ operators are Hermitian.
+which can be rewritten as \f$ \rho_x = 1–2 S^0_x\f$, where the \f$0^{th}\f$ Pauli matrix is the \f$2\times2\f$ identity matrix.  The \f$S\f$ operators are Hermitian.
 
 Rewriting those operators into the Isle basis,
 \f{align}{
-    \rho_x &= n^a_x-n^b_x = a_x^\dagger a - b_x^\dagger b                                       \\
-    S^0_x &= \frac{1}{2} \left[ a_x a_x^\dagger - b_x b_x^\dagger +1 \right]                    \\
-    S^1_x &= \frac{1}{2} (-\sigma_\kappa)^x \left[ b_x^\dagger a_x^\dagger + a_x b_x \right]    \\
-    S^2_x &= \frac{i}{2} (-\sigma_\kappa)^x \left[ b_x^\dagger a_x^\dagger - a_x b_x \right]    \\
-    S^3_x &= \frac{1}{2} \left[ a_x a_x^\dagger + b_x b_x^\dagger -1 \right]
+    \rho_x &= n^a_x–n^b_x = a_x^\dagger a – b_x^\dagger b                                       \\
+    S^0_x &= \frac{1}{2} \left[ a_x a_x^\dagger – b_x b_x^\dagger +1 \right]                    \\
+    S^1_x &= \frac{1}{2} (–\sigma_\kappa)^x \left[ b_x^\dagger a_x^\dagger + a_x b_x \right]    \\
+    S^2_x &= \frac{i}{2} (–\sigma_\kappa)^x \left[ b_x^\dagger a_x^\dagger – a_x b_x \right]    \\
+    S^3_x &= \frac{1}{2} \left[ a_x a_x^\dagger + b_x b_x^\dagger –1 \right]
 \f}
 where the \f$\sigma_\kappa\f$ squares away when two \f$b\f$ operators are multiplied.
 Note the operator ordering in \f$\rho\f$ is opposite from \f$S^0\f$, and that particles are positively charged.
@@ -46,37 +46,37 @@ Single-particle and single-hole operators \f$\mathcal{O}\f$ with a definite thir
 \f]
 This equation is satisfied when
 \f$(\mathcal{O},s_3) = (a, +\frac{1}{2})\f$,
-\f$(\mathcal{O},s_3) = (a^\dagger, -\frac{1}{2})\f$,
+\f$(\mathcal{O},s_3) = (a^\dagger, –\frac{1}{2})\f$,
 \f$(\mathcal{O},s_3) = (b, +\frac{1}{2})\f$, and
-\f$(\mathcal{O},s_3) = (b^\dagger, -\frac{1}{2})\f$.
+\f$(\mathcal{O},s_3) = (b^\dagger, –\frac{1}{2})\f$.
 
 Single-particle and single-hole operators \f$\mathcal{O}\f$ with a definite electric charge \f$q\f$ obeys the eigenvalue equation
 \f[
     [ \rho_x, \mathcal{O}_y ] = q \mathcal{O}_y \delta_{xy}.
 \f]
-Since \f$\rho = 1-2S^0\f$, we can check the commutator with \f$2S^0\f$.
+Since \f$\rho = 1–2S^0\f$, we can check the commutator with \f$2S^0\f$.
 I have checked that this equation is satisfied when
-\f$(\mathcal{O},q) = (a, -1)\f$,
+\f$(\mathcal{O},q) = (a, –1)\f$,
 \f$(\mathcal{O},q) = (a^\dagger, +1)\f$,
 \f$(\mathcal{O},q) = (b, +1)\f$, and
-\f$(\mathcal{O},q) = (b^\dagger, -1)\f$.
+\f$(\mathcal{O},q) = (b^\dagger, –1)\f$.
 Note that the signs are distributed differently from the \f$S^3\f$ eigenequation.
 There are also eigenoperators of \f$S^{1}\f$,
 \f$(\mathcal{O},q) = (a+b^\dagger, +\frac{1}{2})\f$,
-\f$(\mathcal{O},q) = (a-b^\dagger, -\frac{1}{2})\f$,
-\f$(\mathcal{O},q) = (a^\dagger+b, -\frac{1}{2})\f$, and
-\f$(\mathcal{O},q) = (a^\dagger-b, +\frac{1}{2})\f$,
+\f$(\mathcal{O},q) = (a–b^\dagger, –\frac{1}{2})\f$,
+\f$(\mathcal{O},q) = (a^\dagger+b, –\frac{1}{2})\f$, and
+\f$(\mathcal{O},q) = (a^\dagger–b, +\frac{1}{2})\f$,
 and eigenoperators of \f$S^{2}\f$,
 \f$(\mathcal{O},q) = (a+ib^\dagger, +\frac{1}{2})\f$,
-\f$(\mathcal{O},q) = (a-ib^\dagger, -\frac{1}{2})\f$,
+\f$(\mathcal{O},q) = (a–ib^\dagger, –\frac{1}{2})\f$,
 \f$(\mathcal{O},q) = (a^\dagger+ib, +\frac{1}{2})\f$, and
-\f$(\mathcal{O},q) = (a^\dagger-ib, -\frac{1}{2})\f$,
+\f$(\mathcal{O},q) = (a^\dagger–ib, –\frac{1}{2})\f$,
 but we list these only for completeness' sake.
 
 One may also construct spin raising and lowering operators in the standard way,
 \f{align}{
-    S^+_x = S^1_x + i S^2_x &= (-\sigma_\kappa)^x a_x b_x \\
-    S^-_x = S^1_x - i S^2_x &= (-\sigma_\kappa)^x b^\dagger_x a^\dagger_x
+    S^+_x = S^1_x + i S^2_x &= (–\sigma_\kappa)^x a_x b_x \\
+    S^–_x = S^1_x – i S^2_x &= (–\sigma_\kappa)^x b^\dagger_x a^\dagger_x
 \f}
 which obey the eigenvalue relations
 \f[
@@ -86,9 +86,9 @@ which can be shown using the single-particle and single-hole eigenvalue equation
 
 Something I have not seen elsewhere is the construction of the number operators in a similar fashion,
 \f{align}{
-    \delta_{xx} - N^p_x &= S^0_x + S^3_x = a_x a^\dagger_x = \delta_{xx} - a^\dagger_x a_x
+    \delta_{xx} – N^p_x &= S^0_x + S^3_x = a_x a^\dagger_x = \delta_{xx} – a^\dagger_x a_x
     \\
-    N^h_x &= S^0_x - S^3_x = -b_x b^\dagger_x + \delta_{xx} = -\delta_{xx} + b^\dagger_x b_x + \delta_{xx} = b^\dagger_x b_x.
+    N^h_x &= S^0_x – S^3_x = –b_x b^\dagger_x + \delta_{xx} = –\delta_{xx} + b^\dagger_x b_x + \delta_{xx} = b^\dagger_x b_x.
 \f}
 We can of course drop the constant term in the first definition.
 
@@ -104,21 +104,21 @@ and we don't need to track time separately, until we start analyzing how to actu
 The simplest correlation function is \f$C^{11}\f$,
 \f{align}{
     \left\langle S^{1}_{x} S^{1}_{y}{}^\dagger \right\rangle
-    &= \frac{1}{4} (-\sigma_\kappa)^{x+y} \left\langle \left[ b_x^\dagger a_x^\dagger + a_x b_x \right] \left[ b_y^\dagger a_y^\dagger + a_y b_y \right] \right\rangle \\
-    &= \frac{1}{4} (-\sigma_\kappa)^{x+y} \left\langle a_x b_x a_y b_y + a_x b_x b_y^\dagger a_y^\dagger + b_x^\dagger a_x^\dagger a_y b_y + b_x^\dagger a_x^\dagger b_y^\dagger a_y^\dagger \right\rangle \\
-    &= \frac{1}{4} (-\sigma_\kappa)^{x+y} \left\langle a_x a_y^\dagger b_x b_y^\dagger + a_x^\dagger a_y b_x^\dagger b_y \right\rangle \\
-    &= \frac{1}{4} (-\sigma_\kappa)^{x+y} \left\langle a_x a_y^\dagger b_x b_y^\dagger + (\delta_{yx} - a_y a_x^\dagger)(\delta_{yx} - b_y b_x^\dagger) \right\rangle \\
-    &= \frac{1}{4} (-\sigma_\kappa)^{x+y} \left\langle P_{xy} H_{xy} + (\delta_{yx} - P_{yx})(\delta_{yx} - H_{yx}) \right\rangle \\
+    &= \frac{1}{4} (–\sigma_\kappa)^{x+y} \left\langle \left[ b_x^\dagger a_x^\dagger + a_x b_x \right] \left[ b_y^\dagger a_y^\dagger + a_y b_y \right] \right\rangle \\
+    &= \frac{1}{4} (–\sigma_\kappa)^{x+y} \left\langle a_x b_x a_y b_y + a_x b_x b_y^\dagger a_y^\dagger + b_x^\dagger a_x^\dagger a_y b_y + b_x^\dagger a_x^\dagger b_y^\dagger a_y^\dagger \right\rangle \\
+    &= \frac{1}{4} (–\sigma_\kappa)^{x+y} \left\langle a_x a_y^\dagger b_x b_y^\dagger + a_x^\dagger a_y b_x^\dagger b_y \right\rangle \\
+    &= \frac{1}{4} (–\sigma_\kappa)^{x+y} \left\langle a_x a_y^\dagger b_x b_y^\dagger + (\delta_{yx} – a_y a_x^\dagger)(\delta_{yx} – b_y b_x^\dagger) \right\rangle \\
+    &= \frac{1}{4} (–\sigma_\kappa)^{x+y} \left\langle P_{xy} H_{xy} + (\delta_{yx} – P_{yx})(\delta_{yx} – H_{yx}) \right\rangle \\
 \f}
 where we have taken advantage of the anticommutator rules,
 the fact that we will only get a non-zero result if we have the same number of \f$a\f$s as \f$a^\dagger\f$s (and likewise for \f$b\f$),
-and used the fact that the Wick contraction of \f$a_x a_y^\dagger = (M^p)^{-1}_{xy} \equiv P_{xy}\f$, defining \f$P\f$,
-and similarly for holes \f$b_x b_y^\dagger = (M^h)^{-1}_{xy} \equiv H_{xy}\f$.
+and used the fact that the Wick contraction of \f$a_x a_y^\dagger = (M^p)^{–1}_{xy} \equiv P_{xy}\f$, defining \f$P\f$,
+and similarly for holes \f$b_x b_y^\dagger = (M^h)^{–1}_{xy} \equiv H_{xy}\f$.
 
 Computing \f$C^{22}_{xy}\f$ requires
 \f{align}{
     \left\langle S^{2}_{x} S^{2}_{y}{}^\dagger \right\rangle
-    &= \frac{1}{4} (-\sigma_\kappa)^{x+y} \left\langle \left[ b_x^\dagger a_x^\dagger - a_x b_x \right] \left[ a_y b_y - b_y^\dagger a_y^\dagger \right] \right\rangle \\
+    &= \frac{1}{4} (–\sigma_\kappa)^{x+y} \left\langle \left[ b_x^\dagger a_x^\dagger – a_x b_x \right] \left[ a_y b_y – b_y^\dagger a_y^\dagger \right] \right\rangle \\
 \f}
 and when you write out all the operators in their complete glory, you find that you reproduce the non-vanishing operator content in \f$\left\langle S^{1}_{x} S^{1}_{y}{}^\dagger \right\rangle\f$,
 so \f$C^{22}_{xy} = C^{11}_{xy}\f$ (the vanishing operators have the opposite sign).
@@ -127,43 +127,43 @@ We now move to \f$C^{33}_{xy}\f$, which is less trivial because of terms like \f
 so that there are terms with four \f$a\f$ operators, and so-called disconnected diagrams:
 \f{align}{
     \left\langle S^{3}_{x} S^{3}_{y}{}^\dagger \right\rangle
-    &= \frac{1}{4} \left\langle \left[ a_x a_x^\dagger + b_x b_x^\dagger -1 \right] \left[ a_y a_y^\dagger + b_y b_y^\dagger -1 \right] \right\rangle \\
-    &= \frac{1}{4} \left\langle a_x a_x^\dagger a_y a_y^\dagger + a_x a_x^\dagger b_y b_y^\dagger - a_x a_x^\dagger - a_y a_y^\dagger + (a \leftrightarrow b) +1 \right\rangle \\
-    &= \frac{1}{4} \left\langle a_x (\delta_{yx} - a_y a_x^\dagger ) a_y^\dagger + a_x a_x^\dagger b_y b_y^\dagger - a_x a_x^\dagger - a_y a_y^\dagger + (a \leftrightarrow b) +1 \right\rangle \\
-    &= \frac{1}{4} \left\langle - a_x a_y a_x^\dagger a_y^\dagger + a_x a_x^\dagger b_y b_y^\dagger + a_x a_y^\dagger \delta_{yx} - a_x a_x^\dagger - a_y a_y^\dagger + (a \leftrightarrow b) +1 \right\rangle \\
-    &= \frac{1}{4} \left\langle P_{xx}P_{yy} - P_{yx} P_{xy} + P_{xx} H_{yy} + P_{xy} - P_{xx} - P_{yy} + (P \leftrightarrow H) + 1 \right\rangle
+    &= \frac{1}{4} \left\langle \left[ a_x a_x^\dagger + b_x b_x^\dagger –1 \right] \left[ a_y a_y^\dagger + b_y b_y^\dagger –1 \right] \right\rangle \\
+    &= \frac{1}{4} \left\langle a_x a_x^\dagger a_y a_y^\dagger + a_x a_x^\dagger b_y b_y^\dagger – a_x a_x^\dagger – a_y a_y^\dagger + (a \leftrightarrow b) +1 \right\rangle \\
+    &= \frac{1}{4} \left\langle a_x (\delta_{yx} – a_y a_x^\dagger ) a_y^\dagger + a_x a_x^\dagger b_y b_y^\dagger – a_x a_x^\dagger – a_y a_y^\dagger + (a \leftrightarrow b) +1 \right\rangle \\
+    &= \frac{1}{4} \left\langle – a_x a_y a_x^\dagger a_y^\dagger + a_x a_x^\dagger b_y b_y^\dagger + a_x a_y^\dagger \delta_{yx} – a_x a_x^\dagger – a_y a_y^\dagger + (a \leftrightarrow b) +1 \right\rangle \\
+    &= \frac{1}{4} \left\langle P_{xx}P_{yy} – P_{yx} P_{xy} + P_{xx} H_{yy} + P_{xy} – P_{xx} – P_{yy} + (P \leftrightarrow H) + 1 \right\rangle
 \f}
 
 We can also calculate the charge-charge correlator,
 \f{align}{
     \left\langle \rho_x \rho_y^\dagger \right\rangle
-     = \left\langle (1-2S_x^0) (1-2S_y^0) \right\rangle
-    &= \left\langle 1 - 2 S_x^0 - 2 S_y^0 + 4 S_x^0 S_y^0 \right\rangle  \\
-    &= \left\langle 1 -(a_x a_x^\dagger - b_x b_x^\dagger + 1) - (a_y a_y^\dagger - b_y b_y^\dagger + 1) + (a_x a_x^\dagger - b_x b_x^\dagger + 1)(a_y a_y^\dagger - b_y b_y^\dagger + 1) \right\rangle \\
-    &= \left\langle a_x a_x^\dagger a_y a_y^\dagger - a_x a_x^\dagger b_y b_y^\dagger - b_x b_x^\dagger a_y a_y^\dagger + b_x b_x^\dagger b_y b_y^\dagger \right\rangle \\
-    &= \left\langle a_x (\delta_{yx} - a_y a_x^\dagger ) a_y^\dagger - a_x a_x^\dagger b_y b_y^\dagger - b_x b_x^\dagger a_y a_y^\dagger + b_x (\delta_{yx} - b_y b_x^\dagger) b_y^\dagger \right\rangle \\
-    &= \left\langle P_{xx}P_{yy} - P_{xy}P_{yx} + P_{xy}\delta_{yx} - P_{xx}H_{yy} + (P \leftrightarrow H) \right\rangle
+     = \left\langle (1–2S_x^0) (1–2S_y^0) \right\rangle
+    &= \left\langle 1 – 2 S_x^0 – 2 S_y^0 + 4 S_x^0 S_y^0 \right\rangle  \\
+    &= \left\langle 1 –(a_x a_x^\dagger – b_x b_x^\dagger + 1) – (a_y a_y^\dagger – b_y b_y^\dagger + 1) + (a_x a_x^\dagger – b_x b_x^\dagger + 1)(a_y a_y^\dagger – b_y b_y^\dagger + 1) \right\rangle \\
+    &= \left\langle a_x a_x^\dagger a_y a_y^\dagger – a_x a_x^\dagger b_y b_y^\dagger – b_x b_x^\dagger a_y a_y^\dagger + b_x b_x^\dagger b_y b_y^\dagger \right\rangle \\
+    &= \left\langle a_x (\delta_{yx} – a_y a_x^\dagger ) a_y^\dagger – a_x a_x^\dagger b_y b_y^\dagger – b_x b_x^\dagger a_y a_y^\dagger + b_x (\delta_{yx} – b_y b_x^\dagger) b_y^\dagger \right\rangle \\
+    &= \left\langle P_{xx}P_{yy} – P_{xy}P_{yx} + P_{xy}\delta_{yx} – P_{xx}H_{yy} + (P \leftrightarrow H) \right\rangle
 \f}
 
 Something left undefined in Buividovich et al. are the mixed correlators, \f$C^{12}_{xy}\f$, which requires
 \f{align}{
     \left\langle S^{1}_{x} S^{2}_{y}{}^\dagger \right\rangle
-    &= -\frac{i}{4}(-\sigma_\kappa)^{x+y} \left\langle \left[ b_x^\dagger a_x^\dagger + a_x b_x \right] \left[ a_y b_y - b_y^\dagger a_y^\dagger \right] \right\rangle   \\
-    &= -\frac{i}{4}(-\sigma_\kappa)^{x+y} \left\langle b_x^\dagger a_x^\dagger a_y b_y - a_x b_x b_y^\dagger a_y^\dagger + a_x b_x a_y b_y - b_x^\dagger a_x^\dagger b_y^\dagger a_y^\dagger \right\rangle   \\
-    &= -\frac{i}{4}(-\sigma_\kappa)^{x+y} \left\langle b_x^\dagger b_y a_x^\dagger a_y - b_x b_y^\dagger a_x a_y^\dagger \right\rangle   \\
-    &= -\frac{i}{4}(-\sigma_\kappa)^{x+y} \left\langle (\delta_{yx} - b_y b_x^\dagger) (\delta_{yx} - a_y a_x^\dagger) - b_x b_y^\dagger a_x a_y^\dagger \right\rangle   \\
-    &= -\frac{i}{4}(-\sigma_\kappa)^{x+y} \left\langle (\delta_{yx} - H_{yx}) (\delta_{yx} - P_{yx}) - H_{xy} P_{xy} \right\rangle   \\
+    &= –\frac{i}{4}(–\sigma_\kappa)^{x+y} \left\langle \left[ b_x^\dagger a_x^\dagger + a_x b_x \right] \left[ a_y b_y – b_y^\dagger a_y^\dagger \right] \right\rangle   \\
+    &= –\frac{i}{4}(–\sigma_\kappa)^{x+y} \left\langle b_x^\dagger a_x^\dagger a_y b_y – a_x b_x b_y^\dagger a_y^\dagger + a_x b_x a_y b_y – b_x^\dagger a_x^\dagger b_y^\dagger a_y^\dagger \right\rangle   \\
+    &= –\frac{i}{4}(–\sigma_\kappa)^{x+y} \left\langle b_x^\dagger b_y a_x^\dagger a_y – b_x b_y^\dagger a_x a_y^\dagger \right\rangle   \\
+    &= –\frac{i}{4}(–\sigma_\kappa)^{x+y} \left\langle (\delta_{yx} – b_y b_x^\dagger) (\delta_{yx} – a_y a_x^\dagger) – b_x b_y^\dagger a_x a_y^\dagger \right\rangle   \\
+    &= –\frac{i}{4}(–\sigma_\kappa)^{x+y} \left\langle (\delta_{yx} – H_{yx}) (\delta_{yx} – P_{yx}) – H_{xy} P_{xy} \right\rangle   \\
 \f}
 and \f$C^{03}_{xy}\f$, requiring
 \f{align}{
     \left\langle S^{0}_{x} S^{3}_{y}{}^\dagger \right\rangle
-    &= \frac{1}{4} \left\langle \left[ a_x a_x^\dagger - b_x b_x^\dagger +1 \right] \left[ a_x a_x^\dagger + b_x b_x^\dagger -1 \right] \right\rangle \\
-    &= \frac{1}{4} \left\langle P_{xx}P_{yy} - P_{xy}P_{yx} + P_{xx}H_{yy} - H_{xx}P_{yy} - H_{xx} H_{yy} + H_{xy} H_{yx} + P_{xy} - P_{xx} + P_{yy} - H_{xy} + H_{xx} + H_{yy} - 1\right\rangle
+    &= \frac{1}{4} \left\langle \left[ a_x a_x^\dagger – b_x b_x^\dagger +1 \right] \left[ a_x a_x^\dagger + b_x b_x^\dagger –1 \right] \right\rangle \\
+    &= \frac{1}{4} \left\langle P_{xx}P_{yy} – P_{xy}P_{yx} + P_{xx}H_{yy} – H_{xx}P_{yy} – H_{xx} H_{yy} + H_{xy} H_{yx} + P_{xy} – P_{xx} + P_{yy} – H_{xy} + H_{xx} + H_{yy} – 1\right\rangle
 \f}
 while \f$C^{21}_{xy}\f$ and \f$C^{30}_{xy}\f$ are defined analogously.
 Once the all-dagger or no-dagger operators are dropped, it is easy to see that
 \f{align}{
-    \left\langle S^1_x S^2_y{}^\dagger \right\rangle &= - \left\langle S^2_x S^1_y{}^\dagger\right\rangle
+    \left\langle S^1_x S^2_y{}^\dagger \right\rangle &= – \left\langle S^2_x S^1_y{}^\dagger\right\rangle
 \f}
 but unfortunately no such simple relation holds between (0,3) and (3,0).
 
@@ -172,15 +172,15 @@ I think if we had a spin chemical potential that mixed \f$a\f$ and \f$b\f$ opera
 so that the contractions, rather than considering \f$a\f$ and \f$b\f$ separately, would consider \f$c\f$ operators with more entries and the chemical potential would introduce an off-diagonal component.
 Working out the details of this is a question for a different time, however.
 
-We can also think of correlators between \f$S^+\f$ and \f$S^-\f$,
+We can also think of correlators between \f$S^+\f$ and \f$S^–\f$,
 \f{align}{
-    \left\langle S^+_x S^-_y \right\rangle
-        &= (-\sigma_\kappa)^{x+y}\left\langle a_x b_x b^\dagger_y a^\dagger_y \right\rangle \\
-        &= (-\sigma_\kappa)^{x+y}\left\langle P_{xy} H_{xy}\right\rangle    \\
-    \left\langle S^-_x S^+_y \right\rangle
-        &= (-\sigma_\kappa)^{x+y}\left\langle b^\dagger_x a^\dagger_x a_y b_y  \right\rangle \\
-        &= (-\sigma_\kappa)^{x+y}\left\langle (\delta_{yx}- b_y b^\dagger_x)(\delta_{yx} - a_y a^\dagger_x)  \right\rangle \\
-        &= (-\sigma_\kappa)^{x+y}\left\langle (\delta_{yx}- H_{yx})(\delta_{yx} - P_{yx})  \right\rangle \\
+    \left\langle S^+_x S^–_y \right\rangle
+        &= (–\sigma_\kappa)^{x+y}\left\langle a_x b_x b^\dagger_y a^\dagger_y \right\rangle \\
+        &= (–\sigma_\kappa)^{x+y}\left\langle P_{xy} H_{xy}\right\rangle    \\
+    \left\langle S^–_x S^+_y \right\rangle
+        &= (–\sigma_\kappa)^{x+y}\left\langle b^\dagger_x a^\dagger_x a_y b_y  \right\rangle \\
+        &= (–\sigma_\kappa)^{x+y}\left\langle (\delta_{yx}– b_y b^\dagger_x)(\delta_{yx} – a_y a^\dagger_x)  \right\rangle \\
+        &= (–\sigma_\kappa)^{x+y}\left\langle (\delta_{yx}– H_{yx})(\delta_{yx} – P_{yx})  \right\rangle \\
 \f}
 # TODO: These have a name; I should find it.
 At half filling on a bipartite lattice, the cost to create or destroy a spin from the vacuum should be equal and the correlators should match, in the limit of large statistics.
@@ -193,9 +193,9 @@ We can similarly build correlators between \f$N^p\f$ and itself or \f$N^h\f$,
         \\
     \left\langle N^p_x N^p_x{}^\dagger \right\rangle
         &=  \left\langle a_x a^\dagger_x a_y a^\dagger_y \right\rangle \\
-        &=  \left\langle a_x (\delta_{yx} - a_y a^\dagger_x) a^\dagger_y \right\rangle \\
-        &=  \left\langle a_x a^\dagger_y - a_x a_y a^\dagger_x a^\dagger_y \right\rangle \\
-        &=  \left\langle P_{xy} - P_{xy}P_{yx} + P_{xx}P_{yy} \right\rangle
+        &=  \left\langle a_x (\delta_{yx} – a_y a^\dagger_x) a^\dagger_y \right\rangle \\
+        &=  \left\langle a_x a^\dagger_y – a_x a_y a^\dagger_x a^\dagger_y \right\rangle \\
+        &=  \left\langle P_{xy} – P_{xy}P_{yx} + P_{xx}P_{yy} \right\rangle
 \f}
 and we can interchange the p/h superscripts by changing the \f$P\f$ and \f$H\f$ propagators.
 
@@ -209,7 +209,7 @@ some of the bilinears may be conserved.  For example, we can calculate the commu
 \f{align}{
     [H, \rho_z]
         &= \left[\sum_{xy} a_x^\dagger K_{xy} a_y + b_x^\dagger K_{xy} b_y, \rho_z\right]   \\
-        &= \sum_x - a_x^\dagger K_{xz} a_z + \sum_y a_z^\dagger K_{zy} a_y - \sigma_\kappa (a \leftrightarrow b) \\
+        &= \sum_x – a_x^\dagger K_{xz} a_z + \sum_y a_z^\dagger K_{zy} a_y – \sigma_\kappa (a \leftrightarrow b) \\
 \f}
 where we immediately dropped the interaction term since the charge operator commutes with itself.
 If we sum \f$z\f$ over all space the two terms cancel, so that the total charge is conserved.
@@ -221,10 +221,10 @@ for \f$i\in\{1,2,3\}\f$.
 When the operators are conserved, their correlation functions are constant,
 \f{align}{
     C^{\rho\rho}_{++}(\tau)
-        &= \frac{1}{\mathcal{Z}}\textrm{tr}\left[ \rho_+(\tau) \rho_+(0) e^{-\beta H}\right] \\
-        &= \frac{1}{\mathcal{Z}}\textrm{tr}\left[ e^{+H \tau }\rho_+(0) e^{-H\tau} \rho_+(0) e^{-\beta H}\right] \\
-        &= \frac{1}{\mathcal{Z}}\textrm{tr}\left[ \rho_+(0) e^{-H\tau} \rho_+(0) e^{-(\beta-\tau) H}\right] \\
-        &= \frac{1}{\mathcal{Z}}\textrm{tr}\left[ \rho_+(0) \rho_+(0) e^{-\beta H}\right]
+        &= \frac{1}{\mathcal{Z}}\textrm{tr}\left[ \rho_+(\tau) \rho_+(0) e^{–\beta H}\right] \\
+        &= \frac{1}{\mathcal{Z}}\textrm{tr}\left[ e^{+H \tau }\rho_+(0) e^{–H\tau} \rho_+(0) e^{–\beta H}\right] \\
+        &= \frac{1}{\mathcal{Z}}\textrm{tr}\left[ \rho_+(0) e^{–H\tau} \rho_+(0) e^{–(\beta–\tau) H}\right] \\
+        &= \frac{1}{\mathcal{Z}}\textrm{tr}\left[ \rho_+(0) \rho_+(0) e^{–\beta H}\right]
 \f}
 where we used the fact that \f$\rho_+\f$ commutes with the Hamiltonian in the last step.
 We can turn this relation on its head and get an estimate for the equal-time correlator \f$\left\langle\rho_+\rho_+\right\rangle\f$ by averaging \f$C^{\rho\rho}_{++}(\tau)\f$ over the temporal separation \f$\tau\f$,
@@ -261,7 +261,7 @@ Similarly, we can build whole correlators and the order parameters are the zero-
 
 In Lang's 2010 thesis he defines the antiferromagnetic susceptibility \f$\chi_{AF}\f$ [see eq. (1.16)] which we can extract from
 \f[
-    \chi_{AF} = - U_{\Lambda x} C^{+-}_{xy}(0) U^\dagger_{y \Lambda'}
+    \chi_{AF} = – U_{\Lambda x} C^{+–}_{xy}(0) U^\dagger_{y \Lambda'}
 \f]
 where the irreps are the sign-alternating irreps.
 I have reproduced his exact result [from the first line in (1.16)] on two spatial sites for a variety of \f$U\f$s and \f$\beta\f$s.
@@ -278,7 +278,7 @@ In that case we must have omitted something about the spin connection, which is 
 Buividovich et al. study a slightly different order parameter, the squared sum (see their equation 14).
 In their discussion they say that they would like the order parameter to be the difference of spins between the sublattices, presumably
 \f[
-    \left\langle \left(\sum_{x \in A} - \sum_{x\in B}\right) S^3_x \right\rangle
+    \left\langle \left(\sum_{x \in A} – \sum_{x\in B}\right) S^3_x \right\rangle
 \f]
 but without introducing a bias and extrapolating the bias to zero (as in spontaneous symmetry breaking), while going to the thermodynamic limit, one finds the order parameter vanishes.
 Instead, they study "the square of the total spin per sublattice",
