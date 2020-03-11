@@ -21,12 +21,15 @@ which can be rewritten as \f$ \rho_x = 1-2 S^0_x\f$, where the \f$0^{th}\f$ Paul
 
 Rewriting those operators into the Isle basis,
 \f{align}{
-    S^0_x &= \frac{1}{2} \left[ a_x a_x^\dagger - b_x b_x^\dagger +1 \right] \\
-    S^1_x &= \frac{1}{2} (-\sigma_\kappa)^x \left[ b_x^\dagger a_x^\dagger + a_x b_x \right] \\
-    S^2_x &= \frac{i}{2} (-\sigma_\kappa)^x \left[ b_x^\dagger a_x^\dagger - a_x b_x \right] \\
+    \rho_x &= n^a_x-n^b_x = a_x^\dagger a - b_x^\dagger b                                       \\
+    S^0_x &= \frac{1}{2} \left[ a_x a_x^\dagger - b_x b_x^\dagger +1 \right]                    \\
+    S^1_x &= \frac{1}{2} (-\sigma_\kappa)^x \left[ b_x^\dagger a_x^\dagger + a_x b_x \right]    \\
+    S^2_x &= \frac{i}{2} (-\sigma_\kappa)^x \left[ b_x^\dagger a_x^\dagger - a_x b_x \right]    \\
     S^3_x &= \frac{1}{2} \left[ a_x a_x^\dagger + b_x b_x^\dagger -1 \right]
 \f}
 where the \f$\sigma_\kappa\f$ squares away when two \f$b\f$ operators are multiplied.
+Note the operator ordering in \f$\rho\f$ is opposite from \f$S^0\f$, and that particles are positively charged.
+
 The three spin operators obey the commutation relation
 \f[
     \left[ S_x^i, S_y^j \right] = i \delta_{xy} \epsilon^{ijk} S_x^k
@@ -34,10 +37,8 @@ The three spin operators obey the commutation relation
 which I have checked explicitly for \f$(i,j)=(1,2)\f$ by writing out the operators in all their glory and using the anticommutation properties of \f$a\f$ and \f$b\f$.
 By a similar exercise one may show
 \f[
-    \left[ S_x^0, S_y^j \right] = 0
+    \left[ S_x^0, S_y^j \right] = 0.
 \f]
-which I have checked explicitly for \f$j=3\f$.
-// TODO: check commutation rules with the tight-binding Hamiltonian and interaction terms.
 
 Single-particle and single-hole operators \f$\mathcal{O}\f$ with a definite third component of spin \f$s_3\f$ obeys the eigenvalue equation
 \f[
@@ -59,8 +60,18 @@ I have checked that this equation is satisfied when
 \f$(\mathcal{O},q) = (a^\dagger, +1)\f$,
 \f$(\mathcal{O},q) = (b, +1)\f$, and
 \f$(\mathcal{O},q) = (b^\dagger, -1)\f$.
-Note that the signs are different.
-Presumably there are eigenoperators for \f$S^{1,2}\f$ that are linear combinations of \f$a\f$ and \f$b\f$ with some \f$i\f$s and daggers, but I cannot be bothered to find them.
+Note that the signs are distributed differently from the \f$S^3\f$ eigenequation.
+There are also eigenoperators of \f$S^{1}\f$,
+\f$(\mathcal{O},q) = (a+b^\dagger, +\frac{1}{2})\f$,
+\f$(\mathcal{O},q) = (a-b^\dagger, -\frac{1}{2})\f$,
+\f$(\mathcal{O},q) = (a^\dagger+b, -\frac{1}{2})\f$, and
+\f$(\mathcal{O},q) = (a^\dagger-b, +\frac{1}{2})\f$,
+and eigenoperators of \f$S^{2}\f$,
+\f$(\mathcal{O},q) = (a+ib^\dagger, +\frac{1}{2})\f$,
+\f$(\mathcal{O},q) = (a-ib^\dagger, -\frac{1}{2})\f$,
+\f$(\mathcal{O},q) = (a^\dagger+ib, +\frac{1}{2})\f$, and
+\f$(\mathcal{O},q) = (a^\dagger-ib, -\frac{1}{2})\f$,
+but we list these only for completeness' sake.
 
 One may also construct spin raising and lowering operators in the standard way,
 \f{align}{

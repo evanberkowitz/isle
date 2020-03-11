@@ -17,14 +17,14 @@ number operators,
 \f}
 For example, the expected charge density operator
 \f[
-    \rho_x = 1-2S^0_x = N^h_x - N^p_x
+    \rho_x = 1-2S^0_x = N^p_x - N^h_x
 \f]
-and the z-component of spin is given by
+(as we use positive particles) and the z-component of spin is given by
 \f[
     S^3_x = \frac{1}{2} \left( 1 - N^p_x - N^h_x \right)
 \f]
 
-We transform the spatial degree of freedom into fourier space.
+We can transform into a different basis; by default the results are in the spatial basis.
 """
 
 
