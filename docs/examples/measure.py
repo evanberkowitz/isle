@@ -92,7 +92,7 @@ def main():
                                             allToAll[isle.Species.HOLE],
                                             "correlation_functions/spin_spin",
                                             configSlice=s_[::10],
-                                            projector=projector,
+                                            transform=projector,
                                             sigmaKappa=params.sigmaKappa),
         isle.meas.DeterminantCorrelators(allToAll[isle.Species.PARTICLE],
                                             allToAll[isle.Species.HOLE],

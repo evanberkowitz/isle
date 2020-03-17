@@ -25,9 +25,10 @@ Rewriting those operators into the Isle basis,
     S^0_x &= \frac{1}{2} \left[ a_x a_x^\dagger – b_x b_x^\dagger +1 \right]                    \\
     S^1_x &= \frac{1}{2} (–\sigma_\kappa)^x \left[ b_x^\dagger a_x^\dagger + a_x b_x \right]    \\
     S^2_x &= \frac{i}{2} (–\sigma_\kappa)^x \left[ b_x^\dagger a_x^\dagger – a_x b_x \right]    \\
-    S^3_x &= \frac{1}{2} \left[ a_x a_x^\dagger + b_x b_x^\dagger –1 \right]
+    S^3_x &= \frac{1}{2} \left[ a_x a_x^\dagger + b_x b_x^\dagger –1 \right]                    \\
+    n_x   &= a_x^\dagger a_x + b_x^\dagger b_x
 \f}
-where the \f$\sigma_\kappa\f$ squares away when two \f$b\f$ operators are multiplied.
+where the \f$\sigma_\kappa\f$ squares away when two \f$b\f$ operators are multiplied and we introduce the total-number operator \f$n\f$ with no superscript.
 Note the operator ordering in \f$\rho\f$ is opposite from \f$S^0\f$, and that particles are positively charged.
 
 The three spin operators obey the commutation relation
@@ -84,20 +85,40 @@ which obey the eigenvalue relations
 \f]
 which can be shown using the single-particle and single-hole eigenvalue equations and the identity \f$[A, BC] = [A,B]C + B[A,C]\f$.
 
-Something I have not seen elsewhere is the construction of the number operators in a similar fashion,
+The construction of the number operators can be done in a similar fashion,
 \f{align}{
-    \delta_{xx} – N^p_x &= S^0_x + S^3_x = a_x a^\dagger_x = \delta_{xx} – a^\dagger_x a_x
+    \delta_{xx} – n^p_x &= S^0_x + S^3_x = a_x a^\dagger_x = \delta_{xx} – a^\dagger_x a_x
     \\
-    N^h_x &= S^0_x – S^3_x = –b_x b^\dagger_x + \delta_{xx} = –\delta_{xx} + b^\dagger_x b_x + \delta_{xx} = b^\dagger_x b_x.
+    n^h_x &= S^0_x – S^3_x = –b_x b^\dagger_x + \delta_{xx} = –\delta_{xx} + b^\dagger_x b_x + \delta_{xx} = b^\dagger_x b_x.
 \f}
 We can of course drop the constant term in the first definition.
+We use the shorthand
+\f{align}{
+    n_x &= n^p_x + n^h_x = \delta_{xx}-2 S^3_x
+    \\
+    \text{as in }
+    \rho_x &= n^p_x - n^h_x = \delta_{xx}-2 S^0_x
+\f}
 
+## Charge ≠ 0
+
+All the above bilinears have charge zero, since \f$[\rho,\cdot]=0\f$.
+However, there are two bilinears that are missing from the above operators, and they have nonzero charge.
+(To get a charge of 1, one must have an odd number of particle and hole operators.)
+The two operators are \f$a^\dagger b\f$ and \f$b^\dagger a\f$ with charge ±2,
+\f{align}{
+    [\rho_x, a_y^\dagger b_y] = &+ 2 \delta_{xy} a_y^\dagger b_y \\
+    [\rho_x, b_y^\dagger a_y] = &– 2 \delta_{xy} b_y^\dagger a_y.
+\f}
+which we'll indicate with double symbols, \f${}^+_+\f$ and \f${}^-_-\f$, respectively.
+As they are charged, these are best interpreted as creation and annihilation operators.
+It is easy to check that these operators have \f$[S^z,\cdot]=0\f$.
 
 # Correlation Functions
 
 Now we can write correlation functions
 \f[
-    C^{ij}_{xy}(\tau) = \frac{1}{N_t} \sum_t \left\langle S^{i}_{x,t+\tau} S^{j}_{y,t}{}^\dagger \right\rangle
+    C^{ij}_{xy}(\tau) = \frac{1}{N_t} \sum_t \left\langle S^{i}_{x,t+\tau} S^{j}_{y,t} \right\rangle
 \f]
 and we don't need to track time separately, until we start analyzing how to actually use this correlation function.
 
@@ -138,7 +159,7 @@ and what we get by exchanging particles with holes,
     C^{hh}_{xy}     = \left\langle N^p_x N^p_y \right\rangle
                 &   = \left\langle \delta_{xx}\delta_{yy} - \delta_{xx} H_{yy} - H_{xx} \delta_{yy} + \delta_{yx} H_{xy} – H_{xy} H_{yx} + H_{xx} H_{yy}  \right\rangle
 \f}
-though these are more complicated to _compute_ because they have so-called disconnected diagrams.
+though these are more complicated to _compute_ because they have so-called disconnected diagrams.  However, with all-to-all propagators, it's all the same.
 
 We can build correlations between the spin operators themselves.
 For example,
@@ -168,8 +189,9 @@ so that
 \f[
     C^{11}_{xy} = C^{22}_{xy}
     =
-    \frac{1}{4}\left(C^{+–}_{xy}+C^{–+}_{xy}\right)
+    \frac{1}{4}\left(C^{+–}_{xy}+C^{–+}_{xy}\right),
 \f]
+which you can directly verify with the explict contractions above.
 Similarly, knowing that the four-dagger and no-dagger terms vanish, it is easy to show
 \f[
          \left\langle S^{1}_{x}S^{2}_y\right\rangle
@@ -218,15 +240,38 @@ We are stuck computing four correlators and taking advantage of the one-point fu
         \right)
         \\
     \text{and we define }
-    C^{\rho\rho}_{xy} &= C^{pp}_{xy} + C^{hh}_{xy} - C^{ph}_{xy} - C^{hp}_{xy}
+    C^{\rho\rho}_{xy} &= C^{pp}_{xy} + C^{hh}_{xy} - C^{ph}_{xy} - C^{hp}_{xy},
+        \\
+    C^{\rho n}_{xy}   &= C^{pp}_{xy} - C^{hh}_{xy} + C^{ph}_{xy} - C^{hp}_{xy},
+        \\
+    C^{n \rho}_{xy}   &= C^{pp}_{xy} - C^{hh}_{xy} - C^{ph}_{xy} + C^{hp}_{xy},
+        \\
+    \text{and }
+    C^{nn}_{xy} &= C^{pp}_{xy} + C^{hh}_{xy} + C^{ph}_{xy} + C^{hp}_{xy}
 \f}
-the correlator between two charge density operators \f$C^{\rho\rho}_{xy}=\left\langle\rho_x\rho_y\right\rangle\f$.
-(In the above relations that require one-point functions 1 indicates a matrix full of ones---not an identity matrix in x and y.  Similarly \f$N_x\f$ changes in x but is constant in y, and vice-versa for \f$N_y\f$.)
+so that the correlator between two charge density operators \f$C^{\rho\rho}_{xy}=\left\langle\rho_x\rho_y\right\rangle\f$ and
+the correlator between two total-number operators \f$C^{nn}_{xy} = \left\langle  n_x n_y\right\rangle\f$ where \f$n\f$ counts both particles and holes.
+(In the first four above relations that require one-point functions 1 indicates a matrix full of ones---not an identity matrix in x and y.  Similarly \f$N_x\f$ changes in x but is constant in y, and vice-versa for \f$N_y\f$.)
 
 Note that 1 and 2 cannot mix with 0 or 3 because each term would not have the right constituent operator content to contract completely.  This is very curious.
 I think if we had a spin chemical potential that mixed \f$a\f$ and \f$b\f$ operators, such as \f$\mu S^1\f$, we would not be able to split the operators into two species, because the bilinear piece would allow one species to mix with the other while propagating,
 so that the contractions, rather than considering \f$a\f$ and \f$b\f$ separately, would consider \f$c\f$ operators with more entries and the chemical potential would introduce an off-diagonal component.
 Working out the details of this is a question for a different time, however.
+
+The charge +2 and –2 operators cannot be contracted with any of the other bilinears, by conservation of charge.
+However, they can be contracted with each other.
+\f{align}{
+    C^{{}^+_+{}^-_-} = \left\langle a_x^\dagger b_x b_y^\dagger a_y \right\rangle
+                    &= \left\langle a_x^\dagger a_y b_x b_y^\dagger \right\rangle                   \\
+                    &= \left\langle (\delta_{yx} - a_y a_x^\dagger) b_x b_y^\dagger \right\rangle   \\
+                    &= \left\langle (\delta_{yx} - P_{yx}) H_{xy} \right\rangle                         \\
+                    \\
+    C^{{}^-_-{}^+_+} = \left\langle b_x^\dagger a_x a_y^\dagger b_y\right\rangle
+                    &= \left\langle b_x^\dagger b_y a_x a_y^\dagger \right\rangle                   \\
+                    &= \left\langle (\delta_{yx} - b_y b_x^\dagger) a_x a_y^\dagger \right\rangle   \\
+                    &= \left\langle (\delta_{yx} - H_{yx}) P_{xy} \right\rangle;                        \\
+\f}
+recall that the double-plus operator and double-minus operator are Hermitian conjugates.
 
 
 # Conserved Quantities
@@ -355,7 +400,7 @@ import numpy as np
 
 import isle
 from .measurement import Measurement
-from ..util import temporalRoller
+from ..util import temporalRoller, signAlternator
 from ..h5io import createH5Group
 
 class SpinSpinCorrelator(Measurement):
@@ -364,7 +409,7 @@ class SpinSpinCorrelator(Measurement):
     Tabulate spin-spin correlators.
     """
 
-    def __init__(self, particleAllToAll, holeAllToAll, savePath, configSlice=(None, None, None), projector=None, sigmaKappa=-1):
+    def __init__(self, particleAllToAll, holeAllToAll, savePath, configSlice=(None, None, None), transform=None, sigmaKappa=-1):
         super().__init__(savePath, configSlice)
 
         # The correlation functions encoded here are between bilinear operators.
@@ -377,14 +422,17 @@ class SpinSpinCorrelator(Measurement):
         self.particle=particleAllToAll
         self.hole=holeAllToAll
 
-        self.data = {k: [] for k in ["rho_rho", "S1_S1", "S3_S3", "Splus_Sminus", "Sminus_Splus", "Np_Nh", "Nh_Np", "Np_Np", "Nh_Nh", "Q2S0_Q2S0"]}
+        self.data = {k: [] for k in [
+            # Directly computed
+            "Splus_Sminus", "Sminus_Splus",
+            "np_np", "np_nh", "nh_np", "nh_nh",
+            "++_--", "--_++",
+            # And their combinations:
+            "S1_S1", "S1_S2",
+            "rho_rho", "rho_n", "n_rho", "n_n"
+            ]}
 
-        if projector is None:
-            # TODO: warn when diagonalizing the hopping matrix.
-            _, self.irreps = np.linalg.eigh(isle.Matrix(allToAll.hfm.kappaTilde()))
-            self.irreps = self.irreps
-        else:
-            self.irreps = projector
+        self.transform = transform
 
         self._einsum_paths = {}
 
@@ -397,98 +445,155 @@ class SpinSpinCorrelator(Measurement):
         nx = P.shape[0]
         nt = P.shape[1]
 
+        # This puts in all needed factors of (-sigmaKappa)^{x+y}!
+        # For operators which DON'T need it, it does nothing---the reason
+        # those operators don't need it is that the sign squares away.
+        if self.sigmaKappa == +1:
+            # This could be done without a test on sigmaKappa, since signAlternator
+            # returns the identity matrix if sigmaKappa is -1, but then we'd be doing
+            # 1-matrix-1 multiplication for no reason, and it's not cheap.
+            Sigma = signAlternator(nx, self.sigmaKappa)
+            P = np.einsum('ax,xfyi,yb->afyb', Sigma, P, Sigma, optimize="optimal")
+            H = np.einsum('ax,xfyi,yb->afyb', Sigma, H, Sigma, optimize="optimal")
+
+
         d = np.eye(nx*nt).reshape(*P.shape) # A Kronecker delta
 
         log = getLogger(__name__)
+
         # TODO: store some einsum paths
+
+        # Contractions always result in a tensor xfyi, where xf are space/time at the sink
+        # and yi are space/time at the source.  Because we have to move all the daggers to the right
+        # to Wick contract ladder operators into propagators, however, the indices on the propagators
+        # need not be in the same order.
+
+        # Contractions are grouped into 4 categories,
+        #   xfxf,yiyi->xfyi
+        #   xfyi,xfyi->xfyi
+        #   xfyi,yixf->xfyi
+        #   yixf,yixf->xfyi
+        #
+        # Note that other orders are all ready covered
+        #   yixf,xfyi = xfyi,yixf
+        #   yiyi,xfxf = xfxf,yiyi
+        #
+        # Even in those four categories, there may be enormous redundencies.
+        # For example, the kronecker delta is symmetric.
         if "xfxf,yiyi->xfyi" not in self._einsum_paths:
             self._einsum_paths["xfxf,yiyi->xfyi"], _ = np.einsum_path("xfxf,yiyi->xfyi", d, d, optimize="optimal")
             log.info("Optimized Einsum path xfxf,yiyi->xfyi")
+
+        dxxdyy = np.einsum("xfxf,yiyi->xfyi", d, d, optimize=self._einsum_paths["xfxf,yiyi->xfyi"])
+        dxxPyy = np.einsum("xfxf,yiyi->xfyi", d, P, optimize=self._einsum_paths["xfxf,yiyi->xfyi"])
+        dxxHyy = np.einsum("xfxf,yiyi->xfyi", d, H, optimize=self._einsum_paths["xfxf,yiyi->xfyi"])
+        Pxxdyy = np.einsum("xfxf,yiyi->xfyi", P, d, optimize=self._einsum_paths["xfxf,yiyi->xfyi"])
         PxxPyy = np.einsum("xfxf,yiyi->xfyi", P, P, optimize=self._einsum_paths["xfxf,yiyi->xfyi"])
         PxxHyy = np.einsum("xfxf,yiyi->xfyi", P, H, optimize=self._einsum_paths["xfxf,yiyi->xfyi"])
-        dxxdyy = np.einsum("xfxf,yiyi->xfyi", d, d, optimize=self._einsum_paths["xfxf,yiyi->xfyi"])
+        Hxxdyy = np.einsum("xfxf,yiyi->xfyi", H, d, optimize=self._einsum_paths["xfxf,yiyi->xfyi"])
         HxxPyy = np.einsum("xfxf,yiyi->xfyi", H, P, optimize=self._einsum_paths["xfxf,yiyi->xfyi"])
         HxxHyy = np.einsum("xfxf,yiyi->xfyi", H, H, optimize=self._einsum_paths["xfxf,yiyi->xfyi"])
+
+        if "xfyi,xfyi->xfyi" not in self._einsum_paths:
+            self._einsum_paths["xfyi,xfyi->xfyi"], _ = np.einsum_path("xfyi,xfyi->xfyi", d, d, optimize="optimal")
+            log.info("Optimized Einsum path xfyi,xfyi->xfyi")
+
+    #   dxydxy = dyxdyx
+    #   dxyPxy = Pxydxy
+    #   dxyHxy = Hxydyx
+    #   Pxydxy = Pxydyx
+    #   PxyPxy cannot appear by Pauli exclusion
+        PxyHxy = np.einsum("xfyi,xfyi->xfyi", P, H, optimize=self._einsum_paths["xfyi,xfyi->xfyi"])
+    #   Hxydxy = Hxydyx
+    #   HxyPxy = PxyHxy
+    #   HxyHxy cannot appear by Pauli exclusion
 
         if "xfyi,yixf->xfyi" not in self._einsum_paths:
             self._einsum_paths["xfyi,yixf->xfyi"], _ = np.einsum_path("xfyi,yixf->xfyi", d, d, optimize="optimal")
             log.info("Optimized Einsum path xfyi,yixf->xfyi")
 
-        PxyPyx = np.einsum("xfyi,yixf->xfyi", P, P, optimize=self._einsum_paths["xfyi,yixf->xfyi"])
+    #   dxydyx = dyxdyx
+    #   dxyPyx = Pyxdyx
+    #   dxyHyx = Hyxdyx
         Pxydyx = np.einsum("xfyi,yixf->xfyi", P, d, optimize=self._einsum_paths["xfyi,yixf->xfyi"])
+        PxyPyx = np.einsum("xfyi,yixf->xfyi", P, P, optimize=self._einsum_paths["xfyi,yixf->xfyi"])
+        PxyHyx = np.einsum("xfyi,yixf->xfyi", P, H, optimize=self._einsum_paths["xfyi,yixf->xfyi"])
         Hxydyx = np.einsum("xfyi,yixf->xfyi", H, d, optimize=self._einsum_paths["xfyi,yixf->xfyi"])
+        HxyPyx = np.einsum("xfyi,yixf->xfyi", H, P, optimize=self._einsum_paths["xfyi,yixf->xfyi"])
         HxyHyx = np.einsum("xfyi,yixf->xfyi", H, H, optimize=self._einsum_paths["xfyi,yixf->xfyi"])
 
         if "yixf,yixf->xfyi" not in self._einsum_paths:
             self._einsum_paths["yixf,yixf->xfyi"], _ = np.einsum_path("yixf,yixf->xfyi", d, d, optimize="optimal")
             log.info("Optimized Einsum path yixf,yixf->xfyi")
 
-        PyxHyx = np.einsum("yixf,yixf->xfyi", P, H, optimize=self._einsum_paths["yixf,yixf->xfyi"])
-        Pyxdyx = np.einsum("yixf,yixf->xfyi", P, d, optimize=self._einsum_paths["yixf,yixf->xfyi"])
-        Hyxdyx = np.einsum("yixf,yixf->xfyi", H, d, optimize=self._einsum_paths["yixf,yixf->xfyi"])
         dyxdyx = np.einsum("yixf,yixf->xfyi", d, d, optimize=self._einsum_paths["yixf,yixf->xfyi"])
-
-        if "yixf,xfyi->xfyi" not in self._einsum_paths:
-            self._einsum_paths["yixf,xfyi->xfyi"], _ = np.einsum_path("yixf,xfyi->xfyi", d, d, optimize="optimal")
-            log.info("Optimized yixf,xfyi->xfyi")
-
-        PyxHxy = np.einsum("yixf,xfyi->xfyi", P, H, optimize=self._einsum_paths["yixf,xfyi->xfyi"])
-
-        if "xfyi,xfyi->xfyi" not in self._einsum_paths:
-            self._einsum_paths["xfyi,xfyi->xfyi"], _ = np.einsum_path("xfyi,xfyi->xfyi", d, d, optimize="optimal")
-            log.info("Optimized Einsum path xfyi,xfyi->xfyi")
-
-        PxyHxy = np.einsum("xfyi,xfyi->xfyi", P, H, optimize=self._einsum_paths["xfyi,xfyi->xfyi"])
-        Pxydyx = np.einsum("xfyi,xfyi->xfyi", P, d, optimize=self._einsum_paths["xfyi,xfyi->xfyi"])
-        Hxydyx = np.einsum("xfyi,xfyi->xfyi", H, d, optimize=self._einsum_paths["xfyi,xfyi->xfyi"])
-
-        if "xfxf,yiyi->xfyi" not in self._einsum_paths:
-            self._einsum_paths["xfxf,yiyi->xfyi"], _ = np.einsum_path("xfxf,yiyi->xfyi", d, d, optimize="optimal")
-            log.info("Optimized Einsum path xfxf,yiyi->xfyi")
-
-        Pxxdyy = np.einsum("xfxf,yiyi->xfyi", P, d, optimize=self._einsum_paths["xfxf,yiyi->xfyi"])
-        dxxPyy = np.einsum("xfxf,yiyi->xfyi", d, P, optimize=self._einsum_paths["xfxf,yiyi->xfyi"])
-        Hxxdyy = np.einsum("xfxf,yiyi->xfyi", H, d, optimize=self._einsum_paths["xfxf,yiyi->xfyi"])
-        dxxHyy = np.einsum("xfxf,yiyi->xfyi", d, H, optimize=self._einsum_paths["xfxf,yiyi->xfyi"])
+    #   dyxPyx = Pyxdyx
+    #   dyxHyx = Hyxdyx
+        Pyxdyx = np.einsum("yixf,yixf->xfyi", P, d, optimize=self._einsum_paths["yixf,yixf->xfyi"])
+    #   PyxPyx cannot appear by Pauli exclusion.
+        PyxHyx = np.einsum("yixf,yixf->xfyi", P, H, optimize=self._einsum_paths["yixf,yixf->xfyi"])
+        Hyxdyx = np.einsum("yixf,yixf->xfyi", H, d, optimize=self._einsum_paths["yixf,yixf->xfyi"])
+    #   HyxPyx = PyxHyx
+    #   HyxHyx cannot appear by Pauli exclusion.
 
         data = dict()
-        data["rho_rho"] = (PxxPyy + HxxHyy) - (PxyPyx + HxyHyx) + (Pxydyx + Hxydyx) - (PxxHyy+HxxPyy)
-        data["S1_S1"] = 0.25*(PxyHxy+ dyxdyx - Pyxdyx - Hyxdyx + PyxHyx)
-        data["S3_S3"] = 0.25*((PxxPyy + HxxHyy) - (PxyPyx + HxyHyx) + (PxxHyy + HxxPyy) + (Pxydyx+Hxydyx) - (Pxxdyy+Hxxdyy) - (dxxPyy+dxxHyy) + dxxdyy)
+
         data["Splus_Sminus"] = PxyHxy
-        data["Sminus_Splus"] = (dyxdyx - Pyxdyx - Hyxdyx + PyxHyx)
-        data["Np_Nh"] = PxxHyy
-        data["Nh_Np"] = HxxPyy
-        data["Np_Np"] = Pxydyx + PxxPyy - PxyPyx
-        data["Nh_Nh"] = Hxydyx + HxxHyy - HxyHyx
-        data["Q2S0_Q2S0"] = 2*(Hxydyx-PyxHxy)
+        data["Sminus_Splus"] = dyxdyx - Pyxdyx - Hyxdyx + PyxHyx
+
+        data["np_nh"] = dxxdyy - Pxxdyy - dxxHyy + PxxHyy
+        data["np_np"] = dxxdyy - dxxPyy - Pxxdyy + Pxydyx - PxyPyx + PxxPyy
+        data["nh_np"] = dxxdyy - Hxxdyy - dxxPyy + HxxPyy
+        data["nh_nh"] = dxxdyy - dxxHyy - Hxxdyy + Hxydyx - HxyHyx + HxxHyy
+
+        data["++_--"] = Hxydyx - HxyPyx
+        data["--_++"] = Pxydyx - PxyHyx
 
         self._roll = np.array([temporalRoller(nt, -t, fermionic=self.fermionic) for t in range(nt)])
 
+        time_averaged = dict()
+        for correlator in data:
+
+            # It is major savings to avoid two matrix-matrix multiplies, so it is
+            # worthwhile to test for a transform and only add those multiplies in if needed.
+            if self.transform is not None:
+                if "idf,bx,xfyi,ya->bad" not in self._einsum_paths:
+                    self._einsum_paths["idf,bx,xfyi,ya->bad"], _ = np.einsum_path("idf,bx,xfyi,ya->bad", self._roll, self.transform.T.conj(), data[correlator], self.transform, optimize="optimal")
+                    log.info("Optimized Einsum path for time averaging and transform application.")
+
+                time_averaged[correlator] = np.einsum("idf,bx,xfyi,ya->bad",
+                                    self._roll,
+                                    self.transform.T.conj(),
+                                    data[correlator],
+                                    self.transform,
+                                    optimize=self._einsum_paths["idf,bx,xfyi,ya->bad"]) / nt
+            else:
+                if "idf,xfyi->xyd" not in self._einsum_paths:
+                    self._einsum_paths["idf,xfyi->xyd"], _ = np.einsum_path("idf,xfyi->xyd", self._roll, data[correlator], optimize="optimal")
+                    log.info("Optimized Einsum path for time averaging in position space.")
+
+                time_averaged[correlator] = np.einsum("idf,xfyi->xyd",
+                                    self._roll,
+                                    data[correlator],
+                                    optimize=self._einsum_paths["idf,bx,xfyi,ya->bad"]) / nt
+
+        # Now we can use identites demonstrated above to build other two-point functions:
+        time_averaged["S1_S1"] = 0.25 *(time_averaged["Splus_Sminus"] + time_averaged["Sminus_Splus"])
+        time_averaged["S1_S2"] = 0.25j*(time_averaged["Splus_Sminus"] - time_averaged["Sminus_Splus"])
+        time_averaged["rho_rho"] = time_averaged["np_np"] + time_averaged["nh_nh"] - time_averaged["np_nh"] - time_averaged["nh_np"]
+        time_averaged["rho_n"]   = time_averaged["np_np"] - time_averaged["nh_nh"] + time_averaged["np_nh"] - time_averaged["nh_np"]
+        time_averaged["n_rho"]   = time_averaged["np_np"] - time_averaged["nh_nh"] - time_averaged["np_nh"] + time_averaged["nh_np"]
+        time_averaged["n_n"]     = time_averaged["np_np"] + time_averaged["nh_nh"] + time_averaged["np_nh"] + time_averaged["nh_np"]
+
         for correlator in self.data:
-
-            # print(f"Time averaging {name}...")
-            # Just leave with spatial indices:
-            # time_averaged = np.einsum("idf,xfyi->xyd", self._roll, observable) / nt
-
-            # Project to irreps:
-            if "idf,bx,xfyi,ya->bad" not in self._einsum_paths:
-                self._einsum_paths["idf,bx,xfyi,ya->bad"], _ = np.einsum_path("idf,bx,xfyi,ya->bad", self._roll, self.irreps, data[correlator], self.irreps.conj().T, optimize="optimal")
-                log.info("Optimized Einsum path for time averaging and irrep projection.")
-
-            time_averaged = np.einsum("idf,bx,xfyi,ya->bad", self._roll, self.irreps.T.conj(),
-                                      data[correlator], self.irreps,
-                                      optimize=self._einsum_paths["idf,bx,xfyi,ya->bad"]) / nt
-
-            self.data[correlator].append(time_averaged)
-
+            self.data[correlator].append(time_averaged[correlator])
 
     def save(self, h5group):
         r"""!
         \param h5group Base HDF5 group. Data is stored in subgroup `h5group/self.savePath`.
         """
         subGroup = createH5Group(h5group, self.savePath)
-        subGroup["irreps"] = self.irreps
+        subGroup["transform"] = self.transform
         for field in self.data:
             subGroup[field] = self.data[field]
 
