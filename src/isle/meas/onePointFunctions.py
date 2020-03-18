@@ -80,7 +80,7 @@ class onePointFunctions(Measurement):
 
         data={}
         data["np"] = d-P
-        data["np"] = d-H
+        data["nh"] = d-H
 
         # We'll time average and transform at once:
         if self._einsum_path is None:
