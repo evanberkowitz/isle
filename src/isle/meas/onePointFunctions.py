@@ -57,7 +57,7 @@ class onePointFunctions(Measurement):
         self.particle=particleAllToAll
         self.hole=holeAllToAll
 
-        self.data = {k: [] for k in ["np", "np"]}
+        self.data = {k: [] for k in ["np", "nh"]}
 
         self.transform = transform
 
