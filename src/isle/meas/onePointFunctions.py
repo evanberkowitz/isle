@@ -9,19 +9,23 @@ described in the SpinSpinCorrelator documentation to compute one-point functions
 All the vacuum quantum number bilinears can be written as combinations of the
 number operators,
 \f{align}{
-    N^p_x & = \left\langle 1-a_x a_x^\dagger \right\rangle
+    n^p_x & = \left\langle 1-a_x a_x^\dagger \right\rangle
             = \left\langle 1-P_{xx} \right\rangle
     \\
-    N^h_x & = \left\langle 1-b_x b_x^\dagger \right\rangle
+    n^h_x & = \left\langle 1-b_x b_x^\dagger \right\rangle
             = \left\langle 1-H_{xx} \right\rangle
 \f}
 For example, the expected charge density operator
 \f[
-    \rho_x = 1-2S^0_x = N^p_x - N^h_x
+    \rho_x = 1-2S^0_x = n^p_x - n^h_x
 \f]
-(as we use positive particles) and the z-component of spin is given by
+(as we use positive particles), the total number operator
 \f[
-    S^3_x = \frac{1}{2} \left( 1 - N^p_x - N^h_x \right)
+    n_x = n^p_x + n^h_x
+\f]
+and the z-component of spin is given by
+\f[
+    S^3_x = \frac{1}{2} \left( 1 - n_x \right)
 \f]
 
 We can transform into a different basis; by default the results are in the spatial basis.
@@ -53,7 +57,7 @@ class onePointFunctions(Measurement):
         self.particle=particleAllToAll
         self.hole=holeAllToAll
 
-        self.data = {k: [] for k in ["N_p", "N_h"]}
+        self.data = {k: [] for k in ["np", "np"]}
 
         self.transform = transform
 
@@ -75,12 +79,12 @@ class onePointFunctions(Measurement):
         log = getLogger(__name__)
 
         data={}
-        data["N_p"] = d-P
-        data["N_h"] = d-H
+        data["np"] = d-P
+        data["np"] = d-H
 
         # We'll time average and transform at once:
         if self._einsum_path is None:
-            self._einsum_path, _ = np.einsum_path("ax,xtxt->a", self.transform, data["N_p"], optimize="optimal")
+            self._einsum_path, _ = np.einsum_path("ax,xtxt->a", self.transform, data["np"], optimize="optimal")
             log.info("Optimized Einsum path for time averaging and unitary transformation.")
 
 
