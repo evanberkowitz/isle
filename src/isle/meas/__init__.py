@@ -13,6 +13,7 @@ from .logdet import Logdet  # (unused import) pylint: disable=W0611
 from .singleParticleCorrelator import SingleParticleCorrelator  # (unused import) pylint: disable=W0611
 from .totalPhi import TotalPhi  # (unused import) pylint: disable=W0611
 from .polyakov import Polyakov
-from .onePointFunctions import onePointFunctions
-from .spinSpinCorrelator import SpinSpinCorrelator
 from .determinantCorrelators import DeterminantCorrelators
+
+import isle.meas.onePointFunctions
+import isle.meas.spinSpinCorrelator

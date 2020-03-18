@@ -403,7 +403,7 @@ from .measurement import Measurement
 from ..util import temporalRoller, signAlternator
 from ..h5io import createH5Group
 
-class SpinSpinCorrelator(Measurement):
+class measurement(Measurement):
     r"""!
     \ingroup meas
     Tabulate spin-spin correlators.
@@ -598,8 +598,32 @@ class SpinSpinCorrelator(Measurement):
             subGroup[field] = self.data[field]
 
 
-def read(h5group):
-    r"""!
-    \param h5group HDF5 group which contains the data of this measurement.
-    """
-    ...
+def complete(measurements, correlators=["S1_S1", "S1_S2", "rho_rho", "rho_n", "n_rho", "n_n",
+                                    "S3_S3", "S3_S0", "S0_S3", "S0_S0"
+                                    ], onePoint=None):
+
+    requiresOnePoint = ["S3_S3", "S3_S0", "S0_S3", "S0_S0"]
+
+    rest = dict()
+
+    if "S1_S1" in correlators:
+        rest["S1_S1"]   = 0.25 *(measurements["Splus_Sminus"] + measurements["Sminus_Splus"])
+    if "S1_S2" in correlators:
+        rest["S1_S2"]   = 0.25j*(time_averaged["Splus_Sminus"] - measurements["Sminus_Splus"])
+    if "rho_rho" in correlators:
+        rest["rho_rho"] = measurements["np_np"] + measurements["nh_nh"] - measurements["np_nh"] - measurements["nh_np"]
+    if "rho_n" in correlators:
+        rest["rho_n"]   = measurements["np_np"] - measurements["nh_nh"] + measurements["np_nh"] - measurements["nh_np"]
+    if "n_rho" in correlators:
+        rest["n_rho"]   = measurements["np_np"] - measurements["nh_nh"] - measurements["np_nh"] + measurements["nh_np"]
+    if "n_n" in correlators:
+        rest["n_n"]     = measurements["np_np"] + measurements["nh_nh"] + measurements["np_nh"] + measurements["nh_np"]
+
+    if onePoint is None:
+        log = getLogger(__name__)
+        log.info(f"No one point measurements were provided; will not compute {requiresOnePoint} correlators.")
+        return {**measurements, **rest}
+
+    # if "S3_S3" in correlators:
+    #     rest["S3_S3"] =
+    return {**measurements, **rest}

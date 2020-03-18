@@ -41,7 +41,9 @@ from .measurement import Measurement
 from ..util import temporalRoller
 from ..h5io import createH5Group
 
-class onePointFunctions(Measurement):
+fields = ["np", "nh"]
+
+class measurement(Measurement):
     r"""!
     \ingroup meas
     Tabulate one-point correlators.
@@ -57,7 +59,7 @@ class onePointFunctions(Measurement):
         self.particle=particleAllToAll
         self.hole=holeAllToAll
 
-        self.data = {k: [] for k in ["np", "nh"]}
+        self.data = {k: [] for k in fields}
 
         self.transform = transform
 
@@ -106,4 +108,14 @@ def read(h5group):
     r"""!
     \param h5group HDF5 group which contains the data of this measurement.
     """
-    ...
+    return {key: h5group[key][()] for key in h5group}
+
+def complete(measurements):
+
+    rest = dict()
+
+    rest["rho"] = measurements["np"] - measurements["nh"]
+    rest["N"]   = measurements["np"] + measurements["nh"]
+    rest["S3"]  = 0.5 * ( 1 - rest["N"])
+
+    return {**measurements, **rest}

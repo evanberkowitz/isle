@@ -64,41 +64,41 @@ def main():
     # overwritten by accident.
     measurements = [
         # log(det(M)) where M is the fermion matrix
-        isle.meas.Logdet(hfm, "logdet"),
+        # isle.meas.Logdet(hfm, "logdet"),
         # \sum_i phi_i
-        isle.meas.TotalPhi("field"),
+        # isle.meas.TotalPhi("field"),
         # collect all weights and store them in consolidated datasets instead of
         # spread out over many HDF5 groups
-        isle.meas.CollectWeights("weights"),
+        # isle.meas.CollectWeights("weights"),
         # polyakov loop
-        isle.meas.Polyakov(params.basis, lat.nt(), "polyakov", configSlice=s_[::10]),
+        # isle.meas.Polyakov(params.basis, lat.nt(), "polyakov", configSlice=s_[::10]),
         # one-point functions
-        isle.meas.onePointFunctions(allToAll[isle.Species.PARTICLE],
+        isle.meas.onePointFunctions.measurement(allToAll[isle.Species.PARTICLE],
                                             allToAll[isle.Species.HOLE],
                                             "correlation_functions/one_point",
                                             configSlice=s_[::10],
                                             transform=None),
         # single particle correlator for particles / spin up
-        isle.meas.SingleParticleCorrelator(allToAll[isle.Species.PARTICLE],
-                                           "correlation_functions/single_particle",
-                                           configSlice=s_[::10],
-                                           projector=projector),
+        # isle.meas.SingleParticleCorrelator(allToAll[isle.Species.PARTICLE],
+        #                                    "correlation_functions/single_particle",
+        #                                    configSlice=s_[::10],
+        #                                    projector=projector),
         # single particle correlator for holes / spin down
-        isle.meas.SingleParticleCorrelator(allToAll[isle.Species.HOLE],
-                                           "correlation_functions/single_hole",
-                                           configSlice=s_[::10],
-                                           projector=projector),
-        isle.meas.SpinSpinCorrelator(allToAll[isle.Species.PARTICLE],
-                                            allToAll[isle.Species.HOLE],
-                                            "correlation_functions/spin_spin",
-                                            configSlice=s_[::10],
-                                            transform=projector,
-                                            sigmaKappa=params.sigmaKappa),
-        isle.meas.DeterminantCorrelators(allToAll[isle.Species.PARTICLE],
-                                            allToAll[isle.Species.HOLE],
-                                            "correlation_functions/det",
-                                            configSlice=s_[::10],
-                                            )
+        # isle.meas.SingleParticleCorrelator(allToAll[isle.Species.HOLE],
+        #                                    "correlation_functions/single_hole",
+        #                                    configSlice=s_[::10],
+        #                                    projector=projector),
+        # isle.meas.SpinSpinCorrelator(allToAll[isle.Species.PARTICLE],
+        #                                     allToAll[isle.Species.HOLE],
+        #                                     "correlation_functions/spin_spin",
+        #                                     configSlice=s_[::10],
+        #                                     transform=projector,
+        #                                     sigmaKappa=params.sigmaKappa),
+        # isle.meas.DeterminantCorrelators(allToAll[isle.Species.PARTICLE],
+        #                                     allToAll[isle.Species.HOLE],
+        #                                     "correlation_functions/det",
+        #                                     configSlice=s_[::10],
+        #                                     )
     ]
 
     # Run the measurements on all configurations in the input file.
