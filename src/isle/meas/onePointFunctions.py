@@ -9,10 +9,14 @@ described in the SpinSpinCorrelator documentation to compute one-point functions
 All the vacuum quantum number bilinears can be written as combinations of the
 number operators,
 \f{align}{
-    n^p_x & = \left\langle 1-a_x a_x^\dagger \right\rangle
+    \left\langle n^p_x \right\rangle
+          & = \left\langle a_x^\dagger a_x \right\rangle
+            = \left\langle 1-a_x a_x^\dagger \right\rangle
             = \left\langle 1-P_{xx} \right\rangle
     \\
-    n^h_x & = \left\langle 1-b_x b_x^\dagger \right\rangle
+    \left\langle n^h_x \right\rangle
+          & = \left\langle b_x^\dagger b_x \right\rangle
+            = \left\langle 1-b_x b_x^\dagger \right\rangle
             = \left\langle 1-H_{xx} \right\rangle
 \f}
 For example, the expected charge density operator
