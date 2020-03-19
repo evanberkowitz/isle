@@ -397,11 +397,18 @@ Because we do not assume a bipartite graph, we implement Meng and Wessel's \f$S_
 from logging import getLogger
 
 import numpy as np
+import h5py as h5
 
 import isle
 from .measurement import Measurement
 from ..util import temporalRoller, signAlternator
 from ..h5io import createH5Group
+
+fields = [
+    'Splus_Sminus', 'Sminus_Splus',
+    'np_np', 'np_nh', 'nh_np', 'nh_nh',
+    '++_--', '--_++',
+]
 
 class measurement(Measurement):
     r"""!
@@ -428,8 +435,8 @@ class measurement(Measurement):
             "np_np", "np_nh", "nh_np", "nh_nh",
             "++_--", "--_++",
             # And their combinations:
-            "S1_S1", "S1_S2",
-            "rho_rho", "rho_n", "n_rho", "n_n"
+            # "S1_S1", "S1_S2",
+            # "rho_rho", "rho_n", "n_rho", "n_n"
             ]}
 
         self.transform = transform
@@ -578,12 +585,12 @@ class measurement(Measurement):
                                     optimize=self._einsum_paths["idf,bx,xfyi,ya->bad"]) / nt
 
         # Now we can use identites demonstrated above to build other two-point functions:
-        time_averaged["S1_S1"] = 0.25 *(time_averaged["Splus_Sminus"] + time_averaged["Sminus_Splus"])
-        time_averaged["S1_S2"] = 0.25j*(time_averaged["Splus_Sminus"] - time_averaged["Sminus_Splus"])
-        time_averaged["rho_rho"] = time_averaged["np_np"] + time_averaged["nh_nh"] - time_averaged["np_nh"] - time_averaged["nh_np"]
-        time_averaged["rho_n"]   = time_averaged["np_np"] - time_averaged["nh_nh"] + time_averaged["np_nh"] - time_averaged["nh_np"]
-        time_averaged["n_rho"]   = time_averaged["np_np"] - time_averaged["nh_nh"] - time_averaged["np_nh"] + time_averaged["nh_np"]
-        time_averaged["n_n"]     = time_averaged["np_np"] + time_averaged["nh_nh"] + time_averaged["np_nh"] + time_averaged["nh_np"]
+        # time_averaged["S1_S1"] = 0.25 *(time_averaged["Splus_Sminus"] + time_averaged["Sminus_Splus"])
+        # time_averaged["S1_S2"] = 0.25j*(time_averaged["Splus_Sminus"] - time_averaged["Sminus_Splus"])
+        # time_averaged["rho_rho"] = time_averaged["np_np"] + time_averaged["nh_nh"] - time_averaged["np_nh"] - time_averaged["nh_np"]
+        # time_averaged["rho_n"]   = time_averaged["np_np"] - time_averaged["nh_nh"] + time_averaged["np_nh"] - time_averaged["nh_np"]
+        # time_averaged["n_rho"]   = time_averaged["np_np"] - time_averaged["nh_nh"] - time_averaged["np_nh"] + time_averaged["nh_np"]
+        # time_averaged["n_n"]     = time_averaged["np_np"] + time_averaged["nh_nh"] + time_averaged["np_nh"] + time_averaged["nh_np"]
 
         for correlator in self.data:
             self.data[correlator].append(time_averaged[correlator])
@@ -598,9 +605,40 @@ class measurement(Measurement):
             subGroup[field] = self.data[field]
 
 
+def read(h5group):
+    r"""!
+    \param h5group HDF5 group which contains the data for this measurement.
+
+    \returns A dictionary of measurements and a transformation, \n
+    {   \n
+        `Splus_Sminus`: \f$S^+_{xf}S^-_{yi}\f$,                         \n
+        `Sminus_Splus`: \f$S^-_{xf}S^+_{yi}\f$,                         \n
+        `np_np`       : \f$n^p_{xf}n^p_{yi}\f$,                         \n
+        `np_nh`       : \f$n^p_{xf}n^h_{yi}\f$,                         \n
+        `nh_np`       : \f$n^h_{xf}n^p_{yi}\f$,                         \n
+        `nh_nh`       : \f$n^h_{xf}n^h_{yi}\f$,                         \n
+        `++_--`       : \f$(a^\dagger b)_{xf} (b^\dagger a)_{yi}\f$,    \n
+        `--_++`       : \f$(b^\dagger a)_{xf} (a^\dagger b)_{yi}\f$,    \n
+        `spinSpin-transform`: A transformation from position space to another space.
+    }
+    """
+
+    try:
+        data = {key: h5group[key][()] for key in h5group}
+
+        if type(data['transform']) is h5.Empty:
+            data['transform'] = None
+
+        data['spinSpin-transform'] = data['transform']
+        del data['transform']
+
+        return data
+    except:
+        raise KeyError(f"Problem reading spinSpinCorrelator measurements from {h5group.name}")
+
 def complete(measurements, correlators=["S1_S1", "S1_S2", "rho_rho", "rho_n", "n_rho", "n_n",
-                                    "S3_S3", "S3_S0", "S0_S3", "S0_S0"
-                                    ], onePoint=None):
+                                        "S3_S3", "S3_S0", "S0_S3", "S0_S0"
+                                        ]):
 
     requiresOnePoint = ["S3_S3", "S3_S0", "S0_S3", "S0_S0"]
 
@@ -609,7 +647,7 @@ def complete(measurements, correlators=["S1_S1", "S1_S2", "rho_rho", "rho_n", "n
     if "S1_S1" in correlators:
         rest["S1_S1"]   = 0.25 *(measurements["Splus_Sminus"] + measurements["Sminus_Splus"])
     if "S1_S2" in correlators:
-        rest["S1_S2"]   = 0.25j*(time_averaged["Splus_Sminus"] - measurements["Sminus_Splus"])
+        rest["S1_S2"]   = 0.25j*(measurements["Splus_Sminus"] - measurements["Sminus_Splus"])
     if "rho_rho" in correlators:
         rest["rho_rho"] = measurements["np_np"] + measurements["nh_nh"] - measurements["np_nh"] - measurements["nh_np"]
     if "rho_n" in correlators:
@@ -619,11 +657,19 @@ def complete(measurements, correlators=["S1_S1", "S1_S2", "rho_rho", "rho_n", "n
     if "n_n" in correlators:
         rest["n_n"]     = measurements["np_np"] + measurements["nh_nh"] + measurements["np_nh"] + measurements["nh_np"]
 
-    if onePoint is None:
-        log = getLogger(__name__)
-        log.info(f"No one point measurements were provided; will not compute {requiresOnePoint} correlators.")
-        return {**measurements, **rest}
+    log = getLogger(__name__)
 
-    # if "S3_S3" in correlators:
-    #     rest["S3_S3"] =
+    if "np" in measurements and "nh" in measurements:
+        log.info("Constructing bilinears that require one-point measurements.")
+        if "S3_S3" in correlators:
+            ...
+        if "S3_S0" in correlators:
+            ...
+        if "S0_S3" in correlators:
+            ...
+        if "S0_S0" in correlators:
+            ...
+    else:
+        log.info("One-point measurements are needed to construct S3_S3, S3_S0, S0_S3, S0_S0 bilinears.")
+
     return {**measurements, **rest}
