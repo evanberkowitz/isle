@@ -121,32 +121,6 @@ class measurement(Measurement):
         for field in self.data:
             subGroup[field] = self.data[field]
 
-def read(h5group):
-    r"""!
-    \param h5group HDF5 group which contains the data of this measurement.
-
-    \returns A dictionary of measurements and a basis transformation, \n
-    {    \n
-        `np`: \f$n^p_x\f$,                      \n
-        `nh`: \f$n^h_x\f$,                      \n
-        `onePoint-transform`: A transformation from position space to another space \n
-        }
-    where both \f$n^{p,h}_x\f$ have the shape [measurements, spatial dimension] as long as `onePoint-transform` is square.
-    """
-
-    try:
-        data = {key: h5group[key][()] for key in h5group}
-
-        if type(data['transform']) is h5.Empty:
-            data['transform'] = None
-
-        data['onePoint-transform'] = data['transform']
-        del data['transform']
-
-        return data
-    except:
-        raise KeyError(f"Problem reading onePointFunction measurements from {h5group.name}")
-
 def complete(measurements):
     r"""!
     \param measurements a dictionary of measurements, like what is returned from read().

@@ -605,37 +605,6 @@ class measurement(Measurement):
             subGroup[field] = self.data[field]
 
 
-def read(h5group):
-    r"""!
-    \param h5group HDF5 group which contains the data for this measurement.
-
-    \returns A dictionary of measurements and a transformation, \n
-    {   \n
-        `Splus_Sminus`: \f$S^+_{xf}S^-_{yi}\f$,                         \n
-        `Sminus_Splus`: \f$S^-_{xf}S^+_{yi}\f$,                         \n
-        `np_np`       : \f$n^p_{xf}n^p_{yi}\f$,                         \n
-        `np_nh`       : \f$n^p_{xf}n^h_{yi}\f$,                         \n
-        `nh_np`       : \f$n^h_{xf}n^p_{yi}\f$,                         \n
-        `nh_nh`       : \f$n^h_{xf}n^h_{yi}\f$,                         \n
-        `++_--`       : \f$(a^\dagger b)_{xf} (b^\dagger a)_{yi}\f$,    \n
-        `--_++`       : \f$(b^\dagger a)_{xf} (a^\dagger b)_{yi}\f$,    \n
-        `spinSpin-transform`: A transformation from position space to another space.
-    }
-    """
-
-    try:
-        data = {key: h5group[key][()] for key in h5group}
-
-        if type(data['transform']) is h5.Empty:
-            data['transform'] = None
-
-        data['spinSpin-transform'] = data['transform']
-        del data['transform']
-
-        return data
-    except:
-        raise KeyError(f"Problem reading spinSpinCorrelator measurements from {h5group.name}")
-
 def complete(measurements, correlators=["S1_S1", "S1_S2", "rho_rho", "rho_n", "n_rho", "n_n",
                                         "S3_S3", "S3_S0", "S0_S3", "S0_S0"
                                         ]):
