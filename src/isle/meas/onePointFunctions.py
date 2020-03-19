@@ -141,17 +141,10 @@ def complete(measurements):
     \returns a dictionary with additional one-point functions, built from those already computed.
     """
 
-    try:
-        rest = dict()
+    rest = dict()
 
-        rest["rho"] = measurements["np"] - measurements["nh"]
-        rest["N"]   = measurements["np"] + measurements["nh"]
-        rest["S3"]  = 0.5 * ( 1 - rest["N"])
+    rest["rho"] = measurements["np"] - measurements["nh"]
+    rest["N"]   = measurements["np"] + measurements["nh"]
+    rest["S3"]  = 0.5 * ( 1 - rest["N"])
 
-        return {**measurements, **rest}
-
-    except KeyError:
-        raise KeyError(f"Needed fields np, nh are not both available in {measurements.keys()}")
-
-    except ValueError:
-        raise ValueError("Particle and hole one-point measurements are incompatible shapes, {measurements['np'].shape} and {measurements['nh'].shape}, respectively.")
+    return {**measurements, **rest}
