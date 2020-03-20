@@ -431,7 +431,7 @@ class SpinSpinCorrelator(Measurement):
                                 *DERIVED_CORRELATOR_NAMES_ONE_POINT}
 
     def __init__(self, particleAllToAll, holeAllToAll, savePath, configSlice=(None, None, None),
-                 transform=None, sigmaKappa=-1, correlators=None):
+                 transform=None, sigmaKappa=-1, correlators=CORRELATOR_NAMES):
         r"""!
         \param particleAllToAll propagator.AllToAll for particles.
         \param holesAllToAll propagator.AllToAll for holes.
@@ -604,13 +604,8 @@ class SpinSpinCorrelator(Measurement):
                                     data[correlator],
                                     optimize=self._einsum_paths["idf,bx,xfyi,ya->bad"]) / nt
 
-        # Now we can use identites demonstrated above to build other two-point functions:
-        # time_averaged["S1_S1"] = 0.25 *(time_averaged["Splus_Sminus"] + time_averaged["Sminus_Splus"])
-        # time_averaged["S1_S2"] = 0.25j*(time_averaged["Splus_Sminus"] - time_averaged["Sminus_Splus"])
-        # time_averaged["rho_rho"] = time_averaged["np_np"] + time_averaged["nh_nh"] - time_averaged["np_nh"] - time_averaged["nh_np"]
-        # time_averaged["rho_n"]   = time_averaged["np_np"] - time_averaged["nh_nh"] + time_averaged["np_nh"] - time_averaged["nh_np"]
-        # time_averaged["n_rho"]   = time_averaged["np_np"] - time_averaged["nh_nh"] - time_averaged["np_nh"] + time_averaged["nh_np"]
-        # time_averaged["n_n"]     = time_averaged["np_np"] + time_averaged["nh_nh"] + time_averaged["np_nh"] + time_averaged["nh_np"]
+        # Any additional correlators can be derived by identities explained above.
+        # They can be computed by SpinSpinCorrelator.computeDerivedCorrelators().
 
         for name, correlator in time_averaged.items():
             self.correlators[name].append(correlator)
@@ -624,73 +619,78 @@ class SpinSpinCorrelator(Measurement):
         for name, correlator in self.correlators.items():
             subGroup[name] = correlator
 
+    @classmethod
+    def computeDerivedCorrelators(cls, measurements, correlators=None):
+        r"""!
+        \param measurements a dictionary of measurements that has measurements of `"Splus_Sminus"`,
+        `"Sminus_Splus"`, `"np_np"`, `"np_nh"`, `"nh_np"`, and `"nh_nh"` (and other fields are allowed).
+        \param correlators an iterable of correlators you wish to compute.  If `None`, the default, uses
+        all possible identities from the above bilinear correlators.
+        If one-point measurements from onePointFunctions.py `"np"` and `"nh"` are included,
+        additional identities will be leveraged to construct more two-point functions.
 
-def computeDerivedCorrelators(measurements, correlators=None):
-    r"""!
-    \param measurements a dictionary of measurements that has measurements of `"Splus_Sminus"`,
-    `"Sminus_Splus"`, `"np_np"`, `"np_nh"`, `"nh_np"`, and `"nh_nh"` (and other fields are allowed).
-    If one-point measurements from onePointFunctions.py `"np"` and `"nh"` are included,
-    additional identities will be leveraged to construct more two-point functions.
+        Uses the identities above to reframe data in terms of different operators.
 
-    Uses the identities above to reframe data in terms of different operators.
+        You can sensibly do this on vectors of bootstrapped averages, since everything is linear.
 
-    You can sensibly do this on vectors of bootstrapped averages, since everything is linear.
+        \returns `dict` with additional reconstructed correlators
+        `"S1_S1"`, `"S1_S2"`, `"rho_rho"`, `"rho_n"`, `"n_rho"`, `n_n`.  If `"np"` and `"nh"` are available,
+        also constructed are `"S0_S0"`, `"S0_S3"`, `"S3_S0"`, and `"S3_S3"`.
+        """
 
-    \returns `dict` with additional reconstructed correlators
-    `"S1_S1"`, `"S1_S2"`, `"rho_rho"`, `"rho_n"`, `"n_rho"`, `n_n`.  If `"np"` and `"nh"` are available,
-    also constructed are `"S0_S0"`, `"S0_S3"`, `"S3_S0"`, and `"S3_S3"`.
-    """
+        log = getLogger(__name__)
 
-    log = getLogger(__name__)
+        if correlators is None:
+            if "np" in measurements and "nh" in measurements:
+                correlators = SpinSpinCorrelator.DERIVED_CORRELATOR_NAMES
+                log.info("Selecting full derived spin-spin correlators: %s", correlators)
+            else:
+                correlators = SpinSpinCorrelator.DERIVED_CORRELATOR_NAMES_SPIN_ONLY
+                log.info("Selecting only partial derived spin-spin correlators, "
+                         "no one point data is available: %s", correlators)
 
-    if correlators is None:
-        if "np" in measurements and "nh" in measurements:
-            correlators = SpinSpinCorrelator.DERIVED_CORRELATOR_NAMES
-            log.info("Selecting full derived spin-spin correlators: %s", correlators)
-        else:
-            correlators = SpinSpinCorrelator.DERIVED_CORRELATOR_NAMES_SPIN_ONLY
-            log.info("Selecting only partial derived spin-spin correlators, "
-                     "no one point data is available: %s", correlators)
+        derived = dict()
 
-    derived = dict()
+        # These are easy to think about, if one is measured they are all measured.
+        if "S1_S1" in correlators:
+            derived["S1_S1"] = 0.25 *(measurements["Splus_Sminus"] + measurements["Sminus_Splus"])
+        if "S1_S2" in correlators:
+            derived["S1_S2"] = 0.25j*(measurements["Splus_Sminus"] - measurements["Sminus_Splus"])
+        if "rho_rho" in correlators:
+            derived["rho_rho"] = measurements["np_np"] + measurements["nh_nh"] - measurements["np_nh"] - measurements["nh_np"]
+        if "rho_n" in correlators:
+            derived["rho_n"] = measurements["np_np"] - measurements["nh_nh"] + measurements["np_nh"] - measurements["nh_np"]
+        if "n_rho" in correlators:
+            derived["n_rho"] = measurements["np_np"] - measurements["nh_nh"] - measurements["np_nh"] + measurements["nh_np"]
+        if "n_n" in correlators:
+            derived["n_n"] = measurements["np_np"] + measurements["nh_nh"] + measurements["np_nh"] + measurements["nh_np"]
 
-    # These are easy to think about, if one is measured they are all measured.
-    if "S1_S1" in correlators:
-        derived["S1_S1"] = 0.25 *(measurements["Splus_Sminus"] + measurements["Sminus_Splus"])
-    if "S1_S2" in correlators:
-        derived["S1_S2"] = 0.25j*(measurements["Splus_Sminus"] - measurements["Sminus_Splus"])
-    if "rho_rho" in correlators:
-        derived["rho_rho"] = measurements["np_np"] + measurements["nh_nh"] - measurements["np_nh"] - measurements["nh_np"]
-    if "rho_n" in correlators:
-        derived["rho_n"] = measurements["np_np"] - measurements["nh_nh"] + measurements["np_nh"] - measurements["nh_np"]
-    if "n_rho" in correlators:
-        derived["n_rho"] = measurements["np_np"] - measurements["nh_nh"] - measurements["np_nh"] + measurements["nh_np"]
-    if "n_n" in correlators:
-        derived["n_n"] = measurements["np_np"] + measurements["nh_nh"] + measurements["np_nh"] + measurements["nh_np"]
+        if any(name in correlators for name in SpinSpinCorrelator.DERIVED_CORRELATOR_NAMES_ONE_POINT):
+            # TODO: These are hard to think about generally, if they're not measured with equal frequency.
+            # NB:   This contains the assumption that they're measured at *the same* frequency
 
-    if any(name in correlators for name in SpinSpinCorrelator.DERIVED_CORRELATOR_NAMES_ONE_POINT):
-        # TODO: These are hard to think about generally, if they're not measured with equal frequency.
-        # NB:   This contains the assumption that they're measured at *the same* frequency
-        nm = measurements["np"].shape[0]    # number of measurements
-        assert nm == measurements["np_np"].shape[0]
-        nx = measurements["np"].shape[-1]
-        nt = measurements["Splus_Sminus"].shape[-1]
+            # This assertion checks the number of measurements and the spatial volume match.
+            assert measurements['np'].shape == measurements["np_np"].shape[0:2]
 
-        one = np.ones((nm,nx,nx,nt))
-        constant = np.ones((nx,nt))
+            nm = measurements["np"].shape[0]        # number of measurements
+            nx = measurements["np"].shape[1]        # space
+            nt = measurements["np_np"].shape[-1]    # time
 
-        npx = np.einsum('ax,yt->axyt', measurements["np"], constant, optimize="optimal")
-        nhx = np.einsum('ax,yt->axyt', measurements["nh"], constant, optimize="optimal")
-        npy = np.einsum('ay,xt->axyt', measurements["np"], constant, optimize="optimal")
-        nhy = np.einsum('ay,xt->axyt', measurements["nh"], constant, optimize="optimal")
+            one = np.ones((nm,nx,nx,nt))
+            constant = np.ones((nx,nt))
 
-        if "S0_S0" in correlators:
-            derived["S0_S0"] = 0.25*(derived["rho_rho"] + one - npx - npy + nhx + nhy)
-        if "S0_S3" in correlators:
-            derived["S0_S3"] = 0.25*(derived["rho_n"]   + one - npx - npy + nhx - nhy)
-        if "S3_S0" in correlators:
-            derived["S3_S0"] = 0.25*(derived["n_rho"]   + one - npx - npy - nhx + nhy)
-        if "S3_S3" in correlators:
-            derived["S3_S3"] = 0.25*(derived["n_n"]     + one - npx - npy - nhx - nhy)
+            npx = np.einsum('ax,yt->axyt', measurements["np"], constant, optimize="optimal")
+            nhx = np.einsum('ax,yt->axyt', measurements["nh"], constant, optimize="optimal")
+            npy = np.einsum('ay,xt->axyt', measurements["np"], constant, optimize="optimal")
+            nhy = np.einsum('ay,xt->axyt', measurements["nh"], constant, optimize="optimal")
 
-    return derived
+            if "S0_S0" in correlators:
+                derived["S0_S0"] = 0.25*(derived["rho_rho"] + one - npx - npy + nhx + nhy)
+            if "S0_S3" in correlators:
+                derived["S0_S3"] = 0.25*(derived["rho_n"]   + one - npx - npy + nhx - nhy)
+            if "S3_S0" in correlators:
+                derived["S3_S0"] = 0.25*(derived["n_rho"]   + one - npx - npy - nhx + nhy)
+            if "S3_S3" in correlators:
+                derived["S3_S3"] = 0.25*(derived["n_n"]     + one - npx - npy - nhx - nhy)
+
+        return derived

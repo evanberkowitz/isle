@@ -128,29 +128,30 @@ class OnePointFunctions(Measurement):
         for name, correlator in self.correlators.items():
             subGroup[name] = correlator
 
-def computeDerivedCorrelators(measurements):
-    r"""!
-    \param measurements a dictionary of measurements that has measurements of `"np"` and `"nh"`
+    @classmethod
+    def computeDerivedCorrelators(cls, measurements):
+        r"""!
+        \param measurements a dictionary of measurements that has measurements of `"np"` and `"nh"`
 
-    Measurements of one-point functions \f$\rho_x\f$, \f$n_x\f$,
-    and \f$S^3_x\f$ are built from measurements of \f$n^p_x\f$ and \f$n^h_x\f$
-    using the identities above.
+        Measurements of one-point functions \f$\rho_x\f$, \f$n_x\f$,
+        and \f$S^3_x\f$ are built from measurements of \f$n^p_x\f$ and \f$n^h_x\f$
+        using the identities above.
 
-    This can be used with the following example codeblock
+        This can be used with the following example codeblock
 
-    ```python
-       # meas is an instance of OnePointFunctions
-        derived = isle.meas.onePointFunctions.computeDerivedCorrelators(
-            {name: np.asarray(corr) for name, corr in meas.correlators.items()})
-    ```
+        ```python
+           # meas is an instance of OnePointFunctions
+            derived = isle.meas.onePointFunctions.computeDerivedCorrelators(
+                {name: np.asarray(corr) for name, corr in meas.correlators.items()})
+        ```
 
-    \returns `dict` with additional one-point functions, built from those already computed.
-    """
+        \returns `dict` with additional one-point functions, built from those already computed.
+        """
 
-    derived = dict()
+        derived = dict()
 
-    derived["rho"] = measurements["np"] - measurements["nh"]
-    derived["n"]   = measurements["np"] + measurements["nh"]
-    derived["S3"]  = 0.5 * (1 - derived["n"])
+        derived["rho"] = measurements["np"] - measurements["nh"]
+        derived["n"]   = measurements["np"] + measurements["nh"]
+        derived["S3"]  = 0.5 * (1 - derived["n"])
 
-    return derived
+        return derived
