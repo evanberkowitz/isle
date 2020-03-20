@@ -41,12 +41,8 @@ from logging import getLogger
 import numpy as np
 import h5py as h5
 
-import isle
 from .measurement import Measurement
-from ..util import temporalRoller
 from ..h5io import createH5Group
-
-fields = ["np", "nh"]
 
 #TODO: save / retrieve einsum paths.
 
@@ -55,6 +51,9 @@ class OnePointFunctions(Measurement):
     \ingroup meas
     Tabulate one-point correlators.
     """
+
+    ##! Set of names of all possible elementary one-point-functions.
+    CORRELATOR_NAMES = {"np", "nh"}
 
     def __init__(self, particleAllToAll, holeAllToAll, savePath, configSlice=(None, None, None), transform=None):
         super().__init__(savePath, configSlice)
@@ -66,7 +65,7 @@ class OnePointFunctions(Measurement):
         self.particle=particleAllToAll
         self.hole=holeAllToAll
 
-        self.data = {k: [] for k in fields}
+        self.correlators = {k: [] for k in self.CORRELATOR_NAMES}
 
         self.transform = transform
 
@@ -100,13 +99,13 @@ class OnePointFunctions(Measurement):
                 log.info("Optimized Einsum path for time averaging and unitary transformation.")
 
         if self.transform is None:
-            for correlator in self.data:
-                measurement = np.einsum("xtxt->x", data[correlator], optimize=self._einsum_path) / nt
-                self.data[correlator].append(measurement)
+            for name, correlator in data.items():
+                measurement = np.einsum("xtxt->x", correlator, optimize=self._einsum_path) / nt
+                self.correlators[name].append(measurement)
         else:
-            for correlator in self.data:
-                measurement = np.einsum("ax,xtxt->a", self.transform, data[correlator], optimize=self._einsum_path) / nt
-                self.data[correlator].append(measurement)
+            for name, correlator in data.items():
+                measurement = np.einsum("ax,xtxt->a", self.transform, correlator, optimize=self._einsum_path) / nt
+                self.correlators[name].append(measurement)
 
 
     def save(self, h5group):
@@ -118,8 +117,8 @@ class OnePointFunctions(Measurement):
             subGroup["transform"] = h5.Empty(dtype="complex")
         else:
             subGroup["transform"] = self.transform
-        for field in self.data:
-            subGroup[field] = self.data[field]
+        for name, correlator in self.correlators.items():
+            subGroup[name] = correlator
 
 def computeDerivedCorrelators(measurements):
     r"""!
@@ -132,17 +131,18 @@ def computeDerivedCorrelators(measurements):
     This can be used with the following example codeblock
 
     ```python
-        # data is a dictionary with "np" and "nh" keys that point to numpy arrays
-        data = isle.meas.onePointFunctions.complete(data)
+       # meas is an instance of OnePointFunctions
+        derived = isle.meas.onePointFunctions.computeDerivedCorrelators(
+            {name: np.asarray(corr) for name, corr in meas.correlators.items()})
     ```
 
-    \returns a dictionary with additional one-point functions, built from those already computed.
+    \returns `dict` with additional one-point functions, built from those already computed.
     """
 
-    rest = dict()
+    derived = dict()
 
-    rest["rho"] = measurements["np"] - measurements["nh"]
-    rest["n"]   = measurements["np"] + measurements["nh"]
-    rest["S3"]  = 0.5 * ( 1 - rest["n"])
+    derived["rho"] = measurements["np"] - measurements["nh"]
+    derived["n"]   = measurements["np"] + measurements["nh"]
+    derived["S3"]  = 0.5 * (1 - derived["n"])
 
-    return {**measurements, **rest}
+    return derived
