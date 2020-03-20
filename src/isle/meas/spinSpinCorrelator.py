@@ -415,23 +415,34 @@ class SpinSpinCorrelator(Measurement):
     Tabulate spin-spin correlators.
     """
 
-    ##! Set of names of all possible elementary spin-spin correlators.
+    ## Set of names of all possible elementary spin-spin correlators.
     CORRELATOR_NAMES = {"np_np", "nh_np", "np_nh", "nh_nh",
                         "Splus_Sminus", "Sminus_Splus",
                         '++_--', '--_++'}
 
-    ##! Set of names of derived correlators that can be constructed from spin-spin correlators.
+    ## Set of names of derived correlators that can be constructed from spin-spin correlators.
     DERIVED_CORRELATOR_NAMES_SPIN_ONLY = {"S1_S1", "S1_S2", "rho_rho", "rho_n", "n_rho", "n_n"}
 
-    ##! Set of names of derived correlators that need one-point correlators to be constructed.
+    ## Set of names of derived correlators that need one-point correlators to be constructed.
     DERIVED_CORRELATOR_NAMES_ONE_POINT = {"S0_S0", "S0_S3", "S3_S0", "S3_S3"}
 
-    ##! Set of names of all derived correlators
+    ## Set of names of all derived correlators
     DERIVED_CORRELATOR_NAMES = {*DERIVED_CORRELATOR_NAMES_SPIN_ONLY,
                                 *DERIVED_CORRELATOR_NAMES_ONE_POINT}
 
     def __init__(self, particleAllToAll, holeAllToAll, savePath, configSlice=(None, None, None),
                  transform=None, sigmaKappa=-1, correlators=None):
+        r"""!
+        \param particleAllToAll propagator.AllToAll for particles.
+        \param holesAllToAll propagator.AllToAll for holes.
+        \param savePath Path in the output file where results are saved.
+        \param configSlice `slice` indicating which configurations to measure on.
+        \param transform Transformation matrix applied to correlators in position space.
+        \param sigmaKappa \f$\sigma_\kappa\f$ from the fermion action.
+        \param correlators Iterable of names of correlators to compute.
+                           Defaults to SpinSpinCorrelator.CORRELATOR_NAMES.
+        """
+
         super().__init__(savePath, configSlice)
 
         if correlators is None:

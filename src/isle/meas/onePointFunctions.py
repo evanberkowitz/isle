@@ -52,10 +52,18 @@ class OnePointFunctions(Measurement):
     Tabulate one-point correlators.
     """
 
-    ##! Set of names of all possible elementary one-point-functions.
+    ## Set of names of all possible elementary one-point-functions.
     CORRELATOR_NAMES = {"np", "nh"}
 
     def __init__(self, particleAllToAll, holeAllToAll, savePath, configSlice=(None, None, None), transform=None):
+        r"""!
+        \param particleAllToAll propagator.AllToAll for particles.
+        \param holesAllToAll propagator.AllToAll for holes.
+        \param savePath Path in the output file where results are saved.
+        \param configSlice `slice` indicating which configurations to measure on.
+        \param transform Transformation matrix applied to correlators in position space.
+        """
+
         super().__init__(savePath, configSlice)
 
         # The correlation functions encoded here are between bilinear operators.
