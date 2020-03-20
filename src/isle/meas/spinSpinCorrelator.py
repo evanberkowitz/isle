@@ -404,11 +404,12 @@ from .measurement import Measurement
 from ..util import temporalRoller, signAlternator
 from ..h5io import createH5Group
 
-fields = (
-    'Splus_Sminus', 'Sminus_Splus',
-    'np_np', 'np_nh', 'nh_np', 'nh_nh',
-    '++_--', '--_++',
-)
+
+def _checkCorrNames(actual, allowed):
+    for name in actual:
+        if name not in allowed:
+            raise ValueError(f"Unknown correlator: '{name}'. Choose from '{allowed}'")
+
 
 class SpinSpinCorrelator(Measurement):
     r"""!
@@ -416,29 +417,29 @@ class SpinSpinCorrelator(Measurement):
     Tabulate spin-spin correlators.
     """
 
-    def __init__(self, particleAllToAll, holeAllToAll, savePath, configSlice=(None, None, None), transform=None, sigmaKappa=-1):
+    ##! Set of names of all possible elementary spin-spin correlators.
+    CORRELATOR_NAMES = {"np_np", "nh_np", "np_nh", "nh_nh",
+                        "Splus_Sminus", "Sminus_Splus",
+                        '++_--', '--_++'}
+
+    def __init__(self, particleAllToAll, holeAllToAll, savePath, configSlice=(None, None, None),
+                 transform=None, sigmaKappa=-1, correlators=None):
         super().__init__(savePath, configSlice)
+
+        if correlators is None:
+            correlators = self.CORRELATOR_NAMES
+        _checkCorrNames(correlators, self.CORRELATOR_NAMES)
 
         # The correlation functions encoded here are between bilinear operators.
         # Since the individual constituents are fermionic, the bilinear is bosonic.
         self.fermionic = False
-
 
         self.sigmaKappa = sigmaKappa
 
         self.particle=particleAllToAll
         self.hole=holeAllToAll
 
-        self.data = {k: [] for k in [
-            # Directly computed
-            "Splus_Sminus", "Sminus_Splus",
-            "np_np", "np_nh", "nh_np", "nh_nh",
-            "++_--", "--_++",
-            # And their combinations:
-            # "S1_S1", "S1_S2",
-            # "rho_rho", "rho_n", "n_rho", "n_n"
-            ]}
-
+        self.correlators = {k: [] for k in correlators}
         self.transform = transform
 
         self._einsum_paths = {}
@@ -545,18 +546,18 @@ class SpinSpinCorrelator(Measurement):
 
         data = dict()
 
-        data["Splus_Sminus"] = PxyHxy
-        data["Sminus_Splus"] = dyxdyx - Pyxdyx - Hyxdyx + PyxHyx
+        if "Splus_Sminus" in self.correlators: data["Splus_Sminus"] = PxyHxy
+        if "Sminus_Splus" in self.correlators: data["Sminus_Splus"] = dyxdyx - Pyxdyx - Hyxdyx + PyxHyx
 
-        data["np_nh"] = dxxdyy - Pxxdyy - dxxHyy + PxxHyy
-        data["np_np"] = dxxdyy - dxxPyy - Pxxdyy + Pxydyx - PxyPyx + PxxPyy
-        data["nh_np"] = dxxdyy - Hxxdyy - dxxPyy + HxxPyy
-        data["nh_nh"] = dxxdyy - dxxHyy - Hxxdyy + Hxydyx - HxyHyx + HxxHyy
+        if "np_nh" in self.correlators: data["np_nh"] = dxxdyy - Pxxdyy - dxxHyy + PxxHyy
+        if "np_np" in self.correlators: data["np_np"] = dxxdyy - dxxPyy - Pxxdyy + Pxydyx - PxyPyx + PxxPyy
+        if "nh_np" in self.correlators: data["nh_np"] = dxxdyy - Hxxdyy - dxxPyy + HxxPyy
+        if "nh_nh" in self.correlators: data["nh_nh"] = dxxdyy - dxxHyy - Hxxdyy + Hxydyx - HxyHyx + HxxHyy
 
-        data["++_--"] = Hxydyx - HxyPyx
-        data["--_++"] = Pxydyx - PxyHyx
+        if "++_--" in self.correlators: data["++_--"] = Hxydyx - HxyPyx
+        if "--_++" in self.correlators: data["--_++"] = Pxydyx - PxyHyx
 
-        self._roll = np.array([temporalRoller(nt, -t, fermionic=self.fermionic) for t in range(nt)])
+        roll = np.array([temporalRoller(nt, -t, fermionic=self.fermionic) for t in range(nt)])
 
         time_averaged = dict()
         for correlator in data:
@@ -565,22 +566,22 @@ class SpinSpinCorrelator(Measurement):
             # worthwhile to test for a transform and only add those multiplies in if needed.
             if self.transform is not None:
                 if "idf,bx,xfyi,ya->bad" not in self._einsum_paths:
-                    self._einsum_paths["idf,bx,xfyi,ya->bad"], _ = np.einsum_path("idf,bx,xfyi,ya->bad", self._roll, self.transform.T.conj(), data[correlator], self.transform, optimize="optimal")
+                    self._einsum_paths["idf,bx,xfyi,ya->bad"], _ = np.einsum_path("idf,bx,xfyi,ya->bad", roll, self.transform.T.conj(), data[correlator], self.transform, optimize="optimal")
                     log.info("Optimized Einsum path for time averaging and transform application.")
 
                 time_averaged[correlator] = np.einsum("idf,bx,xfyi,ya->bad",
-                                    self._roll,
+                                    roll,
                                     self.transform.T.conj(),
                                     data[correlator],
                                     self.transform,
                                     optimize=self._einsum_paths["idf,bx,xfyi,ya->bad"]) / nt
             else:
                 if "idf,xfyi->xyd" not in self._einsum_paths:
-                    self._einsum_paths["idf,xfyi->xyd"], _ = np.einsum_path("idf,xfyi->xyd", self._roll, data[correlator], optimize="optimal")
+                    self._einsum_paths["idf,xfyi->xyd"], _ = np.einsum_path("idf,xfyi->xyd", roll, data[correlator], optimize="optimal")
                     log.info("Optimized Einsum path for time averaging in position space.")
 
                 time_averaged[correlator] = np.einsum("idf,xfyi->xyd",
-                                    self._roll,
+                                    roll,
                                     data[correlator],
                                     optimize=self._einsum_paths["idf,bx,xfyi,ya->bad"]) / nt
 
@@ -592,8 +593,8 @@ class SpinSpinCorrelator(Measurement):
         # time_averaged["n_rho"]   = time_averaged["np_np"] - time_averaged["nh_nh"] - time_averaged["np_nh"] + time_averaged["nh_np"]
         # time_averaged["n_n"]     = time_averaged["np_np"] + time_averaged["nh_nh"] + time_averaged["np_nh"] + time_averaged["nh_np"]
 
-        for correlator in self.data:
-            self.data[correlator].append(time_averaged[correlator])
+        for name, correlator in time_averaged.items():
+            self.correlators[name].append(correlator)
 
     def save(self, h5group):
         r"""!
@@ -601,8 +602,8 @@ class SpinSpinCorrelator(Measurement):
         """
         subGroup = createH5Group(h5group, self.savePath)
         subGroup["transform"] = self.transform
-        for field in self.data:
-            subGroup[field] = self.data[field]
+        for name, correlator in self.correlators.items():
+            subGroup[name] = correlator
 
 
 def computeDerivedCorrelators(measurements):
