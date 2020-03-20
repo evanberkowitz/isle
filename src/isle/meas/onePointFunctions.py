@@ -123,7 +123,7 @@ class measurement(Measurement):
 
 def complete(measurements):
     r"""!
-    \param measurements a dictionary of measurements, like what is returned from read().
+    \param measurements a dictionary of measurements that has measurements of `"np"` and `"nh"`
 
     Measurements of one-point functions \f$\rho_x\f$, \f$n_x\f$,
     and \f$S^3_x\f$ are built from measurements of \f$n^p_x\f$ and \f$n^h_x\f$
@@ -132,9 +132,7 @@ def complete(measurements):
     This can be used with the following example codeblock
 
     ```python
-        with h5.File('measurements.h5','r') as f:
-            data = isle.meas.onePointFunctions.read(f["correlation_functions/one_point"])
-
+        # data is a dictionary with "np" and "nh" keys that point to numpy arrays
         data = isle.meas.onePointFunctions.complete(data)
     ```
 
@@ -144,7 +142,7 @@ def complete(measurements):
     rest = dict()
 
     rest["rho"] = measurements["np"] - measurements["nh"]
-    rest["N"]   = measurements["np"] + measurements["nh"]
-    rest["S3"]  = 0.5 * ( 1 - rest["N"])
+    rest["n"]   = measurements["np"] + measurements["nh"]
+    rest["S3"]  = 0.5 * ( 1 - rest["n"])
 
     return {**measurements, **rest}
