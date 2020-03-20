@@ -410,7 +410,7 @@ fields = (
     '++_--', '--_++',
 )
 
-class spinSpinCorrelator(Measurement):
+class SpinSpinCorrelator(Measurement):
     r"""!
     \ingroup meas
     Tabulate spin-spin correlators.
