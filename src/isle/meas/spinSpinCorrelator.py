@@ -404,11 +404,11 @@ from .measurement import Measurement
 from ..util import temporalRoller, signAlternator
 from ..h5io import createH5Group
 
-fields = [
+fields = (
     'Splus_Sminus', 'Sminus_Splus',
     'np_np', 'np_nh', 'nh_np', 'nh_nh',
     '++_--', '--_++',
-]
+)
 
 class measurement(Measurement):
     r"""!
@@ -605,39 +605,56 @@ class measurement(Measurement):
             subGroup[field] = self.data[field]
 
 
-def complete(measurements, correlators=["S1_S1", "S1_S2", "rho_rho", "rho_n", "n_rho", "n_n",
-                                        "S3_S3", "S3_S0", "S0_S3", "S0_S0"
-                                        ]):
+def complete(measurements):
+    r"""!
+    \param measurements a dictionary of measurements that has measurements of `"Splus_Sminus"`,
+    `"Sminus_Splus"`, `"np_np"`, `"np_nh"`, `"nh_np"`, and `"nh_nh"` (and other fields are allowed).
+    If one-point measurements from onePointFunctions.py `"np"` and `"nh"` are included,
+    additional identities will be leveraged to construct more two-point functions.
 
-    requiresOnePoint = ["S3_S3", "S3_S0", "S0_S3", "S0_S0"]
+    Uses the identities above to reframe data in terms of different operators.
+
+    You can sensibly do this on vectors of bootstrapped averages, since everything is linear.
+
+    \returns the passed dictionary of measurements, with additional reconstructed correlators
+    `"S1_S1"`, `"S1_S2"`, `"rho_rho"`, `"rho_n"`, `"n_rho"`, `n_n`.  If `"np"` and `"nh"` are available,
+    also constructed are `"S0_S0"`, `"S0_S3"`, `"S3_S0"`, and `"S3_S3"`.
+    """
 
     rest = dict()
 
-    if "S1_S1" in correlators:
-        rest["S1_S1"]   = 0.25 *(measurements["Splus_Sminus"] + measurements["Sminus_Splus"])
-    if "S1_S2" in correlators:
-        rest["S1_S2"]   = 0.25j*(measurements["Splus_Sminus"] - measurements["Sminus_Splus"])
-    if "rho_rho" in correlators:
-        rest["rho_rho"] = measurements["np_np"] + measurements["nh_nh"] - measurements["np_nh"] - measurements["nh_np"]
-    if "rho_n" in correlators:
-        rest["rho_n"]   = measurements["np_np"] - measurements["nh_nh"] + measurements["np_nh"] - measurements["nh_np"]
-    if "n_rho" in correlators:
-        rest["n_rho"]   = measurements["np_np"] - measurements["nh_nh"] - measurements["np_nh"] + measurements["nh_np"]
-    if "n_n" in correlators:
-        rest["n_n"]     = measurements["np_np"] + measurements["nh_nh"] + measurements["np_nh"] + measurements["nh_np"]
+    # These are easy to think about, if one is measured they are all measured.
+    rest["S1_S1"]   = 0.25 *(measurements["Splus_Sminus"] + measurements["Sminus_Splus"])
+    rest["S1_S2"]   = 0.25j*(measurements["Splus_Sminus"] - measurements["Sminus_Splus"])
+    rest["rho_rho"] = measurements["np_np"] + measurements["nh_nh"] - measurements["np_nh"] - measurements["nh_np"]
+    rest["rho_n"]   = measurements["np_np"] - measurements["nh_nh"] + measurements["np_nh"] - measurements["nh_np"]
+    rest["n_rho"]   = measurements["np_np"] - measurements["nh_nh"] - measurements["np_nh"] + measurements["nh_np"]
+    rest["n_n"]     = measurements["np_np"] + measurements["nh_nh"] + measurements["np_nh"] + measurements["nh_np"]
 
     log = getLogger(__name__)
 
     if "np" in measurements and "nh" in measurements:
         log.info("Constructing bilinears that require one-point measurements.")
-        if "S3_S3" in correlators:
-            ...
-        if "S3_S0" in correlators:
-            ...
-        if "S0_S3" in correlators:
-            ...
-        if "S0_S0" in correlators:
-            ...
+
+        # TODO: These are hard to think about generally, if they're not measured with equal frequency.
+        # NB:   This contains the assumption that they're measured at *the same* frequency
+        nm = measurements["np"].shape[0]    # number of measurements
+        nx = measurements["np"].shape[-1]
+        nt = measurements["Splus_Sminus"].shape[-1]
+
+        one = np.ones((nm,nx,nx,nt))
+        constant = np.ones((nx,nt))
+
+        npx = np.einsum('ax,yt->axyt', measurements["np"], constant, optimize="optimal")
+        nhx = np.einsum('ax,yt->axyt', measurements["nh"], constant, optimize="optimal")
+        npy = np.einsum('ay,xt->axyt', measurements["np"], constant, optimize="optimal")
+        nhy = np.einsum('ay,xt->axyt', measurements["nh"], constant, optimize="optimal")
+
+        rest["S0_S0"] = 0.25*(rest["rho_rho"] + one - npx - npy + nhx + nhy)
+        rest["S0_S3"] = 0.25*(rest["rho_n"]   + one - npx - npy + nhx - nhy)
+        rest["S3_S0"] = 0.25*(rest["n_rho"]   + one - npx - npy - nhx + nhy)
+        rest["S3_S3"] = 0.25*(rest["n_n"]     + one - npx - npy - nhx - nhy)
+
     else:
         log.info("One-point measurements are needed to construct S3_S3, S3_S0, S0_S3, S0_S0 bilinears.")
 
