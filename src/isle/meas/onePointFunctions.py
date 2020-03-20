@@ -50,7 +50,7 @@ fields = ["np", "nh"]
 
 #TODO: save / retrieve einsum paths.
 
-class measurement(Measurement):
+class onePointFunctions(Measurement):
     r"""!
     \ingroup meas
     Tabulate one-point correlators.
@@ -121,7 +121,7 @@ class measurement(Measurement):
         for field in self.data:
             subGroup[field] = self.data[field]
 
-def useIdentities(measurements):
+def computeDerivedCorrelators(measurements):
     r"""!
     \param measurements a dictionary of measurements that has measurements of `"np"` and `"nh"`
 

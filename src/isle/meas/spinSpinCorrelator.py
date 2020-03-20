@@ -410,7 +410,7 @@ fields = (
     '++_--', '--_++',
 )
 
-class measurement(Measurement):
+class spinSpinCorrelator(Measurement):
     r"""!
     \ingroup meas
     Tabulate spin-spin correlators.
@@ -605,7 +605,7 @@ class measurement(Measurement):
             subGroup[field] = self.data[field]
 
 
-def useIdentities(measurements):
+def computeDerivedCorrelators(measurements):
     r"""!
     \param measurements a dictionary of measurements that has measurements of `"Splus_Sminus"`,
     `"Sminus_Splus"`, `"np_np"`, `"np_nh"`, `"nh_np"`, and `"nh_nh"` (and other fields are allowed).
