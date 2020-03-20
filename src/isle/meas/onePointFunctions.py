@@ -121,7 +121,7 @@ class measurement(Measurement):
         for field in self.data:
             subGroup[field] = self.data[field]
 
-def complete(measurements):
+def useIdentities(measurements):
     r"""!
     \param measurements a dictionary of measurements that has measurements of `"np"` and `"nh"`
 

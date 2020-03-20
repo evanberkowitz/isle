@@ -605,7 +605,7 @@ class measurement(Measurement):
             subGroup[field] = self.data[field]
 
 
-def complete(measurements):
+def useIdentities(measurements):
     r"""!
     \param measurements a dictionary of measurements that has measurements of `"Splus_Sminus"`,
     `"Sminus_Splus"`, `"np_np"`, `"np_nh"`, `"nh_np"`, and `"nh_nh"` (and other fields are allowed).
