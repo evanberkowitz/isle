@@ -58,7 +58,7 @@ class OnePointFunctions(Measurement):
     def __init__(self, particleAllToAll, holeAllToAll, savePath, configSlice=(None, None, None), transform=None):
         r"""!
         \param particleAllToAll propagator.AllToAll for particles.
-        \param holesAllToAll propagator.AllToAll for holes.
+        \param holeAllToAll propagator.AllToAll for holes.
         \param savePath Path in the output file where results are saved.
         \param configSlice `slice` indicating which configurations to measure on.
         \param transform Transformation matrix applied to correlators in position space.
