@@ -141,7 +141,7 @@ class OnePointFunctions(Measurement):
 
         ```python
            # meas is an instance of OnePointFunctions
-            derived = isle.meas.onePointFunctions.computeDerivedCorrelators(
+            derived = isle.meas.OnePointFunctions.computeDerivedCorrelators(
                 {name: np.asarray(corr) for name, corr in meas.correlators.items()})
         ```
 
