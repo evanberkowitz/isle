@@ -50,7 +50,7 @@ def main():
     species =   (isle.Species.PARTICLE, isle.Species.HOLE)
     allToAll = {s: isle.meas.propagator.AllToAll(hfm, s) for s in species}
 
-    _, projector = np.linalg.eigh(isle.Matrix(hfm.kappaTilde()))
+    _, diagonalize = np.linalg.eigh(isle.Matrix(hfm.kappaTilde()))
 
     #
     # The measurements are run on each configuration in the slice passed to 'configSlice'.
@@ -82,17 +82,17 @@ def main():
         isle.meas.SingleParticleCorrelator(allToAll[isle.Species.PARTICLE],
                                            "correlation_functions/single_particle",
                                            configSlice=s_[::10],
-                                           projector=projector),
+                                           transform=diagonalize),
         # single particle correlator for holes / spin down
         isle.meas.SingleParticleCorrelator(allToAll[isle.Species.HOLE],
                                            "correlation_functions/single_hole",
                                            configSlice=s_[::10],
-                                           projector=projector),
+                                           transform=diagonalize),
         isle.meas.SpinSpinCorrelator(allToAll[isle.Species.PARTICLE],
                                      allToAll[isle.Species.HOLE],
                                      "correlation_functions/spin_spin",
                                      configSlice=s_[::10],
-                                     transform=projector,
+                                     transform=diagonalize,
                                      sigmaKappa=params.sigmaKappa),
         isle.meas.DeterminantCorrelators(allToAll[isle.Species.PARTICLE],
                                          allToAll[isle.Species.HOLE],
