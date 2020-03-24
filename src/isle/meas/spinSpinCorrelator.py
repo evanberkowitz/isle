@@ -615,9 +615,14 @@ class SpinSpinCorrelator(Measurement):
         \param h5group Base HDF5 group. Data is stored in subgroup `h5group/self.savePath`.
         """
         subGroup = createH5Group(h5group, self.savePath)
-        subGroup["transform"] = self.transform
+        
         for name, correlator in self.correlators.items():
             subGroup[name] = correlator
+
+        if self.transform is None:
+            subGroup["transform"] = h5.Empty(dtype="complex")
+        else:
+            subGroup["transform"] = self.transform
 
     @classmethod
     def computeDerivedCorrelators(cls, measurements, correlators=None):
