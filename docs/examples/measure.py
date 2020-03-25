@@ -50,7 +50,7 @@ def main():
     species =   (isle.Species.PARTICLE, isle.Species.HOLE)
     allToAll = {s: isle.meas.propagator.AllToAll(hfm, s) for s in species}
 
-    _, projector = np.linalg.eigh(isle.Matrix(hfm.kappaTilde()))
+    _, diagonalize = np.linalg.eigh(isle.Matrix(hfm.kappaTilde()))
 
     #
     # The measurements are run on each configuration in the slice passed to 'configSlice'.
@@ -73,37 +73,38 @@ def main():
         # polyakov loop
         isle.meas.Polyakov(params.basis, lat.nt(), "polyakov", configSlice=s_[::10]),
         # one-point functions
-        isle.meas.onePointFunctions(allToAll[isle.Species.PARTICLE],
-                                            allToAll[isle.Species.HOLE],
-                                            "correlation_functions/one_point",
-                                            configSlice=s_[::10],
-                                            transform=None),
+        isle.meas.OnePointFunctions(allToAll[isle.Species.PARTICLE],
+                                    allToAll[isle.Species.HOLE],
+                                    "correlation_functions/one_point",
+                                    configSlice=s_[::10],
+                                    transform=None),
         # single particle correlator for particles / spin up
         isle.meas.SingleParticleCorrelator(allToAll[isle.Species.PARTICLE],
                                            "correlation_functions/single_particle",
                                            configSlice=s_[::10],
-                                           projector=projector),
+                                           transform=diagonalize),
         # single particle correlator for holes / spin down
         isle.meas.SingleParticleCorrelator(allToAll[isle.Species.HOLE],
                                            "correlation_functions/single_hole",
                                            configSlice=s_[::10],
-                                           projector=projector),
+                                           transform=diagonalize),
         isle.meas.SpinSpinCorrelator(allToAll[isle.Species.PARTICLE],
-                                            allToAll[isle.Species.HOLE],
-                                            "correlation_functions/spin_spin",
-                                            configSlice=s_[::10],
-                                            projector=projector,
-                                            sigmaKappa=params.sigmaKappa),
+                                     allToAll[isle.Species.HOLE],
+                                     "correlation_functions/spin_spin",
+                                     configSlice=s_[::10],
+                                     transform=diagonalize,
+                                     sigmaKappa=params.sigmaKappa),
         isle.meas.DeterminantCorrelators(allToAll[isle.Species.PARTICLE],
-                                            allToAll[isle.Species.HOLE],
-                                            "correlation_functions/det",
-                                            configSlice=s_[::10],
-                                            )
+                                         allToAll[isle.Species.HOLE],
+                                         "correlation_functions/det",
+                                         configSlice=s_[::10],
+        )
     ]
 
     # Run the measurements on all configurations in the input file.
     # This automatically saves all results to the output file when done.
     measState(measurements)
+
 
 if __name__ == "__main__":
     main()
