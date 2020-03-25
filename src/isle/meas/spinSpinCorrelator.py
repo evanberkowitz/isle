@@ -206,7 +206,7 @@ Similarly, knowing that the four-dagger and no-dagger terms vanish, it is easy t
 \f]
 because
 \f[
-    C^{12}_{xy}+C^{21}_{xy} = \frac{i}{2} \left(C^{+–}_{xy} – C^{–+}_{xy}\right).
+    C^{12}_{xy}-C^{21}_{xy} = \frac{i}{2} \left(C^{+–}_{xy} – C^{–+}_{xy}\right).
 \f]
 These mixed-spin correlators are not defined in Buividovich et al.
 
@@ -615,7 +615,7 @@ class SpinSpinCorrelator(Measurement):
         \param h5group Base HDF5 group. Data is stored in subgroup `h5group/self.savePath`.
         """
         subGroup = createH5Group(h5group, self.savePath)
-        
+
         for name, correlator in self.correlators.items():
             subGroup[name] = correlator
 
