@@ -397,6 +397,7 @@ Because we do not assume a bipartite graph, we implement Meng and Wessel's \f$S_
 from logging import getLogger
 
 import numpy as np
+import h5py as h5
 
 from .measurement import Measurement
 from ..util import temporalRoller, signAlternator
