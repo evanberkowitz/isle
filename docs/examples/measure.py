@@ -77,7 +77,7 @@ def main():
                                     allToAll[isle.Species.HOLE],
                                     "correlation_functions/one_point",
                                     configSlice=s_[::10],
-                                    transform=None),
+                                    transform=diagonalize),
         # single particle correlator for particles / spin up
         isle.meas.SingleParticleCorrelator(allToAll[isle.Species.PARTICLE],
                                            "correlation_functions/single_particle",
