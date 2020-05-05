@@ -35,7 +35,7 @@ The three spin operators obey the commutation relation
 \f[
     \left[ S_x^i, S_y^j \right] = i \delta_{xy} \epsilon^{ijk} S_x^k
 \f]
-which I have checked explicitly for \f$(i,j)=(1,2)\f$ by writing out the operators in all their glory and using the anticommutation properties of \f$a\f$ and \f$b\f$.
+which may be checked explicitly by writing out the operators in all their glory and using the anticommutation properties of \f$a\f$ and \f$b\f$.
 By a similar exercise one may show
 \f[
     \left[ S_x^0, S_y^j \right] = 0.
@@ -56,7 +56,7 @@ Single-particle and single-hole operators \f$\mathcal{O}\f$ with a definite elec
     [ \rho_x, \mathcal{O}_y ] = q \mathcal{O}_y \delta_{xy}.
 \f]
 Since \f$\rho = 1–2S^0\f$, we can check the commutator with \f$2S^0\f$.
-I have checked that this equation is satisfied when
+This equation is satisfied when
 \f$(\mathcal{O},q) = (a, –1)\f$,
 \f$(\mathcal{O},q) = (a^\dagger, +1)\f$,
 \f$(\mathcal{O},q) = (b, +1)\f$, and
