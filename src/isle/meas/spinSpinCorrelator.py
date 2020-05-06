@@ -481,8 +481,8 @@ class SpinSpinCorrelator(Measurement):
             # returns the identity matrix if sigmaKappa is -1, but then we'd be doing
             # 1-matrix-1 multiplication for no reason, and it's not cheap.
             Sigma = signAlternator(nx, self.sigmaKappa)
-            P = np.einsum('ax,xfyi,yb->afyb', Sigma, P, Sigma, optimize="optimal")
-            H = np.einsum('ax,xfyi,yb->afyb', Sigma, H, Sigma, optimize="optimal")
+            P = np.einsum('ax,xfyi,yb->afbi', Sigma, P, Sigma, optimize="optimal")
+            H = np.einsum('ax,xfyi,yb->afbi', Sigma, H, Sigma, optimize="optimal")
 
 
         d = np.eye(nx*nt).reshape(*P.shape) # A Kronecker delta
