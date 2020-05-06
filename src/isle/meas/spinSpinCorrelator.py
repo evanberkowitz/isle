@@ -502,7 +502,7 @@ class SpinSpinCorrelator(Measurement):
         #   xfyi,yixf->xfyi
         #   yixf,yixf->xfyi
         #
-        # Note that other orders are all ready covered
+        # Note that other orders are all already covered
         #   yixf,xfyi = xfyi,yixf
         #   yiyi,xfxf = xfxf,yiyi
         #
@@ -626,7 +626,7 @@ class SpinSpinCorrelator(Measurement):
             subGroup["transform"] = self.transform
 
     @classmethod
-    def computeDerivedCorrelators(cls, measurements, correlators=None):
+    def computeDerivedCorrelators(cls, measurements, commonTransform, correlators=None):
         r"""!
         \param measurements a dictionary of measurements that has measurements of `"Splus_Sminus"`,
         `"Sminus_Splus"`, `"np_np"`, `"np_nh"`, `"nh_np"`, and `"nh_nh"` (and other fields are allowed).
@@ -682,13 +682,19 @@ class SpinSpinCorrelator(Measurement):
             nx = measurements["np"].shape[1]        # space
             nt = measurements["np_np"].shape[-1]    # time
 
-            one = np.ones((nm,nx,nx,nt))
-            constant = np.ones((nx,nt))
+            # Kronecker deltas
+            dx = np.eye(nx)
+            dt = np.eye(nt)
 
-            npx = np.einsum('ax,yt->axyt', measurements["np"], constant, optimize="optimal")
-            nhx = np.einsum('ax,yt->axyt', measurements["nh"], constant, optimize="optimal")
-            npy = np.einsum('ay,xt->axyt', measurements["np"], constant, optimize="optimal")
-            nhy = np.einsum('ay,xt->axyt', measurements["nh"], constant, optimize="optimal")
+            U = commonTransform
+
+            # TODO: These need U <---> U.conj().T when the convention is harmonized as part of #30.
+            # TODO: think carefully about whether < n > also needs to swap .conj()s
+            one = np.einsum('ax,xx,tt,yy,yb->abt', U.conj().T, dx, dt, dx, U, optimize="optimal")
+            npx = np.einsum('ma,tt,yy,yb->mabt', measurements['np'],        dt, dx, U,          optimize="optimal")
+            npy = np.einsum('mb,tt,xx,ax->mabt', measurements['np'].conj(), dt, dx, U.conj().T, optimize="optimal")
+            nhx = np.einsum('ma,tt,yy,yb->mabt', measurements['nh'],        dt, dx, U,          optimize="optimal")
+            nhy = np.einsum('mb,tt,xx,ax->mabt', measurements['nh'].conj(), dt, dx, U.conj().T, optimize="optimal")
 
             if "S0_S0" in correlators:
                 derived["S0_S0"] = 0.25*(derived["rho_rho"] + one - npx - npy + nhx + nhy)
