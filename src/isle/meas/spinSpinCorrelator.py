@@ -629,11 +629,14 @@ class SpinSpinCorrelator(Measurement):
     def computeDerivedCorrelators(cls, measurements, commonTransform, correlators=None):
         r"""!
         \param measurements a dictionary of measurements that has measurements of `"Splus_Sminus"`,
-        `"Sminus_Splus"`, `"np_np"`, `"np_nh"`, `"nh_np"`, and `"nh_nh"` (and other fields are allowed).
-        \param correlators an iterable of correlators you wish to compute.  If `None`, the default, uses
-        all possible identities from the above bilinear correlators.
-        If one-point measurements from onePointFunctions.py `"np"` and `"nh"` are included,
-        additional identities will be leveraged to construct more two-point functions.
+                            `"Sminus_Splus"`, `"np_np"`, `"np_nh"`, `"nh_np"`, and `"nh_nh"`
+                            (and other fields are allowed).
+        \param commonTransform A spatial matrix used to transform *all* correlators passed in through `measurements`,
+                               i.e. the `transform` attribute of measurement objects.
+        \param correlators an iterable of correlators you wish to compute.
+                           If `None`, the default, uses all possible identities from the above bilinear correlators.
+                           If one-point measurements from onePointFunctions.py `"np"` and `"nh"` are included,
+                           additional identities will be leveraged to construct more two-point functions.
 
         Uses the identities above to reframe data in terms of different operators.
 
