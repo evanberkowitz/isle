@@ -129,9 +129,11 @@ class OnePointFunctions(Measurement):
             subGroup[name] = correlator
 
     @classmethod
-    def computeDerivedCorrelators(cls, measurements):
+    def computeDerivedCorrelators(cls, measurements, commonTransform):
         r"""!
         \param measurements a dictionary of measurements that has measurements of `"np"` and `"nh"`
+        \param commonTransform A spatial matrix used to transform *all* correlators passed in through `measurements`,
+                               i.e. the `transform` attribute of measurement objects.
 
         Measurements of one-point functions \f$\rho_x\f$, \f$n_x\f$,
         and \f$S^3_x\f$ are built from measurements of \f$n^p_x\f$ and \f$n^h_x\f$
@@ -142,16 +144,20 @@ class OnePointFunctions(Measurement):
         ```python
            # meas is an instance of OnePointFunctions
             derived = isle.meas.OnePointFunctions.computeDerivedCorrelators(
-                {name: np.asarray(corr) for name, corr in meas.correlators.items()})
+                {name: np.asarray(corr) for name, corr in meas.correlators.items()},
+                 meas.transform)
         ```
 
         \returns `dict` with additional one-point functions, built from those already computed.
         """
 
+        nx = next(iter(measurements.values())).shape[1]
+        U = commonTransform if commonTransform is not None else np.eye((nx, nx))
+
         derived = dict()
 
         derived["rho"] = measurements["np"] - measurements["nh"]
         derived["n"]   = measurements["np"] + measurements["nh"]
-        derived["S3"]  = 0.5 * (1 - derived["n"])
+        derived["S3"]  = 0.5 * (np.expand_dims(np.sum(U, axis=1), axis=0) - derived["n"])
 
         return derived
