@@ -686,7 +686,7 @@ class SpinSpinCorrelator(Measurement):
             dx = np.eye(nx)
             dt = np.eye(nt)
 
-            U = commonTransform
+            U = commonTransform if commonTransform is not None else np.eye((nx, nx))
 
             # TODO: These need U <---> U.conj().T when the convention is harmonized as part of #30.
             # TODO: think carefully about whether < n > also needs to swap .conj()s
