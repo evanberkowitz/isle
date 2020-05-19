@@ -1,3 +1,5 @@
+#!/usr/bin/env python3
+
 """!
 Example script to perform measurements on configurations.
 
@@ -14,6 +16,7 @@ import isle.drivers
 # Import built in measurements (not included in above).
 import isle.meas
 
+import numpy as np
 
 def main():
     # Initialize Isle.
@@ -44,6 +47,11 @@ def main():
         hfm = isle.HubbardFermiMatrixExp(kappaTilde, muTilde, params.sigmaKappa)
 
     # Define measurements to run.
+    species =   (isle.Species.PARTICLE, isle.Species.HOLE)
+    allToAll = {s: isle.meas.propagator.AllToAll(hfm, s) for s in species}
+
+    _, diagonalize = np.linalg.eigh(isle.Matrix(hfm.kappaTilde()))
+
     #
     # The measurements are run on each configuration in the slice passed to 'configSlice'.
     # It defaults to 'all configurations' in e.g. the Logdet measurement.
@@ -59,21 +67,44 @@ def main():
         isle.meas.Logdet(hfm, "logdet"),
         # \sum_i phi_i
         isle.meas.TotalPhi("field"),
-        # copy the action into the output file
-        isle.meas.Action("action"),
+        # collect all weights and store them in consolidated datasets instead of
+        # spread out over many HDF5 groups
+        isle.meas.CollectWeights("weights"),
+        # polyakov loop
+        isle.meas.Polyakov(params.basis, lat.nt(), "polyakov", configSlice=s_[::10]),
+        # one-point functions
+        isle.meas.OnePointFunctions(allToAll[isle.Species.PARTICLE],
+                                    allToAll[isle.Species.HOLE],
+                                    "correlation_functions/one_point",
+                                    configSlice=s_[::10],
+                                    transform=diagonalize),
         # single particle correlator for particles / spin up
-        isle.meas.SingleParticleCorrelator(hfm, isle.Species.PARTICLE,
+        isle.meas.SingleParticleCorrelator(allToAll[isle.Species.PARTICLE],
                                            "correlation_functions/single_particle",
-                                           configSlice=s_[::10]),
+                                           configSlice=s_[::10],
+                                           transform=diagonalize),
         # single particle correlator for holes / spin down
-        isle.meas.SingleParticleCorrelator(hfm, isle.Species.HOLE,
+        isle.meas.SingleParticleCorrelator(allToAll[isle.Species.HOLE],
                                            "correlation_functions/single_hole",
-                                           configSlice=s_[::10]),
+                                           configSlice=s_[::10],
+                                           transform=diagonalize),
+        isle.meas.SpinSpinCorrelator(allToAll[isle.Species.PARTICLE],
+                                     allToAll[isle.Species.HOLE],
+                                     "correlation_functions/spin_spin",
+                                     configSlice=s_[::10],
+                                     transform=diagonalize,
+                                     sigmaKappa=params.sigmaKappa),
+        isle.meas.DeterminantCorrelators(allToAll[isle.Species.PARTICLE],
+                                         allToAll[isle.Species.HOLE],
+                                         "correlation_functions/det",
+                                         configSlice=s_[::10],
+        )
     ]
 
     # Run the measurements on all configurations in the input file.
     # This automatically saves all results to the output file when done.
     measState(measurements)
+
 
 if __name__ == "__main__":
     main()

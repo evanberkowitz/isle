@@ -39,11 +39,11 @@ class Measurement(metaclass=ABCMeta):
         self.configSlice = configSlice
 
     @abstractmethod
-    def __call__(self, phi, actVal, itr):
+    def __call__(self, stage, itr):
         r"""!
         Execute the measurement.
-        \param phi Field configuration.
-        \param actVal Value of the action at field phi.
+        \param stage Instance of `isle.evolver.EvolutionStage` containing the
+                     configuration to measure on and associated data.
         \param itr Index of the current trajectory.
         """
 

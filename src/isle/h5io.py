@@ -4,6 +4,7 @@ Routines for working with HDF5.
 
 from logging import getLogger
 from pathlib import Path
+from itertools import chain
 
 import yaml
 import h5py as h5
@@ -12,6 +13,7 @@ import numpy as np
 from . import Vector, isleVersion, pythonVersion, blazeVersion, pybind11Version
 from .random import readStateH5
 from .collection import listToSlice, parseSlice, subslice, normalizeSlice
+
 
 def createH5Group(base, name):
     r"""!
@@ -29,6 +31,19 @@ def createH5Group(base, name):
                          +" name already exists in '{}/{}'").format(name, base.filename, base.name))
     # does not exists yet
     return base.create_group(name)
+
+def writeDict(h5group, dictionary):
+    """!
+    Write a `dict` into an HDF5 group by storing each dict element as a dataset.
+    """
+    for key, value in dictionary.items():
+        h5group[key] = value
+
+def loadDict(h5group):
+    """!
+    Load all datasets from an HDF5 group into a dictionary.
+    """
+    return {key: dset[()] for key, dset in h5group.items()}
 
 def writeMetadata(fname, lattice, params, makeActionSrc):
     """!
@@ -65,7 +80,7 @@ def readMetadata(fname):
             versions = {name: val[()] for name, val in metaGrp["version"].items()}
         except KeyError as exc:
             getLogger(__name__).error("Cannot read metadata from file %s: %s",
-                                              str(fname), str(exc))
+                                      str(fname), str(exc))
             raise
     return lattice, params, makeActionSrc, versions
 
@@ -82,7 +97,7 @@ def initializeNewFile(fname, overwrite, lattice, params, makeActionSrc, extraGro
             getLogger(__name__).info("Output file %s exists -- overwriting", fname)
         else:
             getLogger(__name__).error("Output file %s exists and not allowed to overwrite", fname)
-            raise RuntimeError("Ouput file exists")
+            raise RuntimeError("Output file exists")
 
     with h5.File(str(fname), "w-") as h5f:
         for group in extraGroups:
@@ -90,28 +105,21 @@ def initializeNewFile(fname, overwrite, lattice, params, makeActionSrc, extraGro
 
     writeMetadata(fname, lattice, params, makeActionSrc)
 
-def writeTrajectory(h5group, label, phi, actVal, trajPoint):
+def writeTrajectory(h5group, label, stage):
     r"""!
     Write a trajectory (endpoint) to a HDF5 group.
-    Creates a new group with name 'label' and stores
-    Configuration, action, and whenther the trajectory was accepted.
+    Creates a new group with name 'label' and stores the EvolutionStage.
 
     \param h5group Base HDF5 group to store trajectory in.
     \param label Name of the subgroup of `h5group` to write to.
                  The subgroup must not already exist.
-    \param phi Configuration to save.
-    \param actVal Value of the action at configuration `phi`.
-    \param trajPoint Point on the trajectory that was accepted.
-                     `trajPoint==0` is the start point and values `>0` or `<0` are
-                     `trajPoint` MD steps after or before the start point.
+    \param stage EvolutionStage to save.
 
     \returns The newly created HDF5 group containing the trajectory.
     """
 
     grp = h5group.create_group(str(label))
-    grp["phi"] = phi
-    grp["action"] = actVal
-    grp["trajPoint"] = trajPoint
+    stage.save(grp)
     return grp
 
 def writeCheckpoint(h5group, label, rng, trajGrpName, evolver, evolverManager):
@@ -148,14 +156,34 @@ def loadCheckpoint(h5group, label, evolverManager, action, lattice):
                           including its type.
     \param action Action to construct the evolver with.
     \param lattice Lattice to construct the evolver with.
-    \returns (RNG, configuration, evolver)
+    \returns (RNG, HDF5 group of configuration, evolver)
     """
 
     grp = h5group[str(label)]
     rng = readStateH5(grp["rngState"])
-    phi = Vector(grp["cfg/phi"][()])
+    cfgGrp = grp["cfg"]
     evolver = evolverManager.load(grp["evolver"], action, lattice, rng)
-    return rng, phi, evolver
+    return rng, cfgGrp, evolver
+
+def loadConfiguration(h5group, trajIdx=-1, path="configuration"):
+    r"""!
+    Load a configuration from HDF5.
+
+    \param h5group Base HDF5 group. Configurations must be located at `h5group[path]`.
+    \param trajIdx Trajectory index of the configuration to load.
+                   This is the number under which the configuration is stored, not a
+                   plain index into the array of all configurations.
+    \param path Path under `h5group` that contains configurations.
+
+    \returns (configuration, action value)
+    """
+
+    configs = loadList(h5group[path])
+    # get proper positive index
+    idx = configs[-1][0]+trajIdx+1 if trajIdx < 0 else trajIdx
+    # get the configuration group with the given index
+    cfgGrp = next(pair[1] for pair in loadList(h5group[path]) if pair[0] == idx)
+    return Vector(cfgGrp["phi"][()]), cfgGrp["actVal"][()]
 
 def loadList(h5group, convert=int):
     r"""!
@@ -189,23 +217,29 @@ def loadActionValuesFrom(h5obj, full=False, base="/"):
     \throws RuntimeError if neither `/action/action` nor `/configuration` exist in the file.
     """
 
-    h5f = h5obj.file[base]
+    grp = h5obj.file[base]
     action = None
 
-    if not full and "action" in h5f:
-        action = h5f["action/action"][()]
-        cRange = normalizeSlice(parseSlice(h5f["action"].attrs["configurations"],
+    if not full and "action" in grp:
+        action = grp["action/action"][()]
+        cRange = normalizeSlice(parseSlice(grp["action"].attrs["configurations"],
                                            minComponents=3),
                                 0, action.shape[0])
 
-    if action is None and "configuration" in h5f:
-        indices, groups = zip(*loadList(h5f["configuration"]))
-        action = np.array([grp["action"][()] for grp in groups])
+    if not full and "weights" in grp:
+        action = grp["weights/actVal"][()]
+        cRange = normalizeSlice(parseSlice(grp["weights"].attrs["configurations"],
+                                           minComponents=3),
+                                0, action.shape[0])
+
+    if action is None and "configuration" in grp:
+        indices, groups = zip(*loadList(grp["configuration"]))
+        action = np.array([grp["actVal"][()] for grp in groups])
         cRange = listToSlice(indices)
 
     if action is None:
         getLogger(__name__).error("Cannot load action, no configurations or "
-                                  "separate action found in file %s.", h5f.filename)
+                                  "separate action found in file %s.", grp.file.filename)
         raise RuntimeError("No action found in file")
 
     return action, cRange
@@ -271,3 +305,79 @@ def loadActionWeightsFor(dset, base="/"):
         subRange = subslice(actionRange, neededRange)
 
     return np.exp(-1j * np.imag(action[subRange]))
+
+def loadLogWeightsFrom(h5obj, full=False, base="/", weightsGroup="weights"):
+    r"""!
+    Load logarithmic weights from an HDF5 file given via an HDF5 object in that file.
+
+    Reads the weights from `{base}/{weights}` if it exists.
+    This group can be created using the measurement CollectWeights.
+    Otherwise, read weights from saved configurations.
+    If that is not possible either, raise `RuntimeError`.
+
+    \param h5obj An arbitrary HDF5 object in the file to read the weights from.
+    \param base Path in HDF5 file under which the data is stored.
+    \param full If True, always read from configurations group instead of collected weights.
+    \returns (weights, configRange) where
+             - weights: `dict` to numpy arrays of values of the weights.
+             - configRange: `slice` indicating the range of configurations
+                            the weights were loaded for.
+    \throws RuntimeError if neither weights nor configuration groups exist in the file.
+    """
+
+    baseGroup = h5obj.file[base]
+    log = getLogger(__name__)
+
+    if not full and weightsGroup in baseGroup:
+        # load content of weights group as it is without any fancy checks
+        wgrp = baseGroup[weightsGroup]
+        log.info("Loading weights from %s/%s", h5obj.filename, wgrp.name)
+        logWeights = loadDict(wgrp)
+        cRange = normalizeSlice(parseSlice(wgrp.attrs["configurations"],
+                                           minComponents=3),
+                                0, next(iter(logWeights.values())).shape[0])
+        return logWeights, cRange
+
+    if "configuration" in baseGroup:
+        log.info("Loading weights from %s/%s", h5obj.filename, baseGroup["configuration"].name)
+        indices, groups = zip(*loadList(baseGroup["configuration"]))
+
+        # prepare dict for all waights that are present (logWeights might not exist)
+        logWeights = {name: np.empty(len(indices), dtype=complex)
+                      for name in chain(("actVal",),
+                                        groups[0]["logWeights"] if "logWeights" in groups[0] else ())}
+        # load weights one trajectory at a time
+        for i, grp in enumerate(groups):
+            for name in logWeights.keys():
+                if name == "actVal":
+                    logWeights[name][i] = grp["actVal"][()]
+                else:
+                    logWeights[name][i] = grp["logWeights/"+name][()]
+
+        return logWeights, listToSlice(indices)
+
+    getLogger(__name__).error("Cannot load weights from file %s, no configurations or "
+                              "separate weights group found", baseGroup.file.filename)
+    raise RuntimeError("No action found in file")
+
+def loadLogWeights(fname, full=False, base="/"):
+    r"""!
+    Load logarithmic weights from an HDF5 file given via an HDF5 object in that file.
+
+    Reads the weights from `{base}/{weights}` if it exists.
+    This group can be created using the measurement CollectWeights.
+    Otherwise, read weights from saved configurations.
+    If that is not possible either, raise `RuntimeError`.
+
+    \param fname Name of the file to load action from.
+    \param base Path in HDF5 file under which the data is stored.
+    \param full If True, always read from configurations group instead of collected weights.
+    \returns (weights, configRange) where
+             - weights: `dict` to numpy arrays of values of the weights.
+             - configRange: `slice` indicating the range of configurations
+                            the weights were loaded for.
+    \throws RuntimeError if neither weights nor configuration groups exist in the file.
+    """
+
+    with h5.File(fname, "r") as h5f:
+        return loadLogWeightsFrom(h5f, full, base)

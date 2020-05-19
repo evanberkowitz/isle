@@ -31,6 +31,14 @@ namespace isle {
               _hoppingMat(nx, nx), _positions(nx),
               name(name_), comment(comment_) { }
 
+        Lattice(const Lattice &other) = default;
+        ~Lattice() noexcept = default;
+
+        // these don't work because some members are const
+        Lattice &operator=(const Lattice &other) = delete;
+        Lattice(Lattice &&other) = delete;
+        Lattice &operator=(Lattice &&other) = delete;
+
         /// Get the hopping strengths from a given site to all others.
         /**
          * \param site Index of a site (`site < nx()`).
@@ -192,9 +200,23 @@ namespace isle {
     }
 
     /// Return true if hopping matrix is bipartite, false otherwise.
+    /**
+     * A lattice is only considered bipartite in Isle if the graph defined by the
+     * hopping matrix is bipartite and the site labels alternate.
+     * That is, all even sites must be on one sublattice and all odd sites must
+     * be on the other sublattice.
+     * This function only returns `true` if both conditions are satisfied.
+     */
     bool isBipartite(const SparseMatrix<double> &hoppingMatrix);
 
     /// Return true if hopping matrix of lat is bipartite, false otherwise.
+    /**
+     * A lattice is only considered bipartite in Isle if the graph defined by the
+     * hopping matrix is bipartite and the site labels alternate.
+     * That is, all even sites must be on one sublattice and all odd sites must
+     * be on the other sublattice.
+     * This function only returns `true` if both conditions are satisfied.
+     */
     bool isBipartite(const Lattice &lat);
 
 }  // namespace isle

@@ -1,0 +1,5 @@
+numpy
+PyYAML
+h5py
+pybind11
+scipy

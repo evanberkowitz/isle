@@ -24,11 +24,24 @@ namespace isle {
         auto computeExponential(const DSparseMatrix &kappa,
                                 const double mu,
                                 const std::int8_t sigmaKappa,
-                                const Species species) {
-            if (species == Species::PARTICLE)
-                return expmSym(-kappa + mu*IdMatrix<double>(kappa.rows()));
-            else
-                return expmSym(-sigmaKappa*kappa - mu*IdMatrix<double>(kappa.rows()));
+                                const Species species,
+                                const bool inv) {
+            switch (species) {
+            case Species::PARTICLE:
+                if (inv) {
+                    return expmSym(-kappa + mu*IdMatrix<double>(kappa.rows()));
+                } else {
+                    return expmSym(kappa - mu*IdMatrix<double>(kappa.rows()));
+                }
+            case Species::HOLE:
+                if (inv) {
+                    return expmSym(-sigmaKappa*kappa - mu*IdMatrix<double>(kappa.rows()));
+                } else {
+                    return expmSym(sigmaKappa*kappa + mu*IdMatrix<double>(kappa.rows()));
+                }
+            }
+            // Strictly speaking impossible to reach but gcc complains.
+            throw std::invalid_argument("Unknown species");
         }
     }
 
@@ -40,8 +53,11 @@ namespace isle {
                                                  const double muTilde,
                                                  const std::int8_t sigmaKappa)
         : _kappa{kappaTilde}, _mu{muTilde}, _sigmaKappa{sigmaKappa},
-          _expKappap{computeExponential(kappaTilde, muTilde, sigmaKappa, Species::PARTICLE)},
-          _expKappah{computeExponential(kappaTilde, muTilde, sigmaKappa, Species::HOLE)}
+          _expKappap{computeExponential(kappaTilde, muTilde, sigmaKappa, Species::PARTICLE, false)},
+          _expKappapInv{computeExponential(kappaTilde, muTilde, sigmaKappa, Species::PARTICLE, true)},
+          _expKappah{computeExponential(kappaTilde, muTilde, sigmaKappa, Species::HOLE, false)},
+          _expKappahInv{computeExponential(kappaTilde, muTilde, sigmaKappa, Species::HOLE, true)},
+          _logdetExpKappahInv{logdet(_expKappahInv)}
     {
         if (kappaTilde.rows() != kappaTilde.columns())
             throw std::invalid_argument("Hopping matrix is not square.");
@@ -57,11 +73,31 @@ namespace isle {
                                                  const std::int8_t sigmaKappa)
         : HubbardFermiMatrixExp{lat.hopping()*beta/lat.nt(), muTilde, sigmaKappa} { }
 
-    const DMatrix &HubbardFermiMatrixExp::expKappa(const Species species) const {
-        if (species == Species::PARTICLE)
-            return _expKappap;
-        else
-            return _expKappah;
+    const DMatrix &HubbardFermiMatrixExp::expKappa(const Species species, const bool inv) const {
+        switch (species) {
+        case Species::PARTICLE:
+            if (inv) {
+                return _expKappapInv;
+            } else {
+                return _expKappap;
+            }
+        case Species::HOLE:
+            if (inv) {
+                return _expKappahInv;
+            } else {
+                return _expKappah;
+            }
+        }
+        // Strictly speaking impossible to reach but gcc complains.
+        throw std::invalid_argument("Unknown species");
+    }
+
+    std::complex<double> HubbardFermiMatrixExp::logdetExpKappa(const Species species,
+                                                               const bool inv) const {
+        if (species == Species::HOLE && inv) {
+            return _logdetExpKappahInv;
+        }
+        throw std::runtime_error("logdetExpKappa is only implemented for holes and inv=true");
     }
 
     void HubbardFermiMatrixExp::K(DSparseMatrix &k, const Species UNUSED(species)) const {
@@ -87,21 +123,21 @@ namespace isle {
         const std::size_t NT = getNt(phi, NX);
         const std::size_t tm1 = tp==0 ? NT-1 : tp-1;  // t' - 1
         resizeMatrix(f, NX);
-        f = 0;
 
-        // phi dependent part
-        if (species == Species::PARTICLE)
-            blaze::diagonal(f) = blaze::exp(1.i*spacevec(phi, tm1, NX));
+        // the sign in the exponential of phi
+        auto const sign = ((species == Species::PARTICLE && !inv)
+                           || (species == Species::HOLE && inv))
+            ? +1.0i
+            : -1.0i;
+
+        if (inv)
+            // f = e^phi * e^kappa  (up to signs in exponents)
+            f = expand(exp(sign*spacevec(phi, tm1, NX)), NX)
+                % expKappa(species, inv);
         else
-            blaze::diagonal(f) = blaze::exp(-1.i*spacevec(phi, tm1, NX));
-
-        // kappa, mu dependent part
-        f = expKappa(species) * f;
-
-        if (inv) {
-            auto ipiv = std::make_unique<int[]>(NX);
-            invert(f, ipiv);
-        }
+            // f = e^kappa * e^phi  (up to signs in exponents)
+            f = expKappa(species, inv)
+                % expand(trans(exp(sign*spacevec(phi, tm1, NX))), NX);
     }
 
     CDMatrix HubbardFermiMatrixExp::F(const std::size_t tp, const CDVector &phi,
@@ -145,7 +181,8 @@ namespace isle {
         if (_sigmaKappa == -1)  // the exponentials are ivnerses of each other
             return 2*IdMatrix<double>(nx());
         else
-            return IdMatrix<double>(nx()) + expKappa(Species::PARTICLE)*expKappa(Species::HOLE);
+            return IdMatrix<double>(nx()) \
+                + expKappa(Species::PARTICLE, false)*expKappa(Species::HOLE, false);
     }
 
     void HubbardFermiMatrixExp::Tplus(CDMatrix &T,
@@ -204,14 +241,18 @@ namespace isle {
 
     void HubbardFermiMatrixExp::updateKappaTilde(const SparseMatrix<double> &kappaTilde) {
         _kappa = kappaTilde;
-        _expKappap = computeExponential(kappaTilde, _mu, _sigmaKappa, Species::PARTICLE);
-        _expKappah = computeExponential(kappaTilde, _mu, _sigmaKappa, Species::HOLE);
+        _expKappap = computeExponential(kappaTilde, _mu, _sigmaKappa, Species::PARTICLE, false);
+        _expKappapInv = computeExponential(kappaTilde, _mu, _sigmaKappa, Species::PARTICLE, true);
+        _expKappah = computeExponential(kappaTilde, _mu, _sigmaKappa, Species::HOLE, false);
+        _expKappahInv = computeExponential(kappaTilde, _mu, _sigmaKappa, Species::HOLE, true);
     }
 
     void HubbardFermiMatrixExp::updateMuTilde(const double muTilde) {
         _mu = muTilde;
-        _expKappap = computeExponential(_kappa, _mu, _sigmaKappa, Species::PARTICLE);
-        _expKappah = computeExponential(_kappa, _mu, _sigmaKappa, Species::HOLE);
+        _expKappap = computeExponential(_kappa, _mu, _sigmaKappa, Species::PARTICLE, false);
+        _expKappap = computeExponential(_kappa, _mu, _sigmaKappa, Species::PARTICLE, true);
+        _expKappah = computeExponential(_kappa, _mu, _sigmaKappa, Species::HOLE, false);
+        _expKappah = computeExponential(_kappa, _mu, _sigmaKappa, Species::HOLE, true);
     }
 
     const SparseMatrix<double> &HubbardFermiMatrixExp::kappaTilde() const noexcept {
@@ -528,82 +569,132 @@ namespace isle {
         return toFirstLogBranch(ldet);
     }
 
+    namespace {
+        // Use version log(det(1+hat{A})).
+        std::complex<double> logdetM_p(const HubbardFermiMatrixExp &hfm,
+                                       const CDVector &phi) {
+            const auto NX = hfm.nx();
+            const auto NT = getNt(phi, NX);
+            const auto species = Species::PARTICLE;
+
+            // first factor F
+            CDMatrix f;
+            CDMatrix B = hfm.F(0, phi, species, false);
+            // other factors
+            for (std::size_t t = 1; t < NT; ++t) {
+                hfm.F(f, t, phi, species, false);
+                B = f*B;
+            }
+
+            B += IdMatrix<std::complex<double>>(NX);
+            return toFirstLogBranch(ilogdet(B));
+        }
+
+        // Use version -i Phi - N_t log(det(e^{-sigmaKappa*kappa-mu})) + log(det(1+hat{A}^{-1})).
+        std::complex<double> logdetM_h(const HubbardFermiMatrixExp &hfm,
+                                       const CDVector &phi) {
+            const auto NX = hfm.nx();
+            const auto NT = getNt(phi, NX);
+
+            // build product of F^{-1}
+            auto f = hfm.F(0, phi, Species::HOLE, true);
+            CDMatrix aux = f;  // the matrix under the determinant
+            for (std::size_t t = 1; t < NT; ++t) {
+                hfm.F(f, t, phi, Species::HOLE, true);
+                aux = aux*f;
+            }
+            aux += IdMatrix<std::complex<double>>(NX);
+
+            // add Phi and return
+            return toFirstLogBranch(-static_cast<double>(NT)*hfm.logdetExpKappa(Species::HOLE, true)
+                                    - 1.0i*blaze::sum(phi)
+                                    + ilogdet(aux));
+        }
+    }
 
     std::complex<double> logdetM(const HubbardFermiMatrixExp &hfm,
                                  const CDVector &phi, const Species species) {
         if (hfm.muTilde() != 0)
             throw std::runtime_error("Called logdetM with mu != 0. This is not supported yet because the algorithm is unstable.");
 
-        const auto NX = hfm.nx();
-        const auto NT = getNt(phi, NX);
-
-        // first factor F
-        CDMatrix f;
-        CDMatrix B = hfm.F(0, phi, species, false);
-        // other factors
-        for (std::size_t t = 1; t < NT; ++t) {
-            hfm.F(f, t, phi, species, false);
-            B = f*B;
+        switch (species) {
+        case Species::PARTICLE:
+            return logdetM_p(hfm, phi);
+        case Species::HOLE:
+            return logdetM_h(hfm, phi);
         }
-
-        B += IdMatrix<std::complex<double>>(NX);
-        return toFirstLogBranch(logdet(B));
+        // Strictly speaking impossible to reach but gcc complains.
+        throw std::invalid_argument("Unknown species");
     }
 
-    std::vector<CDVector> solveM(const HubbardFermiMatrixExp &hfm,
-                                 const CDVector &phi,
-                                 const Species species,
-                                 const std::vector<CDVector> &rhs) {
+    namespace {
+#ifndef NDEBUG
+        void verifyResultOfSolveM(const HubbardFermiMatrixExp &hfm,
+                                  const CDVector &phi,
+                                  const Species species,
+                                  const CDMatrix &res,
+                                  const CDMatrix &rhss) {
+            const double diff = blaze::max(blaze::abs(hfm.M(phi, species) * blaze::trans(res)
+                                                      - blaze::trans(rhss)));
+            if (diff > 1e-8) {
+                std::ostringstream oss;
+                oss << "Check of result of solveM exceeds tolerance: " << diff << '\n';
+                getLogger("HubbardFermiMatrixExp").warning(oss.str());
+            }
+        }
+#endif
+    }
+
+    CDMatrix solveM(const HubbardFermiMatrixExp &hfm, const CDVector &phi,
+                    const Species species, const CDMatrix &rhss) {
         if (hfm.muTilde() != 0)
             throw std::runtime_error("Exponential hopping is not supported for mu != 0");
 
         const std::size_t NX = hfm.nx();
         const std::size_t NT = getNt(phi, NX);
-        std::vector<CDVector> res(rhs.size());  // the results
+        const std::size_t NRHS = rhss.rows();
+        // the results (vectors x in the end, z at intermediate stage)
+        CDMatrix res(rhss.rows(), rhss.columns());
 
-        // solve Ly = rhs
-        CDMatrix f;
-
-        // TODO causes nested parallel statement error
-        // BLAZE_SERIAL_SECTION {  // we don't want the puny intra vector parallelization
-// #pragma omp parallel for private(f)
-            for (std::size_t i = 0; i < rhs.size(); ++i) {
-                res[i].resize(NX*NT);
-                spacevec(res[i], 0, NX) = blaze::serial(spacevec(rhs[i], 0, NX));  // t=0
-                for (std::size_t t = 1; t < NT; ++t) {  // other t's
-                    hfm.F(f, t, phi, species, false);
-                    spacevec(res[i], t, NX) = blaze::serial(spacevec(rhs[i], t, NX)
-                                                            + f*spacevec(res[i], t-1, NX));
-                }
-            }
-        // }
-        // now res = y
-
-        // partial products of B
-        std::vector<CDMatrix> partialB;
-        partialB.reserve(NT-1);  // not storing the full B
-        partialB.emplace_back(hfm.F(0, phi, species, false));
-        for (std::size_t t = 1; t < NT-1; ++t) {
-            hfm.F(f, t, phi, species, false);
-            partialB.emplace_back(f * partialB.back());
+        // construct all partial A^{-1} and the complete one
+        std::vector<CDMatrix> partialAinv;
+        partialAinv.reserve(NT);
+        partialAinv.emplace_back(hfm.F(0, phi, species, true));
+        for (std::size_t t = 1; t < NT; ++t) {
+            partialAinv.emplace_back(partialAinv[t-1]*hfm.F(t, phi, species, true));
         }
 
-        // invmat = (1+B)^-1
-        hfm.F(f, NT-1, phi, species, false);
-        CDMatrix invmat = IdMatrix<std::complex<double>>(NX) + f*partialB.back();
-        auto ipiv = std::make_unique<int[]>(invmat.rows());
-        invert(invmat, ipiv);
+        // calculate all z's and store in res
+        blaze::submatrix(res, 0, 0, NRHS, NX) = blaze::submatrix(rhss, 0, 0, NRHS, NX) * blaze::trans(partialAinv[0]);
+        for (std::size_t t = 1; t < NT; ++t) {
+            blaze::submatrix(res, 0, t*NX, NRHS, NX) = blaze::submatrix(rhss, 0, t*NX, NRHS, NX) * blaze::trans(partialAinv[t])
+                + blaze::submatrix(res, 0, (t-1)*NX, NRHS, NX);
+        }
+        // now res = z
 
-        // solve Ux = y inplace (in res)
-        // BLAZE_SERIAL_SECTION {
-// #pragma omp parallel for
-            for (std::size_t i = 0; i < rhs.size(); ++i) {
-                spacevec(res[i], NT-1, NX) = invmat*spacevec(res[i], NT-1, NX);  // t = nt-1
-                for (std::size_t t = 0; t < NT-1; ++t) {  // other t's
-                    spacevec(res[i], t, NX) -= partialB[t]*spacevec(res[i], NT-1, NX);
-                }
-            }
-        // }
+        // LU-decompose all partial A^{-1} in place
+        std::vector<int> ipiv(NX*NT);  // all pivots for all matrices in time-major order
+        for (std::size_t t = 0; t < NT-1; ++t) {
+            blaze::getrf(partialAinv[t], &ipiv[t*NX]);
+        }
+        // NT-1 is special
+        partialAinv[NT-1] += IdMatrix<std::complex<double>>(NX);
+        blaze::getrf(partialAinv[NT-1], &ipiv[(NT-1)*NX]);
+
+        // solve for x
+        CDMatrix matLast = blaze::submatrix(res, 0, (NT-1)*NX, NRHS, NX);
+        // transpose because LAPACK wants column-major layout
+        blaze::getrs(partialAinv[NT-1], matLast, 'T', &ipiv[(NT-1)*NX]);
+        blaze::submatrix(res, 0, (NT-1)*NX, NRHS, NX) = matLast;
+        for (std::size_t t = 0; t < NT-1; ++t) {
+            CDMatrix mat = blaze::submatrix(res, 0, t*NX, NRHS, NX) - matLast;
+            blaze::getrs(partialAinv[t], mat, 'T', &ipiv[t*NX]);
+            blaze::submatrix(res, 0, t*NX, NRHS, NX) = mat;
+        }
+
+#ifndef NDEBUG
+        verifyResultOfSolveM(hfm, phi, species, res, rhss);
+#endif  // ndef NDEBUG
 
         return res;
     }

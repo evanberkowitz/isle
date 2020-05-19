@@ -3,16 +3,7 @@ Some general utilities.
 """
 
 from logging import getLogger
-
-try:
-    # use dataclasses if available (Python3.7 or later)
-    from dataclasses import make_dataclass, field, asdict
-    _HAVE_DATACLASSES = True
-except ImportError:
-    # construct poor man's workaround
-    _HAVE_DATACLASSES = False
-    getLogger(__name__).info("Could not import dataclasses, using a workaround "
-                             "for storing parameters")
+import dataclasses
 
 import yaml
 import numpy as np
@@ -122,7 +113,7 @@ def binnedArray(data, binsize):
 
 def _makeParametersClass(fields):
     r"""!
-    Construct a new class for parameters. Uses either a dataclass or custom workaround.
+    Construct a new dataclass for parameters.
     """
     def _tilde(self, value, nt, beta=None):
         if beta is None:
@@ -140,32 +131,13 @@ def _makeParametersClass(fields):
 
         return value*beta/nt
 
-    if _HAVE_DATACLASSES:
-        # use nifty built in dataclass
-        return make_dataclass("Parameters",
-                              ((key, type(value), field(default=value))
-                               for key, value in fields.items()),
-                              namespace={"asdict": asdict,
-                                         "tilde": _tilde},
-                              frozen=True)
-
-    # Use a workaround that lacks almost all of dataclasses features.
-    # Just stores a bunch of variables in a class.
-    class Parameters:
-        # store a list of all field names for asdict
-        _FIELDS = list(fields.keys())
-
-        def asdict(self):
-            return {key: getattr(self, key) for key in self._FIELDS}
-
-    # store all fields in class
-    for key, value in fields.items():
-        setattr(Parameters, key, value)
-
-    # add tilde method
-    setattr(Parameters, "tilde", _tilde)
-
-    return Parameters
+    return dataclasses.make_dataclass("Parameters",
+                                      ((key, type(value), dataclasses.field(default=value))
+                                       for key, value in fields.items()),
+                                      namespace={"asdict": dataclasses.asdict,
+                                                 "tilde": _tilde,
+                                                 "replace": dataclasses.replace},
+                                      frozen=True)
 
 def parameters(**kwargs):
     r"""!
@@ -187,6 +159,9 @@ def parameters(**kwargs):
             - `nt`: Number of time slices or isle.Lattice.
             - `beta`: Inverse temperature. Read from dataclass attribute 'beta'
                       if argument set to `None` (default).
+    - <B>replace</B>(**kwargs):
+           Works like `dataclasses.replace` but is provided as an instance member
+           for compatibility with the pre Python3.7 workaround.
 
     The new classes are automatically registered with YAML so they can
     be dumped. A loader is registered if yamlio is imported.
@@ -231,3 +206,36 @@ def rollTemporally(timeVector, time, fermionic=True):
             nt = len(timeVector)
             result[nt+time:] *= -1
     return result
+
+def temporalRoller(nt, dt, fermionic=True):
+    r"""!
+    A matrix that, when applied to a temporal vector of length nt, rotates by t.
+    \param nt The number of time slices.
+    \param dt How many time slices to rotate by.
+    \param fermionic If true, use antiperiodic boundary conditions.
+    \returns An `nt * nt` matrix `R`, such that `R@(v[t]) = v[t+dt]` with correct boundary conditions.
+    """
+    shift = dt % nt
+    result = np.ones(nt)
+    if fermionic:
+        completeOrbits = dt // nt # integer division does the right thing, even if dt is negative.
+        if 1 == completeOrbits % 2:
+            result *= -1
+        result[nt-shift:]*=-1
+    return np.roll(np.diag(result), shift, axis=0)
+
+def signAlternator(nx, sigmaKappa=-1):
+    """
+    Return a unit matrix of size `nx` by `nx` if `sigmaKappa==+1`.
+    If `sigmaKappa==-1`, return a diagonal matrix with +1 in even rows
+    and -1 on odd rows.
+
+    This matrix corresponds to (-sigmaKappa)^x iff the lattice is bipartite and partition
+    A has even indices, and B odd indices.
+    """
+
+    if sigmaKappa == -1:
+        return np.eye(nx)
+    if sigmaKappa == +1:
+        return np.diag([+1 if np.mod(x, 2) == 0 else -1 for x in range(nx)])
+    raise ValueError(f"sigmaKappa must be +1 or -1; is {sigmaKappa}")

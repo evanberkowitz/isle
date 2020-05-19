@@ -103,8 +103,8 @@ namespace bind {
             using HFA = HubbardFermiAction<HOPPING, VARIANT, BASIS>;
 
             py::class_<HFA>(mod, name, action)
-                .def(py::init<SparseMatrix<double>, double, std::int8_t>(),
-                     "kappa"_a, "mu"_a, "sigmaKappa"_a)
+                .def(py::init<SparseMatrix<double>, double, std::int8_t, bool>(),
+                     "kappa"_a, "mu"_a, "sigmaKappa"_a, "allowShortcut"_a)
                 .def("eval", &HFA::eval)
                 .def("force", &HFA::force)
                 ;
@@ -116,28 +116,29 @@ namespace bind {
                                           const std::int8_t sigmaKappa,
                                           const HFAHopping hopping,
                                           const HFABasis basis,
-                                          const HFAVariant variant) {
+                                          const HFAVariant variant,
+                                          const bool allowShortcut) {
 
             if (basis == HFABasis::PARTICLE_HOLE) {
                 if (hopping == HFAHopping::DIA) {
                     if (variant == HFAVariant::ONE) {
                         return py::cast(HubbardFermiAction<HFAHopping::DIA,
                                         HFAVariant::ONE,
-                                        HFABasis::PARTICLE_HOLE>(kappaTilde, muTilde, sigmaKappa));
+                                        HFABasis::PARTICLE_HOLE>(kappaTilde, muTilde, sigmaKappa, allowShortcut));
                     } else {  // HFAVariant::TWO
                         return py::cast(HubbardFermiAction<HFAHopping::DIA,
                                         HFAVariant::TWO,
-                                        HFABasis::PARTICLE_HOLE>(kappaTilde, muTilde, sigmaKappa));
+                                        HFABasis::PARTICLE_HOLE>(kappaTilde, muTilde, sigmaKappa, allowShortcut));
                     }
                 } else {  // HFAHopping::EXP
                     if (variant == HFAVariant::ONE) {
                         return py::cast(HubbardFermiAction<HFAHopping::EXP,
                                         HFAVariant::ONE,
-                                        HFABasis::PARTICLE_HOLE>(kappaTilde, muTilde, sigmaKappa));
+                                        HFABasis::PARTICLE_HOLE>(kappaTilde, muTilde, sigmaKappa, allowShortcut));
                     } else {  // HFAVariant::TWO
                         return py::cast(HubbardFermiAction<HFAHopping::EXP,
                                         HFAVariant::TWO,
-                                        HFABasis::PARTICLE_HOLE>(kappaTilde, muTilde, sigmaKappa));
+                                        HFABasis::PARTICLE_HOLE>(kappaTilde, muTilde, sigmaKappa, allowShortcut));
                     }
                 }
             }
@@ -147,21 +148,21 @@ namespace bind {
                     if (variant == HFAVariant::ONE) {
                         return py::cast(HubbardFermiAction<HFAHopping::DIA,
                                         HFAVariant::ONE,
-                                        HFABasis::SPIN>(kappaTilde, muTilde, sigmaKappa));
+                                        HFABasis::SPIN>(kappaTilde, muTilde, sigmaKappa, allowShortcut));
                     } else {  // HFAVariant::TWO
                         return py::cast(HubbardFermiAction<HFAHopping::DIA,
                                         HFAVariant::TWO,
-                                        HFABasis::SPIN>(kappaTilde, muTilde, sigmaKappa));
+                                        HFABasis::SPIN>(kappaTilde, muTilde, sigmaKappa, allowShortcut));
                     }
                 } else {  // HFAHopping::EXP
                     if (variant == HFAVariant::ONE) {
                         return py::cast(HubbardFermiAction<HFAHopping::EXP,
                                         HFAVariant::ONE,
-                                        HFABasis::SPIN>(kappaTilde, muTilde, sigmaKappa));
+                                        HFABasis::SPIN>(kappaTilde, muTilde, sigmaKappa, allowShortcut));
                     } else {  // HFAVariant::TWO
                         return py::cast(HubbardFermiAction<HFAHopping::EXP,
                                         HFAVariant::TWO,
-                                        HFABasis::SPIN>(kappaTilde, muTilde, sigmaKappa));
+                                        HFABasis::SPIN>(kappaTilde, muTilde, sigmaKappa, allowShortcut));
                     }
                 }
             }
@@ -199,23 +200,25 @@ namespace bind {
                     "kappaTilde"_a, "muTilde"_a, "sigmaKappa"_a,
                     "hopping"_a=HFAHopping::DIA,
                     "basis"_a=HFABasis::PARTICLE_HOLE,
-                    "variant"_a= HFAVariant::ONE);
+                    "variant"_a= HFAVariant::ONE,
+                    "allowShortcut"_a=false);
 
             mod.def("makeHubbardFermiAction",
                     [] (const Lattice &lattice, const double beta,
                         const double muTilde, const std::int8_t sigmaKappa,
                         const HFAHopping hopping, const HFABasis basis,
-                        const HFAVariant variant) {
+                        const HFAVariant variant, const bool allowShortcut) {
 
                         return makeHubbardFermiAction(
                             lattice.hopping()*beta/lattice.nt(),
                             muTilde, sigmaKappa,
-                            hopping, basis, variant);
+                            hopping, basis, variant, allowShortcut);
                     },
                     "lat"_a, "beta"_a, "muTilde"_a, "sigmaKappa"_a,
                     "hopping"_a=HFAHopping::DIA,
                     "basis"_a=HFABasis::PARTICLE_HOLE,
-                    "variant"_a= HFAVariant::ONE);
+                    "variant"_a= HFAVariant::ONE,
+                    "allowShortcut"_a=false);
         }
     }
 

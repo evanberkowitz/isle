@@ -32,6 +32,23 @@ namespace isle {
             struct HFM<HFAHopping::EXP> {
                 using type = HubbardFermiMatrixExp;
             };
+
+            /// Check if the shortcut to compute det(M_hole) is possible.
+            template <HFABasis BASIS>
+            bool _holeShortcutPossible(const SparseMatrix<double> &hopping,
+                                       const double muTilde,
+                                       const std::int8_t sigmaKappa);
+
+
+            template <> bool _holeShortcutPossible<HFABasis::PARTICLE_HOLE>(
+                const SparseMatrix<double> &hopping,
+                const double muTilde,
+                const std::int8_t sigmaKappa);
+
+            template <> bool _holeShortcutPossible<HFABasis::SPIN>(
+                const SparseMatrix<double> &hopping,
+                const double muTilde,
+                const std::int8_t sigmaKappa);
         }
         /// \endcond DO_NOT_DOCUMENT
 
@@ -54,6 +71,15 @@ namespace isle {
          * - `alpha == 0` - spin basis
          * - `alpha == 1` - particle/hole basis
          *
+         * It is possible to compute the contribution from holes from the contribution
+         * from particles iff the lattice is bipartite, mu=0, sigmaKappa=+1,
+         * basis=SPIN, and phi is real.
+         * If `allowShortcut=true` in the constructor and the parameters permit,
+         * %HubbardFermiAction uses that shortcut.
+         * \warning The field configuration is not checked.
+         *          If you allow for the shortcut, you must ensure that phi is
+         *          always real!
+         *
          * \warning Only supports `nt > 2`.
          *
          * See <TT>docs/algorithm/hubbardFermiAction.pdf</TT>
@@ -64,15 +90,25 @@ namespace isle {
         public:
             /// Construct from individual parameters of HubbardFermiMatrix[Dia,Exp].
             HubbardFermiAction(const SparseMatrix<double> &kappaTilde,
-                               const double muTilde, const std::int8_t sigmaKappa)
+                               const double muTilde, const std::int8_t sigmaKappa,
+                               const bool allowShortcut)
                 : _hfm{kappaTilde, muTilde, sigmaKappa}, _kp{_hfm.K(Species::PARTICLE)},
-                  _kh{_hfm.K(Species::HOLE)} { }
+                  _kh{_hfm.K(Species::HOLE)},
+                  _shortcutForHoles{allowShortcut
+                                    && _internal::_holeShortcutPossible<BASIS>(
+                                        kappaTilde, muTilde, sigmaKappa)}
+            { }
 
             /// Construct from individual parameters of HubbardFermiMatrix[Dia,Exp].
             HubbardFermiAction(const Lattice &lat, const double beta,
-                               const double muTilde, const std::int8_t sigmaKappa)
+                               const double muTilde, const std::int8_t sigmaKappa,
+                               const bool allowShortcut)
                 : _hfm{lat, beta, muTilde, sigmaKappa}, _kp{_hfm.K(Species::PARTICLE)},
-                  _kh{_hfm.K(Species::HOLE)} { }
+                  _kh{_hfm.K(Species::HOLE)},
+                  _shortcutForHoles{allowShortcut
+                                    && _internal::_holeShortcutPossible<BASIS>(
+                                        lat.hopping(), muTilde, sigmaKappa)}
+            { }
 
             HubbardFermiAction(const HubbardFermiAction &other) = default;
             HubbardFermiAction &operator=(const HubbardFermiAction &other) = default;
@@ -91,6 +127,8 @@ namespace isle {
             const typename _internal::HFM<HOPPING>::type _hfm;
             const DSparseMatrix _kp;  ///< Matrix K for particles.
             const DSparseMatrix _kh;  ///< Matrix K for holes.
+            /// Can logdetM for holes be computed from logdetM from particles?
+            const bool _shortcutForHoles;
         };
 
         // For each specialization, forward declare specializations of eval

@@ -11,7 +11,8 @@ from logging import getLogger
 try:
     import matplotlib as mpl
     import matplotlib.pyplot as plt
-    from matplotlib.ticker import MultipleLocator
+    from matplotlib.ticker import MultipleLocator, MaxNLocator
+    from matplotlib.patches import Rectangle
 
 except ImportError:
     getLogger(__name__).error("Cannot import matplotlib, plotting functionality is not available.")
@@ -27,6 +28,7 @@ import numpy as np
 import h5py as h5
 
 import isle.meas
+from isle.collection import neighbors
 ## \endcond DO_NOT_DOCUMENT
 
 def setupMPL():
@@ -51,27 +53,100 @@ def placeholder(ax):
     ax.tick_params(axis="both", which="both",
                    bottom=False, top=False, left=False, right=False,
                    labelbottom=False, labeltop=False, labelleft=False, labelright=False)
-    ax.plot(ax.get_xlim(), ax.get_ylim(), c="k", alpha=0.5)
+    if ax.name != "polar":
+        ax.plot(ax.get_xlim(), ax.get_ylim(), c="k", alpha=0.5)
 
-def oneDimKDE(dat, bandwidth=0.2, nsamples=1024, kernel="gaussian"):
-    """!
-    Perform a 1D kenrel density estimation on some data.
+def oneDimKDE(data, bandwidth=0.2, nsamples=1024, kernel="gaussian",
+              sampleRange=None, samplePoints=None, period=None, failureIsError=True):
+    r"""!
+    Perform a 1D kernel density estimation on some data.
+    \param data 1D array-like.
+    \param bandwidth Size of the kernel.
+    \param nsamples Number of points to estimate the density on.
+    \param kernel The kind of kernel to use. See `sklearn.neighbors.KernelDensity`.
+    \param sampleRange `tuple` of min and max of range to sample on.
+                       Defaults to `(min(data), max(data))`.
+    \param samplePoints 1D array-like of points to sample KDE on. If set, `nsamples` and
+                        `sampleRange` are ignored.
+    \param period If not `None`, the data is assumed to be periodic with this period length.
+    \param failureIsError If `False`, the function returns `(None, None)` if scikit-learn
+                          is not available. Raises a `RuntimeError` if `True`.
     \returns Tuple of sampling points and densities.
-             Or return (None, None) if scikit-learn is not available.
     """
 
     if _DO_KDE:
-        # make 2D array shape (len(totalPhi), 1)
-        twoDDat = np.array(dat)[:, np.newaxis]
-        # make 2D set of sampling points
-        samplePts = np.linspace(np.min(dat)*1.1, np.max(dat)*1.1, nsamples)[:, np.newaxis]
+        # make 2D array of shape (len(data), 1)
+        twoDData = np.expand_dims(np.asarray(data), -1)
+        if samplePoints is None:
+            # make set of 1D sampling points
+            sampleRange = sampleRange if sampleRange else (np.min(data), np.max(data))
+            samplePoints = np.linspace(*sampleRange, nsamples)
+        # turn 2D
+        samplePoints = np.expand_dims(samplePoints, -1)
+
+        if period is not None:
+            twoDData = np.r_[twoDData-period, twoDData, twoDData+period]
+            # The above increased the number of points 3-fold which multiplies the density by 1/3.
+            # Renormalize to the original number of data points by multiplying by 3.
+            renorm = 3
+        else:
+            renorm = 1  # number of points is unchanged here
+
         # estimate density
         dens = np.exp(KernelDensity(kernel=kernel, bandwidth=bandwidth)
-                      .fit(twoDDat)
-                      .score_samples(samplePts))
-        return samplePts[:, 0], dens
+                      .fit(twoDData)
+                      .score_samples(samplePoints))
+        return samplePoints[:, 0], dens*renorm
 
-    return None, None
+    if not failureIsError:
+        return None, None
+    getLogger(__name__).error("KDE not supported, please install scikit-learn.")
+    raise RuntimeError("KDE not supported")
+
+def polarDensity(data, innerRadius, outerRadius, kde,
+                 bins=None, bandwidth=None, kernel=None):
+    r"""!
+    Calculate density of data for a plot in polar coordinates.
+    \param data 1D array-like.
+    \param innerRadius Radius of the base line for showing the density.
+                       Corresponds to density=0.
+    \param outerRadius Maximum radius, corresponds to density=1.
+    \param kde If `True`, perfom a KDE to estimate the density, otherwise use a histogram.
+    \param bins Number of histogram bins or number of KDE samples.
+    \param bandwidth *KDE only*. Bandwidth of the kernel.
+    \param kernel *KDE only*. The kind of kernel to use. See `sklearn.neighbors.KernelDensity`.
+    \returns Two lists:
+             - Angles of the points where the density was estimated. Range: `[-pi, pi]`
+             - Radii computed from the density.
+    """
+
+    if kde:
+        bins = int(np.sqrt(len(data))) if not bins else bins
+        # Set defaults here to allow histogram code to detect if those arguments are set.
+        bandwidth = 0.01 if not bandwidth else bandwidth
+        kernel = "gaussian" if not kernel else kernel
+
+        xlist, ytmp = oneDimKDE(data, bandwidth, bins, kernel, sampleRange=(-np.pi, np.pi),
+                                period=2*np.pi, failureIsError=False)
+        ylist = innerRadius + (outerRadius-innerRadius)*ytmp
+
+    else:
+        log = getLogger(__name__)
+        if bandwidth is not None:
+            log.warning("polarDensity: Argument 'bandwidth' has no effect when kde==False")
+        if kernel is not None:
+            log.warning("polarDensity: Argument 'kernel' has no effect when kde==False")
+        if not bins:
+            bins = int(np.sqrt(len(data)))
+
+        hist, bin_edges = np.histogram(data, bins, (-np.pi, np.pi), density=True)
+        # angle, outer radius pairs
+        points = [((high+low)/2,  # assumes that there are no bins on the -pi, pi boundary
+                   innerRadius + (outerRadius-innerRadius)*val)
+                  for val, (low, high) in zip(hist, neighbors(bin_edges))]
+        xlist, ylist = zip(*points)
+
+    return xlist, ylist
 
 def runningAverage(data, binsize):
     """!
@@ -83,6 +158,73 @@ def runningAverage(data, binsize):
     for i, j in enumerate(indices):
         density[i] = np.mean(data[j-binsize:j])
     return indices, density
+
+def polarHistogram(ax, data, kde=False, bins=None, bandwidth=None, kernel=None,
+                   innerRadius=1, outerRadius=2,
+                   ls=None, marker=".", fill=False,
+                   edgecolor=None, facecolor=None, edgealpha=None, facealpha=None):
+    r"""!
+    Plot a polar histogram into an Axes.
+    """
+
+    xlist, ylist = polarDensity(data, innerRadius, outerRadius, kde,
+                                bins, bandwidth, kernel)
+
+    # draw base-line circle
+    baselines, = ax.plot(list(xlist)+[xlist[0]], [innerRadius]*(len(xlist)+1), c=edgecolor)
+
+    # the above is the first plot command, use it to set the color if not specified
+    if edgecolor is None:
+        edgecolor = baselines.get_color()
+    if facecolor is None:
+        facecolor = baselines.get_color()
+
+    # lines connecting baseline to markers
+    if ls != "":
+        for x, y in zip(xlist, ylist):
+            ax.plot((x, x), (innerRadius, y), ls=ls, c=edgecolor, alpha=edgealpha)
+
+    # fill area between baseline and markers
+    if fill:
+        ax.fill_between(list(xlist)+[xlist[0]],
+                        [innerRadius]*(len(xlist)+1),
+                        list(ylist)+[ylist[0]],
+                        facecolor=facecolor, alpha=facealpha)
+
+    # show markers at the outer tips of the bins
+    if marker:
+        lines = ax.plot(xlist, ylist, ls="", marker=marker, c=edgecolor, alpha=edgealpha)
+    else:
+        lines = []
+
+    return lines
+
+def setPolarTicks(ax, which="both"):
+    r"""!
+    Set the ticks for a polar Axes.
+    """
+
+    allowedWhich = ("both", "x", "y", "none")
+    if which not in allowedWhich:
+        getLogger(__name__).error("Invalid value for argument 'which': '%s'\n"
+                                  "Supported values are %s",
+                                  which, allowedWhich)
+        raise ValueError(f"Invalid value for argument 'which': '{which}'")
+
+    if which in ("both", "x"):
+        ax.set_xticks([0, np.pi/4, np.pi/2, np.pi*3/4, np.pi,
+                       np.pi*5/4, 3*np.pi/2, np.pi*7/4])
+        ax.xaxis.set_ticklabels([r"0",
+                                 r"$\frac{1}{4}\pi$",
+                                 r"$\frac{1}{2}\pi$",
+                                 r"$\frac{3}{4}\pi$",
+                                 r"$\pi$",
+                                 r"$-\frac{3}{4}\pi$",
+                                 r"$-\frac{1}{2}\pi$",
+                                 r"$-\frac{1}{4}\pi$"])
+
+    if which in ("both", "y"):
+        ax.set_yticks([])
 
 
 def plotTotalPhi(measState, axPhi, axPhiHist):
@@ -116,16 +258,16 @@ def plotTotalPhi(measState, axPhi, axPhiHist):
 
     # show histograms + KDE
     axPhiHist.hist(np.real(totalPhi), label="totalPhi, real part, histogram",
-                   orientation="horizontal", bins=max(len(totalPhi), 1000)//100, density=True,
+                   orientation="horizontal", bins=max(len(totalPhi)//100, 10), density=True,
                    facecolor="C0", alpha=0.7)
-    samplePts, dens = oneDimKDE(np.real(totalPhi), bandwidth=3/5)
+    samplePts, dens = oneDimKDE(np.real(totalPhi), bandwidth=3/5, failureIsError=False)
     if dens is not None:
         axPhiHist.plot(dens, samplePts, color="C0", label="totalPhi, real part, kde")
     if np.max(np.imag(totalPhi)) > 0:
         axPhiHist.hist(np.imag(totalPhi), label="totalPhi, imag part, histogram",
-                       orientation="horizontal", bins=len(totalPhi)//100,
+                       orientation="horizontal", bins=max(len(totalPhi)//100, 10),
                        density=True, facecolor="C1", alpha=0.7)
-        samplePts, dens = oneDimKDE(np.imag(totalPhi), bandwidth=3/5)
+        samplePts, dens = oneDimKDE(np.imag(totalPhi), bandwidth=3/5, failureIsError=False)
         if dens is not None:
             axPhiHist.plot(dens, samplePts, color="C1", label="totalPhi, imag part, kde")
 
@@ -168,36 +310,42 @@ def plotTrajPoints(measState, ax):
     ax.legend(loc="lower center")
 
 
-def plotAction(action, ax):
-    """!Plot real and imaginary parts of the action."""
-    if action is None:
+def plotWeights(weights, ax):
+    """!Plot real and imaginary parts of the weights."""
+    if weights is None:
         # no data - empty frame
         ax.set_title(r"Action")
         placeholder(ax)
         return
 
+    action = weights["actVal"]
     ax.set_title(f"Action, average = {np.mean(np.real(action)):1.3e} + {np.mean(np.imag(action)):1.3e} i")
     ax.plot(np.real(action), c="C0", alpha=0.8, label=r"$\mathrm{Re}(S)$")
     ax.plot(np.imag(action), c="C1", alpha=0.8, label=r"$\mathrm{Im}(S)$")
+    if len(weights) > 1:
+        for i, (name, values) in enumerate(filter(lambda pair: pair[0] != "actVal", weights.items())):
+            ax.plot(np.real(values), c=f"C{2*i+2}", alpha=0.8, label=rf"$\mathrm{{Re}}({name})$")
+            ax.plot(np.imag(values), c=f"C{2*i+3}", alpha=0.8, label=rf"$\mathrm{{Im}}({name})$")
     ax.set_xlabel(r"$i_{\mathrm{tr}}$")
-    ax.set_ylabel(r"$\mathrm{Re}(S(\phi))$")
+    ax.set_ylabel(r"$S(\phi)$")
     ax.legend()
 
-def plotPhase(action, axPhase, axPhase2D):
+
+def plotPhase(weights, axPhase, axPhase2D):
     """!Plot MC history and 2D histogram of the phase."""
-    if action is None:
+    if weights is None:
         # no data - empty frame
         placeholder(axPhase)
         placeholder(axPhase2D)
         return
 
-    theta = np.imag(action)
+    theta = -np.imag(sum(weights.values()))  # minus because the weight is exp(-1j*Im(S))
 
     if np.max(np.abs(theta)) > 1e-13:
         # show 1D histogram + KDE
         axPhase.hist(theta, bins=max(len(theta)//100, 10), density=True,
                      facecolor="C1", alpha=0.7)
-        samplePts, dens = oneDimKDE(theta, bandwidth=1/5)
+        samplePts, dens = oneDimKDE(theta, bandwidth=1/5, failureIsError=False)
         if dens is not None:
             axPhase.plot(samplePts, dens, color="C1")
 
@@ -206,22 +354,15 @@ def plotPhase(action, axPhase, axPhase2D):
         axPhase.set_ylabel(r"Density")
 
         # show 2D histogram
-        weight = np.exp(-1j*theta)
-        x, y = np.real(weight), np.imag(weight)
-
-        view = [-1.05, 1.05]
-        hist = axPhase2D.hist2d(x, y, bins=51, range=[view, view], normed=1)
-        axPhase2D.set_xlim(view)
-        axPhase2D.set_ylim(view)
-        axPhase2D.set_aspect(1)
-        axPhase2D.get_figure().colorbar(hist[3], ax=axPhase2D)
-
-        # indicate the average weight
-        axPhase2D.scatter([np.mean(x)], [np.mean(y)], c="w", marker="x")
-
-        axPhase2D.set_title(r"$w = e^{-i \theta}$")
-        axPhase2D.set_xlabel(r"$\mathrm{Re}(w)$")
-        axPhase2D.set_ylabel(r"$\mathrm{Im}(w)$")
+        polarHistogram(axPhase2D, theta, _DO_KDE, bins=50, ls="-", marker=".", fill=True,
+                       edgecolor="C1", facealpha=0.3)
+        average = np.mean(np.exp(1j*theta))
+        axPhase2D.plot((np.angle(average),), (np.abs(average),), ls="", marker="x",
+                       c=mpl.rcParams["text.color"], markersize=10)
+        setPolarTicks(axPhase2D)
+        axPhase2D.set_ylim((0, 2.1))  # the outerRadius of the plot is 2
+        axPhase2D.set_ylabel(r"$\theta$", labelpad=20)
+        axPhase2D.yaxis.set_label_position("right")
 
     else:
         placeholder(axPhase)
@@ -279,3 +420,72 @@ def plotCorrelators(measState, axP, axH):
     axH.set_yscale("log")
 
     return True
+
+def plotTunerFit(ax, probabilityPoints, trajPointPoints, fitResult, verification):
+    r"""!
+    Plot a single fit result of the tuner.
+    \param ax Matplotlib Axes to plot to.
+    \param probabilityPoints List of tuples of values for the probability weight.
+                             Tuples contain elements (nMD, mean, error).
+    \param trajPointPoints List of tuples of values for the trajectory point.
+                           Tuples contain elements (nMD, mean, error).
+    \param fitResult A isle.evolver.autotuner.Fitter.Result object.
+    \param verification `True` if the fit was done to verify an existing hypothesis,
+                        `False` if it was done during search.
+    """
+
+    x, y, err = zip(*probabilityPoints)
+    ax.errorbar(np.asarray(x)+0.05, y, err, ls="", marker=".", label=r"min(1, $\exp{(dH)}$)")
+    x, y, err = zip(*trajPointPoints)
+    ax.errorbar(np.asarray(x)-0.05, y, err, ls="", marker=".", label="trajPoint")
+
+    if fitResult is not None:
+        x = np.linspace(0, ax.get_xlim()[1]*1.1, 1000)
+        bestFit, otherFits = fitResult.evalOn(x)
+        for y in otherFits:
+            ax.plot(x, y, c="k", alpha=0.5)
+        ax.plot(x, bestFit, c="k")
+
+    if verification:
+        # draw a rectangle just inside of the axes borders
+        ax.add_patch(Rectangle((0.01, 0.01), 0.98, 0.98, linewidth=2, transform=ax.transAxes,
+                               edgecolor="#E3D514", facecolor="none"))
+
+def plotTunerTrace(ax, records):
+    r"""!
+    Plot the history of tuning.
+    \param ax Matplotlib Axes to plot to.
+    \param records List of isle.evolver.autotuner.Registrar.Record objects.
+    """
+
+    axNstep = ax
+    axProbTP = ax.twiny()
+
+    lastYMax = 0
+    axNstep.axhline(-0.5, ls=":", c="k", alpha=0.5)
+    for record in records:
+        if len(record) == 0:
+            continue
+
+        # y values for this record (~ trajectory index)
+        yMax = lastYMax + len(record)
+        y = np.arange(lastYMax, yMax)
+        lastYMax = yMax
+
+        lineProb, = axProbTP.plot(record.probabilities, y, ls="", marker="v", c="C0")
+        lineTP, = axProbTP.plot(record.trajPoints, y, ls="", marker="x", c="C1")
+        lineNstep, = axNstep.plot([record.nstep]*2, (y[0], y[-1]),
+                                  ls="-", marker="", linewidth=2, c="k")
+        axNstep.axhline(yMax-0.5, ls=":", c="k", alpha=0.5)
+
+    axNstep.xaxis.set_major_locator(MaxNLocator(integer=True))
+    axNstep.yaxis.set_major_locator(MaxNLocator(integer=True))
+    axNstep.set_xlabel(r"$N_{\mathrm{MD}}$")
+    axNstep.set_ylabel("trajectory")
+    axProbTP.set_xlabel(r"min(1, $\exp{(dH)}$) | trajPoint")
+
+    # manual legend so that all lines are shown
+    axNstep.legend([lineNstep, lineProb, lineTP],
+                   [r"$N_{\mathrm{MD}}$", r"min(1, $\exp{(dH)}$)", r"trajPoint"],
+                   bbox_to_anchor=(0, -0.08, 1, 0), loc="lower left", mode="expand",
+                   ncol=3, borderaxespad=0, handletextpad=0.05)

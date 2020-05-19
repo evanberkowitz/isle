@@ -1,82 +1,47 @@
 \page measdoc Measurements
 
-\todo Needs to be completely rewritten!
 
-Measurements are a uniform mechanism to extract information from gauge configurations.
-They can be called both during HMC as 'inline' measurements or afterwards as
-'out-of-line' measurements.
-A number of fairly general purpose measurements are defined in namespace cns.meas.
-See section Canonical Implementation for details on how to write those measurements.
+Isle provides the high level measurement driver isle.drivers.meas.Measure.
+This driver can perform measurements on configurations stored in files.
+It requires the file layout to be compatible with "Configuration Files" as described in \ref filelayout.
+See \ref measureExample for an example usage.
 
-Inline measurements represent a general hook into the Hybrid Monte Carlo function provided
-by cns.hmc. Measurements are run after each Metropolis accept-reject step so they can be
-used for a number of tasks. For instance, cns.hmc.hmc does not store or output intermediate
-results by itself. Instead, a measurement can be used to save configurations to disk.
-Other possible usage cases would be checkpointing or logging information to the terminal.
+The measurement driver currently has some strong limitations.
+Once a measurement was taken on a set of configurations and saved, there is no built in way to
+extend it by measurements on additional configurations.
+Furthermore, results are only saved after all configurations have been processed.
+This can be a limitation in case not all results fit into memory simultaneously.
+Both of those issues can be worked around by calling the driver multiple times and using the
+`configSlices` of the measurements (see below).
 
-## Interface
-An inline measurement must be a callable with parameters `phi, inline, itr, act, acc`, where
-- <B>`phi`</B> - configuration,
-- <B>`inline`</B> - `True` when called inline of HMC,
-- <B>`itr`</B> - trajectory index,
-- <B>`act`</B> - action given configuration `phi`,
-- <B>`acc`</B> - `True` if trajectory was accepted, `False` otherwise.
-- <B>`rng`</B> - A random number generator that implements cns.random.RNGWrapper.
+All measurements should inherit from \ref isle.meas.measurement.Measurement "isle.meas.Measurement"
+which provides a standard interface for the driver to use.
+There are two attributes all measurements must have:
+- <B>`savePath`</B> - The measurement promises to save its result in a group at this location in the
+  output HDF5 file. The drives ensures ahead of time that those locations are available in order to avoid
+  wasting time by measurements failing to save at the end of the process.
+- <B>`configSlice`</B> - A `slice` object that indicates which configurations the measurement is to be
+  taken on. This gets processed by the driver and no steps other than saving it need to be done
+  in the measurement itself. Note that this attribute gets modified by the driver by replacing
+  any `None`'s with the actual integers.
 
-`phi` and `inline` are called by position whereas `itr`, `act`, `acc`, and `rng` are called
-by name. The return value is ignored when the measurement is called in-line.
+The base class also provides utilities for saving the `configSlice` in the standard fashion.
+This can be overridden if need be.
+That would however disable, among others, the weight loading facilities provided by Isle.
+Further information on the file layout of measurements can be found in \ref filelayout.
 
-Out-of-line measurements can have an arbitrary interface because they are only called
-by the user. However, in order to provide a uniform way of calling both inline and
-out-of-line measurements, the recommended implementation is
-```.py
-def myMeas(phi, inline=False, **kwargs):
-    # ...
-```
-for functions and
-```.py
-class MyMeas:
-    # ...
 
-    def __call__(self, phi, inline=False, **kwargs):
-        # ...
-```
-for callable classes. This can accommodate the special arguments passed to inline
-measurements which might not be available out-of-line as well as possible extra
-arguments used with out-of-line measurements not available inline.
+## Custom Measurements
 
-## Canonical Implementation
-All measurements in package cns.meas follow the same implementation scheme.
-Each measurement is a class with a name in UpperCamelCase defined in its own file of the same
-name but in lowerCamelCase. Measurements not defined in cns.meas can have any format as long
-as the satisfy the interface described above.
+It is possible to implement custom measurements by inheriting from
+\ref isle.meas.measurement.Measurement "isle.meas.Measurement" and implementing the abstract interface.
+It is important to initialize the base class in order to set the save path and configuration
+slice properly as they are needed by the measurement driver.
 
-As an example, look at the following:
-```.py
-# file acceptanceRate.py
-
-class AcceptanceRate:
-    def __call__(self, phi, inline=False, **kwargs):
-        # ...
-
-    # ...
-```
-This allows for the class to be found by the import script and it can be used as
-```.py
-# some other file
-
-import cns
-import cns.meas  # meas is not imported by cns base package
-
-accMeas = cns.meas.AcceptanceRate()
-```
-If a different naming scheme is used or there are multiple measurements in one module,
-the name of the module must be used:
-```.py
-import cns
-import cns.meas  # still need this
-
-nonCanMeas = cns.meas.non_canonocal_module.NonCanonicalMeasurement()
-```
-If a module contains extra functions or classes besides the central measurement, those can
-only be addressed using the full module name as well.
+The `savePath` is a promise to the measurement driver that the measurement object only writes to that
+location in the file.
+The measurement is expected to create a new HDF5 group under `savePath` and write all its
+results into that group.
+The `configSlice` gets written automatically by `saveAll` unless overridden.
+If `save` writes anywhere else, the operation might fail which would happen at the end of the measurement
+process and thus waste a lot of time.

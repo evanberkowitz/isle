@@ -24,19 +24,19 @@ class ChiralCondensate(Measurement):
         self.species = species
         self.chiCon = []
 
-    def __call__(self, phi, action, itr):
+        # need to know Nt to set those, do it in _getRHSs
+        self._rhss = None
+
+    def __call__(self, stage, itr):
         """!Record the chiral condensate."""
 
         nx = self.hfm.nx()
-        nt = int(len(phi) / nx)
-
-        # Create a large set of sources:
-        rhss = [isle.Vector(self.rng.normal(0, 1, nt*nx)+0j)
-                for _ in range(self.nsamples)]
+        nt = int(len(stage.phi) / nx)
+        rhss = self._getRHSs(nt)
 
         # Solve M*x = b for different right-hand sides,
         # Normalize by spacetime volume
-        res = np.array(isle.solveM(self.hfm, phi, self.species, rhss), copy=False) / (nx*nt)
+        res = np.array(isle.solveM(self.hfm, stage.phi, self.species, rhss), copy=False) / (nx*nt)
 
         self.chiCon.append(np.mean([np.dot(rhs, r) for rhs, r in zip(rhss, res)]))
 
@@ -48,6 +48,19 @@ class ChiralCondensate(Measurement):
         """
         subGroup = isle.h5io.createH5Group(h5group, self.savePath)
         subGroup["chiralCondensate"] = self.chiCon
+
+    def _getRHSs(self, nt):
+        """!
+        Get all right hand side vectors as a matrix.
+        For the j^th spacetime vector of the i^th state, go to self.rhss[i * nt + j]
+        In other words, time is the faster running index.
+        """
+
+        if self._rhss is None or self._rhss.rows() != nt*self.hfm.nx():
+            # Create a large set of sources:
+            self._rhss = isle.Matrix(np.array([isle.Vector(self.rng.normal(0, 1, nt*self.hfm.nx())+0j)
+                                               for _ in range(self.nsamples)]))
+        return self._rhss
 
 
 def read(h5group):

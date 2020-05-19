@@ -598,6 +598,30 @@ class ColorFormatter(logging.Formatter):
         return super().format(record)
 
 
+def _suppressGoogleLogWarning():
+    """
+    Suppress warning emitted by absl.logging
+    'WARNING: Logging before flag parsing goes to stderr.'
+    Does nothing if abseil-py is not installed.
+    """
+
+    try:
+        # Tensorflow uses Google's abseil-py library, which uses a Google-specific
+        # wrapper for logging. That wrapper will write a warning to sys.stderr if
+        # the Google command-line flags library has not been initialized.
+        #
+        # https://github.com/abseil/abseil-py/blob/pypi-v0.7.1/absl/logging/__init__.py#L819-L825
+        #
+        # We don't want this here because we have our own logging setup.
+        import absl.logging
+
+        # https://github.com/abseil/abseil-py/issues/99
+        logging.root.removeHandler(absl.logging._absl_handler)
+        # https://github.com/abseil/abseil-py/issues/102
+        absl.logging._warn_preinit_stderr = False
+    except Exception:
+        pass
+
 def setupLogging(logfile=None, verbosity=0):
     r"""!
     Set up Python's logging framework.
@@ -625,6 +649,8 @@ def setupLogging(logfile=None, verbosity=0):
         logging.getLogger(__name__).error("Called setupLogging a second time."
                                           "This function must be called *exactly* once.")
         raise RuntimeError("Logging already set up")
+
+    _suppressGoogleLogWarning()
 
     if verbosity > 2:
         # can't be any noisier than that
@@ -721,7 +747,7 @@ def addMeasArgs(parser):
 def addShowArgs(parser):
     """!Add arguments for reporting to parser."""
 
-    reporters = ["overview", "lattice", "correlator"]
+    reporters = ["overview", "lattice", "correlator", "tuning"]
 
     class _ReportAction(argparse.Action):
         """!custom action to parse reporters."""

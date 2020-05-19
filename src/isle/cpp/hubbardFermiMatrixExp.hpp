@@ -26,8 +26,8 @@ namespace isle {
      *
      * Neither the full matrices nor any of their blocks are stored explicitly. Instead,
      * each block is to be constructed when needed which might be expensive.
-     * The only exception is \f$e^{-\tilde{\kappa}+\tilde{\mu}}\f$ which is cached
-     * after it has been requested through HubbardFermiMatrixExp::expKappa() for the first time.
+     * The only exception is \f$e^{\tilde{\kappa}-\tilde{\mu}}\f$ which is stored for particles and holes, both
+     * as the matrices themselves and their inverses.
      *
      * The result of an LU-decomposition of \f$\hat{Q}\f$ is stored in HubbardFermiMatrixExp::LU
      * to save memory and give easier access to the components compared to a `blaze::Matrix`.
@@ -64,12 +64,16 @@ namespace isle {
         HubbardFermiMatrixExp &operator=(HubbardFermiMatrixExp &&) = default;
         ~HubbardFermiMatrixExp() = default;
 
-        /// Return the exponential of the hopping amtrix and chemical potential.
+        /// Return the exponential of the hopping matrix and chemical potential.
         /**
-         * \returns \f$\exp(-\tilde{\kappa} + \tilde{\mu})\f$ for particles
-         *          and \f$\exp(-\sigma_{\tilde{\kappa}}\tilde{\kappa} - \tilde{\mu})\f$ for holes.
+         * \returns \f$\exp(\tilde{\kappa} - \tilde{\mu})\f$ for particles
+         *          and \f$\exp(\sigma_{\tilde{\kappa}}\tilde{\kappa} + \tilde{\mu})\f$ for holes
+         *          or the inverses if `inv == true`.
          */
-        const DMatrix &expKappa(const Species species) const;
+        const DMatrix &expKappa(const Species species, const bool inv) const;
+
+        /// Return log(det(expKappa(species, inv)).
+        std::complex<double> logdetExpKappa(const Species species, const bool inv) const;
 
         /// Store the diagonal block K of matrix M in the parameter.
         /**
@@ -246,14 +250,20 @@ namespace isle {
         };
 
     private:
-        DSparseMatrix _kappa;  ///< Hopping matrix.
+        DSparseMatrix _kappa;  ///< Hopping matrix (tilde).
         double _mu;  ///< Chemical potential.
         std::int8_t _sigmaKappa;  ///< Sign of kappa in M^dag.
 
-        /// exp(kappaTilde) for particles.
+        /// exp(kappaTilde-muTilde) for particles.
         DMatrix _expKappap;
-        /// exp(sigmaKappa*kappaTilde) for holes.
+        /// exp(-kappaTilde+muTilde) for particles.
+        DMatrix _expKappapInv;
+        /// exp(sigmaKappa*kappaTilde+muTilde) for holes.
         DMatrix _expKappah;
+        /// exp(-sigmaKappa*kappaTilde-muTilde) for holes.
+        DMatrix _expKappahInv;
+        /// log(det(_expKappahInv)).
+        std::complex<double> _logdetExpKappahInv;
     };
 
 
@@ -321,6 +331,10 @@ namespace isle {
 
     /// Compute \f$\log(\det(M))\f$.
     /**
+     * Uses one of two algorithms depending on whether species==PARTICLE or
+     * species==HOLE.
+     * See docs/algorithm/hubbardFermiAction.pdf for more details.
+     *
      * \param hfm %HubbardFermiMatrixExp to compute the determinant of.
      * \param phi Auxilliary field.
      * \param species Select whether to use particles or holes.
@@ -335,16 +349,21 @@ namespace isle {
      * Can be called for multiple right hand sides b in order to re-use parts of
      * the calculation.
      *
+     * \note The shape of `rhs` and the return value may be counter intuitive.
+     *       The first index is the number of the right hand side vector,
+     *       the second index is space-time.
+     *       That is space-time point (t, x) of right hand side i is `rhs(i, t*nx+x)`.
+     *       That means, for instance, that the inverse of M is
+     *       `transpose(solveM(hfm, phi, species, unity))`.
+     *
      * \param hfm Represents matrix M which describes the system of equations.
      * \param phi Gauge configuration needed to construct M.
      * \param species Select whether to solve for particles or holes.
      * \param rhs Right hand sides b.
-     * \returns Results x, same length as rhs.
+     * \returns Results x, same shape as rhs.
      */
-    std::vector<CDVector> solveM(const HubbardFermiMatrixExp &hfm,
-                                 const CDVector &phi,
-                                 Species species,
-                                 const std::vector<CDVector> &rhs);
+    CDMatrix solveM(const HubbardFermiMatrixExp &hfm, const CDVector &phi,
+                    const Species species, const CDMatrix &rhss);
 
 }  // namespace isle
 

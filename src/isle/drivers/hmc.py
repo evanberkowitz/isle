@@ -9,7 +9,7 @@ import h5py as h5
 from .. import Vector, fileio, cli
 from ..meta import sourceOfFunction, callFunctionFromSource
 from ..util import verifyVersionsByException
-from ..evolver import EvolverManager
+from ..evolver import EvolverManager, EvolutionStage
 
 class HMC:
     r"""!
@@ -23,7 +23,7 @@ class HMC:
     """
 
     def __init__(self, lattice, params, rng, action, outfname, startIdx,
-                 definitions={}, propManager=None, new=False):
+                 definitions={}, evManager=None):
         """!
         Construct with given parameters.
         """
@@ -35,23 +35,25 @@ class HMC:
         self.outfname = str(outfname)
 
         self._trajIdx = startIdx
-        self._propManager = propManager if propManager \
+        self._evManager = evManager if evManager \
             else EvolverManager(outfname, definitions=definitions)
-        self._new = new
 
-    def __call__(self, phi, evolver, ntr, saveFreq, checkpointFreq):
+    def __call__(self, stage, evolver, ntr, saveFreq, checkpointFreq, maxNtr=None):
         r"""!
         Evolve configuration using %HMC.
 
-        \param phi Start configuration to evolve.
+        \param stage Start configuration or evolution stage to evolve.
         \param evolver Used to evolve configurations for Metropolis accept/reject.
         \param ntr Number of trajectories to generate.
+                   May be `None` in which case production never stops unless the
+                   evolver raises an instance of `StopIteration`.
         \param saveFreq Save configurations every `saveFreq` trajectories.
         \param checkpointFreq Write a checkpoint every `checkpointFreq` trajectories.
                               Must be a multiple of `saveFreq`.
+        \param maxNtr If not `None` and `ntr is None`, stop after at most `maxNtr`
+                      trajectories. Ignored if `ntr is not None`.
 
-        \returns (phi, actVal, trajPoint), field configuration, value of the action,
-                 and selected trajectory point of last trajectory.
+        \returns EvolutionStage of last trajectory.
         """
 
         if checkpointFreq != 0 and checkpointFreq % saveFreq != 0:
@@ -59,44 +61,42 @@ class HMC:
                                       " Got %d and %d, resp.", checkpointFreq, saveFreq)
             raise ValueError("checkpointFreq must be a multiple of saveFreq.")
 
-        trajPoint = 1  # point of last trajectory that was selected
-        actVal = self.action.eval(phi)  # running action (without pi)
+        if not isinstance(stage, EvolutionStage):
+            # make sure it is an EvolutionStage
+            stage = EvolutionStage(stage, self.action.eval(stage), 1)
 
-        if self._new:
-            self._saveConditionally(phi, actVal, trajPoint, evolver, saveFreq, checkpointFreq)
-            self._new = False
+        for _ in _iterTrajectories(ntr, maxNtr):
+            try:
+                # do evolution
+                stage = evolver.evolve(stage)
+            except StopIteration:
+                # the evolver wants to stop,
+                # don't advance or save because no new config was produced
+                break
 
-        for _ in cli.progressRange(ntr, message="HMC evolution",
-                                   updateRate=max(ntr//100, 1)):
-            # get initial conditions for evolver
-            startPhi, startPi, startActVal = phi, Vector(self.rng.normal(0, 1, len(phi))+0j), actVal
-
-            # get new fields
-            phi, _, actVal, trajPoint = evolver.evolve(startPhi, startPi, startActVal, trajPoint)
-
-            # TODO consistency checks
             # TODO inline meas
 
             # advance before saving because phi is a new configuration (no 0 is handled above)
             self.advance()
-            self._saveConditionally(phi, actVal, trajPoint, evolver, saveFreq, checkpointFreq)
+            self._saveConditionally(stage, evolver, saveFreq, checkpointFreq)
 
-        return phi, actVal, trajPoint
+        _report(evolver)
+        return stage
 
-    def saveFieldAndCheckpoint(self, phi, actVal, trajPoint, evolver):
+    def saveFieldAndCheckpoint(self, stage, evolver):
         """!
         Write a trajectory (endpoint) and checkpoint to file.
         """
         with h5.File(self.outfname, "a") as outf:
-            cfgGrp = self._writeTrajectory(outf, phi, actVal, trajPoint)
+            cfgGrp = self._writeTrajectory(outf, stage)
             self._writeCheckpoint(outf, cfgGrp, evolver)
 
-    def save(self, phi, actVal, trajPoint):
+    def save(self, stage):
         """!
         Write a trajectory (endpoint) to file.
         """
         with h5.File(self.outfname, "a") as outf:
-            self._writeTrajectory(outf, phi, actVal, trajPoint)
+            self._writeTrajectory(outf, stage)
 
     def advance(self, amount=1):
         """!
@@ -110,21 +110,20 @@ class HMC:
         """
         self._trajIdx = idx
 
-    def _saveConditionally(self, phi, actVal, trajPoint, evolver, saveFreq, checkpointFreq):
+    def _saveConditionally(self, stage, evolver, saveFreq, checkpointFreq):
         """!Save the trajectory and checkpoint if frequencies permit."""
         if saveFreq != 0 and self._trajIdx % saveFreq == 0:
             if checkpointFreq != 0 and self._trajIdx % checkpointFreq == 0:
-                self.saveFieldAndCheckpoint(phi, actVal, trajPoint, evolver)
+                self.saveFieldAndCheckpoint(stage, evolver)
             else:
-                self.save(phi, actVal, trajPoint)
+                self.save(stage)
 
-    def _writeTrajectory(self, h5file, phi, actVal, trajPoint):
+    def _writeTrajectory(self, h5file, stage):
         """!
         Write a trajectory (endpoint) to a HDF5 group.
         """
         try:
-            return fileio.h5.writeTrajectory(h5file["configuration"], self._trajIdx,
-                                             phi, actVal, trajPoint)
+            return fileio.h5.writeTrajectory(h5file["configuration"], self._trajIdx, stage)
         except (ValueError, RuntimeError) as err:
             if "name already exists" in err.args[0]:
                 getLogger(__name__).error("Cannot write trajectory %d to file %s."
@@ -138,7 +137,7 @@ class HMC:
         """
         try:
             return fileio.h5.writeCheckpoint(h5file["checkpoint"], self._trajIdx,
-                                             self.rng, trajGrp.name, evolver, self._propManager)
+                                             self.rng, trajGrp.name, evolver, self._evManager)
         except (ValueError, RuntimeError) as err:
             if "name already exists" in err.args[0]:
                 getLogger(__name__).error("Cannot write checkpoint for trajectory %d to file %s."
@@ -157,12 +156,13 @@ def newRun(lattice, params, rng, makeAction, outfile, overwrite, definitions={})
     \param lattice Lattice to run simulation on, passed to `makeAction`.
     \param params Parameters passed to `makeAction`.
     \param rng Random number generator used for all random numbers needed during %HMC evolution.
-    \param makeAction Function to construct an action. Must be self-contained!
+    \param makeAction Function or source code of a function to construct an action.
+                      Must be self-contained!
     \param outfile Name (Path) of the output file. Must not exist unless `overwrite==True`.
     \param overwrite If `False`, nothing in the output file will be erased/overwritten.
                      If `True`, the file is removed and re-initialized, whereby all content is lost.
     \param definitions Dictionary of mapping names to custom types. Used to control how evolvers
-                       are stored for checkpoints. See evolvers.saveEvolverType().
+                       are stored for checkpoints.
 
     \returns A new HMC instance to control evolution initialized with given parameters.
     """
@@ -171,12 +171,12 @@ def newRun(lattice, params, rng, makeAction, outfile, overwrite, definitions={})
         getLogger(__name__).error("No output file given for HMC driver")
         raise ValueError("No output file")
 
-    makeActionSrc = sourceOfFunction(makeAction)
+    makeActionSrc = makeAction if isinstance(makeAction, str) else sourceOfFunction(makeAction)
     fileio.h5.initializeNewFile(outfile, overwrite, lattice, params, makeActionSrc,
                                 ["/configuration", "/checkpoint"])
 
     return HMC(lattice, params, rng, callFunctionFromSource(makeActionSrc, lattice, params),
-               outfile, 0, definitions, new=True)
+               outfile, 0, definitions)
 
 
 def continueRun(infile, outfile, startIdx, overwrite, definitions={}):
@@ -198,7 +198,7 @@ def continueRun(infile, outfile, startIdx, overwrite, definitions={}):
                         - (`infile!=outfile`): outfile is removed and re-initialized,
                           whereby all content is lost.
     \param definitions Dictionary of mapping names to custom types. Used to control how evolvers
-                       are stored for checkpoints. See evolvers.saveEvolverType().
+                       are stored for checkpoints.
 
     \returns In order:
         - Instance of HMC constructed from parameters found in `infile`.
@@ -225,18 +225,18 @@ def continueRun(infile, outfile, startIdx, overwrite, definitions={}):
                                     ["/configuration", "/checkpoint"])
 
     configurations, checkpoints = _loadIndices(infile)
-    propManager = EvolverManager(infile, definitions=definitions)
-    checkpointIdx, (rng, phi, evolver) = _loadCheckpoint(infile, startIdx, checkpoints,
-                                                         propManager, action, lattice)
+    evManager = EvolverManager(infile, definitions=definitions)
+    checkpointIdx, rng, stage, evolver = _loadCheckpoint(infile, startIdx, checkpoints,
+                                                         evManager, action, lattice)
 
     if outfile == infile:
         _ensureNoNewerConfigs(infile, checkpointIdx, checkpoints, configurations, overwrite)
 
     return (HMC(lattice, params, rng, action, outfile,
-                checkpointIdx+1,  # +1 because we start with the traj one after the checkpoint
+                checkpointIdx,
                 definitions,
-                propManager if infile == outfile else None),  # need to re-init manager for new outfile
-            phi,
+                evManager if infile == outfile else None),  # need to re-init manager for new outfile
+            stage,
             evolver,
             _stride(configurations),
             _stride(checkpoints))
@@ -298,7 +298,7 @@ def _removeGreaterThan(fname, groupPath, maxIdx):
                 del grp[idx]
 
 
-def _loadCheckpoint(fname, startIdx, checkpoints, propManager, action, lattice):
+def _loadCheckpoint(fname, startIdx, checkpoints, evManager, action, lattice):
     """!
     Load a checkpoint from file allowing for negative indices.
     """
@@ -316,7 +316,35 @@ def _loadCheckpoint(fname, startIdx, checkpoints, propManager, action, lattice):
                                   startIdx)
         raise ValueError("No checkpoint matching start index")
 
-    # TODO load actVal and pass to HMC driver to avoid initial evaluation
     with h5.File(str(fname), "r") as h5f:
-        return startIdx, fileio.h5.loadCheckpoint(h5f["checkpoint"], startIdx,
-                                                  propManager, action, lattice)
+        rng, cfgGrp, evolver = fileio.h5.loadCheckpoint(h5f["checkpoint"], startIdx,
+                                                        evManager, action, lattice)
+        stage = EvolutionStage.fromH5(cfgGrp)
+        return startIdx, rng, stage, evolver
+
+def _iterTrajectories(ntr, maxNtr):
+    """!
+    Iterator for production.
+    Either iterate ntr times or infinitely long if ntr is None.
+    Shows a progressbar in both cases.
+    """
+
+    if ntr is not None:
+        yield from cli.progressRange(ntr, message="HMC evolution",
+                                     updateRate=max(ntr//100, 1))
+
+    else:
+        with cli.trackProgress(ntr, message="HMC evolution", updateRate=1) as pbar:
+            count = 0
+            while True:
+                yield count
+                count += 1
+                if maxNtr is not None and count >= maxNtr:
+                    getLogger(__name__).warning("Reached maximum number of trajectories for "
+                                                "'unbounded' evolution.")
+                    return
+                pbar.advance()
+
+def _report(evolver):
+    """!Log a report after evolution."""
+    getLogger(__name__).info("Evolution stopped, evolver:\n%s", evolver.report())

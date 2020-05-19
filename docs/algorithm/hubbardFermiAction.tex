@@ -123,7 +123,7 @@ The fermion matrix discussed in the previous section is an approximation of
 with
 \begin{align}
   {\hat{K}}_{x'x} &\equiv \delta_{x'x}\\
-  {\hat{F}_{t'}(\phi, \tilde{\kappa}, \tilde{\mu})}_{x'x} &\equiv {(e^{-\tilde{\kappa}+\tilde{\mu}})}_{x'x} e^{\i \phi_{x(t'-1)}} = {(e^{-\tilde{\kappa}+\tilde{\mu}} F_{t'}(\phi) )}_{x'x}.
+  {\hat{F}_{t'}(\phi, \tilde{\kappa}, \tilde{\mu})}_{x'x} &\equiv {(e^{\tilde{\kappa}-\tilde{\mu}})}_{x'x} e^{\i \phi_{x(t'-1)}} = {(e^{\tilde{\kappa}-\tilde{\mu}} F_{t'}(\phi) )}_{x'x}.
 \end{align}
 And the combination
 \begin{align}
@@ -132,9 +132,9 @@ And the combination
 \end{align}
 with
 \begin{align}
-  {\hat{P}(\tilde{\kappa}, \tilde{\mu}, \sigma_{\tilde{\kappa}})}_{x'x} &= \delta_{x'x} + {(e^{-\tilde{\kappa}+\tilde{\mu}} e^{-\sigma_{\tilde{\kappa}}\tilde{\kappa} - \tilde{\mu}})}_{x'x}\\
-  {\hat{T}^+_{t'}(\phi, \tilde{\kappa}, \tilde{\mu}, \sigma_{\tilde{\kappa}})}_{x'x} &= - \mathcal{B}_{t'} {\hat{F}_{t'}(\phi, \tilde{\kappa}, \tilde{\mu})}_{x'x} = - \mathcal{B}_{t'} {(e^{-\tilde{\kappa}+\tilde{\mu}})}_{x'x} e^{\i \phi_{x(t'-1)}}\\
-  {\hat{T}^-_{t'}(\phi, \tilde{\kappa}, \tilde{\mu}, \sigma_{\tilde{\kappa}})}_{x'x} &= - \mathcal{B}_{t'+1} {\hat{F}^T_{t'+1}(-\phi, \sigma_{\tilde{\kappa}}\tilde{\kappa}, -\tilde{\mu})}_{x'x} = - \mathcal{B}_{t'+1} e^{-\i \phi_{x't'}} {(e^{-\sigma_{\tilde{\kappa}}\tilde{\kappa}-\tilde{\mu}})}_{x'x}
+  {\hat{P}(\tilde{\kappa}, \tilde{\mu}, \sigma_{\tilde{\kappa}})}_{x'x} &= \delta_{x'x} + {(e^{\tilde{\kappa}-\tilde{\mu}} e^{\sigma_{\tilde{\kappa}}\tilde{\kappa} + \tilde{\mu}})}_{x'x}\\
+  {\hat{T}^+_{t'}(\phi, \tilde{\kappa}, \tilde{\mu}, \sigma_{\tilde{\kappa}})}_{x'x} &= - \mathcal{B}_{t'} {\hat{F}_{t'}(\phi, \tilde{\kappa}, \tilde{\mu})}_{x'x} = - \mathcal{B}_{t'} {(e^{+\tilde{\kappa}-\tilde{\mu}})}_{x'x} e^{\i \phi_{x(t'-1)}}\\
+  {\hat{T}^-_{t'}(\phi, \tilde{\kappa}, \tilde{\mu}, \sigma_{\tilde{\kappa}})}_{x'x} &= - \mathcal{B}_{t'+1} {\hat{F}^T_{t'+1}(-\phi, \sigma_{\tilde{\kappa}}\tilde{\kappa}, -\tilde{\mu})}_{x'x} = - \mathcal{B}_{t'+1} e^{-\i \phi_{x't'}} {(e^{\sigma_{\tilde{\kappa}}\tilde{\kappa}+\tilde{\mu}})}_{x'x}
 \end{align}
 Since both $\hat{M}$ and $\hat{Q}$ have the same block structure as $M$ and $Q$, most of the following derivations treat only the diagonal discretization from Section~\ref{sec:dia_disc}.
 Based on those, results for the exponential discretization are derived where they differ.
@@ -216,17 +216,17 @@ Hence the determinant is
 \end{align}
 It is possible to move the inverse to $F$ by factoring in one $K$ and factoring out one $F$ and iterating:
 \begin{align}
-  \det M &= {(\det\,K)}^{N_t-1} \det F_{N_t-1}^{-1} \det(F_{N_t-1} K + K^{-1} F_{N_t-2} \cdots K^{-1}F_{1}K^{-1} F_{0})\\
-         &= {(\det\,K)}^{N_t-2} \det (F_{N_t-1}^{-1} F_{N_t-2}^{-1}) \det(F_{N_t-2} K F_{N_t-1} K + K^{-1} F_{N_t-3} \cdots K^{-1} F_{0})\\
-         &= \Big(\prod_{t=0}^{N_t-1} \det F_{t}^{-1}\Big) \det(1 + F_0^{-1} K F_1^{-1} K \cdots F_{N_t-2}^{-1} K F_{N_t-1}^{-1} K)\\
-         &= e^{-\i \Phi} \det(1 + A^{-1}),\label{eq:det_M_1}
+  \det M &= {(\det\,K)}^{N_t-1} \det F_{N_t-1} \det(F_{N_t-1}^{-1} K + K^{-1} F_{N_t-2} \cdots K^{-1}F_{1}K^{-1} F_{0})\\
+         &= {(\det\,K)}^{N_t-2} \det (F_{N_t-1} F_{N_t-2}) \det(F_{N_t-2}^{-1} K F_{N_t-1}^{-1} K + K^{-1} F_{N_t-3} \cdots K^{-1} F_{0})\\
+         &= \Big(\prod_{t=0}^{N_t-1} \det F_{t}\Big) \det(1 + F_0^{-1} K F_1^{-1} K \cdots F_{N_t-2}^{-1} K F_{N_t-1}^{-1} K)\\
+         &= e^{\i \Phi} \det(1 + A^{-1}),\label{eq:det_M_1}
 \end{align}
 where $\Phi \equiv \sum_{x,t} \phi_{x,t}$.
 Apply the logarithm to~\eqref{eq:det_M_1} to get the final result:
 \begin{resultbox}
   \vspace{-\baselineskip}
   \begin{align}
-    \log \det M &= -\i \Phi  + \log \det (1 + A^{-1}),\label{eq:det_M}\\
+    \log \det M &= \i \Phi  + \log \det (1 + A^{-1}),\label{eq:det_M}\\
     A^{-1} &\equiv F_0^{-1}K F_1^{-1}K \cdots F_{N_t-1}^{-1}K.\label{eq:def_Ainv}
   \end{align}
 \end{resultbox}
@@ -247,14 +247,25 @@ Applying them to~\eqref{eq:det_M_2} gives
 \begin{resultbox}
   \vspace{-\baselineskip}
   \begin{align}
-    \log \det \hat{M} &= \log \det (1 + \hat{A}),\label{eq:det_M_exp}\\
+    \log \det \hat{M}_p &= \log \det (1 + \hat{A}),\label{eq:det_M_exp}\\
     \hat{A} &\equiv \hat{F}_{N_t-1} \hat{F}_{N_t-2} \cdots \hat{F}_{1} \hat{F}_{0}.\label{eq:def_B}
   \end{align}
 \end{resultbox}
 
+\noindent
+Numerical experiments have shown that using equation~\eqref{eq:det_M_exp} can be unstable for holes and large values of $\beta$.
+For this reason, the hole determinant should be calculated using the following, which is based on~\eqref{eq:det_M_1} with appropriate substitutions for the exponential discretization:
+\begin{resultbox}
+  \vspace{-\baselineskip}
+  \begin{align}
+    \log \det \hat{M}_h &= -\i \Phi  - N_t \log \det e^{-\sigma_{\tilde{\kappa}}\kappa-\mu} + \log \det (1 + \hat{A}^{-1}),\label{eq:det_M_exp_h}\\
+    \hat{A}^{-1} &\equiv \hat{F}_0^{-1} \hat{F}_1^{-1} \cdots \hat{F}_{N_t-1}^{-1}
+  \end{align}
+\end{resultbox}
+
+
 \subsection{Force}
 
-% TODO can be done using the new form of the action to get directly to the "result" in terms of A^-1
 The fermionic force at spacetime point $\mu\tau$ is given by
 \begin{align}
   {(\dot{\pi}_{\text{ferm}})}_{\mu\tau} = -\dpd{H_{\text{ferm}}}{\phi_{\mu\tau}} = -\dpd{S_\text{ferm}}{\phi_{\mu\tau}} =  \dpd{}{\phi_{\mu\tau}} \Big[\log \det M(\phi, \tilde{\kappa}, \tilde{\mu}) + \log \det M(-\phi, \sigma_{\tilde{\kappa}}\tilde{\kappa}, -\tilde{\mu})\Big].
@@ -302,15 +313,18 @@ This form is essentially identical to~\eqref{eq:force_v1} and thus the same algo
 
 \subsection{Solver}\label{sec:solver_v1}
 
-Linear systems of equations involving $M$ can be solved using an LU-decomposition and forward-/back-substitution.
+Linear systems of equations of the form
+\begin{align}
+  M x = b\label{eq:linear_system_v1}
+\end{align}
+can be solved using an LU-decomposition and forward-/back-substitution.
 It is straight-forward to derive expressions for the result using the algorithm presented in Section~\ref{sec:lu_v1}.
 
-\paragraph{Matrix-Vector Equation}
-Solve a system of equations for a single right hand side, i.e. $M x = b$, where $x$ and $b$ are vectors.
-Start by solving the auxiliary system $L y = b$:
+\paragraph{Diagonal Discretization}
+Begin by solving the auxiliary system $L y = b$:
 \begin{align}
-  y_0 &= b_0\\
-  y_i &= b_i + F_i K^{-1}y_{i-1} \quad \text{for} \quad i > 0
+  y_0 &= b_0\label{eq:y0_v1}\\
+  y_i &= b_i + F_i K^{-1}y_{i-1} \quad \text{for} \quad i > 0\label{eq:recursion_y_v1}
 \end{align}
 And then solve the original equations by solving $U x = y$:
 \begin{align}
@@ -318,7 +332,42 @@ And then solve the original equations by solving $U x = y$:
   x_i &= K^{-1} y_i - A_{0i}x_{N_t-1} \quad \text{for} \quad i < N_t-1,
 \end{align}
 where the definitions for $A$ and $A_{tt'}$ are given in~\eqref{eq:def_A} and~\eqref{eq:def_partial_A}, respectively.
-Note that $y$ always appears as $K^{-1}y$. Hence it is possible to reduce the number of required matrix-vector multiplications by storing $K^{-1}y$ instead of just $y$.
+
+\noindent
+Those equations, while formally a valid solution to equation~\eqref{eq:linear_system_v1}, are sub optimal because they involve $K^{-1}$ which is dense.
+Both for speed and numerical accuracy it is beneficial to modify those equations as follows.
+Expand the recursion~\eqref{eq:recursion_y_v1} to get
+\begin{align}
+  y_i &= b_i + (F_i K^{-1}) b_{i-1} + (F_{i} K^{-1} F_{i-1}K^{-1}) b_{i-2} + \cdots + (F_i K^{-1} \cdots F_1 K^{-1}) b_0\\
+      &= K A_{0i} \big[(F_0^{-1} K F_1^{-1} K \cdots F_i^{-1}) b_i + (F_0^{-1} K F_1^{-1} K \cdots F_{i-1}^{-1}) b_{i-1} + \cdots + (F_0^{-1}) b_0\big]\\
+  &\equiv K A_{0i} z_i.
+\end{align}
+Now substitute this for $y$ in equations~\eqref{eq:y0_v1} and~\eqref{eq:recursion_y_v1} to get the relations
+\begin{align}
+  z_0 &= F_0^{-1} b_0\\
+  z_i &= A_{0(i-1)}^{-1} F_i^{-1} b_i + z_{i-1} \quad \text{for} \quad i > 0.
+\end{align}
+Finally, the solution $x$ can be obtained as
+\begin{align}
+  (1 + A^{-1}) x_{N_t-1} &= z_{N_t-1}\\
+  A_{0i}^{-1} x_i &= z_i - x_{N_t-1} \quad \text{for} \quad i < N_t-1.
+\end{align}
+$x$ can best be calculated by constructing $A_{0i}^{-1}$ and $A^{-1}$ and solving the equations using a standard dense solver in order to avoid calculating the numerically less stable $A_{0i}$.
+In this form of the equations, $K^{-1}$ is no longer needed.
+
+\paragraph{Exponential Discretization}
+The equations for the exponential discretization can again be obtained via substitutions~\eqref{eq:exp_subs_K} and~\eqref{eq:exp_subs_F}.
+A solver based on the rearranged equations for the diagonal discretization was found to be more stable than based on the initial equations even though here $K \equiv \mathds{1}$.
+The result is
+\begin{align}
+  z_0 &= \hat{F}_0^{-1} b_0\\
+  z_i &= \hat{A}_{0i}^{-1} b_i + z_{i-1} \quad \text{for} \quad i > 0
+\end{align}
+and
+\begin{align}
+  (1 + \hat{A}^{-1}) x_{N_t-1} &= z_{N_t-1}\\
+  \hat{A}_{0i}^{-1} x_i &= z_i - x_{N_t-1} \quad \text{for} \quad i < N_t-1.
+\end{align}
 
 
 \clearpage

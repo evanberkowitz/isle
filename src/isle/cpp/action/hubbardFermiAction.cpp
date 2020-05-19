@@ -1,5 +1,8 @@
 #include "hubbardFermiAction.hpp"
 
+#include "../core.hpp"
+#include "../bind/logging.hpp"
+
 using namespace std::complex_literals;
 
 namespace isle {
@@ -18,7 +21,7 @@ namespace isle {
                 const auto nt = getNt(phi, nx);
 
                 if (nt < 2)
-                    throw std::runtime_error("nt < 2 in HubbardFermiAction algorithm variant 1 not supported");
+                    throw std::invalid_argument("nt < 2 in HubbardFermiAction algorithm variant 1 not supported");
 
                 // build A^-1 and partial products on the left of (1+A^-1)^-1
                 std::vector<CDMatrix> lefts;  // in reverse order
@@ -107,19 +110,77 @@ namespace isle {
         }  // anonymous namespace
 
 
+        namespace _internal {
+            template <> bool _holeShortcutPossible<HFABasis::PARTICLE_HOLE>(
+                const SparseMatrix<double> &hopping,
+                const double muTilde,
+                const std::int8_t sigmaKappa) {
+
+                auto log = getLogger("HubbardFermiAction");
+
+                if (!isBipartite(hopping)) {
+                    log.info("Not using shortcut for hole determinant, "
+                             "lattice is not bipartite.");
+                    return false;
+                }
+                else if (muTilde != 0.0) {  // must be exactlz zero
+                    log.info("Not using shortcut for hole determinant, "
+                             "chemical potential is not zero.");
+                    return false;
+                }
+                else if (sigmaKappa != +1) {
+                    log.info("Not using shortcut for hole determinant, "
+                             "sigmaKappa is not +1");
+                    // If other params do not allow for the shortcut,
+                    // we hit an earlier return.
+                    log.info("The other parameters allow using the shortcut, "
+                             "consider setting sigmaKappa to +1 or explicitly "
+                             "forbidding the use of the shortcut.");
+                    return false;
+                }
+
+                log.info("Using shortcut to calculate hole determinant from "
+                         "particle determinant.");
+                return true;
+            }
+
+            template <> bool _holeShortcutPossible<HFABasis::SPIN>(
+                const SparseMatrix<double> &UNUSED(hopping),
+                const double UNUSED(muTilde),
+                const std::int8_t UNUSED(sigmaKappa)) {
+
+                getLogger("HubbardFermiAction").info(
+                    "Not using shortcut for hole determinant, "
+                    "spin basis is not supported.");
+                return false;
+            }
+        }
+
         template <> std::complex<double>
         HubbardFermiAction<HFAHopping::DIA, HFAVariant::ONE, HFABasis::PARTICLE_HOLE>::eval(
             const CDVector &phi) const {
 
-            return -toFirstLogBranch(logdetM(_hfm, phi, Species::PARTICLE)
-                                     + logdetM(_hfm, phi, Species::HOLE));
+            if (_shortcutForHoles) {
+                const auto ldp = logdetM(_hfm, phi, Species::PARTICLE);
+                return -toFirstLogBranch(ldp + std::conj(ldp));
+            }
+            else {
+                return -toFirstLogBranch(logdetM(_hfm, phi, Species::PARTICLE)
+                                         + logdetM(_hfm, phi, Species::HOLE));
+            }
         }
         template <> CDVector
         HubbardFermiAction<HFAHopping::DIA, HFAVariant::ONE, HFABasis::PARTICLE_HOLE>::force(
             const CDVector &phi) const {
 
-            return -1.i*(forceVariant1Part(_hfm, phi, _kp, Species::PARTICLE)
+            if (_shortcutForHoles) {
+                const auto fp = forceVariant1Part(_hfm, phi, _kp, Species::PARTICLE);
+                return -1.i*(fp - blaze::conj(fp));
+            }
+            else {
+                return -1.i*(forceVariant1Part(_hfm, phi, _kp, Species::PARTICLE)
                          - forceVariant1Part(_hfm, phi, _kh, Species::HOLE));
+            }
         }
 
         template <> std::complex<double>
@@ -170,15 +231,27 @@ namespace isle {
         HubbardFermiAction<HFAHopping::EXP, HFAVariant::ONE, HFABasis::PARTICLE_HOLE>::eval(
             const CDVector &phi) const {
 
-            return -toFirstLogBranch(logdetM(_hfm, phi, Species::PARTICLE)
-                                     + logdetM(_hfm, phi, Species::HOLE));
+            if (_shortcutForHoles) {
+                const auto ldp = logdetM(_hfm, phi, Species::PARTICLE);
+                return -toFirstLogBranch(ldp + std::conj(ldp));
+            }
+            else {
+                return -toFirstLogBranch(logdetM(_hfm, phi, Species::PARTICLE)
+                                         + logdetM(_hfm, phi, Species::HOLE));
+            }
         }
         template <> CDVector
         HubbardFermiAction<HFAHopping::EXP, HFAVariant::ONE, HFABasis::PARTICLE_HOLE>::force(
             const CDVector &phi) const {
 
-            return -1.i*(forceVariant1Part(_hfm, phi, _kp, Species::PARTICLE)
+            if (_shortcutForHoles) {
+                const auto fp = forceVariant1Part(_hfm, phi, _kp, Species::PARTICLE);
+                return -1.i*(fp - blaze::conj(fp));
+            }
+            else {
+                return -1.i*(forceVariant1Part(_hfm, phi, _kp, Species::PARTICLE)
                          - forceVariant1Part(_hfm, phi, _kh, Species::HOLE));
+            }
         }
 
         template <> std::complex<double>

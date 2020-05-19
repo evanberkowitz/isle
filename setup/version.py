@@ -22,9 +22,9 @@ def version_from_git(plain=True):
         match = re.match(r"v?((\d[\d\.]*).*)\n?", str(latest_tag))
         if match is None:
             print(f"error: latest git tag does not conform to format of version number: {latest_tag}")
-            return "0.0"
+            return "0.0-unknown"
         if plain:
             return match[2]
         return match[1]
     except subprocess.CalledProcessError:
-        return "0.0"
+        return "0.0-unknown"

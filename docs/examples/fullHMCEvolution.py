@@ -4,7 +4,6 @@ Example script to show how to set up the HMC driver for production including the
 
 # All output should go through a logger for better control and consistency.
 from logging import getLogger
-from pathlib import Path
 
 # Import base functionality of Isle.
 import isle
@@ -15,8 +14,8 @@ import isle.drivers
 ### Specify input / output files
 # Write all data to this file.
 OUTFILE = "hmc-example.out.h5"
-# Load lattice from this file.
-LATTICE = Path(__file__).resolve().parent/"../../resources/lattices/four_sites.yml"
+# Name of the lattice.
+LATTICE = "four_sites"
 
 ### Specify parameters.
 # isle.util.parameters takes arbitrary keyword arguments, constructs a new dataclass,
@@ -83,7 +82,11 @@ def main():
     log = getLogger("HMC")
 
     # Load the spatial lattice.
-    lat = isle.fileio.yaml.loadLattice(LATTICE)
+    # Note: This command loads a lattice that is distributed together with Isle.
+    #       In order to load custom lattices from a file, use
+    #       either  isle.LATTICES.loadExternal(filename)
+    #       or  isle.fileio.yaml.loadLattice(filename)
+    lat = isle.LATTICES[LATTICE]
     # Lattice files usually only contain information on the spatial lattice
     # to be more flexible. Set the number of time slices here.
     lat.nt(NT)
@@ -110,7 +113,7 @@ def main():
     # The number of steps (99) must be one less than the number of trajectories below.
     evolver = isle.evolver.LinearStepLeapfrog(hmcState.action, (1, 1), (20, 5), 99, rng)
     # Thermalize configuration for 100 trajectories without saving anything.
-    phi, *_ = hmcState(phi, evolver, 100, saveFreq=0, checkpointFreq=0)
+    evStage = hmcState(phi, evolver, 100, saveFreq=0, checkpointFreq=0)
     # Reset the internal counter so we start saving configs at index 0.
     hmcState.resetIndex()
 
@@ -120,7 +123,7 @@ def main():
     evolver = isle.evolver.ConstStepLeapfrog(hmcState.action, 1, 5, rng)
     # Produce configurations and save in intervals of 2 trajectories.
     # Place a checkpoint every 10 trajectories.
-    phi = hmcState(phi, evolver, 100, saveFreq=2, checkpointFreq=10)
+    hmcState(evStage, evolver, 100, saveFreq=2, checkpointFreq=10)
 
     # That is it, clean up happens automatically.
 

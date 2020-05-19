@@ -78,8 +78,12 @@ yaml.add_representer(Lattice, _representLattice)
 
 def loadLattice(fname):
     """!Load a Lattice from a YAML file."""
-    with open(str(fname), "r") as yamlf:
-        return yaml.safe_load(yamlf.read())
+    if hasattr(fname, "read"):
+        string = fname.read()
+    else:
+        with open(fname, "r") as yamlf:
+            string = yamlf.read()
+    return yaml.safe_load(string)
 
 
 # register parameters function

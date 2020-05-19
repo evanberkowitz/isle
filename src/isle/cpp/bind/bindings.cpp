@@ -11,16 +11,6 @@
 
 using namespace isle;
 
-namespace bind {
-    namespace {
-        /// Bind STL containers to dedicated Python types.
-        void bindSTLContainers(py::module &mod) {
-            py::bind_vector<std::vector<CDVector>>(mod, "VectorCDVector");
-            py::implicitly_convertible<py::list, std::vector<CDVector>>();
-        }
-    }
-}
-
 PYBIND11_MODULE(ISLE_LIBNAME, mod) {
     mod.doc() = "Python bindings for isle";
 
@@ -31,6 +21,4 @@ PYBIND11_MODULE(ISLE_LIBNAME, mod) {
     bind::bindHubbardFermiMatrix(mod);
     bind::bindActions(mod);
     bind::bindIntegrators(mod);
-
-    bind::bindSTLContainers(mod);
 }

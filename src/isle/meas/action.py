@@ -23,9 +23,9 @@ class Action(Measurement):
         super().__init__(savePath, configSlice)
         self.action = []
 
-    def __call__(self, phi, action, itr):
+    def __call__(self, stage, itr):
         """!Record action."""
-        self.action.append(action)
+        self.action.append(stage.actVal)
 
     def save(self, h5group):
         r"""!

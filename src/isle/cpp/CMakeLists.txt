@@ -32,8 +32,22 @@ add_library(${LIBNAME} MODULE ${SOURCE})
 target_compile_definitions(${LIBNAME} PUBLIC -DISLE_LIBNAME=${LIBNAME})
 
 # set standard
-set_target_properties(${LIBNAME} PROPERTIES CXX_STANDARD 14
+set_target_properties(${LIBNAME} PROPERTIES
+  CXX_STANDARD 14
   CXX_STANDARD_REQUIRED ON)
+
+if ("${CMAKE_BUILD_TYPE}" STREQUAL "RELEASE")
+  include(CheckIPOSupported)
+  check_ipo_supported(RESULT result)
+  if (${result})
+    set_target_properties(${LIBNAME} PROPERTIES
+      INTERPROCEDURAL_OPTIMIZATION True)
+    message(STATUS "Enabling link time optimization")
+  else()
+    message(STATUS "Cannot enable link time optimization")
+  endif ()
+  unset(result)
+endif ()
 
 # warnings
 set(GCC_CLANG_WARNINGS -Wall -Wextra -Wshadow -Wnon-virtual-dtor -Wpedantic

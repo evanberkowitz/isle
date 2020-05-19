@@ -14,14 +14,13 @@ import isle
 BENCH_PATH = Path(__file__).resolve().parent
 
 NTS = (4, 8, 12, 16, 24, 32, 64, 96)
-NREP = 5
+NREP = 500
 
 
 def nt_scaling():
     "Benchmark scaling with Nt."
 
-    with open(str(BENCH_PATH/"../resources/lattices/c60_ipr.yml"), "r") as yamlf:
-        lat = yaml.safe_load(yamlf)
+    lat = isle.LATTICES["c60_ipr"]
     nx = lat.nx()
 
     functions = {
@@ -61,8 +60,8 @@ def nt_scaling():
 def nx_scaling():
     "Benchmark scaling with Nx."
 
-    lattices = [isle.yamlio.loadLattice(fname)
-                for fname in (BENCH_PATH/"../resources/lattices").iterdir()]
+    lattices = [isle.LATTICES[name]
+                for name in isle.LATTICES.keys()]
     lattices = sorted(lattices, key=lambda lat: lat.nx())
     NT = 16
 
@@ -80,13 +79,13 @@ def nx_scaling():
 
         # make random auxilliary field and HFM
         phi = isle.Vector(np.random.randn(nx*NT)
-                         + 1j*np.random.randn(nx*NT))
+                          + 1j*np.random.randn(nx*NT))
         hfm = isle.HubbardFermiMatrixDia(lat.hopping()/NT, 0, -1)
 
-        times["logdetM"].append(timeit.timeit(
+        times["logdetM"].append(np.min(timeit.repeat(
             "isle.logdetM(hfm, phi, isle.Species.PARTICLE)",
             globals={"hfm": hfm, "phi": phi, "isle": isle},
-            number=NREP) / NREP)
+            number=NREP, repeat=5)) / NREP)
 
     # save benchmark to file
     pickle.dump({"xlabel": "Nx",

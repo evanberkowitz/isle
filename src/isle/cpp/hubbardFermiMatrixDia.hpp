@@ -1,7 +1,5 @@
 /** \file
  * \brief Hubbard model fermion matrices with hopping matrix on the diagonal.
- *
- * \todo Derive force and solver based on new form of algorithm.
  */
 
 #ifndef HUBBARD_FERMI_MATRIX_DIA_HPP
@@ -329,16 +327,22 @@ namespace isle {
      * Can be called for multiple right hand sides b in order to re-use parts of
      * the calculation.
      *
+     * \note The shape of `rhs` and the return value may be counter intuitive.
+     *       The first index is the number of the right hand side vector,
+     *       the second index is space-time.
+     *       That is space-time point (t, x) of right hand side i is `rhs(i, t*nx+x)`.
+     *       That means, for instance, that the inverse of M is
+     *       `transpose(solveM(hfm, phi, species, unity))`.
+     *
      * \param hfm Represents matrix M which describes the system of equations.
      * \param phi Gauge configuration needed to construct M.
      * \param species Select whether to solve for particles or holes.
      * \param rhs Right hand sides b.
-     * \returns Results x, same length as rhs.
+     * \returns Results x, same shape as rhs.
      */
-    std::vector<CDVector> solveM(const HubbardFermiMatrixDia &hfm,
-                                 const CDVector &phi,
-                                 Species species,
-                                 const std::vector<CDVector> &rhs);
+    CDMatrix solveM(const HubbardFermiMatrixDia &hfm, const CDVector &phi,
+                    const Species species, const CDMatrix &rhss);
+
 
 }  // namespace isle
 

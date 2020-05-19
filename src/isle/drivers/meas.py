@@ -5,6 +5,7 @@ Driver to perform measurements on configurations stored in a file.
 """
 
 from logging import getLogger
+from pathlib import Path
 
 import h5py as h5
 
@@ -12,6 +13,7 @@ from .. import fileio, cli
 from ..collection import inSlice, withStart, withStop, withStep
 from ..meta import callFunctionFromSource
 from ..util import verifyVersionsByException
+from ..evolver import EvolutionStage
 
 
 class Measure:
@@ -104,13 +106,13 @@ class Measure:
             # apply measurements to all configs
             with cli.trackProgress(len(configurations), "Measurements", updateRate=1000) as pbar:
                 for itr, grp in configurations:
-                    # read config and action
-                    phi = grp["phi"][()]
-                    action = grp["action"][()]
+                    # load trajectory
+                    stage = EvolutionStage.fromH5(grp)
+
                     # measure
                     for imeas, measurement in enumerate(measurements):
                         if inSlice(itr, measurement.configSlice):
-                            measurement(phi, action, itr)
+                            measurement(stage, itr)
                         elif itr >= measurement.configSlice.stop:
                             # this measurement is done => drop it
                             del measurements[imeas]
@@ -238,6 +240,7 @@ def _ensureIsValidOutfile(outfile, lattice, params, makeActionSrc):
         raise ValueError("Output file type no supported by Meas driver. "
                          f"Output file is '{outfile}'")
 
+    outfile = Path(outfile)
     if not outfile.exists():
         # the easy case, just make a new file
         fileio.h5.initializeNewFile(outfile, False, lattice, params, makeActionSrc)

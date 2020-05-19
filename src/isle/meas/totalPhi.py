@@ -20,10 +20,10 @@ class TotalPhi(Measurement):
         self.Phi = []
         self.phiSq = []
 
-    def __call__(self, phi, action, itr):
+    def __call__(self, stage, itr):
         """!Record the total phi and mean value of phi^2."""
-        self.Phi.append(np.sum(phi))
-        self.phiSq.append(np.linalg.norm(phi)**2 / len(phi))
+        self.Phi.append(np.sum(stage.phi))
+        self.phiSq.append(np.linalg.norm(stage.phi)**2 / len(stage.phi))
 
     def save(self, h5group):
         r"""!

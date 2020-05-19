@@ -12,6 +12,7 @@ namespace bind {
         py::class_<Lattice>{mod, "Lattice"}
             .def(py::init<std::size_t, std::size_t>())
             .def(py::init<std::size_t, std::size_t, const std::string&, const std::string&>())
+            .def(py::init<const Lattice&>())
             .def("hopping", py::overload_cast<>(&Lattice::hopping),
                  py::return_value_policy::reference_internal)
             .def("areNeighbors", &Lattice::areNeighbors)
