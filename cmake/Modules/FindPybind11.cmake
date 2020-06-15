@@ -11,9 +11,11 @@
 set(PYTHON_EXECUTABLE "python3" CACHE STRING "Python 3 executable")
 set(PYTHON_CONFIG "python3-config" CACHE STRING "Python 3 config script")
 
-# Execute python-config with given arguments.
-function (python_config args output)
-  execute_process(COMMAND ${PYTHON_CONFIG} ${args}
+# Execute python-config.
+# The first argument is the output variable.
+# An arbitray number of additional arguments can be given which are passed as flags to python-config.
+function (python_config output)
+  execute_process(COMMAND ${PYTHON_CONFIG} ${ARGN}
     RESULT_VARIABLE rc
     OUTPUT_VARIABLE result
     OUTPUT_STRIP_TRAILING_WHITESPACE)
@@ -63,6 +65,7 @@ string(REGEX REPLACE
 unset(PY_VERSION_STRING)
 unset(RC)
 
+
 ### get includes ###
 execute_process(COMMAND ${PYTHON_EXECUTABLE} "-m" "pybind11" "--includes"
   RESULT_VARIABLE RC
@@ -82,25 +85,16 @@ unset(RAW_INCLUDES)
 
 
 ### get linker flags and libraries ###
-python_config("--ldflags" AUX)
-# turn it into a list
-string(REPLACE " " ";" AUX_LIST ${AUX})
-message("#### ${AUX_LIST}")
-
-# `-lpython` was removed form `python-config --ldlags` in version 3.8 but it is needed on MacOS.
-# Use `python-config --embed` to get that flag if necessary (should not be necessary on Linux).
 if ((${PY_VERSION} VERSION_GREATER "3.8.0")
     OR (${PY_VERSION} VERSION_EQUAL "3.8.0"))
-  python_config("--embed" EMBED_FLAGS)
-  if (EMBED_FLAGS)
-    # turn it into a list
-    string(REPLACE " " ";" EMBED_LIST ${EMBED_FLAGS})
-    list(APPEND AUX_LIST ${EMBED_LIST})
-    unset(EMBED_LIST)
-    unset(EMBED_FLAGS)
-  endif ()
-endif ()
-
+  # `-lpython` was removed form `python-config --ldlags` in version 3.8 but it is needed on MacOS.
+  # Use `python-config --ldflags --embed` to get that flag.
+  python_config(AUX "--ldflags" "--embed")
+else ()
+  python_config(AUX "--ldflags")
+endif()
+# turn it into a list
+string(REPLACE " " ";" AUX_LIST ${AUX})
 # split
 extract_flags_paths(AUX_LIST "-L" AUX_FLAGS PYBIND11_LIB_PATHS)
 unset(AUX_LIST)
@@ -133,7 +127,7 @@ unset(PY_VERSION)
 
 
 ### get library extension suffix ###
-python_config("--extension-suffix" PYBIND11_LIB_SUFFIX)
+python_config(PYBIND11_LIB_SUFFIX "--extension-suffix")
 
 
 # handle find_package arguments
