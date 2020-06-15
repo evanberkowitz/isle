@@ -1,0 +1,43 @@
+name: MacOS Build
+
+on:
+  push:
+    branches:
+      - devel
+      - master
+
+jobs:
+  build:
+    
+    runs-on: macos-latest
+    strategy:
+      matrix:
+        python-version: [3.6, 3.7, 3.8]
+
+    steps:
+    - uses: actions/checkout@v2
+    - name: Set up Python ${{ matrix.python-version }}
+      uses: actions/setup-python@v1
+      with:
+        python-version: ${{ matrix.python-version }}
+    - name: Install dependencies
+      run: |
+        brew install openblas
+        wget https://bitbucket.org/blaze-lib/blaze/downloads/blaze-3.6.tar.gz
+        echo "Extracting blaze"
+        gzip -d blaze-3.6.tar.gz
+        tar -xf blaze-3.6.tar ./blaze-3.6/blaze
+        mv blaze-3.6 blaze
+        python${{ matrix.python-version }} -m pip install --upgrade pip
+        pip install -r requirements.txt
+    - name: Install dataclasses
+      if: matrix.python-version == 3.6
+      run: pip install dataclasses
+    - name: Build
+      run: |
+        python${{ matrix.python-version }} setup.py configure --compiler=g++-9 --build-type=DEBUG --blaze-parallelism=OMP --parallel-blas --blaze=blaze
+        python${{ matrix.python-version }} setup.py develop
+    - name: Test
+      run: |
+        pip install pytest
+        pytest
