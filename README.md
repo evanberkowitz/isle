@@ -1,4 +1,4 @@
-![Test](https://github.com/jl-wynen/isle/workflows/Test/badge.svg?branch=devel)
+![Linux Build](https://github.com/jl-wynen/isle/workflows/Linux%20Build/badge.svg)
 
 Simulating carbon nanostructures.
 
