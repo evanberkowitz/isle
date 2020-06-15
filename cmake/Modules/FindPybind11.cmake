@@ -47,6 +47,22 @@ function (extract_flags_paths in_list prefix out_flags out_paths)
 endfunction ()
 
 
+### get Python version ###
+execute_process(COMMAND ${PYTHON_EXECUTABLE} "--version"
+  RESULT_VARIABLE RC
+  OUTPUT_VARIABLE PY_VERSION_STRING
+  OUTPUT_STRIP_TRAILING_WHITESPACE)
+if (NOT "${RC}" STREQUAL "0")
+  message(FATAL_ERROR "Could not determine Python version. Return code: ${RC}")
+endif ()
+string(REGEX REPLACE
+  "Python ([0-9]+\\.[0-9]+\\.[0-9]+)"
+  "\\1"
+  PY_VERSION
+  ${PY_VERSION_STRING})
+unset(PY_VERSION_STRING)
+unset(RC)
+
 ### get includes ###
 execute_process(COMMAND ${PYTHON_EXECUTABLE} "-m" "pybind11" "--includes"
   RESULT_VARIABLE RC
@@ -69,6 +85,22 @@ unset(RAW_INCLUDES)
 python_config("--ldflags" AUX)
 # turn it into a list
 string(REPLACE " " ";" AUX_LIST ${AUX})
+message("#### ${AUX_LIST}")
+
+# `-lpython` was removed form `python-config --ldlags` in version 3.8 but it is needed on MacOS.
+# Use `python-config --embed` to get that flag if necessary (should not be necessary on Linux).
+if ((${PY_VERSION} VERSION_GREATER "3.8.0")
+    OR (${PY_VERSION} VERSION_EQUAL "3.8.0"))
+  python_config("--embed" EMBED_FLAGS)
+  if (EMBED_FLAGS)
+    # turn it into a list
+    string(REPLACE " " ";" EMBED_LIST ${EMBED_FLAGS})
+    list(APPEND AUX_LIST ${EMBED_LIST})
+    unset(EMBED_LIST)
+    unset(EMBED_FLAGS)
+  endif ()
+endif ()
+
 # split
 extract_flags_paths(AUX_LIST "-L" AUX_FLAGS PYBIND11_LIB_PATHS)
 unset(AUX_LIST)
@@ -94,6 +126,10 @@ foreach (lib IN LISTS AUX_LIBS)
 endforeach ()
 unset(AUX_LIBS)
 unset(LD_LIBRARY_PATH)
+
+
+### clean up remaining variables ###
+unset(PY_VERSION)
 
 
 ### get library extension suffix ###
