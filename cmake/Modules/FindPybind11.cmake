@@ -11,9 +11,11 @@
 set(PYTHON_EXECUTABLE "python3" CACHE STRING "Python 3 executable")
 set(PYTHON_CONFIG "python3-config" CACHE STRING "Python 3 config script")
 
-# Execute python-config with given arguments.
-function (python_config args output)
-  execute_process(COMMAND ${PYTHON_CONFIG} ${args}
+# Execute python-config.
+# The first argument is the output variable.
+# An arbitray number of additional arguments can be given which are passed as flags to python-config.
+function (python_config output)
+  execute_process(COMMAND ${PYTHON_CONFIG} ${ARGN}
     RESULT_VARIABLE rc
     OUTPUT_VARIABLE result
     OUTPUT_STRIP_TRAILING_WHITESPACE)
@@ -47,6 +49,23 @@ function (extract_flags_paths in_list prefix out_flags out_paths)
 endfunction ()
 
 
+### get Python version ###
+execute_process(COMMAND ${PYTHON_EXECUTABLE} "--version"
+  RESULT_VARIABLE RC
+  OUTPUT_VARIABLE PY_VERSION_STRING
+  OUTPUT_STRIP_TRAILING_WHITESPACE)
+if (NOT "${RC}" STREQUAL "0")
+  message(FATAL_ERROR "Could not determine Python version. Return code: ${RC}")
+endif ()
+string(REGEX REPLACE
+  "Python ([0-9]+\\.[0-9]+\\.[0-9]+)"
+  "\\1"
+  PY_VERSION
+  ${PY_VERSION_STRING})
+unset(PY_VERSION_STRING)
+unset(RC)
+
+
 ### get includes ###
 execute_process(COMMAND ${PYTHON_EXECUTABLE} "-m" "pybind11" "--includes"
   RESULT_VARIABLE RC
@@ -66,7 +85,14 @@ unset(RAW_INCLUDES)
 
 
 ### get linker flags and libraries ###
-python_config("--ldflags" AUX)
+if ((${PY_VERSION} VERSION_GREATER "3.8.0")
+    OR (${PY_VERSION} VERSION_EQUAL "3.8.0"))
+  # `-lpython` was removed form `python-config --ldlags` in version 3.8 but it is needed on MacOS.
+  # Use `python-config --ldflags --embed` to get that flag.
+  python_config(AUX "--ldflags" "--embed")
+else ()
+  python_config(AUX "--ldflags")
+endif()
 # turn it into a list
 string(REPLACE " " ";" AUX_LIST ${AUX})
 # split
@@ -96,8 +122,12 @@ unset(AUX_LIBS)
 unset(LD_LIBRARY_PATH)
 
 
+### clean up remaining variables ###
+unset(PY_VERSION)
+
+
 ### get library extension suffix ###
-python_config("--extension-suffix" PYBIND11_LIB_SUFFIX)
+python_config(PYBIND11_LIB_SUFFIX "--extension-suffix")
 
 
 # handle find_package arguments
