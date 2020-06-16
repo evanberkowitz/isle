@@ -13,6 +13,7 @@ dist
 
 # Python virtual environments
 Pipfile
+Pipfile.lock
 
 # Jupyter checkpoints
 .ipynb_checkpoints
