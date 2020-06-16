@@ -25,3 +25,6 @@ Pipfile.lock
 
 # build directory
 build
+
+# IDE settings
+.idea
