@@ -15,21 +15,8 @@ from . import rand
 SEED = 8613
 RAND_MEAN = 0
 RAND_STD = 0.2
-N_REP = 1 # number of repetitions
-
-#  test on these lattices
-LATTICES = [isle.LATTICES[name] for name in
-            ("c20",
-             "tube_3-3_1",
-             "one_site",
-             "two_sites",
-             "triangle")]
-
-# test with these values of chemical potential
-MU = (0, 1, 1.5)
-
-# types of hubbard fermi matrices
-HFMS = (isle.HubbardFermiMatrixDia, isle.HubbardFermiMatrixExp)
+# TODO
+N_REP = 1  # number of repetitions
 
 
 def _randomPhi(n, real=True, imag=True):
@@ -144,42 +131,27 @@ class TestHubbardFermiMatrix(unittest.TestCase):
         self.assertRaises(RuntimeError,
                           lambda msg:
                           isle.logdetM(HFM(kappa, 1, 1), isle.CDVector(nx), isle.Species.PARTICLE),
-                          msg="logdetM must throw a RuntimeError when called with mu != 0. If this bug has been fixed, update the unit test!")
+                          msg="logdetM must throw a RuntimeError when called with mu != 0. """
+                              "If this bug has been fixed, update the unit test!")
 
-        for nt, beta,  mu, sigmaKappa, species, rep in product((4, 8, 32),
-                                                               (3, 6),
-                                                               [0],
-                                                               (-1, 1),
-                                                               (isle.Species.PARTICLE, isle.Species.HOLE),
-                                                               range(N_REP)):
-            hfm = HFM(kappa*beta/nt, mu*beta/nt, sigmaKappa)
+        for nt, beta, mu, sigmaKappa in product((2, 4, 8, 32),
+                                                (3, 6),
+                                                [0],
+                                                (-1, 1)):
+            hfm = HFM(kappa * beta / nt, mu * beta / nt, sigmaKappa)
+            for species, (real, imag), rep in product((isle.Species.PARTICLE, isle.Species.HOLE),
+                                                      ((True, False), (False, True), (True, True)),
+                                                      range(N_REP)):
+                phi = _randomPhi(nx * nt, real=real, imag=imag)
+                plain = isle.logdet(isle.Matrix(hfm.M(phi, species)))
+                viaLU = isle.logdetM(hfm, phi, species)
+                self.assertAlmostEqual(plain, viaLU, places=5,
+                                       msg="Failed check log(det(M)) in repetition {}".format(rep)
+                                           + "\nfor nt={}, beta={}, mu={}, sigmaKappa={}, species={}, real={}, imag={}"
+                                       .format(nt, beta, mu, sigmaKappa, species, real, imag)
+                                           + "\n  plain = {}".format(plain)
+                                           + "\n  viaLU = {}".format(viaLU))
 
-            phi = _randomPhi(nx*nt, imag=False)
-            plain = isle.logdet(isle.Matrix(hfm.M(phi, species)))
-            viaLU = isle.logdetM(hfm, phi, species)
-            self.assertAlmostEqual((plain-viaLU)/max(abs(plain), abs(viaLU)), 0, places=5,
-                                   msg="Failed check log(det(M)) in repetition {}".format(rep)\
-                                   + "for nt={}, beta={}, mu={}, sigmaKappa={}, species={}:".format(nt, beta, mu, sigmaKappa, species)\
-                                   + "\nplain = {}".format(plain) \
-                                   + "\nviaLU = {}".format(viaLU))
-
-            phi = _randomPhi(nx*nt, real=False)
-            plain = isle.logdet(isle.Matrix(hfm.M(phi, species)))
-            viaLU = isle.logdetM(hfm, phi, species)
-            self.assertAlmostEqual((plain-viaLU)/max(abs(plain), abs(viaLU)), 0, places=5,
-                                   msg="Failed check log(det(M)) in repetition {}".format(rep)\
-                                   + "for nt={}, beta={}, mu={}, sigmaKappa={}, species={}:".format(nt, beta, mu, sigmaKappa, species)\
-                                   + "\nplain = {}".format(plain) \
-                                   + "\nviaLU = {}".format(viaLU))
-
-            phi = _randomPhi(nx*nt)
-            plain = isle.logdet(isle.Matrix(hfm.M(phi, species)))
-            viaLU = isle.logdetM(hfm, phi, species)
-            self.assertAlmostEqual((plain-viaLU)/max(abs(plain), abs(viaLU)), 0, places=5,
-                                   msg="Failed check log(det(M)) in repetition {}".format(rep)\
-                                   + "for nt={}, beta={}, mu={}, sigmaKappa={}, species={}:".format(nt, beta, mu, sigmaKappa, species)\
-                                   + "\nplain = {}".format(plain) \
-                                   + "\nviaLU = {}".format(viaLU))
 
     def _test_logdetQ(self, HFM, kappa):
         "Test log(det(Q))."
@@ -215,23 +187,23 @@ class TestHubbardFermiMatrix(unittest.TestCase):
         "Test solveM()."
 
         nx = kappa.rows()
-        for nt, mu, sigmaKappa, species, rep in product((4, 8, 32),
-                                                        [0],
-                                                        (-1, 1),
-                                                        (isle.Species.PARTICLE, isle.Species.HOLE),
-                                                        range(N_REP)):
-            hfm = HFM(kappa/nt, mu/nt, sigmaKappa)
-            phi = _randomPhi(nx*nt)
-            M = hfm.M(phi, species)
-            rhss = np.array([_randomPhi(nx*nt) for _ in range(2)])
+        for nt, beta, mu, sigmaKappa in product((4, 8, 32),
+                                                (1,),
+                                                [0],  # TODO use more values once possible
+                                                (-1, 1)):
+            hfm = HFM(kappa * beta / nt, mu * beta / nt, sigmaKappa)
+            for species, (real, imag), rep in product((isle.Species.PARTICLE, isle.Species.HOLE),
+                                                      ((True, True),),
+                                                      range(N_REP)):
+                phi = _randomPhi(nx * nt, real=real, imag=imag)
+                M = hfm.M(phi, species)
+                rhss = np.array([_randomPhi(nx * nt) for _ in range(10)])
 
-            res = np.array(isle.solveM(hfm, phi, species, rhss), copy=False)
-            chks = [np.max(np.abs(M*r-rhs)) for r, rhs in zip(res, rhss)]
-            for chk in chks:
-                self.assertAlmostEqual(chk, 0, places=10,
-                                       msg="Failed check solveM in repetition {}".format(rep)\
-                                       + "for nt={}, mu={}, sigmaKappa={}, species={}:".format(nt, mu, sigmaKappa, species)\
-                                       + "\nMx - rhs = {}".format(chk))
+                res = np.array(isle.solveM(hfm, phi, species, rhss), copy=False)
+                np.testing.assert_allclose(M * res.T, rhss.T, rtol=1e-5, atol=0,
+                                           err_msg="Failed check solveM in repetition {}".format(rep)
+                                                   + "\nfor nt={}, mu={}, sigmaKappa={}, species={}, real={}, imag={}:"
+                                           .format(nt, mu, sigmaKappa, species, real, imag))
 
     def test_3_solver(self):
         "Test Ax=b solvers."
