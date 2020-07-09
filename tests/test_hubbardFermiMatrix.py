@@ -193,7 +193,7 @@ class TestHubbardFermiMatrix(unittest.TestCase):
                                                 (-1, 1)):
             hfm = HFM(kappa * beta / nt, mu * beta / nt, sigmaKappa)
             for species, (real, imag), rep in product((isle.Species.PARTICLE, isle.Species.HOLE),
-                                                      ((True, True),),
+                                                      ((True, False), (False, True), (True, True),),
                                                       range(N_REP)):
                 phi = _randomPhi(nx * nt, real=real, imag=imag)
                 M = hfm.M(phi, species)
