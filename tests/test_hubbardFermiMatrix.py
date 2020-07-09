@@ -3,7 +3,7 @@ Unittest for HubbardFermiMatrix.
 """
 
 import unittest
-import itertools
+from itertools import product
 
 import numpy as np
 
@@ -40,6 +40,19 @@ def _randomPhi(n, real=True, imag=True):
 
 
 class TestHubbardFermiMatrix(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        cls.lattices = [isle.LATTICES[name] for name in
+                         ("c20",
+                          "tube_3-3_1",
+                          "one_site",
+                          "two_sites",
+                          "triangle")]
+
+        cls.mu = (0.0, 1.0, 1.5)
+        cls.HFMTypes = (isle.HubbardFermiMatrixDia, isle.HubbardFermiMatrixExp)
+
+
     def _testConstructionNt1(self, HFM, kappa, mu, sigmaKappa):
         "Check if nt=1 HFM is constructed properly."
 
@@ -110,23 +123,19 @@ class TestHubbardFermiMatrix(unittest.TestCase):
                         + "\nauto = {}".format(auto) \
                         + "\nmanual {}".format(manual))
 
-    def _testConstruction(self, kappa):
-        "Check if HFM is constructed correctly for several values of mu and nt."
-
-        for mu, sigmaKappa, _ in itertools.product(MU, (-1, 1),
-                                                   range(N_REP)):
-            for HFM in HFMS:
-                self._testConstructionNt1(HFM, kappa, mu, sigmaKappa)
-                self._testConstructionNt2(HFM, kappa/2, mu/2, sigmaKappa)
-                self._testConstructionNt3(HFM, kappa/3, mu/3, sigmaKappa)
-
     def test_1_construction(self):
         "Test construction of sparse matrix for different lattices and parameters."
 
         logger = core.get_logger()
-        for lattice in LATTICES:
-            logger.info("Testing constructor of HubbardFermiMatrix* for lattice %s", lattice.name)
-            self._testConstruction(lattice.hopping())
+        for lattice, mu, sigmaKappa, HFM, _ in product(self.lattices,
+                                                       self.mu,
+                                                       (-1, 1),
+                                                       self.HFMTypes,
+                                                       range(N_REP)):
+            kappa = lattice.hopping()
+            self._testConstructionNt1(HFM, kappa, mu, sigmaKappa)
+            self._testConstructionNt2(HFM, kappa/2, mu/2, sigmaKappa)
+            self._testConstructionNt3(HFM, kappa/3, mu/3, sigmaKappa)
 
     def _test_logdetM(self, HFM, kappa):
         "Test log(det(M))."
@@ -137,12 +146,12 @@ class TestHubbardFermiMatrix(unittest.TestCase):
                           isle.logdetM(HFM(kappa, 1, 1), isle.CDVector(nx), isle.Species.PARTICLE),
                           msg="logdetM must throw a RuntimeError when called with mu != 0. If this bug has been fixed, update the unit test!")
 
-        for nt, beta,  mu, sigmaKappa, species, rep in itertools.product((4, 8, 32),
-                                                                         (3, 6),
-                                                                         [0],
-                                                                         (-1, 1),
-                                                                         (isle.Species.PARTICLE, isle.Species.HOLE),
-                                                                         range(N_REP)):
+        for nt, beta,  mu, sigmaKappa, species, rep in product((4, 8, 32),
+                                                               (3, 6),
+                                                               [0],
+                                                               (-1, 1),
+                                                               (isle.Species.PARTICLE, isle.Species.HOLE),
+                                                               range(N_REP)):
             hfm = HFM(kappa*beta/nt, mu*beta/nt, sigmaKappa)
 
             phi = _randomPhi(nx*nt, imag=False)
@@ -176,8 +185,10 @@ class TestHubbardFermiMatrix(unittest.TestCase):
         "Test log(det(Q))."
 
         nx = kappa.rows()
-        for nt, mu, sigmaKappa, rep in itertools.product((4, 8, 32), [0],
-                                                         (-1, 1), range(N_REP)):
+        for nt, mu, sigmaKappa, rep in product((4, 8, 32),
+                                               [0],
+                                               (-1, 1),
+                                               range(N_REP)):
             hfm = HFM(kappa/nt, mu/nt, sigmaKappa)
             phi = _randomPhi(nx*nt)
 
@@ -193,9 +204,9 @@ class TestHubbardFermiMatrix(unittest.TestCase):
     def test_2_logdet(self):
         "Test log(det(M)) and log(deg(Q))."
         logger = core.get_logger()
-        for lattice in LATTICES:
-            logger.info("Testing log(det(M)) and log(det(Q)) %s", lattice.name)
-            for HFM in HFMS:
+        for lattice in self.lattices:
+            logger.info("Testing log(det(M)) and log(det(Q)) on %s", lattice.name)
+            for HFM in self.HFMTypes:
                 self._test_logdetM(HFM, lattice.hopping())
                 self._test_logdetQ(HFM, lattice.hopping())
 
@@ -204,11 +215,11 @@ class TestHubbardFermiMatrix(unittest.TestCase):
         "Test solveM()."
 
         nx = kappa.rows()
-        for nt, mu, sigmaKappa, species, rep in itertools.product((4, 8, 32),
-                                                                  [0],
-                                                                  (-1, 1),
-                                                                  (isle.Species.PARTICLE, isle.Species.HOLE),
-                                                                  range(N_REP)):
+        for nt, mu, sigmaKappa, species, rep in product((4, 8, 32),
+                                                        [0],
+                                                        (-1, 1),
+                                                        (isle.Species.PARTICLE, isle.Species.HOLE),
+                                                        range(N_REP)):
             hfm = HFM(kappa/nt, mu/nt, sigmaKappa)
             phi = _randomPhi(nx*nt)
             M = hfm.M(phi, species)
@@ -225,9 +236,9 @@ class TestHubbardFermiMatrix(unittest.TestCase):
     def test_3_solver(self):
         "Test Ax=b solvers."
         logger = core.get_logger()
-        for lattice in LATTICES:
+        for lattice in self.lattices:
             logger.info("Testing solveM on %s", lattice.name)
-            for HFM in HFMS:
+            for HFM in self.HFMTypes:
                 self._test_solveM(HFM, lattice.hopping())
 
 
