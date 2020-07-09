@@ -18,17 +18,20 @@ RAND_MEAN = 0
 RAND_STD = 0.2
 N_REP = 1 # number of repetitions
 
-LATTICES = ["c20",
-            "tube_3-3_1",
-            "one_site",
-            "two_sites",
-            "triangle"]
+#  test on these lattices
+LATTICES = [isle.LATTICES[name] for name in
+            ("c20",
+             "tube_3-3_1",
+             "one_site",
+             "two_sites",
+             "triangle")]
 
 # test with these values of chemical potential
-MU = [0, 1, 1.5]
+MU = (0, 1, 1.5)
 
 # types of hubbard fermi matrices
 HFMS = (isle.HubbardFermiMatrixDia, isle.HubbardFermiMatrixExp)
+
 
 def _randomPhi(n, real=True, imag=True):
     "Return a normally distributed random complex vector of n elements."
@@ -122,10 +125,9 @@ class TestHubbardFermiMatrix(unittest.TestCase):
         "Test construction of sparse matrix for different lattices and parameters."
 
         logger = core.get_logger()
-        for latname in LATTICES:
-            logger.info("Testing constructor of HubbardFermiMatrix* for lattice %s", latname)
-            lat = isle.LATTICES[latname]
-            self._testConstruction(lat.hopping())
+        for lattice in LATTICES:
+            logger.info("Testing constructor of HubbardFermiMatrix* for lattice %s", lattice.name)
+            self._testConstruction(lattice.hopping())
 
     def _test_logdetM(self, HFM, kappa):
         "Test log(det(M))."
@@ -192,12 +194,11 @@ class TestHubbardFermiMatrix(unittest.TestCase):
     def test_2_logdet(self):
         "Test log(det(M)) and log(deg(Q))."
         logger = core.get_logger()
-        for latname in LATTICES:
-            logger.info("Testing log(det(M)) and log(det(Q)) %s", latname)
-            lat = isle.LATTICES[latname]
+        for lattice in LATTICES:
+            logger.info("Testing log(det(M)) and log(det(Q)) %s", lattice.name)
             for HFM in HFMS:
-                self._test_logdetM(HFM, lat.hopping())
-                self._test_logdetQ(HFM, lat.hopping())
+                self._test_logdetM(HFM, lattice.hopping())
+                self._test_logdetQ(HFM, lattice.hopping())
 
 
     def _test_solveM(self, HFM, kappa):
@@ -225,11 +226,10 @@ class TestHubbardFermiMatrix(unittest.TestCase):
     def test_3_solver(self):
         "Test Ax=b solvers."
         logger = core.get_logger()
-        for latname in LATTICES:
-            logger.info("Testing solveM on %s", latname)
-            lat = isle.LATTICES[latname]
+        for lattice in LATTICES:
+            logger.info("Testing solveM on %s", lattice.name)
             for HFM in HFMS:
-                self._test_solveM(HFM, lat.hopping())
+                self._test_solveM(HFM, lattice.hopping())
 
 
 def setUpModule():
