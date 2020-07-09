@@ -189,7 +189,7 @@ class TestHubbardFermiMatrix(unittest.TestCase):
                                    + "\nplain = {}".format(plain) \
                                    + "\nviaLU = {}".format(viaLU))
 
-    def test_3_logdet(self):
+    def test_2_logdet(self):
         "Test log(det(M)) and log(deg(Q))."
         logger = core.get_logger()
         for latname in LATTICES:
@@ -222,7 +222,7 @@ class TestHubbardFermiMatrix(unittest.TestCase):
                                        + "for nt={}, mu={}, sigmaKappa={}, species={}:".format(nt, mu, sigmaKappa, species)\
                                        + "\nMx - rhs = {}".format(chk))
 
-    def test_4_solver(self):
+    def test_3_solver(self):
         "Test Ax=b solvers."
         logger = core.get_logger()
         for latname in LATTICES:
