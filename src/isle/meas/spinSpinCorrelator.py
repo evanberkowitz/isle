@@ -603,7 +603,8 @@ class SpinSpinCorrelator(Measurement):
                 time_averaged[correlator] = np.einsum("idf,xfyi->xyd",
                                     roll,
                                     data[correlator],
-                                    optimize=self._einsum_paths["idf,bx,xfyi,ya->bad"]) / nt
+                                    optimize=self._einsum_paths["idf,xfyi->xyd"]) / nt
+
 
         # Any additional correlators can be derived by identities explained above.
         # They can be computed by SpinSpinCorrelator.computeDerivedCorrelators().
