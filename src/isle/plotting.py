@@ -384,9 +384,9 @@ def plotCorrelators(measState, axP, axH):
     # load data from previous measurement
     with h5.File(str(measState.infile), "r") as h5f:
         if "correlation_functions" in h5f:
-            dsetP = h5f["correlation_functions/single_particle/correlators"]
+            dsetP = h5f["correlation_functions/single_particle/destruction_creation"]
             corrP = dsetP[()]
-            dsetH = h5f["correlation_functions/single_hole/correlators"]
+            dsetH = h5f["correlation_functions/single_hole/destruction_creation"]
             corrH = dsetH[()]
 
             try:
