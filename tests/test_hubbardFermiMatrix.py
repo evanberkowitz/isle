@@ -36,9 +36,7 @@ class TestHubbardFermiMatrix(unittest.TestCase):
                           "two_sites",
                           "triangle")]
 
-        cls.mu = (0.0, 1.0, 1.5)
-        # cls.HFMTypes = (isle.HubbardFermiMatrixDia, isle.HubbardFermiMatrixExp)
-        cls.HFMTypes = (isle.HubbardFermiMatrixExp, )
+        cls.HFMTypes = (isle.HubbardFermiMatrixDia, isle.HubbardFermiMatrixExp)
 
 
     def _testConstructionNt1(self, HFM, kappa, mu, sigmaKappa):
@@ -114,9 +112,8 @@ class TestHubbardFermiMatrix(unittest.TestCase):
     def test_1_construction(self):
         "Test construction of sparse matrix for different lattices and parameters."
 
-        logger = core.get_logger()
         for lattice, mu, sigmaKappa, HFM, _ in product(self.lattices,
-                                                       self.mu,
+                                                       (0.0, 1.0, 1.5),
                                                        (-1, 1),
                                                        self.HFMTypes,
                                                        range(N_REP)):
@@ -129,12 +126,6 @@ class TestHubbardFermiMatrix(unittest.TestCase):
         "Test log(det(M))."
 
         nx = kappa.rows()
-        # self.assertRaises(RuntimeError,
-        #                   lambda msg:
-        #                   isle.logdetM(HFM(kappa, 1, 1), isle.CDVector(nx), isle.Species.PARTICLE),
-        #                   msg="logdetM must throw a RuntimeError when called with mu != 0. """
-        #                       "If this bug has been fixed, update the unit test!")
-
         for nt, beta, mu, sigmaKappa in product((2, 4, 8, 32),
                                                 (3, 6),
                                                 [0, 0.1, 0.5, 1.0, 2.0],
