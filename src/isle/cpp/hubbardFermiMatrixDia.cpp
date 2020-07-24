@@ -570,9 +570,6 @@ namespace isle {
 
     std::complex<double> logdetM(const HubbardFermiMatrixDia &hfm,
                                  const CDVector &phi, const Species species) {
-        if (hfm.muTilde() != 0)
-            throw std::runtime_error("Called logdetM with mu != 0. This is not supported yet because the algorithm is unstable.");
-
         const auto NX = hfm.nx();
         const auto NT = getNt(phi, NX);
         const auto &k = hfm.K(species);

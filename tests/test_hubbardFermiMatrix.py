@@ -37,7 +37,8 @@ class TestHubbardFermiMatrix(unittest.TestCase):
                           "triangle")]
 
         cls.mu = (0.0, 1.0, 1.5)
-        cls.HFMTypes = (isle.HubbardFermiMatrixDia, isle.HubbardFermiMatrixExp)
+        # cls.HFMTypes = (isle.HubbardFermiMatrixDia, isle.HubbardFermiMatrixExp)
+        cls.HFMTypes = (isle.HubbardFermiMatrixExp, )
 
 
     def _testConstructionNt1(self, HFM, kappa, mu, sigmaKappa):
@@ -128,15 +129,15 @@ class TestHubbardFermiMatrix(unittest.TestCase):
         "Test log(det(M))."
 
         nx = kappa.rows()
-        self.assertRaises(RuntimeError,
-                          lambda msg:
-                          isle.logdetM(HFM(kappa, 1, 1), isle.CDVector(nx), isle.Species.PARTICLE),
-                          msg="logdetM must throw a RuntimeError when called with mu != 0. """
-                              "If this bug has been fixed, update the unit test!")
+        # self.assertRaises(RuntimeError,
+        #                   lambda msg:
+        #                   isle.logdetM(HFM(kappa, 1, 1), isle.CDVector(nx), isle.Species.PARTICLE),
+        #                   msg="logdetM must throw a RuntimeError when called with mu != 0. """
+        #                       "If this bug has been fixed, update the unit test!")
 
         for nt, beta, mu, sigmaKappa in product((2, 4, 8, 32),
                                                 (3, 6),
-                                                [0],
+                                                [0, 0.1, 0.5, 1.0, 2.0],
                                                 (-1, 1)):
             hfm = HFM(kappa * beta / nt, mu * beta / nt, sigmaKappa)
             for species, (real, imag), rep in product((isle.Species.PARTICLE, isle.Species.HOLE),
