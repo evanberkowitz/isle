@@ -47,8 +47,7 @@ def main():
         hfm = isle.HubbardFermiMatrixExp(kappaTilde, muTilde, params.sigmaKappa)
 
     # Define measurements to run.
-    species =   (isle.Species.PARTICLE, isle.Species.HOLE)
-    allToAll = {s: isle.meas.propagator.AllToAll(hfm, s) for s in species}
+    allToAll = {s: isle.meas.propagator.AllToAll(hfm, s) for s in isle.Species.values()}
 
     _, diagonalize = np.linalg.eigh(isle.Matrix(hfm.kappaTilde()))
 
