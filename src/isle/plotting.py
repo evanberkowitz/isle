@@ -357,6 +357,7 @@ def plotPhase(weights, axPhase, axPhase2D):
         polarHistogram(axPhase2D, theta, _DO_KDE, bins=50, ls="-", marker=".", fill=True,
                        edgecolor="C1", facealpha=0.3)
         average = np.mean(np.exp(1j*theta))
+        getLogger(__name__).info("Average phase <exp(-i Im(S))> = %s", average)
         axPhase2D.plot((np.angle(average),), (np.abs(average),), ls="", marker="x",
                        c=mpl.rcParams["text.color"], markersize=10)
         setPolarTicks(axPhase2D)
