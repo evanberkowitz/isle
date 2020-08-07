@@ -162,7 +162,7 @@ class SingleParticleCorrelator(Measurement):
             subGroup[name] = correlator
 
         if self.transform is None:
-            subGroup["transform"] = h5.Empty(dtype="complex")
+            subGroup["transform"] = empty(dtype=complex)
         else:
             subGroup["transform"] = self.transform
         # subGroup["einsum_path"] = self._path # TODO: store the optimization; this line of code doesn't work.
