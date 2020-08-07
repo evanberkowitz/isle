@@ -28,3 +28,6 @@ build
 
 # IDE settings
 .idea
+
+# vim swap files
+*.swp
