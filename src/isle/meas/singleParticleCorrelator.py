@@ -67,7 +67,7 @@ import numpy as np
 import isle
 from .measurement import Measurement
 from ..util import spaceToSpacetime, temporalRoller
-from ..h5io import createH5Group
+from ..h5io import createH5Group, empty
 from .propagator import AllToAll
 
 
