@@ -71,8 +71,47 @@ class Measure:
 
         _ensureCanWriteMeas(self.outfile, measurements, self.overwrite)
 
-        self.mapOverConfigs(measurements, adjustSlices=True)
-        self.save(measurements, checkedBefore=True)
+        # TODO
+        maxMemory = 2*10**9
+
+        with h5.File(self.infile, "r") as cfgf:
+            # get all configuration groups (index, h5group) pairs
+            configurations = fileio.h5.loadList(cfgf["/configuration"])
+
+            _adjustConfigSlices(measurements, configurations)
+
+            with h5.File(self.outfile, "a") as h5f:
+                for measurement in measurements:
+                    configSlice = measurement.configSlice
+                    measurement.setup(maxMemory // len(measurements),
+                                      (configSlice.stop - configSlice.start) // configSlice.step,
+                                      h5f)
+
+            # apply measurements to all configs
+            with cli.trackProgress(len(configurations), "Measurements", updateRate=1000) as pbar:
+                for itr, grp in configurations:
+                    # load trajectory
+                    stage = EvolutionStage.fromH5(grp)
+
+                    # measure
+                    for imeas, measurement in enumerate(measurements):
+                        if inSlice(itr, measurement.configSlice):
+                            measurement(stage, itr)
+                        elif itr >= measurement.configSlice.stop:
+                            # this measurement is done => drop it
+                            del measurements[imeas]
+                    if not measurements:
+                        break  # no measurements left
+
+                    pbar.advance()
+
+        with h5.File(self.outfile, "a") as h5f:
+            for measurement in measurements:
+                measurement.finalize(h5f)
+
+
+        # self.mapOverConfigs(measurements, adjustSlices=True)
+        # self.save(measurements, checkedBefore=True)
 
     def mapOverConfigs(self, measurements, adjustSlices=True):
         r"""!
@@ -181,6 +220,7 @@ def _isValidPath(path):
 
     components = str(path).split("/")
     if components[0] == "":
+        # TODO not true anymore
         getLogger(__name__).warning(
             "Output path of a measurement is specified as absolute path: %s\n"
             "    Use relative paths so the base HDF5 group can be adjusted.",

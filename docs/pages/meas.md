@@ -1,5 +1,6 @@
 \page measdoc Measurements
 
+\todo Paths are not realtive anymore
 
 Isle provides the high level measurement driver isle.drivers.meas.Measure.
 This driver can perform measurements on configurations stored in files.
