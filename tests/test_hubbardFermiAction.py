@@ -49,29 +49,29 @@ def _forAllParams():
 
 class TestHubbardFermiAction(unittest.TestCase):
 
-    def _testVariantsEval(self, lat, hopping, basis, beta, mu, sigmaKappa):
-        actv1 = isle.action.makeHubbardFermiAction(lat,
-                                                   beta,
-                                                   mu*beta/lat.nt(),
-                                                   sigmaKappa,
-                                                   hopping,
-                                                   basis,
-                                                   isle.action.HFAVariant.ONE,
-                                                   False)
-        actv2 = isle.action.makeHubbardFermiAction(lat,
-                                                   beta,
-                                                   mu*beta/lat.nt(),
-                                                   sigmaKappa,
-                                                   hopping,
-                                                   basis,
-                                                   isle.action.HFAVariant.TWO,
-                                                   False)
+    def _testAlgorithmsEval(self, lat, hopping, basis, beta, mu, sigmaKappa):
+        actSingle = isle.action.makeHubbardFermiAction(lat,
+                                                       beta,
+                                                       mu*beta/lat.nt(),
+                                                       sigmaKappa,
+                                                       hopping,
+                                                       basis,
+                                                       isle.action.HFAAlgorithm.DIRECT_SINGLE,
+                                                       False)
+        actSquare = isle.action.makeHubbardFermiAction(lat,
+                                                       beta,
+                                                       mu*beta/lat.nt(),
+                                                       sigmaKappa,
+                                                       hopping,
+                                                       basis,
+                                                       isle.action.HFAAlgorithm.DIRECT_SQUARE,
+                                                       False)
 
         for rep in range(N_REP):
             phi = _randomPhi(lat.lattSize(), False)
 
             self.assertAlmostEqual(
-                actv1.eval(phi), actv2.eval(phi), places=9,
+                actSingle.eval(phi), actSquare.eval(phi), places=9,
                 msg=f"Failed check of evaluation of action in repetition {rep} "\
                 + f"for lat={lat.name}, nt={lat.nt()}, mu={mu}, sigmaKappa={sigmaKappa}, "\
                 + f"beta={beta}, hopping={hopping}, basis={basis}")
@@ -88,7 +88,7 @@ class TestHubbardFermiAction(unittest.TestCase):
                                                         sigmaKappa,
                                                         hopping,
                                                         basis,
-                                                        isle.action.HFAVariant.ONE,
+                                                        isle.action.HFAAlgorithm.DIRECT_SINGLE,
                                                         False)
         actshort = isle.action.makeHubbardFermiAction(lat,
                                                       beta,
@@ -96,7 +96,7 @@ class TestHubbardFermiAction(unittest.TestCase):
                                                       sigmaKappa,
                                                       hopping,
                                                       basis,
-                                                      isle.action.HFAVariant.ONE,
+                                                      isle.action.HFAAlgorithm.DIRECT_SINGLE,
                                                       True)
 
         for rep in range(N_REP):
@@ -115,33 +115,33 @@ class TestHubbardFermiAction(unittest.TestCase):
         for lat in LATTICES:
             for hopping, basis, nt, beta, mu, sigmaKappa in _forAllParams():
                 lat.nt(nt)
-                self._testVariantsEval(lat, hopping, basis, beta, mu, sigmaKappa)
+                self._testAlgorithmsEval(lat, hopping, basis, beta, mu, sigmaKappa)
                 self._testShortcutEval(lat, hopping, basis, beta, mu, sigmaKappa)
 
 
-    def _testVariantsForce(self, lat, hopping, basis, beta, mu, sigmaKappa):
-        actv1 = isle.action.makeHubbardFermiAction(lat,
-                                                   beta,
-                                                   mu*beta/lat.nt(),
-                                                   sigmaKappa,
-                                                   hopping,
-                                                   basis,
-                                                   isle.action.HFAVariant.ONE,
-                                                   False)
-        actv2 = isle.action.makeHubbardFermiAction(lat,
-                                                   beta,
-                                                   mu*beta/lat.nt(),
-                                                   sigmaKappa,
-                                                   hopping,
-                                                   basis,
-                                                   isle.action.HFAVariant.TWO,
-                                                   False)
+    def _testAlgorithmssForce(self, lat, hopping, basis, beta, mu, sigmaKappa):
+        actSingle = isle.action.makeHubbardFermiAction(lat,
+                                                       beta,
+                                                       mu*beta/lat.nt(),
+                                                       sigmaKappa,
+                                                       hopping,
+                                                       basis,
+                                                       isle.action.HFAAlgorithm.DIRECT_SINGLE,
+                                                       False)
+        actSquare = isle.action.makeHubbardFermiAction(lat,
+                                                       beta,
+                                                       mu*beta/lat.nt(),
+                                                       sigmaKappa,
+                                                       hopping,
+                                                       basis,
+                                                       isle.action.HFAAlgorithm.DIRECT_SQUARE,
+                                                       False)
 
         for rep in range(N_REP):
             phi = _randomPhi(lat.lattSize(), False)
 
             self.assertAlmostEqual(
-                np.max(np.abs(actv1.force(phi)-actv2.force(phi))), 0, places=10,
+                np.max(np.abs(actSingle.force(phi)-actSquare.force(phi))), 0, places=10,
                 msg=f"Failed check of force from action in repetition {rep} "\
                 + f"for lat={lat.name}, nt={lat.nt()}, mu={mu}, sigmaKappa={sigmaKappa}, "\
                 + f"beta={beta}, hopping={hopping}, basis={basis}")
@@ -158,7 +158,7 @@ class TestHubbardFermiAction(unittest.TestCase):
                                                         sigmaKappa,
                                                         hopping,
                                                         basis,
-                                                        isle.action.HFAVariant.ONE,
+                                                        isle.action.HFAAlgorithm.DIRECT_SINGLE,
                                                         False)
         actshort = isle.action.makeHubbardFermiAction(lat,
                                                       beta,
@@ -166,7 +166,7 @@ class TestHubbardFermiAction(unittest.TestCase):
                                                       sigmaKappa,
                                                       hopping,
                                                       basis,
-                                                      isle.action.HFAVariant.ONE,
+                                                      isle.action.HFAAlgorithm.DIRECT_SINGLE,
                                                       True)
 
         for rep in range(N_REP):
@@ -185,7 +185,7 @@ class TestHubbardFermiAction(unittest.TestCase):
         for lat in LATTICES:
             for hopping, basis, nt, beta, mu, sigmaKappa in _forAllParams():
                 lat.nt(nt)
-                self._testVariantsForce(lat, hopping, basis, beta, mu, sigmaKappa)
+                self._testAlgorithmssForce(lat, hopping, basis, beta, mu, sigmaKappa)
                 self._testShortcutForce(lat, hopping, basis, beta, mu, sigmaKappa)
 
 

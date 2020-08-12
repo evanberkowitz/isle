@@ -37,7 +37,7 @@ PARAMS = isle.util.parameters(
     # See documentation in docs/algorithm.
     hopping=isle.action.HFAHopping.DIA,
     basis=isle.action.HFABasis.PARTICLE_HOLE,
-    variant=isle.action.HFAVariant.ONE
+    algorithm=isle.action.HFAAlgorithm.DIRECT_SINGLE
 )
 
 # Set the number of time slices.
@@ -67,7 +67,7 @@ def makeAction(lat, params):
                                              params.sigmaKappa,
                                              params.hopping,
                                              params.basis,
-                                             params.variant)
+                                             params.algorithm)
 
 
 def main():
