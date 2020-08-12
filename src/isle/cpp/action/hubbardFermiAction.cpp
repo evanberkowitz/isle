@@ -13,9 +13,9 @@ namespace isle {
              * Constructs all partial A^-1 to the left of (1+A^-1)^-1 first ('left').
              * Constructs rest on the fly ('right', contains (1+A^-1)^-1).
              */
-            template <typename HFM>
+            template <typename HFM, typename KMatrix>
             CDVector forceDirectSinglePart(const HFM &hfm, const CDVector &phi,
-                                           const DSparseMatrix &k, const Species species) {
+                                           const KMatrix &k, const Species species) {
 
                 const auto nx = hfm.nx();
                 const auto nt = getNt(phi, nx);
