@@ -100,57 +100,6 @@ class Measure:
             for measurement in measurements:
                 measurement.finalize(h5f)
 
-
-        # self.mapOverConfigs(measurements, adjustSlices=True)
-        # self.save(measurements, checkedBefore=True)
-
-    def mapOverConfigs(self, measurements, adjustSlices=True):
-        r"""!
-        Apply measurements to all configurations in the input file of this driver.
-
-        Reads configurations from the input file in the order of the Markov chain.
-        Compares the trajectory index extracted from file to the configSlice attribute of each
-        measurement and if the index is in the slice, calls the measurement with that trajectory.
-
-        \warning If `adjustSlices == True`, the `configSlice` attribute of all measurements is
-                 modified to contain the actual trajectory indices read from the file instead
-                 of what the user specified (if those are incompatible, `ValueError` is raised).
-                 This is necessary in order to call Measure.save() later.
-
-        \param measurements List of instances of isle.meas.measurement.Measurement to be called
-                            on each configuration in the input file.
-        \param adjustSlices Modify the `configSlice` attribute of the measurements to reflect the
-                            configurations in the file.
-        """
-
-        # copy so the list can be modified in this function
-        measurements = list(measurements)
-
-        with h5.File(self.infile, "r") as cfgf:
-            # get all configuration groups (index, h5group) pairs
-            configurations = fileio.h5.loadList(cfgf["/configuration"])
-
-            if adjustSlices:
-                _adjustConfigSlices(measurements, configurations)
-
-            # apply measurements to all configs
-            with cli.trackProgress(len(configurations), "Measurements", updateRate=1000) as pbar:
-                for itr, grp in configurations:
-                    # load trajectory
-                    stage = EvolutionStage.fromH5(grp)
-
-                    # measure
-                    for imeas, measurement in enumerate(measurements):
-                        if inSlice(itr, measurement.configSlice):
-                            measurement(stage, itr)
-                        elif itr >= measurement.configSlice.stop:
-                            # this measurement is done => drop it
-                            del measurements[imeas]
-                    if not measurements:
-                        break  # no measurements left
-
-                    pbar.advance()
-
     def save(self, measurements, checkedBefore=False):
         r"""!
         Save results of measurements to the output file.
