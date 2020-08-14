@@ -72,21 +72,11 @@ class Measure:
 
         _ensureCanWriteMeas(self.outfile, measurements, self.overwrite)
 
-        # TODO
-        maxMemory = 2*10**9
-
         with h5.File(self.infile, "r") as cfgf:
             # get all configuration groups (index, h5group) pairs
             configurations = fileio.h5.loadList(cfgf["/configuration"])
 
-            _adjustConfigSlices(measurements, configurations)
-
-            with h5.File(self.outfile, "a") as h5f:
-                for measurement in measurements:
-                    configSlice = measurement.configSlice
-                    measurement.setup(maxMemory // len(measurements),
-                                      (configSlice.stop - configSlice.start) // configSlice.step,
-                                      h5f)
+            _setupMeasurements(measurements, configurations, self.outfile, self.lattice)
 
             # apply measurements to all configs
             with cli.trackProgress(len(configurations), "Measurements", updateRate=1000) as pbar:
@@ -333,3 +323,18 @@ def _totalMemoryAllowance(lattice, bufferFactor=0.8):
     Based on lattice size {lattice.lattSize()}
     and reserving {100 - bufferFactor*100}% of available memory for other purposes.""")
     return allowance
+
+def _setupMeasurements(measurements, configurations, outfile, lattice):
+    _adjustConfigSlices(measurements, configurations)
+
+    usableMemory = _totalMemoryAllowance(lattice)
+    nremaining = len(measurements)
+
+    with h5.File(outfile, "a") as h5f:
+        for measurement in measurements:
+            configSlice = measurement.configSlice
+            residualMemory = measurement.setup(usableMemory // nremaining,
+                                               (configSlice.stop - configSlice.start) // configSlice.step,
+                                               h5f)
+            usableMemory -= usableMemory // nremaining - residualMemory
+            nremaining -= 1
