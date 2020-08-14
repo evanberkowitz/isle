@@ -8,6 +8,7 @@ from logging import getLogger
 from pathlib import Path
 
 import h5py as h5
+import psutil
 
 from .. import fileio, cli
 from ..collection import inSlice, withStart, withStop, withStep
@@ -311,3 +312,24 @@ def _adjustConfigSlices(measurements, configurations):
                                       "given the actual configurations",
                                       measurement.configSlice, type(measurement))
             raise
+
+def _availableMemory():
+    r"""!
+    Return the amount of available memory in bytes.
+    """
+    svmem = psutil.virtual_memory()
+    getLogger(__name__).info(f"""System memory:
+    Total:     {svmem.total:,} B
+    Available: {svmem.available:,} B""")
+    return svmem.available
+
+def _totalMemoryAllowance(lattice, bufferFactor=0.8):
+    r"""!
+    Return the total amount of memory that may be used for storing measurement results in bytes.
+    """
+    available = _availableMemory()
+    allowance = int(bufferFactor * (available - 10 * lattice.lattSize() * 16))
+    getLogger(__name__).info(f"""Maximum allowed memory usage by measurements: {allowance:,} B
+    Based on lattice size {lattice.lattSize()}
+    and reserving {100 - bufferFactor*100}% of available memory for other purposes.""")
+    return allowance
