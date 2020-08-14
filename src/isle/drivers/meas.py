@@ -76,7 +76,7 @@ class Measure:
             # get all configuration groups (index, h5group) pairs
             configurations = fileio.h5.loadList(cfgf["/configuration"])
 
-            _setupMeasurements(measurements, configurations, self.outfile, self.lattice)
+            _setupMeasurements(measurements, configurations, self.outfile, self.lattice, adjustConfigSlices)
 
             # apply measurements to all configs
             with cli.trackProgress(len(configurations), "Measurements", updateRate=1000) as pbar:
@@ -273,8 +273,9 @@ def _totalMemoryAllowance(lattice, bufferFactor=0.8):
     and reserving {100 - bufferFactor*100}% of available memory for other purposes.""")
     return allowance
 
-def _setupMeasurements(measurements, configurations, outfile, lattice):
-    _adjustConfigSlices(measurements, configurations)
+def _setupMeasurements(measurements, configurations, outfile, lattice, adjustConfigSlices):
+    if adjustConfigSlices:
+        _adjustConfigSlices(measurements, configurations)
 
     usableMemory = _totalMemoryAllowance(lattice)
     nremaining = len(measurements)
