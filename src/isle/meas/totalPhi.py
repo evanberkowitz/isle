@@ -3,11 +3,9 @@ r"""!\file
 Measurement of total phi and norm of phi.
 """
 
-from pathlib import Path
-
 import numpy as np
 
-from .measurement import Measurement
+from .measurement import Measurement, BufferSpec
 
 
 class TotalPhi(Measurement):
@@ -17,22 +15,15 @@ class TotalPhi(Measurement):
     """
 
     def __init__(self, savePath, configSlice=slice(None, None, None)):
-        super().__init__(savePath, configSlice)
-
-    def setup(self, memoryAllowance, expectedNConfigs, file):
-        if self.isSetUp():
-            raise RuntimeError("Cannot set up measurement, buffers are already set.")
-
-        self._allocateBuffers((("Phi", np.complex128, (), Path(self.savePath)/"totalPhi"),
-                               ("phiSquared", np.float64, (), Path(self.savePath)/"phiSquared")),
-                              memoryAllowance,
-                              expectedNConfigs,
-                              file)
+        super().__init__(savePath,
+                         (BufferSpec("Phi", (), np.complex128, "totalPhi"),
+                          BufferSpec("phiSquared", (), np.float64, "phiSquared")),
+                         configSlice)
 
     def __call__(self, stage, itr):
         """!Record the total phi and mean value of phi^2."""
-        next(self.PhiIterator)[1][...] = np.sum(stage.phi)
-        next(self.phiSquaredIterator)[1][...] = np.linalg.norm(stage.phi)**2 / len(stage.phi)
+        self.nextItem("Phi")[...] = np.sum(stage.phi)
+        self.nextItem("phiSquared")[...] = np.linalg.norm(stage.phi)**2 / len(stage.phi)
 
     def save(self, h5group):
         r"""!

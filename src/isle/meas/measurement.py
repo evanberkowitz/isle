@@ -4,13 +4,17 @@ Base class for measurements.
 """
 
 from abc import ABCMeta, abstractmethod
+from dataclasses import dataclass
 from logging import getLogger
+from pathlib import Path
+from typing import Union, Tuple, Type
 
 import numpy as np
 from pentinsula import TimeSeries
 from pentinsula.h5utils import open_or_pass_file
 
 from ..h5io import createH5Group
+
 
 class Measurement(metaclass=ABCMeta):
     r"""!
@@ -31,7 +35,7 @@ class Measurement(metaclass=ABCMeta):
       It must be set to a number when saving the slice however!
     """
 
-    def __init__(self, savePath, configSlice=slice(None, None, None)):
+    def __init__(self, savePath, buffers, configSlice=slice(None, None, None)):
         r"""!
         Store common parameters.
         \param savePath Path in an HDF5 file under which results are stored.
@@ -45,36 +49,57 @@ class Measurement(metaclass=ABCMeta):
         self._buffers = {}
         ##
         self._bufferIterators = {}
+        ##
+        self._bufferSpecs = buffers
+        ##
+        self._isSetUp = False
 
-    def _allocateBuffers(self, buffers, memoryAllowance, expectedNConfigs, file,
-                         bufferSuffix="Buffer", iterSuffix="Iterator"):
-        for name, dtype, shape, path in buffers:
-            bufferLength, _ = calculateBufferLength(memoryAllowance // len(buffers), expectedNConfigs,
-                                                    dtype, shape)
-            print(bufferLength)
-            self._buffers[name] = TimeSeries(file, path, bufferLength, shape, dtype)
-            if bufferSuffix:
-                setattr(self, name+bufferSuffix, self._buffers[name])
+    def _allocateBuffers(self, memoryAllowance, expectedNConfigs, file):
+        nremaining = len(self._bufferSpecs)
+        residualMemory = memoryAllowance  # in case no buffers are allocated
+        for spec in self._bufferSpecs:
+            try:
+                bufferLength, residualMemory = calculateBufferLength(memoryAllowance // nremaining,
+                                                                     expectedNConfigs,
+                                                                     spec.shape,
+                                                                     spec.dtype)
+            except RuntimeError:
+                getLogger(__name__).error("Failed to allocate buffer %s", spec.name)
+                raise
+            memoryAllowance -= memoryAllowance // nremaining - residualMemory
+            nremaining -= 1
 
-        with open_or_pass_file(file, None, "a") as h5f:
-            createH5Group(h5f, self.savePath)
-            for buffer in self._buffers.values():
-                buffer.create_dataset(h5f, write=False)
+            getLogger(__name__).info("Allocating buffer '%s' in measurement %s with %d time steps",
+                                     spec.name, type(self).__name__, bufferLength)
+            self._buffers[spec.name] = TimeSeries(file, Path(self.savePath) / spec.path,
+                                                  bufferLength, spec.shape, spec.dtype)
 
-        self._bufferIterators = {name: iter(buffer.write_iter(flush=True))
+        if self._bufferSpecs:
+            with open_or_pass_file(file, None, "a") as h5f:
+                createH5Group(h5f, self.savePath)
+                for buffer in self._buffers.values():
+                    buffer.create_dataset(h5f, write=False)
+
+        self._bufferIterators = {name: iter(buffer.write_iter(flush=False))
                                  for name, buffer in self._buffers.items()}
 
-        if iterSuffix:
-            for name, iterator in self._bufferIterators.items():
-                setattr(self, name+iterSuffix, iterator)
+        return residualMemory
 
-    def isSetUp(self):
-        return self._buffers or self._bufferIterators
+    def setup(self, memoryAllowance, expectedNConfigs, file):
+        if self._isSetUp:
+            raise RuntimeError("Cannot set up measurement, buffers are already set.")
+
+        residualMemory = self._allocateBuffers(memoryAllowance, expectedNConfigs, file)
+        self._isSetUp = True
+        return residualMemory
 
     def finalize(self, file):
         # flush buffers
         for buffer in self._buffers.values():
             buffer.write(file)
+
+    def nextItem(self, name):
+        return next(self._bufferIterators[name])[1]
 
     @abstractmethod
     def __call__(self, stage, itr):
@@ -124,8 +149,23 @@ class Measurement(metaclass=ABCMeta):
         h5obj.attrs[name] = ":".join(map(str, sliceElems))
 
 
-def calculateBufferLength(maxMemory, expectedNTimePoints, dtype, shape):
+@dataclass
+class BufferSpec:
+    name: str
+    shape: Tuple[int, ...]
+    dtype: Union[np.dtype, Type[int], Type[float], Type[complex]]
+    path: str
+
+
+def calculateBufferLength(maxMemory, expectedNTimePoints, shape, dtype):
     timePointSize = np.dtype(dtype).itemsize * int(np.prod(shape))
+    if timePointSize > maxMemory:
+        getLogger(__name__).error(
+            f"""Cannot allocate memory for a buffer of shape {shape} and dtype {dtype}, not enough memory available.
+    Needed:    {timePointSize:12,} B
+    Available: {maxMemory:12,} B""")
+        raise RuntimeError("Insufficient memory to allocate buffer.")
+
     bufferLength = min(maxMemory // timePointSize, expectedNTimePoints)
     residual = maxMemory - bufferLength * timePointSize
     return bufferLength, residual
