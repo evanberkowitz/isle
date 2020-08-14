@@ -96,10 +96,6 @@ class Measure:
 
                     pbar.advance()
 
-        with h5.File(self.outfile, "a") as h5f:
-            for measurement in measurements:
-                measurement.finalize(h5f)
-
     def save(self, measurements, checkedBefore=False):
         r"""!
         Save results of measurements to the output file.

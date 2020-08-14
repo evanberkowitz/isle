@@ -80,7 +80,7 @@ class Measurement(metaclass=ABCMeta):
                 for buffer in self._buffers.values():
                     buffer.create_dataset(h5f, write=False)
 
-        self._bufferIterators = {name: iter(buffer.write_iter(flush=False))
+        self._bufferIterators = {name: iter(buffer.write_iter(flush=True))
                                  for name, buffer in self._buffers.items()}
 
         return residualMemory
@@ -92,11 +92,6 @@ class Measurement(metaclass=ABCMeta):
         residualMemory = self._allocateBuffers(memoryAllowance, expectedNConfigs, file)
         self._isSetUp = True
         return residualMemory
-
-    def finalize(self, file):
-        # flush buffers
-        for buffer in self._buffers.values():
-            buffer.write(file)
 
     def nextItem(self, name):
         return next(self._bufferIterators[name])[1]
