@@ -560,6 +560,7 @@ class SpinSpinCorrelator(Measurement):
     #   HyxPyx = PyxHyx
     #   HyxHyx cannot appear by Pauli exclusion.
 
+        # TODO dont preconstruct all, do contractions earlier to save memory
         data = dict()
 
         if "Splus_Sminus" in self.correlators: data["Splus_Sminus"] = PxyHxy
@@ -583,23 +584,20 @@ class SpinSpinCorrelator(Measurement):
                     self._einsum_paths["idf,bx,xfyi,ya->bad"], _ = np.einsum_path("idf,bx,xfyi,ya->bad", roll, self.transform.T.conj(), data[correlator], self.transform, optimize="optimal")
                     log.info("Optimized Einsum path for time averaging and transform application.")
 
-                self.nextItem(correlator)[...] = np.einsum(
-                    "idf,bx,xfyi,ya->bad",
-                    roll,
-                    self.transform.T.conj(),
-                    data[correlator],
-                    self.transform,
-                    optimize=self._einsum_paths["idf,bx,xfyi,ya->bad"]) / nt
+                res = self.nextItem(correlator)
+                np.einsum("idf,bx,xfyi,ya->bad", roll, self.transform.T.conj(),
+                          data[correlator], self.transform, out=res,
+                          optimize=self._einsum_paths["idf,bx,xfyi,ya->bad"])
+                res /= nt
             else:
                 if "idf,xfyi->xyd" not in self._einsum_paths:
                     self._einsum_paths["idf,xfyi->xyd"], _ = np.einsum_path("idf,xfyi->xyd", roll, data[correlator], optimize="optimal")
                     log.info("Optimized Einsum path for time averaging in position space.")
 
-                self.nextItem(correlator)[...] = np.einsum(
-                    "idf,xfyi->xyd",
-                    roll,
-                    data[correlator],
-                    optimize=self._einsum_paths["idf,xfyi->xyd"]) / nt
+                res = self.nextItem(correlator)
+                np.einsum("idf,xfyi->xyd", roll, data[correlator],
+                          optimize=self._einsum_paths["idf,xfyi->xyd"], out=res)
+                res /= nt
 
         # Any additional correlators can be derived by identities explained above.
         # They can be computed by SpinSpinCorrelator.computeDerivedCorrelators().

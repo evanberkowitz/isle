@@ -146,9 +146,10 @@ class SingleParticleCorrelator(Measurement):
 
         # The temporal roller sums over time, but does not *average* over time.  So, divide by nt:
         for name in self._einsum_paths:
-            self.nextItem(name)[...] = np.einsum(self._indices[name],
-                                                 *tensors[name],
-                                                 optimize=self._einsum_paths[name]) / nt
+            res = self.nextItem(name)
+            np.einsum(self._indices[name], *tensors[name],
+                      optimize=self._einsum_paths[name], out=res)
+            res /= nt
 
     def setup(self, memoryAllowance, expectedNConfigs, file, maxBufferSize=None):
         res = super().setup(memoryAllowance, expectedNConfigs, file, maxBufferSize)

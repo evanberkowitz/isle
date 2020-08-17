@@ -110,12 +110,16 @@ class OnePointFunctions(Measurement):
 
         if self.transform is None:
             for name, correlator in data.items():
-                measurement = np.einsum("xtxt->x", correlator, optimize=self._einsum_path) / nt
-                self.nextItem(name)[...] = measurement
+                res = self.nextItem(name)
+                np.einsum("xtxt->x", correlator,
+                          optimize=self._einsum_path, out=res)
+                res /= nt
         else:
             for name, correlator in data.items():
-                measurement = np.einsum("ax,xtxt->a", self.transform, correlator, optimize=self._einsum_path) / nt
-                self.nextItem(name)[...] = measurement
+                res = self.nextItem(name)
+                np.einsum("ax,xtxt->a", self.transform, correlator,
+                          optimize=self._einsum_path, out=res)
+                res /= nt
 
     def setup(self, memoryAllowance, expectedNConfigs, file, maxBufferSize=None):
         res = super().setup(memoryAllowance, expectedNConfigs, file, maxBufferSize)

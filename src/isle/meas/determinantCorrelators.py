@@ -88,9 +88,9 @@ class DeterminantCorrelators(Measurement):
                 det["PH"][f,i] = det["P"][f,i]*det["H"][f,i]
 
         self._roll = np.array([temporalRoller(nt, -t, fermionic=self.fermionic) for t in range(nt)])
-        self.nextItem("P")[...] = np.einsum(self._time_averaging, self._roll/nt, det["P"])
-        self.nextItem("H")[...] = np.einsum(self._time_averaging, self._roll/nt, det["H"])
+        np.einsum(self._time_averaging, self._roll/nt, det["P"], out=self.nextItem("P"))
+        np.einsum(self._time_averaging, self._roll/nt, det["H"], out=self.nextItem("H"))
 
         # If we fully populate particles AND holes the operator is necessarily bosonic.
         self._roll = np.array([temporalRoller(nt, -t, fermionic=False) for t in range(nt)])
-        self.nextItem("PH")[...] = np.einsum(self._time_averaging, self._roll/nt, det["PH"])
+        np.einsum(self._time_averaging, self._roll/nt, det["PH"], out=self.nextItem("PH"))
