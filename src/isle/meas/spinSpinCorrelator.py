@@ -398,16 +398,10 @@ from logging import getLogger
 
 import numpy as np
 import h5py as h5
+from pentinsula.h5utils import open_or_pass_file
 
-from .measurement import Measurement
+from .measurement import Measurement, BufferSpec
 from ..util import temporalRoller, signAlternator
-from ..h5io import createH5Group
-
-
-def _checkCorrNames(actual, allowed):
-    for name in actual:
-        if name not in allowed:
-            raise ValueError(f"Unknown correlator: '{name}'. Choose from '{allowed}'")
 
 
 class SpinSpinCorrelator(Measurement):
@@ -431,7 +425,7 @@ class SpinSpinCorrelator(Measurement):
     DERIVED_CORRELATOR_NAMES = {*DERIVED_CORRELATOR_NAMES_SPIN_ONLY,
                                 *DERIVED_CORRELATOR_NAMES_ONE_POINT}
 
-    def __init__(self, particleAllToAll, holeAllToAll, savePath, configSlice=(None, None, None),
+    def __init__(self, particleAllToAll, holeAllToAll, lattice, savePath, configSlice=(None, None, None),
                  transform=None, sigmaKappa=-1, correlators=CORRELATOR_NAMES):
         r"""!
         \param particleAllToAll propagator.AllToAll for particles.
@@ -444,11 +438,15 @@ class SpinSpinCorrelator(Measurement):
                            Defaults to SpinSpinCorrelator.CORRELATOR_NAMES.
         """
 
-        super().__init__(savePath, configSlice)
-
         if correlators is None:
             correlators = self.CORRELATOR_NAMES
         _checkCorrNames(correlators, self.CORRELATOR_NAMES)
+
+        super().__init__(savePath,
+                         tuple(BufferSpec(name, (lattice.nx(), lattice.nx(), lattice.nt()),
+                                          complex, name)
+                               for name in correlators),
+                         configSlice)
 
         # The correlation functions encoded here are between bilinear operators.
         # Since the individual constituents are fermionic, the bilinear is bosonic.
@@ -456,11 +454,10 @@ class SpinSpinCorrelator(Measurement):
 
         self.sigmaKappa = sigmaKappa
 
-        self.particle=particleAllToAll
-        self.hole=holeAllToAll
-
-        self.correlators = {k: [] for k in correlators}
+        self.particle = particleAllToAll
+        self.hole = holeAllToAll
         self.transform = transform
+        self.correlators = correlators
 
         self._einsum_paths = {}
 
@@ -483,7 +480,6 @@ class SpinSpinCorrelator(Measurement):
             Sigma = signAlternator(nx, self.sigmaKappa)
             P = np.einsum('ax,xfyi,yb->afbi', Sigma, P, Sigma, optimize="optimal")
             H = np.einsum('ax,xfyi,yb->afbi', Sigma, H, Sigma, optimize="optimal")
-
 
         d = np.eye(nx*nt).reshape(*P.shape) # A Kronecker delta
 
@@ -579,9 +575,7 @@ class SpinSpinCorrelator(Measurement):
 
         roll = np.array([temporalRoller(nt, -t, fermionic=self.fermionic) for t in range(nt)])
 
-        time_averaged = dict()
         for correlator in data:
-
             # It is major savings to avoid two matrix-matrix multiplies, so it is
             # worthwhile to test for a transform and only add those multiplies in if needed.
             if self.transform is not None:
@@ -589,42 +583,35 @@ class SpinSpinCorrelator(Measurement):
                     self._einsum_paths["idf,bx,xfyi,ya->bad"], _ = np.einsum_path("idf,bx,xfyi,ya->bad", roll, self.transform.T.conj(), data[correlator], self.transform, optimize="optimal")
                     log.info("Optimized Einsum path for time averaging and transform application.")
 
-                time_averaged[correlator] = np.einsum("idf,bx,xfyi,ya->bad",
-                                    roll,
-                                    self.transform.T.conj(),
-                                    data[correlator],
-                                    self.transform,
-                                    optimize=self._einsum_paths["idf,bx,xfyi,ya->bad"]) / nt
+                self.nextItem(correlator)[...] = np.einsum(
+                    "idf,bx,xfyi,ya->bad",
+                    roll,
+                    self.transform.T.conj(),
+                    data[correlator],
+                    self.transform,
+                    optimize=self._einsum_paths["idf,bx,xfyi,ya->bad"]) / nt
             else:
                 if "idf,xfyi->xyd" not in self._einsum_paths:
                     self._einsum_paths["idf,xfyi->xyd"], _ = np.einsum_path("idf,xfyi->xyd", roll, data[correlator], optimize="optimal")
                     log.info("Optimized Einsum path for time averaging in position space.")
 
-                time_averaged[correlator] = np.einsum("idf,xfyi->xyd",
-                                    roll,
-                                    data[correlator],
-                                    optimize=self._einsum_paths["idf,xfyi->xyd"]) / nt
-
+                self.nextItem(correlator)[...] = np.einsum(
+                    "idf,xfyi->xyd",
+                    roll,
+                    data[correlator],
+                    optimize=self._einsum_paths["idf,xfyi->xyd"]) / nt
 
         # Any additional correlators can be derived by identities explained above.
         # They can be computed by SpinSpinCorrelator.computeDerivedCorrelators().
 
-        for name, correlator in time_averaged.items():
-            self.correlators[name].append(correlator)
-
-    def save(self, h5group):
-        r"""!
-        \param h5group Base HDF5 group. Data is stored in subgroup `h5group/self.savePath`.
-        """
-        subGroup = createH5Group(h5group, self.savePath)
-
-        for name, correlator in self.correlators.items():
-            subGroup[name] = correlator
-
-        if self.transform is None:
-            subGroup["transform"] = h5.Empty(dtype="complex")
-        else:
-            subGroup["transform"] = self.transform
+    def setup(self, memoryAllowance, expectedNConfigs, file, maxBufferSize=None):
+        res = super().setup(memoryAllowance, expectedNConfigs, file, maxBufferSize)
+        with open_or_pass_file(file, None, "a") as h5f:
+            if self.transform is None:
+                h5f[self.savePath]["transform"] = h5.Empty(dtype="complex")
+            else:
+                h5f[self.savePath]["transform"] = self.transform
+        return res
 
     @classmethod
     def computeDerivedCorrelators(cls, measurements, commonTransform, correlators=None):
@@ -710,3 +697,9 @@ class SpinSpinCorrelator(Measurement):
                 derived["S3_S3"] = 0.25*(derived["n_n"]     + one - npx - npy - nhx - nhy)
 
         return derived
+
+
+def _checkCorrNames(actual, allowed):
+    for name in actual:
+        if name not in allowed:
+            raise ValueError(f"Unknown correlator: '{name}'. Choose from '{allowed}'")
