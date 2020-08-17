@@ -1,7 +1,5 @@
 r"""!\file
 Driver to perform measurements on configurations stored in a file.
-
-\todo Allow setting a base path in the output file so more than one ensemble can be stored in a file.
 """
 
 from logging import getLogger
