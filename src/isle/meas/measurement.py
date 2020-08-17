@@ -106,12 +106,17 @@ class Measurement(metaclass=ABCMeta):
         \param itr Index of the current trajectory.
         """
 
-    @abstractmethod
-    def save(self, h5group):
+    def save(self, file=None):
         r"""!
-        Save results of the measurement to HDF5.
-        \param h5group Base HDF5 group. Data is stored in subgroup `h5group/self.savePath`.
+        Save current results of the measurement to HDF5.
+
+        This is function redundant as results saved automatically.
+        But it can be used to write data before the result buffer is full.
+        Flushing the buffer (happens automatically) writes anything again that
+        has been written by this function.
         """
+        for buffer in self._buffers:
+            buffer.write(file=file)
 
     def saveConfigSlice(self, h5obj, name="configurations"):
         r"""!

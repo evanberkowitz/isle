@@ -25,17 +25,6 @@ class TotalPhi(Measurement):
         self.nextItem("Phi")[...] = np.sum(stage.phi)
         self.nextItem("phiSquared")[...] = np.linalg.norm(stage.phi)**2 / len(stage.phi)
 
-    def save(self, h5group):
-        r"""!
-        Write both Phi and phiSquared.
-        \param base HDF5 group in which to store data.
-        \param h5group Base HDF5 group. Data is stored in subgroup `h5group/self.savePath`.
-        """
-        raise NotImplementedError()
-        # subGroup = createH5Group(h5group, self.savePath)
-        # subGroup["totalPhi"] = self.Phi
-        # subGroup["phiSquared"] = self.phiSq
-
 
 def read(h5group):
     r"""!
