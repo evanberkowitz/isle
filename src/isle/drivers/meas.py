@@ -103,28 +103,6 @@ class Measure:
 
                     pbar.advance()
 
-    def save(self, measurements, checkedBefore=False):
-        r"""!
-        Save results of measurements to the output file.
-
-        \note Calls the `saveAll` function of measurements to write metadata as well as
-              the plain results.
-              This requires the `configSlice` attributes to be set properly,
-              i.e. without any elements being `None`.
-
-        \param measurements List of instances of isle.meas.measurement.Measurement.
-        \param checkedBefore *For internal use only!*
-                             If `True`, assumes that the output filehas been checked and
-                             initialized properly.
-        """
-
-        if not checkedBefore:
-            _ensureCanWriteMeas(self.outfile, measurements, self.overwrite)
-
-        with h5.File(self.outfile, "a") as measFile:
-            for measurement in measurements:
-                measurement.saveAll(measFile)
-
 
 def init(infile, outfile, overwrite):
     r"""!
