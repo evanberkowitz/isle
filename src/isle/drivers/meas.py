@@ -17,10 +17,6 @@ from ..util import verifyVersionsByException
 from ..evolver import EvolutionStage
 
 
-# TODO maximum buffer size argument
-# TODO remove relative path arguments
-
-
 class Measure:
     r"""!
     Driver to perform measurements on configurations stored in a file.
@@ -41,7 +37,7 @@ class Measure:
 
 
     def __init__(self, lattice, params, action, infile, outfile,
-                 overwrite, maxBufferSize=None):
+                 overwrite, maxBufferSize=None, maxTotalMemory=None):
         ## The spatial lattice.
         self.lattice = lattice
         ## Run parameters.
@@ -56,6 +52,8 @@ class Measure:
         self.overwrite = overwrite
         ## Maximum size to use for result buffers of measurements.
         self._maxBufferSize = maxBufferSize
+        ## Maximum memory to use for all buffers.
+        self._maxTotalMemory = maxTotalMemory
 
     def __call__(self, measurements, adjustConfigSlices=True):
         r"""!
@@ -87,7 +85,7 @@ class Measure:
             configurations = fileio.h5.loadList(cfgf["/configuration"])
 
             _setupMeasurements(measurements, configurations, self.outfile, self.lattice,
-                               adjustConfigSlices, self._maxBufferSize)
+                               adjustConfigSlices, self._maxBufferSize, self._maxTotalMemory)
 
             # apply measurements to all configs
             with cli.trackProgress(len(configurations), "Measurements", updateRate=1000) as pbar:
@@ -108,8 +106,7 @@ class Measure:
                     pbar.advance()
 
 
-# TODO restrict total memory
-def init(infile, outfile, overwrite, maxBufferSize=None):
+def init(infile, outfile, overwrite, maxBufferSize=None, maxTotalMemory=None):
     r"""!
     Initialize a new measurement driver.
 
@@ -122,7 +119,8 @@ def init(infile, outfile, overwrite, maxBufferSize=None):
                    Conflicts with existing measurement results are only checked by the driver
                    when the actual measurements are known.
     \param overwrite Indicate whether data in the output file may be overwritten.
-    \param maxBufferSize Maximum size that may be used for result buffers in bytes.
+    \param maxBufferSize Maximum size that may be used for result buffers in bytes (per buffer).
+    \param maxBufferSize Maximum total memory that may be used for result buffers in bytes (all buffers).
     \returns A new isle.drivers.meas.Measure driver.
     """
 
@@ -141,7 +139,7 @@ def init(infile, outfile, overwrite, maxBufferSize=None):
 
     return Measure(lattice, params,
                    callFunctionFromSource(makeActionSrc, lattice, params),
-                   infile, outfile, overwrite, maxBufferSize)
+                   infile, outfile, overwrite, maxBufferSize, maxTotalMemory)
 
 def _isValidPath(path):
     """!Check if parameter is a valid path to a measurement inside an HDF5 file."""
@@ -241,26 +239,37 @@ def _availableMemory():
     Available: {svmem.available:,} B""")
     return svmem.available
 
-def _totalMemoryAllowance(lattice, bufferFactor=0.8, maxBufferSize=None):
+def _totalMemoryAllowance(lattice, bufferFactor=0.8, maxBufferSize=None,
+                          maxTotalMemory=None):
     r"""!
     Return the total amount of memory that may be used for storing measurement results in bytes.
     """
+    log = getLogger(__name__)
+
     available = _availableMemory()
+    if maxTotalMemory:
+        if available < maxTotalMemory:
+            log.info(f"The given maxiumum memory ({maxTotalMemory:,} B) is more "
+                     f"than the available memory ({available:,} B).")
+        else:
+            available = maxTotalMemory
+
     allowance = int(bufferFactor * (available - 10 * lattice.lattSize() * 16))
     message = f"""Maximum allowed memory usage by measurements: {allowance:,} B
     Based on lattice size {lattice.lattSize()}
     and reserving {100 - bufferFactor*100}% of available memory for other purposes."""
     if maxBufferSize:
         message += f"\n    Restricted to buffers of size {maxBufferSize:,} B."
-    getLogger(__name__).info(message)
+    log.info(message)
     return allowance
 
 def _setupMeasurements(measurements, configurations, outfile, lattice,
-                       adjustConfigSlices, maxBufferSize):
+                       adjustConfigSlices, maxBufferSize, maxTotalMemory):
     if adjustConfigSlices:
         _adjustConfigSlices(measurements, configurations)
 
-    usableMemory = _totalMemoryAllowance(lattice, maxBufferSize=maxBufferSize)
+    usableMemory = _totalMemoryAllowance(lattice, maxBufferSize=maxBufferSize,
+                                         maxTotalMemory=maxTotalMemory)
     nremaining = len(measurements)
 
     with h5.File(outfile, "a") as h5f:
