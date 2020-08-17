@@ -21,7 +21,7 @@ class Measurement(metaclass=ABCMeta):
     \ingroup meas
     Base class for measurements.
 
-    Stores general measurement parameters:
+    Stores general measurement parameters and result buffers:
 
     - An HDF5 path indicating where the measurement results shall be saved.
       That path is relative to the HDF5 group passed to Measurement.save() and
@@ -33,6 +33,13 @@ class Measurement(metaclass=ABCMeta):
       as controlled through the `itr` parameter of `Measurement.__call__`.
       `configSlice.end` may be `None` in which case no upper limit is set.
       It must be set to a number when saving the slice however!
+
+    - A map from buffer names to pentinsula.TimeSeries objects and a map from names
+      to write iterators of those time series.
+      Those buffers are meant to be used for storing the results of measurements.
+      They are only allocated when calling the setup method.
+
+    - A flag indicating whether the measurement has been set up.
     """
 
     def __init__(self, savePath, buffers, configSlice=slice(None, None, None)):
@@ -45,13 +52,13 @@ class Measurement(metaclass=ABCMeta):
         self.savePath = savePath
         ## Indicates which configurations the measurement is taken on.
         self.configSlice = configSlice
-        ##
+        ## Maps buffer names to TimeSeries objects.
         self._buffers = {}
-        ##
+        ## Maps buffer names to TimeSeries write iterators.
         self._bufferIterators = {}
-        ##
+        ## List of BufferSpec objects
         self._bufferSpecs = buffers
-        ##
+        ## True if setup has been called.
         self._isSetUp = False
 
     @abstractmethod
@@ -114,6 +121,7 @@ class Measurement(metaclass=ABCMeta):
                                 The actual number may be different.
                                 This argument is only used for computing buffer sizes.
         \param file Name or handle of output file.
+        \param maxBufferSize Maximum size in bytes of buffers.
         \returns The unused amount of memory out of `memoryAllowance` in bytes.
         """
 
@@ -126,16 +134,13 @@ class Measurement(metaclass=ABCMeta):
         return residualMemory
 
     def nextItem(self, name):
-        return next(self._bufferIterators[name])[1]
-
-    @abstractmethod
-    def __call__(self, stage, itr):
         r"""!
-        Execute the measurement.
-        \param stage Instance of `isle.evolver.EvolutionStage` containing the
-                     configuration to measure on and associated data.
-        \param itr Index of the current trajectory.
+        Return the next item in buffer `name`.
+        This item can be modified to and will be written to file at an appropriate time.
         """
+        if not self._isSetUp:
+            raise RuntimeError(f"Cannot get next item {name}, the measurement is not set up.")
+        return next(self._bufferIterators[name])[1]
 
     def save(self, file=None):
         r"""!
@@ -172,13 +177,34 @@ class Measurement(metaclass=ABCMeta):
 
 @dataclass
 class BufferSpec:
+    """!
+    Specification of a result buffer.
+    """
+    ## Name of the buffer.
     name: str
+    ## Shape of items in the buffer (excluding time dimension).
     shape: Tuple[int, ...]
+    ## Data type of the buffer.
     dtype: Union[np.dtype, Type[int], Type[float], Type[complex]]
+    ## Path relative to measurement's savePath to the dataset associated with this buffer.
     path: str
 
 
 def calculateBufferLength(maxMemory, expectedNTimePoints, shape, dtype):
+    r"""!
+    Calculate the number of time steps to use in a TimeSeries buffer.
+
+    \param maxMemory Maximum amount of memory in bytes that the buffer
+                     is allowed to use.
+    \param expectedNTimePoints Expected number of time points that
+                               will be stored in the time series.
+    \param shape Shape of items in the time series.
+    \param dtype Datatype of the buffer / dataset.
+    \returns Tuple of
+             - The Number of time points to use.
+             - The amount of unused memory out of `maxMemory` in bytes.
+    """
+
     timePointSize = np.dtype(dtype).itemsize * int(np.prod(shape))
     if timePointSize > maxMemory:
         getLogger(__name__).error(
