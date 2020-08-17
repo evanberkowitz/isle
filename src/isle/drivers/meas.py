@@ -253,7 +253,7 @@ def _setupMeasurements(measurements, configurations, outfile, lattice, adjustCon
         _adjustConfigSlices(measurements, configurations)
 
     # TODO pass in maxBufferSize
-    maxBufferSize=16*20
+    maxBufferSize=15*1
 
     usableMemory = _totalMemoryAllowance(lattice, maxBufferSize=maxBufferSize)
     nremaining = len(measurements)
