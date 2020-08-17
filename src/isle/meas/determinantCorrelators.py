@@ -5,11 +5,9 @@ Measurement of single-particle correlator.
 
 import numpy as np
 
-import isle
-from .measurement import Measurement
-from ..util import spaceToSpacetime, temporalRoller
-from ..h5io import createH5Group
-from .propagator import AllToAll
+from .measurement import Measurement, BufferSpec
+from ..util import temporalRoller
+
 
 class DeterminantCorrelators(Measurement):
     r"""!
@@ -48,8 +46,12 @@ class DeterminantCorrelators(Measurement):
 
     """
 
-    def __init__(self, particleAllToAll, holeAllToAll, savePath, configSlice=slice(None, None, None)):
-        super().__init__(savePath, configSlice)
+    def __init__(self, particleAllToAll, holeAllToAll, lattice, savePath, configSlice=slice(None, None, None)):
+        super().__init__(savePath,
+                         (BufferSpec("P", (lattice.nt(),), complex, "P"),
+                          BufferSpec("H", (lattice.nt(),), complex, "H"),
+                          BufferSpec("PH", (lattice.nt(),), complex, "PH")),
+                         configSlice)
 
         self.particle = particleAllToAll
         self.hole = holeAllToAll
@@ -58,8 +60,6 @@ class DeterminantCorrelators(Measurement):
         # Nx ladder operators.  So, whether the operator is fermionic or not
         # depends on the parity of the number of sites.
         self.fermionic = (1 == np.mod(self.particle.nx, 2))
-
-        self.data = {k: [] for k in ["P", "H", "PH"]}
 
         self._time_slowest = "xfyi->fixy"
         self._time_averaging = "idf,fi->d"
@@ -71,14 +71,12 @@ class DeterminantCorrelators(Measurement):
         P = np.einsum(self._time_slowest, self.particle(stage, itr))
         H = np.einsum(self._time_slowest, self.hole(stage, itr))
 
-        det = {}
-
         # Determinants are real if you use the exponential discretization.
         # But, store complex numbers as a discretization-agnostic
         # TODO: improve this, save a factor of 2 on storage for the exponential case.
-        det["P"] = np.zeros(P.shape[0:2], dtype=complex)
-        det["H"] = np.zeros(H.shape[0:2], dtype=complex)
-        det["PH"] = np.zeros(H.shape[0:2], dtype=complex)
+        det = {"P": np.zeros(P.shape[0:2], dtype=complex),
+               "H": np.zeros(H.shape[0:2], dtype=complex),
+               "PH": np.zeros(H.shape[0:2], dtype=complex)}
 
         nt = det["P"].shape[0]
         time = np.arange(nt)
@@ -90,29 +88,9 @@ class DeterminantCorrelators(Measurement):
                 det["PH"][f,i] = det["P"][f,i]*det["H"][f,i]
 
         self._roll = np.array([temporalRoller(nt, -t, fermionic=self.fermionic) for t in range(nt)])
-
-        self.data["P"].append(np.einsum(self._time_averaging, self._roll/nt, det["P"]))
-        self.data["H"].append(np.einsum(self._time_averaging, self._roll/nt, det["H"]))
-
+        self.nextItem("P")[...] = np.einsum(self._time_averaging, self._roll/nt, det["P"])
+        self.nextItem("H")[...] = np.einsum(self._time_averaging, self._roll/nt, det["H"])
 
         # If we fully populate particles AND holes the operator is necessarily bosonic.
         self._roll = np.array([temporalRoller(nt, -t, fermionic=False) for t in range(nt)])
-        self.data["PH"].append(np.einsum(self._time_averaging, self._roll/nt, det["PH"]))
-
-
-    def save(self, h5group):
-        r"""!
-        Write the correlators to a file
-        \param h5group Base HDF5 group. Data is stored in subgroup `h5group/self.savePath`.
-        """
-        subGroup = createH5Group(h5group, self.savePath)
-        subGroup["P"] = self.data["P"]
-        subGroup["H"] = self.data["H"]
-        subGroup["PH"] = self.data["PH"]
-
-def read(h5group):
-    r"""!
-    Read the irreps and their correlators from a file.
-    \param h5group HDF5 group which contains the data of this measurement.
-    """
-    return h5group["correlators"][()], h5group["irreps"][()]
+        self.nextItem("PH")[...] = np.einsum(self._time_averaging, self._roll/nt, det["PH"])
