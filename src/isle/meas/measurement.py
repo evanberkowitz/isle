@@ -113,17 +113,6 @@ class Measurement(metaclass=ABCMeta):
         \param h5group Base HDF5 group. Data is stored in subgroup `h5group/self.savePath`.
         """
 
-    def saveAll(self, h5group):
-        r"""!
-        Save results of measurement as well as relevant metadata.
-        \param h5group Base HDF5 group. Data is stored in subgroup `h5group/self.savePath`.
-        """
-        # TODO when and how?
-        self.save(h5group)
-        # create the group here to make sure it really exists
-        subGroup = createH5Group(h5group, self.savePath)
-        self.saveConfigSlice(subGroup)
-
     def saveConfigSlice(self, h5obj, name="configurations"):
         r"""!
         Save the configuration slice as an attribute to an HDF5 object.
