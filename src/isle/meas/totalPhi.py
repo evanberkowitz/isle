@@ -11,7 +11,7 @@ from .measurement import Measurement, BufferSpec
 class TotalPhi(Measurement):
     r"""!
     \ingroup meas
-    Tabulate phi and mean value of phi^2.
+    Tabulate \f$\Phi = \sum_i \phi_i\f$ and \f$\sum_i {|\phi)_i|}^2 / N\f$.
     """
 
     def __init__(self, savePath, configSlice=slice(None, None, None)):
