@@ -54,12 +54,28 @@ class Measurement(metaclass=ABCMeta):
         ##
         self._isSetUp = False
 
-    def _allocateBuffers(self, memoryAllowance, expectedNConfigs, file):
+    @abstractmethod
+    def __call__(self, stage, itr):
+        r"""!
+        Execute the measurement.
+        \param stage Instance of `isle.evolver.EvolutionStage` containing the
+                     configuration to measure on and associated data.
+        \param itr Index of the current trajectory.
+        """
+
+    def _allocateBuffers(self, memoryAllowance, expectedNConfigs, file, maxBufferSize):
+        """!
+        Construct TimeSeries objects for all buffers and create datasets
+        in the file.
+        """
+
         nremaining = len(self._bufferSpecs)
         residualMemory = memoryAllowance  # in case no buffers are allocated
         for spec in self._bufferSpecs:
             try:
                 thisAllowance = memoryAllowance // nremaining
+                if maxBufferSize:
+                    thisAllowance = min(thisAllowance, maxBufferSize)
                 bufferLength, residualMemory = calculateBufferLength(thisAllowance,
                                                                      expectedNConfigs,
                                                                      spec.shape,
@@ -89,11 +105,23 @@ class Measurement(metaclass=ABCMeta):
 
         return residualMemory
 
-    def setup(self, memoryAllowance, expectedNConfigs, file):
+    def setup(self, memoryAllowance, expectedNConfigs, file, maxBufferSize=None):
+        r"""!
+        Setup a measurement for processing a given number of configurations.
+        \param memoryAllowance Rough amount memory in bytes that the measurement
+                               is allowed to use.
+        \param expectedNConfigs Expected number of configurations that will be processed.
+                                The actual number may be different.
+                                This argument is only used for computing buffer sizes.
+        \param file Name or handle of output file.
+        \returns The unused amount of memory out of `memoryAllowance` in bytes.
+        """
+
         if self._isSetUp:
             raise RuntimeError("Cannot set up measurement, buffers are already set.")
 
-        residualMemory = self._allocateBuffers(memoryAllowance, expectedNConfigs, file)
+        residualMemory = self._allocateBuffers(memoryAllowance, expectedNConfigs, file,
+                                               maxBufferSize)
         self._isSetUp = True
         return residualMemory
 

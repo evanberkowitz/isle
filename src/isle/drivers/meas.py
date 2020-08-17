@@ -234,29 +234,37 @@ def _availableMemory():
     Available: {svmem.available:,} B""")
     return svmem.available
 
-def _totalMemoryAllowance(lattice, bufferFactor=0.8):
+def _totalMemoryAllowance(lattice, bufferFactor=0.8, maxBufferSize=None):
     r"""!
     Return the total amount of memory that may be used for storing measurement results in bytes.
     """
     available = _availableMemory()
     allowance = int(bufferFactor * (available - 10 * lattice.lattSize() * 16))
-    getLogger(__name__).info(f"""Maximum allowed memory usage by measurements: {allowance:,} B
+    message = f"""Maximum allowed memory usage by measurements: {allowance:,} B
     Based on lattice size {lattice.lattSize()}
-    and reserving {100 - bufferFactor*100}% of available memory for other purposes.""")
+    and reserving {100 - bufferFactor*100}% of available memory for other purposes."""
+    if maxBufferSize:
+        message += f"\n    Restricted to buffers of size {maxBufferSize:,} B."
+    getLogger(__name__).info(message)
     return allowance
 
 def _setupMeasurements(measurements, configurations, outfile, lattice, adjustConfigSlices):
     if adjustConfigSlices:
         _adjustConfigSlices(measurements, configurations)
 
-    usableMemory = _totalMemoryAllowance(lattice)
+    # TODO pass in maxBufferSize
+    maxBufferSize=16*20
+
+    usableMemory = _totalMemoryAllowance(lattice, maxBufferSize=maxBufferSize)
     nremaining = len(measurements)
 
     with h5.File(outfile, "a") as h5f:
         for measurement in measurements:
             configSlice = measurement.configSlice
+
             residualMemory = measurement.setup(usableMemory // nremaining,
                                                (configSlice.stop - configSlice.start) // configSlice.step,
-                                               h5f)
+                                               h5f,
+                                               maxBufferSize=maxBufferSize)
             usableMemory -= usableMemory // nremaining - residualMemory
             nremaining -= 1
