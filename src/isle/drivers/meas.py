@@ -40,7 +40,8 @@ class Measure:
     """
 
 
-    def __init__(self, lattice, params, action, infile, outfile, overwrite):
+    def __init__(self, lattice, params, action, infile, outfile,
+                 overwrite, maxBufferSize=None):
         ## The spatial lattice.
         self.lattice = lattice
         ## Run parameters.
@@ -53,6 +54,8 @@ class Measure:
         self.outfile = outfile
         ## True if existing data may be overwritten.
         self.overwrite = overwrite
+        ## Maximum size to use for result buffers of measurements.
+        self._maxBufferSize = maxBufferSize
 
     def __call__(self, measurements, adjustConfigSlices=True):
         r"""!
@@ -83,7 +86,8 @@ class Measure:
             # get all configuration groups (index, h5group) pairs
             configurations = fileio.h5.loadList(cfgf["/configuration"])
 
-            _setupMeasurements(measurements, configurations, self.outfile, self.lattice, adjustConfigSlices)
+            _setupMeasurements(measurements, configurations, self.outfile, self.lattice,
+                               adjustConfigSlices, self._maxBufferSize)
 
             # apply measurements to all configs
             with cli.trackProgress(len(configurations), "Measurements", updateRate=1000) as pbar:
@@ -104,7 +108,8 @@ class Measure:
                     pbar.advance()
 
 
-def init(infile, outfile, overwrite):
+# TODO restrict total memory
+def init(infile, outfile, overwrite, maxBufferSize=None):
     r"""!
     Initialize a new measurement driver.
 
@@ -116,6 +121,8 @@ def init(infile, outfile, overwrite):
                    If this file exists, it must be compatible with the metadata and measurements.
                    Conflicts with existing measurement results are only checked by the driver
                    when the actual measurements are known.
+    \param overwrite Indicate whether data in the output file may be overwritten.
+    \param maxBufferSize Maximum size that may be used for result buffers in bytes.
     \returns A new isle.drivers.meas.Measure driver.
     """
 
@@ -134,7 +141,7 @@ def init(infile, outfile, overwrite):
 
     return Measure(lattice, params,
                    callFunctionFromSource(makeActionSrc, lattice, params),
-                   infile, outfile, overwrite)
+                   infile, outfile, overwrite, maxBufferSize)
 
 def _isValidPath(path):
     """!Check if parameter is a valid path to a measurement inside an HDF5 file."""
@@ -248,12 +255,10 @@ def _totalMemoryAllowance(lattice, bufferFactor=0.8, maxBufferSize=None):
     getLogger(__name__).info(message)
     return allowance
 
-def _setupMeasurements(measurements, configurations, outfile, lattice, adjustConfigSlices):
+def _setupMeasurements(measurements, configurations, outfile, lattice,
+                       adjustConfigSlices, maxBufferSize):
     if adjustConfigSlices:
         _adjustConfigSlices(measurements, configurations)
-
-    # TODO pass in maxBufferSize
-    maxBufferSize=15*1
 
     usableMemory = _totalMemoryAllowance(lattice, maxBufferSize=maxBufferSize)
     nremaining = len(measurements)
