@@ -17,6 +17,9 @@ from ..util import verifyVersionsByException
 from ..evolver import EvolutionStage
 
 
+# TODO maximum buffer size argument
+
+
 class Measure:
     r"""!
     Driver to perform measurements on configurations stored in a file.
@@ -50,7 +53,7 @@ class Measure:
         ## True if existing data may be overwritten.
         self.overwrite = overwrite
 
-    def __call__(self, measurements):
+    def __call__(self, measurements, adjustConfigSlices=True):
         r"""!
         Apply measurements to all configurations in the input file and
         save results to the output file.
@@ -68,6 +71,9 @@ class Measure:
 
         \param measurements List of instances of isle.meas.measurement.Measurement to be called
                             on each configuration in the input file.
+        \param adjustConfigSlices If `True`, the configuration slices in all measurements
+                                  will be modified to reflect the actual range of
+                                  configurations that the measurement is performed on.
         """
 
         _ensureCanWriteMeas(self.outfile, measurements, self.overwrite)
