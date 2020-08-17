@@ -76,7 +76,8 @@ class Measurement(metaclass=ABCMeta):
 
         if self._bufferSpecs:
             with open_or_pass_file(file, None, "a") as h5f:
-                createH5Group(h5f, self.savePath)
+                group = createH5Group(h5f, self.savePath)
+                self.saveConfigSlice(group)
                 for buffer in self._buffers.values():
                     buffer.create_dataset(h5f, write=False)
 
