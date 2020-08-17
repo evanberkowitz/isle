@@ -178,6 +178,7 @@ class Measurement(metaclass=ABCMeta):
 @dataclass
 class BufferSpec:
     """!
+    \ingroup meas
     Specification of a result buffer.
     """
     ## Name of the buffer.
@@ -192,6 +193,7 @@ class BufferSpec:
 
 def calculateBufferLength(maxMemory, expectedNTimePoints, shape, dtype):
     r"""!
+    \ingroup meas
     Calculate the number of time steps to use in a TimeSeries buffer.
 
     \param maxMemory Maximum amount of memory in bytes that the buffer
