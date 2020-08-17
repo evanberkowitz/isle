@@ -38,8 +38,7 @@ The formation of potentials and correlators are left for analysis.
 import numpy as np
 
 import isle
-from .measurement import Measurement
-from ..h5io import createH5Group
+from .measurement import Measurement, BufferSpec
 
 from logging import getLogger
 
@@ -49,13 +48,14 @@ class Polyakov(Measurement):
     Tabulate the Polyakov loop.
     """
 
-    def __init__(self, basis, nt, savePath, configSlice=slice(None, None, None)):
-        super().__init__(savePath, configSlice)
+    def __init__(self, basis, lattice, savePath, configSlice=slice(None, None, None)):
+        super().__init__(savePath,
+                         (BufferSpec("Phi_x", (lattice.nx(),), complex, "Phi_x"),
+                          BufferSpec("P", (lattice.nx(),), complex, "Polyakov")),
+                         configSlice)
 
         self.basis = basis
-        self.nt = nt
-        self.Phi_x = []
-        self.P = []
+        self.nt = lattice.nt()
 
         try:
             if self.basis == isle.action.HFABasis.PARTICLE_HOLE:
@@ -68,25 +68,6 @@ class Polyakov(Measurement):
 
     def __call__(self, stage, itr):
         """!Record the sum_t phi_xt and the Polyakov loops."""
-        self.Phi_x.append(np.sum(np.reshape(stage.phi, (self.nt, -1)), axis=0))
-        self.P.append(
-            np.exp(self.forward*self.Phi_x[-1])
-        )
-
-    def save(self, h5group):
-        r"""!
-        Write both Phi_x and P.
-        \param base HDF5 group in which to store data.
-        \param h5group Base HDF5 group. Data is stored in subgroup `h5group/self.savePath`.
-        """
-        subGroup = createH5Group(h5group, self.savePath)
-        subGroup["Phi_x"] = self.Phi_x
-        subGroup["Polyakov"] = self.P
-
-
-    def read(h5group):
-        r"""!
-        Read Phi_x and the Polyakov loops from a file.
-        \param h5group HDF5 group which contains the data of this measurement.
-        """
-        return h5group["Phi_x"][()], h5group["Polyakov"][()]
+        Phi_x = np.sum(np.reshape(stage.phi, (self.nt, -1)), axis=0)
+        self.nextItem("Phi_x")[...] = Phi_x
+        self.nextItem("P")[...] = np.exp(self.forward * Phi_x)
