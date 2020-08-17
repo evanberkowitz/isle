@@ -59,18 +59,21 @@ class Measurement(metaclass=ABCMeta):
         residualMemory = memoryAllowance  # in case no buffers are allocated
         for spec in self._bufferSpecs:
             try:
-                bufferLength, residualMemory = calculateBufferLength(memoryAllowance // nremaining,
+                thisAllowance = memoryAllowance // nremaining
+                bufferLength, residualMemory = calculateBufferLength(thisAllowance,
                                                                      expectedNConfigs,
                                                                      spec.shape,
                                                                      spec.dtype)
             except RuntimeError:
                 getLogger(__name__).error("Failed to allocate buffer %s", spec.name)
                 raise
-            memoryAllowance -= memoryAllowance // nremaining - residualMemory
+            usedMemory = thisAllowance - residualMemory
+            memoryAllowance -= usedMemory
             nremaining -= 1
 
-            getLogger(__name__).info("Allocating buffer '%s' in measurement %s with %d time steps",
-                                     spec.name, type(self).__name__, bufferLength)
+            getLogger(__name__).info(f"Allocating buffer '{spec.name}' in measurement "
+                                     f"{type(self).__name__} with {bufferLength} time steps "
+                                     f"({usedMemory:,} B)")
             self._buffers[spec.name] = TimeSeries(file, Path(self.savePath) / spec.path,
                                                   bufferLength, spec.shape, spec.dtype)
 
