@@ -40,9 +40,9 @@ from logging import getLogger
 
 import numpy as np
 import h5py as h5
+from pentinsula.h5utils import open_or_pass_file
 
-from .measurement import Measurement
-from ..h5io import createH5Group
+from .measurement import Measurement, BufferSpec
 
 #TODO: save / retrieve einsum paths.
 
@@ -64,16 +64,18 @@ class OnePointFunctions(Measurement):
         \param transform Transformation matrix applied to correlators in position space.
         """
 
-        super().__init__(savePath, configSlice)
+        assert particleAllToAll.hfm.nx() == holeAllToAll.hfm.nx()
+        super().__init__(savePath,
+                         tuple(BufferSpec(name, (particleAllToAll.hfm.nx(),), complex, name)
+                               for name in self.CORRELATOR_NAMES),
+                         configSlice)
 
         # The correlation functions encoded here are between bilinear operators.
         # Since the individual constituents are fermionic, the bilinear is bosonic.
         self.fermionic = False
 
-        self.particle=particleAllToAll
-        self.hole=holeAllToAll
-
-        self.correlators = {k: [] for k in self.CORRELATOR_NAMES}
+        self.particle = particleAllToAll
+        self.hole = holeAllToAll
 
         self.transform = transform
 
@@ -109,24 +111,20 @@ class OnePointFunctions(Measurement):
         if self.transform is None:
             for name, correlator in data.items():
                 measurement = np.einsum("xtxt->x", correlator, optimize=self._einsum_path) / nt
-                self.correlators[name].append(measurement)
+                self.nextItem(name)[...] = measurement
         else:
             for name, correlator in data.items():
                 measurement = np.einsum("ax,xtxt->a", self.transform, correlator, optimize=self._einsum_path) / nt
-                self.correlators[name].append(measurement)
+                self.nextItem(name)[...] = measurement
 
-
-    def save(self, h5group):
-        r"""!
-        \param h5group Base HDF5 group. Data is stored in subgroup `h5group/self.savePath`.
-        """
-        subGroup = createH5Group(h5group, self.savePath)
-        if self.transform is None:
-            subGroup["transform"] = h5.Empty(dtype="complex")
-        else:
-            subGroup["transform"] = self.transform
-        for name, correlator in self.correlators.items():
-            subGroup[name] = correlator
+    def setup(self, memoryAllowance, expectedNConfigs, file, maxBufferSize=None):
+        res = super().setup(memoryAllowance, expectedNConfigs, file, maxBufferSize)
+        with open_or_pass_file(file, None, "a") as h5f:
+            if self.transform is None:
+                h5f[self.savePath]["transform"] = h5.Empty(dtype="complex")
+            else:
+                h5f[self.savePath]["transform"] = self.transform
+        return res
 
     @classmethod
     def computeDerivedCorrelators(cls, measurements, commonTransform):
