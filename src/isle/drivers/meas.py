@@ -18,6 +18,7 @@ from ..evolver import EvolutionStage
 
 
 # TODO maximum buffer size argument
+# TODO remove relative path arguments
 
 
 class Measure:
@@ -160,27 +161,18 @@ def init(infile, outfile, overwrite):
 def _isValidPath(path):
     """!Check if parameter is a valid path to a measurement inside an HDF5 file."""
 
-    components = str(path).split("/")
-    if components[0] == "":
-        # TODO not true anymore
-        getLogger(__name__).warning(
-            "Output path of a measurement is specified as absolute path: %s\n"
-            "    Use relative paths so the base HDF5 group can be adjusted.",
-            path)
-
-    nonempty = [component for component in components if component.strip()]
+    nonempty = [component for component in str(path).split("/") if component.strip()]
     if len(nonempty) == 0:
         getLogger(__name__).error(
             "Output path of a measurement is the root HDF5 group. "
             "All measurements must be stored in a subgroup")
         return False
-
     return True
 
 def _ensureCanWriteMeas(outfile, measurements, overwrite):
     r"""!
     Ensure that measurements can be written to the output file.
-    \param outfile The output file, must alreay exist!
+    \param outfile The output file, must already exist!
     \param measurements Measurements that want to save at some point.
     \param overwrite If `True`, erase all existing HDF5 objects under the given paths.
                      if `False`, fail if an object exists under any given path.
