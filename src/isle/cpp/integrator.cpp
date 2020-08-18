@@ -16,22 +16,24 @@ namespace isle {
 
         const double eps = direction*length/static_cast<double>(nsteps);
 
+        const auto traj = action->beginTrajectory();
+
         // initial half step
-        CDVector piOut = pi + blaze::real(action->force(phi))*(eps/2);
+        CDVector piOut = pi + blaze::real(traj->force(phi))*(eps/2);
 
         // first step in phi explicit in order to init new variable
         CDVector phiOut = phi + piOut*eps;
 
         // bunch of full steps
         for (std::size_t i = 0; i < nsteps-1; ++i) {
-            piOut += blaze::real(action->force(phiOut))*eps;
+            piOut += blaze::real(traj->force(phiOut))*eps;
             phiOut += piOut*eps;
         }
 
         // last half step
-        piOut += blaze::real(action->force(phiOut))*(eps/2);
+        piOut += blaze::real(traj->force(phiOut))*(eps/2);
 
-        const std::complex<double> actVal = action->eval(phiOut);
+        const std::complex<double> actVal = traj->eval(phiOut);
         return std::make_tuple(std::move(phiOut), std::move(piOut), actVal);
     }
 
@@ -70,7 +72,7 @@ namespace isle {
 
         template <int N>
         CDVector rk4Step(const CDVector &phi,
-                         const action::Action *action,
+                         const action::BaseTrajectoryHandle * const traj,
                          const double epsilon,
                          const double direction) {
 
@@ -78,31 +80,31 @@ namespace isle {
 
             const double edir = epsilon*direction;
 
-            const CDVector k1 = -edir * conj(action->force(phi));
-            const CDVector k2 = -edir * conj(action->force(phi
-                                                           + p::beta21*k1));
-            const CDVector k3 = -edir * conj(action->force(phi
-                                                           + p::beta31*k1
-                                                           + p::beta32*k2));
-            const CDVector k4 = -epsilon * conj(action->force(phi
-                                                              + p::beta41*k1
-                                                              + p::beta42*k2
-                                                              + p::beta43*k3));
+            const CDVector k1 = -edir * conj(traj->force(phi));
+            const CDVector k2 = -edir * conj(traj->force(phi
+                                                         + p::beta21*k1));
+            const CDVector k3 = -edir * conj(traj->force(phi
+                                                         + p::beta31*k1
+                                                         + p::beta32*k2));
+            const CDVector k4 = -epsilon * conj(traj->force(phi
+                                                            + p::beta41*k1
+                                                            + p::beta42*k2
+                                                            + p::beta43*k3));
 
             return phi + p::omega1*k1 + p::omega2*k2 + p::omega3*k3 + p::omega4*k4;
         }
 
         std::pair<CDVector, std::complex<double>>
         rk4Step(const CDVector &phi,
-                const action::Action *action,
+                const action::BaseTrajectoryHandle * const traj,
                 const double epsilon,
                 const double direction,
                 const int n) {
 
             const auto phiOut = n == 0
-                ? rk4Step<0>(phi, action, epsilon, direction)
-                : rk4Step<1>(phi, action, epsilon, direction);
-            const auto actValOut = action->eval(phiOut);
+                ? rk4Step<0>(phi, traj, epsilon, direction)
+                : rk4Step<1>(phi, traj, epsilon, direction);
+            const auto actValOut = traj->eval(phiOut);
             return {std::move(phiOut), actValOut};
         }
 
@@ -132,7 +134,7 @@ namespace isle {
 
     std::tuple<CDVector, std::complex<double>, double>
     rungeKutta4Flow(CDVector phi,
-                    const action::Action *action,
+                    const action::Action * const action,
                     const double flowTime,
                     double stepSize,
                     std::complex<double> actVal,
@@ -143,12 +145,14 @@ namespace isle {
                     double minStepSize,
                     const double imActTolerance) {
 
+        const auto traj = action->beginTrajectory();
+
         if (n != 0 && n != 1) {
             throw std::invalid_argument("n must be 0 or 1");
         }
 
         if (std::isnan(real(actVal)) || std::isnan(imag(actVal))) {
-            actVal = action->eval(phi);
+            actVal = traj->eval(phi);
         }
 
         if (std::isnan(minStepSize)) {
@@ -166,7 +170,7 @@ namespace isle {
                 }
             }
 
-            const auto attempt = rk4Step(phi, action, stepSize, direction, n);
+            const auto attempt = rk4Step(phi, traj.get(), stepSize, direction, n);
             const auto error = abs(exp(1.0i*(imag(actVal)-imag(attempt.second))) - 1.0);
 
             if (error > imActTolerance) {

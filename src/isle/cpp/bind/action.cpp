@@ -14,26 +14,21 @@ namespace bind {
         /// Trampoline class for isle::action::Action to allow Python classes to
         /// override its virtual members.
         struct ActionTramp : Action {
-            std::complex<double> eval(const Vector<std::complex<double>> &phi) const override {
+        protected:
+            BaseTrajectoryHandle *_makeTrajectoryHandle() const override {
                 PYBIND11_OVERLOAD_PURE(
-                    std::complex<double>,
+                    BaseTrajectoryHandle*,
                     Action,
-                    eval,
-                    phi
-                );
-            }
-
-            Vector<std::complex<double>> force(
-                const Vector<std::complex<double>> &phi) const override {
-
-                PYBIND11_OVERLOAD_PURE(
-                    Vector<std::complex<double>>,
-                    Action,
-                    force,
-                    phi
+                    _makeTrajectoryHandle
                 );
             }
         };
+
+        auto bindTrajectoryHandle(py::module &mod) {
+            return py::class_<BaseTrajectoryHandle>(mod, "BaseTrajectoryHandle")
+                .def("eval", &BaseTrajectoryHandle::eval)
+                .def("force", &BaseTrajectoryHandle::force);
+        }
 
         void addAction(SumAction &sum, py::object &action) {
             try {
@@ -51,8 +46,7 @@ namespace bind {
         auto bindBaseAction(py::module &mod) {
             return py::class_<Action, ActionTramp>(mod, "Action")
                 .def(py::init<>())
-                .def("eval", &Action::eval)
-                .def("force", &Action::force)
+                .def("beginTrajectory", &Action::beginTrajectory)
                 .def("__add__", [](py::object &self, py::object &other) {
                                     SumAction sum;
                                     addAction(sum, self);
@@ -224,6 +218,8 @@ namespace bind {
 
     void bindActions(py::module &mod) {
         py::module actmod = mod.def_submodule("action", "Actions");
+
+        bindTrajectoryHandle(actmod);
 
         auto action = bindBaseAction(actmod);
         bindSumAction(actmod, action);

@@ -19,7 +19,9 @@ RAND_MEAN = 0
 RAND_STD = 0.2
 N_REP = 10 # number of repetitions
 
-
+#
+# TODO Actions implemented in Python are not supported anymore
+#
 class _DummyAction(isle.action.Action):
     def eval(self, phi):
         return np.sum(phi)
@@ -147,8 +149,8 @@ class TestSumAction(unittest.TestCase):
         "Test construction (and tear down) of isle.action.SumAction."
         # No assertions here but if it completes without a segfault, it should be fine.
         _testConstructionPureCXX()
-        _testConstructionPurePy()
-        _testConstructionMixed()
+        # _testConstructionPurePy()
+        # _testConstructionMixed()
 
     def test_2_eval(self):
         "Test eval function of isle.action.SumAction."
@@ -156,12 +158,12 @@ class TestSumAction(unittest.TestCase):
         logger = getLogger(__name__)
         logger.info("Testing SumAction.eval()")
         for rep in range(N_REP):
-            sact = isle.action.SumAction(_DummyAction(), isle.action.HubbardGaugeAction(1))
+            sact = isle.action.SumAction(isle.action.HubbardGaugeAction(1))
             phi = np.random.normal(RAND_MEAN, RAND_STD, 1000) \
                   + 1j*np.random.normal(RAND_MEAN, RAND_STD, 1000)
 
             sacteval = sact.eval(isle.Vector(phi))
-            manualeval = np.sum(phi) + np.dot(phi, phi)/2
+            manualeval = np.dot(phi, phi)/2
 
             self.assertAlmostEqual(sacteval, manualeval, places=10,
                                    msg="Failed check of SumAction.eval in repetition {}\n".format(rep)\
@@ -173,13 +175,12 @@ class TestSumAction(unittest.TestCase):
         logger = getLogger(__name__)
         logger.info("Testing SumAction.force()")
         for rep in range(N_REP):
-            sact = isle.action.SumAction(_DummyAction(),
-                                   isle.action.HubbardGaugeAction(1))
+            sact = isle.action.SumAction(isle.action.HubbardGaugeAction(1))
             phi = np.random.normal(RAND_MEAN, RAND_STD, 1000) \
                   + 1j*np.random.normal(RAND_MEAN, RAND_STD, 1000)
 
             sactforce = sact.force(isle.Vector(phi))
-            manualforce = phi - phi/1
+            manualforce = -phi/1
 
             self.assertAlmostEqual(np.linalg.norm(sactforce-manualforce), 0., places=10,
                                    msg="Failed check of SumAction.force in repetition {}\n".format(rep)\

@@ -127,10 +127,15 @@ namespace isle {
             ~HubbardFermiAction() override = default;
 
             /// Evaluate the %Action for given auxilliary field phi.
-            std::complex<double> eval(const CDVector &phi) const override;
+            std::complex<double> eval(const CDVector &phi) const;
 
             /// Calculate force for given auxilliary field phi.
-            CDVector force(const CDVector &phi) const override;
+            CDVector force(const CDVector &phi) const;
+
+        protected:
+            TrajectoryHandle<HubbardFermiAction> *_makeTrajectoryHandle() const override {
+                return new TrajectoryHandle<HubbardFermiAction>(*this);
+            }
 
         private:
             /// Stores all necessary parameters.
