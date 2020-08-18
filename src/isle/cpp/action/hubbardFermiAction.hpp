@@ -22,7 +22,31 @@ namespace isle {
         /**
          * See documentation in docs/algorithm for more information.
          */
-        enum class HFAAlgorithm { DIRECT_SINGLE, DIRECT_SQUARE };
+        enum class HFAAlgorithm { DIRECT_SINGLE, DIRECT_SQUARE, ITERATIVE };
+
+
+        template <HFAHopping HOPPING, HFAAlgorithm ALGORITHM, HFABasis BASIS>
+        class HubbardFermiAction;
+
+
+        /// Specialized trajectory handle for pseudofermions.
+        template <HFAHopping HOPPING, HFABasis BASIS>
+        struct PseudoFermionTrajectoryHandle : BaseTrajectoryHandle
+        {
+            using ActionType = HubbardFermiAction<HOPPING, HFAAlgorithm::ITERATIVE, BASIS>;
+
+            explicit PseudoFermionTrajectoryHandle(const ActionType &action);
+
+            ~PseudoFermionTrajectoryHandle() noexcept override = default;
+
+            std::complex<double> eval(const Vector<std::complex<double>> &phi) const override;
+
+            Vector<std::complex<double>> force(const Vector<std::complex<double>> &phi) const override;
+
+        private:
+            const ActionType &_action;
+        };
+
 
         /// \cond DO_NOT_DOCUMENT
         namespace _internal {
@@ -61,6 +85,15 @@ namespace isle {
             template <>
             struct KMatrixType<HFAHopping::EXP> {
                 using type = IdMatrix<double>;
+            };
+
+            template <HFAHopping HOPPING, HFAAlgorithm ALGORITHM, HFABasis BASIS>
+            struct TrajHandle {
+                using type = TrajectoryHandle<HubbardFermiAction<HOPPING, ALGORITHM, BASIS>>;
+            };
+            template <HFAHopping HOPPING, HFABasis BASIS>
+            struct TrajHandle<HOPPING, HFAAlgorithm::ITERATIVE, BASIS> {
+                using type = PseudoFermionTrajectoryHandle<HOPPING, BASIS>;
             };
         }
         /// \endcond DO_NOT_DOCUMENT
@@ -133,8 +166,8 @@ namespace isle {
             CDVector force(const CDVector &phi) const;
 
         protected:
-            TrajectoryHandle<HubbardFermiAction> *_makeTrajectoryHandle() const override {
-                return new TrajectoryHandle<HubbardFermiAction>(*this);
+            typename _internal::TrajHandle<HOPPING, ALGORITHM, BASIS>::type *_makeTrajectoryHandle() const override {
+                return new typename _internal::TrajHandle<HOPPING, ALGORITHM, BASIS>::type(*this);
             }
 
         private:
