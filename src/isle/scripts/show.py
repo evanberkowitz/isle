@@ -4,6 +4,7 @@ Script to report on input and output files of Isle.
 Run the script via show.main().
 """
 
+from itertools import chain
 from logging import getLogger
 
 try:
@@ -52,9 +53,54 @@ def _nconfig(fname):
             return len(h5f["action"])
     return None
 
-def _loadLogWeights(measState):
-    """!Load action from previous measurement or compute from configurations."""
-    return isle.h5io.loadLogWeights(measState.infile)[0]
+def _attemptLoadPhi(h5f):
+    """!Load Phi = sum(phi) from the results of a TotalPhi measurement if possible."""
+    if "field" in h5f:
+        return h5f["field/totalPhi"][()]
+    return None
+
+def _attemptLoadLogWeights(h5f):
+    """!Load the weights from a bundles up dataset if possible."""
+    if "weights" in h5f:
+        return isle.h5io.loadDict(h5f["weights"])
+    return None
+
+def _loadConfigurationData(fname):
+    """!Load configurations, weights, and trajectory points."""
+
+    with h5.File(fname, "r") as h5f:
+        totalPhi = _attemptLoadPhi(h5f)
+        logWeights = _attemptLoadLogWeights(h5f)
+
+        try:
+            configs = isle.h5io.loadList(h5f["configuration"])
+        except KeyError:
+            getLogger(__name__).info("No configuration list found in file %s", fname)
+            return totalPhi, logWeights, None
+
+        needPhi = (totalPhi is None)
+        if needPhi:
+            totalPhi = np.empty(len(configs), dtype=complex)
+        needWeights = (logWeights is None)
+        if needWeights:
+            logWeights = {name: np.empty(len(configs), dtype=complex)
+                          for name in chain(("actVal",),
+                                            configs[0]["logWeights"] if "logWeights" in configs[0] else ())}
+        trajPoints = np.empty(len(configs), dtype=int)
+
+        for i, (_, grp) in enumerate(configs):
+            trajPoints[i] = grp["trajPoint"][()]
+            if needPhi:
+                totalPhi[i] = np.sum(grp["phi"][()])
+            if needWeights:
+                for name in logWeights.keys():
+                    if name == "actVal":
+                        logWeights[name][i] = grp["actVal"][()]
+                    else:
+                        logWeights[name][i] = grp["logWeights/"+name][()]
+
+        return totalPhi, logWeights, trajPoints
+
 
 def _formatParams(params):
     """!Format parameters as a multi line string."""
@@ -82,28 +128,24 @@ def _overview(infname, lattice, params, makeActionSrc):
                   "Need HDF5 files.")
         return
 
-    # use this to bundle information and perform simple measurements if needed
-    measState = Measure(lattice, params,
-                        callFunctionFromSource(makeActionSrc, lattice, params),
-                        infname, None, False)
+    totalPhi, logWeights, trajPoints = _loadConfigurationData(infname)
 
     # set up the figure
     fig, (axTP, axAct, axPhase, axPhase2D, axPhi, axPhiHist, axText) = _overviewFigure()
     fig.canvas.set_window_title(f"Isle Overview - {infname}")
 
     # plot a bunch of stuff
-    isle.plotting.plotTotalPhi(measState, axPhi, axPhiHist)
-    isle.plotting.plotTrajPoints(measState, axTP)
-    weights = _loadLogWeights(measState)
-    isle.plotting.plotWeights(weights, axAct)
-    isle.plotting.plotPhase(weights, axPhase, axPhase2D)
+    isle.plotting.plotTotalPhi(totalPhi, axPhi, axPhiHist)
+    isle.plotting.plotTrajPoints(trajPoints, axTP)
+    isle.plotting.plotWeights(logWeights, axAct)
+    isle.plotting.plotPhase(logWeights, axPhase, axPhase2D)
 
     # show metadata at bottom of figure
     axText.axis("off")
     axText.text(0, 0, fontsize=13, linespacing=2, verticalalignment="bottom",
                 s=rf"""Ensemble: $N_{{\mathrm{{config}}}}={_nconfig(infname)}$ in {infname}
-     Lattice: {lattice.name}   $N_t={measState.lattice.nt()}$, $N_x={measState.lattice.nx()}$    '{lattice.comment}'
-      Model: {_formatParams(measState.params)}""")
+     Lattice: {lattice.name}   $N_t={lattice.nt()}$, $N_x={lattice.nx()}$    '{lattice.comment}'
+      Model: {_formatParams(params)}""")
 
     fig.tight_layout()
 
