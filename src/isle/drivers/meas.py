@@ -78,7 +78,7 @@ class Measure:
 
         _ensureCanWriteMeas(self.outfile, measurements, self.overwrite)
 
-        with h5.File(self.infile, "r") as cfgf:
+        with h5.File(self.infile, ("r+" if self.outfile == self.infile else "r")) as cfgf:
             # get all configuration groups (index, h5group) pairs
             configurations = fileio.h5.loadList(cfgf["/configuration"])
 
