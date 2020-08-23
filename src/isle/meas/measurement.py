@@ -80,7 +80,9 @@ class Measurement(metaclass=ABCMeta):
         residualMemory = memoryAllowance  # in case no buffers are allocated
         for spec in self._bufferSpecs:
             try:
-                thisAllowance = memoryAllowance // nremaining
+                # Partition remaining allowance evenly between remaining measurements
+                # but restrict each buffer to at most 4GB (limit on HDF5 chunks).
+                thisAllowance = min(memoryAllowance // nremaining, 4*10**9-1)
                 if maxBufferSize:
                     thisAllowance = min(thisAllowance, maxBufferSize)
                 bufferLength, residualMemory = calculateBufferLength(thisAllowance,
