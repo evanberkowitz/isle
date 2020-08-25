@@ -100,8 +100,7 @@ def main():
                                          allToAll[isle.Species.HOLE],
                                          lat,
                                          "correlation_functions/det",
-                                         configSlice=s_[::10],
-        )
+                                         configSlice=s_[::10]),
     ]
 
     # Run the measurements on all configurations in the input file.
