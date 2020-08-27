@@ -1,13 +1,12 @@
 r"""!\file
 Driver to perform measurements on configurations stored in a file.
-
-\todo Allow setting a base path in the output file so more than one ensemble can be stored in a file.
 """
 
 from logging import getLogger
 from pathlib import Path
 
 import h5py as h5
+import psutil
 
 from .. import fileio, cli
 from ..collection import inSlice, withStart, withStop, withStep
@@ -35,7 +34,8 @@ class Measure:
     """
 
 
-    def __init__(self, lattice, params, action, infile, outfile, overwrite):
+    def __init__(self, lattice, params, action, infile, outfile,
+                 overwrite, maxBufferSize=None, maxTotalMemory=None):
         ## The spatial lattice.
         self.lattice = lattice
         ## Run parameters.
@@ -48,8 +48,12 @@ class Measure:
         self.outfile = outfile
         ## True if existing data may be overwritten.
         self.overwrite = overwrite
+        ## Maximum size to use for result buffers of measurements.
+        self._maxBufferSize = maxBufferSize
+        ## Maximum memory to use for all buffers.
+        self._maxTotalMemory = maxTotalMemory
 
-    def __call__(self, measurements):
+    def __call__(self, measurements, adjustConfigSlices=True):
         r"""!
         Apply measurements to all configurations in the input file and
         save results to the output file.
@@ -67,41 +71,19 @@ class Measure:
 
         \param measurements List of instances of isle.meas.measurement.Measurement to be called
                             on each configuration in the input file.
+        \param adjustConfigSlices If `True`, the configuration slices in all measurements
+                                  will be modified to reflect the actual range of
+                                  configurations that the measurement is performed on.
         """
 
         _ensureCanWriteMeas(self.outfile, measurements, self.overwrite)
 
-        self.mapOverConfigs(measurements, adjustSlices=True)
-        self.save(measurements, checkedBefore=True)
-
-    def mapOverConfigs(self, measurements, adjustSlices=True):
-        r"""!
-        Apply measurements to all configurations in the input file of this driver.
-
-        Reads configurations from the input file in the order of the Markov chain.
-        Compares the trajectory index extracted from file to the configSlice attribute of each
-        measurement and if the index is in the slice, calls the measurement with that trajectory.
-
-        \warning If `adjustSlices == True`, the `configSlice` attribute of all measurements is
-                 modified to contain the actual trajectory indices read from the file instead
-                 of what the user specified (if those are incompatible, `ValueError` is raised).
-                 This is necessary in order to call Measure.save() later.
-
-        \param measurements List of instances of isle.meas.measurement.Measurement to be called
-                            on each configuration in the input file.
-        \param adjustSlices Modify the `configSlice` attribute of the measurements to reflect the
-                            configurations in the file.
-        """
-
-        # copy so the list can be modified in this function
-        measurements = list(measurements)
-
-        with h5.File(self.infile, "r") as cfgf:
+        with h5.File(self.infile, ("r+" if self.outfile == self.infile else "r")) as cfgf:
             # get all configuration groups (index, h5group) pairs
             configurations = fileio.h5.loadList(cfgf["/configuration"])
 
-            if adjustSlices:
-                _adjustConfigSlices(measurements, configurations)
+            _setupMeasurements(measurements, configurations, self.outfile, self.lattice,
+                               adjustConfigSlices, self._maxBufferSize, self._maxTotalMemory)
 
             # apply measurements to all configs
             with cli.trackProgress(len(configurations), "Measurements", updateRate=1000) as pbar:
@@ -121,30 +103,8 @@ class Measure:
 
                     pbar.advance()
 
-    def save(self, measurements, checkedBefore=False):
-        r"""!
-        Save results of measurements to the output file.
 
-        \note Calls the `saveAll` function of measurements to write metadata as well as
-              the plain results.
-              This requires the `configSlice` attributes to be set properly,
-              i.e. without any elements being `None`.
-
-        \param measurements List of instances of isle.meas.measurement.Measurement.
-        \param checkedBefore *For internal use only!*
-                             If `True`, assumes that the output filehas been checked and
-                             initialized properly.
-        """
-
-        if not checkedBefore:
-            _ensureCanWriteMeas(self.outfile, measurements, self.overwrite)
-
-        with h5.File(self.outfile, "a") as measFile:
-            for measurement in measurements:
-                measurement.saveAll(measFile)
-
-
-def init(infile, outfile, overwrite):
+def init(infile, outfile, overwrite, maxBufferSize=None, maxTotalMemory=None):
     r"""!
     Initialize a new measurement driver.
 
@@ -156,6 +116,9 @@ def init(infile, outfile, overwrite):
                    If this file exists, it must be compatible with the metadata and measurements.
                    Conflicts with existing measurement results are only checked by the driver
                    when the actual measurements are known.
+    \param overwrite Indicate whether data in the output file may be overwritten.
+    \param maxBufferSize Maximum size that may be used for result buffers in bytes (per buffer).
+    \param maxBufferSize Maximum total memory that may be used for result buffers in bytes (all buffers).
     \returns A new isle.drivers.meas.Measure driver.
     """
 
@@ -174,31 +137,23 @@ def init(infile, outfile, overwrite):
 
     return Measure(lattice, params,
                    callFunctionFromSource(makeActionSrc, lattice, params),
-                   infile, outfile, overwrite)
+                   infile, outfile, overwrite, maxBufferSize, maxTotalMemory)
 
 def _isValidPath(path):
     """!Check if parameter is a valid path to a measurement inside an HDF5 file."""
 
-    components = str(path).split("/")
-    if components[0] == "":
-        getLogger(__name__).warning(
-            "Output path of a measurement is specified as absolute path: %s\n"
-            "    Use relative paths so the base HDF5 group can be adjusted.",
-            path)
-
-    nonempty = [component for component in components if component.strip()]
+    nonempty = [component for component in str(path).split("/") if component.strip()]
     if len(nonempty) == 0:
         getLogger(__name__).error(
             "Output path of a measurement is the root HDF5 group. "
             "All measurements must be stored in a subgroup")
         return False
-
     return True
 
 def _ensureCanWriteMeas(outfile, measurements, overwrite):
     r"""!
     Ensure that measurements can be written to the output file.
-    \param outfile The output file, must alreay exist!
+    \param outfile The output file, must already exist!
     \param measurements Measurements that want to save at some point.
     \param overwrite If `True`, erase all existing HDF5 objects under the given paths.
                      if `False`, fail if an object exists under any given path.
@@ -271,3 +226,57 @@ def _adjustConfigSlices(measurements, configurations):
                                       "given the actual configurations",
                                       measurement.configSlice, type(measurement))
             raise
+
+def _availableMemory():
+    r"""!
+    Return the amount of available memory in bytes.
+    """
+    svmem = psutil.virtual_memory()
+    getLogger(__name__).info(f"""System memory:
+    Total:     {svmem.total:,} B
+    Available: {svmem.available:,} B""")
+    return svmem.available
+
+def _totalMemoryAllowance(lattice, bufferFactor=0.8, maxBufferSize=None,
+                          maxTotalMemory=None):
+    r"""!
+    Return the total amount of memory that may be used for storing measurement results in bytes.
+    """
+    log = getLogger(__name__)
+
+    available = _availableMemory()
+    if maxTotalMemory:
+        if available < maxTotalMemory:
+            log.info(f"The given maxiumum memory ({maxTotalMemory:,} B) is more "
+                     f"than the available memory ({available:,} B).")
+        else:
+            available = maxTotalMemory
+
+    allowance = int(bufferFactor * (available - 10 * lattice.lattSize() * 16))
+    message = f"""Maximum allowed memory usage by measurements: {allowance:,} B
+    Based on lattice size {lattice.lattSize()}
+    and reserving {100 - bufferFactor*100}% of available memory for other purposes."""
+    if maxBufferSize:
+        message += f"\n    Restricted to buffers of size {maxBufferSize:,} B."
+    log.info(message)
+    return allowance
+
+def _setupMeasurements(measurements, configurations, outfile, lattice,
+                       adjustConfigSlices, maxBufferSize, maxTotalMemory):
+    if adjustConfigSlices:
+        _adjustConfigSlices(measurements, configurations)
+
+    usableMemory = _totalMemoryAllowance(lattice, maxBufferSize=maxBufferSize,
+                                         maxTotalMemory=maxTotalMemory)
+    nremaining = len(measurements)
+
+    with h5.File(outfile, "a") as h5f:
+        for measurement in measurements:
+            configSlice = measurement.configSlice
+
+            residualMemory = measurement.setup(usableMemory // nremaining,
+                                               (configSlice.stop - configSlice.start) // configSlice.step,
+                                               h5f,
+                                               maxBufferSize=maxBufferSize)
+            usableMemory -= usableMemory // nremaining - residualMemory
+            nremaining -= 1

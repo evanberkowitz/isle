@@ -398,16 +398,10 @@ from logging import getLogger
 
 import numpy as np
 import h5py as h5
+from pentinsula.h5utils import open_or_pass_file
 
-from .measurement import Measurement
+from .measurement import Measurement, BufferSpec
 from ..util import temporalRoller, signAlternator
-from ..h5io import createH5Group
-
-
-def _checkCorrNames(actual, allowed):
-    for name in actual:
-        if name not in allowed:
-            raise ValueError(f"Unknown correlator: '{name}'. Choose from '{allowed}'")
 
 
 class SpinSpinCorrelator(Measurement):
@@ -431,7 +425,7 @@ class SpinSpinCorrelator(Measurement):
     DERIVED_CORRELATOR_NAMES = {*DERIVED_CORRELATOR_NAMES_SPIN_ONLY,
                                 *DERIVED_CORRELATOR_NAMES_ONE_POINT}
 
-    def __init__(self, particleAllToAll, holeAllToAll, savePath, configSlice=(None, None, None),
+    def __init__(self, particleAllToAll, holeAllToAll, lattice, savePath, configSlice=(None, None, None),
                  transform=None, sigmaKappa=-1, correlators=CORRELATOR_NAMES):
         r"""!
         \param particleAllToAll propagator.AllToAll for particles.
@@ -444,11 +438,15 @@ class SpinSpinCorrelator(Measurement):
                            Defaults to SpinSpinCorrelator.CORRELATOR_NAMES.
         """
 
-        super().__init__(savePath, configSlice)
-
         if correlators is None:
             correlators = self.CORRELATOR_NAMES
         _checkCorrNames(correlators, self.CORRELATOR_NAMES)
+
+        super().__init__(savePath,
+                         tuple(BufferSpec(name, (lattice.nx(), lattice.nx(), lattice.nt()),
+                                          complex, name)
+                               for name in correlators),
+                         configSlice)
 
         # The correlation functions encoded here are between bilinear operators.
         # Since the individual constituents are fermionic, the bilinear is bosonic.
@@ -456,13 +454,13 @@ class SpinSpinCorrelator(Measurement):
 
         self.sigmaKappa = sigmaKappa
 
-        self.particle=particleAllToAll
-        self.hole=holeAllToAll
-
-        self.correlators = {k: [] for k in correlators}
+        self.particle = particleAllToAll
+        self.hole = holeAllToAll
         self.transform = transform
+        self.correlators = correlators
 
         self._einsum_paths = {}
+        self._cache = {}
 
     def __call__(self, stage, itr):
         """!Record the spin-spin correlators."""
@@ -484,147 +482,110 @@ class SpinSpinCorrelator(Measurement):
             P = np.einsum('ax,xfyi,yb->afbi', Sigma, P, Sigma, optimize="optimal")
             H = np.einsum('ax,xfyi,yb->afbi', Sigma, H, Sigma, optimize="optimal")
 
-
         d = np.eye(nx*nt).reshape(*P.shape) # A Kronecker delta
+        roll = np.array([temporalRoller(nt, -t, fermionic=self.fermionic) for t in range(nt)])
 
         log = getLogger(__name__)
 
         # TODO: store some einsum paths
 
-        # Contractions always result in a tensor xfyi, where xf are space/time at the sink
-        # and yi are space/time at the source.  Because we have to move all the daggers to the right
-        # to Wick contract ladder operators into propagators, however, the indices on the propagators
-        # need not be in the same order.
-
-        # Contractions are grouped into 4 categories,
-        #   xfxf,yiyi->xfyi
-        #   xfyi,xfyi->xfyi
-        #   xfyi,yixf->xfyi
-        #   yixf,yixf->xfyi
-        #
-        # Note that other orders are all already covered
-        #   yixf,xfyi = xfyi,yixf
-        #   yiyi,xfxf = xfxf,yiyi
-        #
-        # Even in those four categories, there may be enormous redundencies.
-        # For example, the kronecker delta is symmetric.
-        if "xfxf,yiyi->xfyi" not in self._einsum_paths:
-            self._einsum_paths["xfxf,yiyi->xfyi"], _ = np.einsum_path("xfxf,yiyi->xfyi", d, d, optimize="optimal")
-            log.info("Optimized Einsum path xfxf,yiyi->xfyi")
-
-        dxxdyy = np.einsum("xfxf,yiyi->xfyi", d, d, optimize=self._einsum_paths["xfxf,yiyi->xfyi"])
-        dxxPyy = np.einsum("xfxf,yiyi->xfyi", d, P, optimize=self._einsum_paths["xfxf,yiyi->xfyi"])
-        dxxHyy = np.einsum("xfxf,yiyi->xfyi", d, H, optimize=self._einsum_paths["xfxf,yiyi->xfyi"])
-        Pxxdyy = np.einsum("xfxf,yiyi->xfyi", P, d, optimize=self._einsum_paths["xfxf,yiyi->xfyi"])
-        PxxPyy = np.einsum("xfxf,yiyi->xfyi", P, P, optimize=self._einsum_paths["xfxf,yiyi->xfyi"])
-        PxxHyy = np.einsum("xfxf,yiyi->xfyi", P, H, optimize=self._einsum_paths["xfxf,yiyi->xfyi"])
-        Hxxdyy = np.einsum("xfxf,yiyi->xfyi", H, d, optimize=self._einsum_paths["xfxf,yiyi->xfyi"])
-        HxxPyy = np.einsum("xfxf,yiyi->xfyi", H, P, optimize=self._einsum_paths["xfxf,yiyi->xfyi"])
-        HxxHyy = np.einsum("xfxf,yiyi->xfyi", H, H, optimize=self._einsum_paths["xfxf,yiyi->xfyi"])
-
-        if "xfyi,xfyi->xfyi" not in self._einsum_paths:
-            self._einsum_paths["xfyi,xfyi->xfyi"], _ = np.einsum_path("xfyi,xfyi->xfyi", d, d, optimize="optimal")
-            log.info("Optimized Einsum path xfyi,xfyi->xfyi")
-
-    #   dxydxy = dyxdyx
-    #   dxyPxy = Pxydxy
-    #   dxyHxy = Hxydyx
-    #   Pxydxy = Pxydyx
-    #   PxyPxy cannot appear by Pauli exclusion
-        PxyHxy = np.einsum("xfyi,xfyi->xfyi", P, H, optimize=self._einsum_paths["xfyi,xfyi->xfyi"])
-    #   Hxydxy = Hxydyx
-    #   HxyPxy = PxyHxy
-    #   HxyHxy cannot appear by Pauli exclusion
-
-        if "xfyi,yixf->xfyi" not in self._einsum_paths:
-            self._einsum_paths["xfyi,yixf->xfyi"], _ = np.einsum_path("xfyi,yixf->xfyi", d, d, optimize="optimal")
-            log.info("Optimized Einsum path xfyi,yixf->xfyi")
-
-    #   dxydyx = dyxdyx
-    #   dxyPyx = Pyxdyx
-    #   dxyHyx = Hyxdyx
-        Pxydyx = np.einsum("xfyi,yixf->xfyi", P, d, optimize=self._einsum_paths["xfyi,yixf->xfyi"])
-        PxyPyx = np.einsum("xfyi,yixf->xfyi", P, P, optimize=self._einsum_paths["xfyi,yixf->xfyi"])
-        PxyHyx = np.einsum("xfyi,yixf->xfyi", P, H, optimize=self._einsum_paths["xfyi,yixf->xfyi"])
-        Hxydyx = np.einsum("xfyi,yixf->xfyi", H, d, optimize=self._einsum_paths["xfyi,yixf->xfyi"])
-        HxyPyx = np.einsum("xfyi,yixf->xfyi", H, P, optimize=self._einsum_paths["xfyi,yixf->xfyi"])
-        HxyHyx = np.einsum("xfyi,yixf->xfyi", H, H, optimize=self._einsum_paths["xfyi,yixf->xfyi"])
-
-        if "yixf,yixf->xfyi" not in self._einsum_paths:
-            self._einsum_paths["yixf,yixf->xfyi"], _ = np.einsum_path("yixf,yixf->xfyi", d, d, optimize="optimal")
-            log.info("Optimized Einsum path yixf,yixf->xfyi")
-
-        dyxdyx = np.einsum("yixf,yixf->xfyi", d, d, optimize=self._einsum_paths["yixf,yixf->xfyi"])
-    #   dyxPyx = Pyxdyx
-    #   dyxHyx = Hyxdyx
-        Pyxdyx = np.einsum("yixf,yixf->xfyi", P, d, optimize=self._einsum_paths["yixf,yixf->xfyi"])
-    #   PyxPyx cannot appear by Pauli exclusion.
-        PyxHyx = np.einsum("yixf,yixf->xfyi", P, H, optimize=self._einsum_paths["yixf,yixf->xfyi"])
-        Hyxdyx = np.einsum("yixf,yixf->xfyi", H, d, optimize=self._einsum_paths["yixf,yixf->xfyi"])
-    #   HyxPyx = PyxHyx
-    #   HyxHyx cannot appear by Pauli exclusion.
-
-        data = dict()
-
-        if "Splus_Sminus" in self.correlators: data["Splus_Sminus"] = PxyHxy
-        if "Sminus_Splus" in self.correlators: data["Sminus_Splus"] = dyxdyx - Pyxdyx - Hyxdyx + PyxHyx
-
-        if "np_nh" in self.correlators: data["np_nh"] = dxxdyy - Pxxdyy - dxxHyy + PxxHyy
-        if "np_np" in self.correlators: data["np_np"] = dxxdyy - dxxPyy - Pxxdyy + Pxydyx - PxyPyx + PxxPyy
-        if "nh_np" in self.correlators: data["nh_np"] = dxxdyy - Hxxdyy - dxxPyy + HxxPyy
-        if "nh_nh" in self.correlators: data["nh_nh"] = dxxdyy - dxxHyy - Hxxdyy + Hxydyx - HxyHyx + HxxHyy
-
-        if "++_--" in self.correlators: data["++_--"] = Hxydyx - HxyPyx
-        if "--_++" in self.correlators: data["--_++"] = Pxydyx - PxyHyx
-
-        roll = np.array([temporalRoller(nt, -t, fermionic=self.fermionic) for t in range(nt)])
-
-        time_averaged = dict()
-        for correlator in data:
+        for name in self.correlators:
+            ataCorrelator = self._allToAllCorrelator(name, P, H, d)
 
             # It is major savings to avoid two matrix-matrix multiplies, so it is
             # worthwhile to test for a transform and only add those multiplies in if needed.
             if self.transform is not None:
                 if "idf,bx,xfyi,ya->bad" not in self._einsum_paths:
-                    self._einsum_paths["idf,bx,xfyi,ya->bad"], _ = np.einsum_path("idf,bx,xfyi,ya->bad", roll, self.transform.T.conj(), data[correlator], self.transform, optimize="optimal")
+                    self._einsum_paths["idf,bx,xfyi,ya->bad"], _ = np.einsum_path("idf,bx,xfyi,ya->bad", roll, self.transform.T.conj(),
+                                                                                  ataCorrelator, self.transform, optimize="optimal")
                     log.info("Optimized Einsum path for time averaging and transform application.")
 
-                time_averaged[correlator] = np.einsum("idf,bx,xfyi,ya->bad",
-                                    roll,
-                                    self.transform.T.conj(),
-                                    data[correlator],
-                                    self.transform,
-                                    optimize=self._einsum_paths["idf,bx,xfyi,ya->bad"]) / nt
+                res = self.nextItem(name)
+                np.einsum("idf,bx,xfyi,ya->bad",
+                          roll,
+                          self.transform.T.conj(),
+                          ataCorrelator,
+                          self.transform,
+                          out=res,
+                          optimize=self._einsum_paths["idf,bx,xfyi,ya->bad"])
+                res /= nt
             else:
                 if "idf,xfyi->xyd" not in self._einsum_paths:
-                    self._einsum_paths["idf,xfyi->xyd"], _ = np.einsum_path("idf,xfyi->xyd", roll, data[correlator], optimize="optimal")
+                    self._einsum_paths["idf,xfyi->xyd"], _ = np.einsum_path("idf,xfyi->xyd", roll, ataCorrelator, optimize="optimal")
                     log.info("Optimized Einsum path for time averaging in position space.")
 
-                time_averaged[correlator] = np.einsum("idf,xfyi->xyd",
-                                    roll,
-                                    data[correlator],
-                                    optimize=self._einsum_paths["idf,xfyi->xyd"]) / nt
-
+                res = self.nextItem(name)
+                np.einsum("idf,xfyi->xyd", roll, ataCorrelator,
+                          optimize=self._einsum_paths["idf,xfyi->xyd"], out=res)
+                res /= nt
 
         # Any additional correlators can be derived by identities explained above.
         # They can be computed by SpinSpinCorrelator.computeDerivedCorrelators().
 
-        for name, correlator in time_averaged.items():
-            self.correlators[name].append(correlator)
+        self._cache.clear()
 
-    def save(self, h5group):
-        r"""!
-        \param h5group Base HDF5 group. Data is stored in subgroup `h5group/self.savePath`.
+    def setup(self, memoryAllowance, expectedNConfigs, file, maxBufferSize=None):
+        """!
+        Override in order to save 'transform'.
         """
-        subGroup = createH5Group(h5group, self.savePath)
+        res = super().setup(memoryAllowance, expectedNConfigs, file, maxBufferSize)
+        with open_or_pass_file(file, None, "a") as h5f:
+            if self.transform is None:
+                h5f[self.savePath]["transform"] = h5.Empty(dtype="complex")
+            else:
+                h5f[self.savePath]["transform"] = self.transform
+        return res
 
-        for name, correlator in self.correlators.items():
-            subGroup[name] = correlator
+    def _getEinsumPath(self, path, d):
+        """!
+        Return an optimized einsum path.
+        """
+        try:
+            return self._einsum_paths[path]
+        except KeyError:
+            self._einsum_paths[path], _ = np.einsum_path(path, d, d, optimize="optimal")
+            getLogger(__name__).info("Optimized Einsum path %s", path)
+            return self._einsum_paths[path]
 
-        if self.transform is None:
-            subGroup["transform"] = h5.Empty(dtype="complex")
+    def _getTensor(self, name, P, H, d):
+        """!
+        Return a component tensor of an all-to-all correlator.
+        Build and cache it if necessary.
+        """
+        try:
+            return self._cache[name]
+        except KeyError:
+            tensor = _TENSOR_CONSTRUCTORS[name](P, H, d, self._getEinsumPath)
+            self._cache[name] = tensor
+            return self._cache[name]
+
+    def _allToAllCorrelator(self, name, P, H, d):
+        """!
+        Compute an all-to-all correlator of given name from all-to-all
+        propagators P and H and Kronecker delta d.
+        """
+
+        def t(n):
+            return self._getTensor(n, P, H, d)
+
+        if name == "Splus_Sminus":
+            return t("PxyHxy")
+        if name == "Sminus_Splus":
+            return t("dyxdyx") - t("Pyxdyx") - t("Hyxdyx") + t("PyxHyx")
+        if name == "np_nh":
+            return t("dxxdyy") - t("Pxxdyy") - t("dxxHyy") + t("PxxHyy")
+        if name == "np_np":
+            return t("dxxdyy") - t("dxxPyy") - t("Pxxdyy") + t("Pxydyx") - t("PxyPyx") + t("PxxPyy")
+        if name == "nh_np":
+            return t("dxxdyy") - t("Hxxdyy") - t("dxxPyy") + t("HxxPyy")
+        if name == "nh_nh":
+            return t("dxxdyy") - t("dxxHyy") - t("Hxxdyy") + t("Hxydyx") - t("HxyHyx") + t("HxxHyy")
+        if name == "++_--":
+            return t("Hxydyx") - t("HxyPyx")
+        if name == "--_++":
+            return t("Pxydyx") - t("PxyHyx")
         else:
-            subGroup["transform"] = self.transform
+            raise ValueError(f"Unknown all-to-all correlator: {name}")
 
     @classmethod
     def computeDerivedCorrelators(cls, measurements, commonTransform, correlators=None):
@@ -710,3 +671,89 @@ class SpinSpinCorrelator(Measurement):
                 derived["S3_S3"] = 0.25*(derived["n_n"]     + one - npx - npy - nhx - nhy)
 
         return derived
+
+
+def _checkCorrNames(actual, allowed):
+    for name in actual:
+        if name not in allowed:
+            raise ValueError(f"Unknown correlator: '{name}'. Choose from '{allowed}'")
+
+
+# Contractions always result in a tensor xfyi, where xf are space/time at the sink
+# and yi are space/time at the source.  Because we have to move all the daggers to the right
+# to Wick contract ladder operators into propagators, however, the indices on the propagators
+# need not be in the same order.
+#
+# Contractions are grouped into 4 categories,
+#   xfxf,yiyi->xfyi
+#   xfyi,xfyi->xfyi
+#   xfyi,yixf->xfyi
+#   yixf,yixf->xfyi
+#
+# Note that other orders are all already covered
+#   yixf,xfyi = xfyi,yixf
+#   yiyi,xfxf = xfxf,yiyi
+#
+# Even in those four categories, there may be enormous redundencies.
+# For example, the kronecker delta is symmetric.
+_TENSOR_CONSTRUCTORS = {
+    "dxxdyy": lambda P, H, d, getPath:
+        np.einsum("xfxf,yiyi->xfyi", d, d, optimize=getPath("xfxf,yiyi->xfyi", d)),
+    "dxxPyy": lambda P, H, d, getPath:
+        np.einsum("xfxf,yiyi->xfyi", d, P, optimize=getPath("xfxf,yiyi->xfyi", d)),
+    "dxxHyy": lambda P, H, d, getPath:
+        np.einsum("xfxf,yiyi->xfyi", d, H, optimize=getPath("xfxf,yiyi->xfyi", d)),
+    "Pxxdyy": lambda P, H, d, getPath:
+        np.einsum("xfxf,yiyi->xfyi", P, d, optimize=getPath("xfxf,yiyi->xfyi", d)),
+    "PxxPyy": lambda P, H, d, getPath:
+        np.einsum("xfxf,yiyi->xfyi", P, P, optimize=getPath("xfxf,yiyi->xfyi", d)),
+    "PxxHyy": lambda P, H, d, getPath:
+        np.einsum("xfxf,yiyi->xfyi", P, H, optimize=getPath("xfxf,yiyi->xfyi", d)),
+    "Hxxdyy": lambda P, H, d, getPath:
+        np.einsum("xfxf,yiyi->xfyi", H, d, optimize=getPath("xfxf,yiyi->xfyi", d)),
+    "HxxPyy": lambda P, H, d, getPath:
+        np.einsum("xfxf,yiyi->xfyi", H, P, optimize=getPath("xfxf,yiyi->xfyi", d)),
+    "HxxHyy": lambda P, H, d, getPath:
+        np.einsum("xfxf,yiyi->xfyi", H, H, optimize=getPath("xfxf,yiyi->xfyi", d)),
+
+    # dxydxy = dyxdyx
+    # dxyPxy = Pxydxy
+    # dxyHxy = Hxydyx
+    # Pxydxy = Pxydyx
+    # PxyPxy cannot appear by Pauli exclusion
+    "PxyHxy": lambda P, H, d, getPath:
+        np.einsum("xfyi,xfyi->xfyi", P, H, optimize=getPath("xfyi,xfyi->xfyi", d)),
+    # Hxydxy = Hxydyx
+    # HxyPxy = PxyHxy
+    # HxyHxy cannot appear by Pauli exclusion
+
+    # dxydyx = dyxdyx
+    # dxyPyx = Pyxdyx
+    # dxyHyx = Hyxdyx
+    "Pxydyx": lambda P, H, d, getPath:
+        np.einsum("xfyi,yixf->xfyi", P, d, optimize=getPath("xfyi,yixf->xfyi", d)),
+    "PxyPyx": lambda P, H, d, getPath:
+        np.einsum("xfyi,yixf->xfyi", P, P, optimize=getPath("xfyi,yixf->xfyi", d)),
+    "PxyHyx": lambda P, H, d, getPath:
+        np.einsum("xfyi,yixf->xfyi", P, H, optimize=getPath("xfyi,yixf->xfyi", d)),
+    "Hxydyx": lambda P, H, d, getPath:
+        np.einsum("xfyi,yixf->xfyi", H, d, optimize=getPath("xfyi,yixf->xfyi", d)),
+    "HxyPyx": lambda P, H, d, getPath:
+        np.einsum("xfyi,yixf->xfyi", H, P, optimize=getPath("xfyi,yixf->xfyi", d)),
+    "HxyHyx": lambda P, H, d, getPath:
+        np.einsum("xfyi,yixf->xfyi", H, H, optimize=getPath("xfyi,yixf->xfyi", d)),
+
+    "dyxdyx": lambda P, H, d, getPath:
+        np.einsum("yixf,yixf->xfyi", d, d, optimize=getPath("yixf,yixf->xfyi", d)),
+    # dyxPyx = Pyxdyx
+    # dyxHyx = Hyxdyx
+    "Pyxdyx": lambda P, H, d, getPath:
+        np.einsum("yixf,yixf->xfyi", P, d, optimize=getPath("yixf,yixf->xfyi", d)),
+    # PyxPyx cannot appear by Pauli exclusion.
+    "PyxHyx": lambda P, H, d, getPath:
+        np.einsum("yixf,yixf->xfyi", P, H, optimize=getPath("yixf,yixf->xfyi", d)),
+    "Hyxdyx": lambda P, H, d, getPath:
+        np.einsum("yixf,yixf->xfyi", H, d, optimize=getPath("yixf,yixf->xfyi", d)),
+    # HyxPyx = PyxHyx
+    # HyxHyx cannot appear by Pauli exclusion.
+}

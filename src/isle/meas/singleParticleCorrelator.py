@@ -62,19 +62,15 @@ configuration-by-configuration.  Therefore it is worthwhile to perform both meas
 
 """
 
+import h5py as h5
 import numpy as np
+from pentinsula.h5utils import open_or_pass_file
 
-import isle
-from .measurement import Measurement
-from ..util import spaceToSpacetime, temporalRoller
+from .measurement import Measurement, BufferSpec
+from ..util import temporalRoller
 from ..h5io import createH5Group, empty
 from .propagator import AllToAll
 
-
-def _checkCorrNames(actual, allowed):
-    for name in actual:
-        if name not in allowed:
-            raise ValueError(f"Unknown correlator: '{name}'. Choose from '{allowed}'")
 
 class SingleParticleCorrelator(Measurement):
     r"""!
@@ -84,7 +80,7 @@ class SingleParticleCorrelator(Measurement):
 
     CORRELATOR_NAMES = {"creation_destruction", "destruction_creation"}
 
-    def __init__(self, allToAll, savePath, configSlice=slice(None, None, None),
+    def __init__(self, allToAll, lattice, savePath, configSlice=slice(None, None, None),
                  transform=None, correlators=CORRELATOR_NAMES):
         r"""!
         \param allToAll propagator.AllToAll for one species.
@@ -94,16 +90,20 @@ class SingleParticleCorrelator(Measurement):
         \param correlators Iterable of names of correlators to compute.
                            Defaults to `SingleParticleCorrelator.CORRELATOR_NAMES`.
         """
-        super().__init__(savePath, configSlice)
 
         _checkCorrNames(correlators, self.CORRELATOR_NAMES)
+        super().__init__(savePath,
+                         tuple(BufferSpec(name, (lattice.nx(), lattice.nx(), lattice.nt()),
+                                          complex, name)
+                               for name in correlators),
+                         configSlice)
 
         # The correlation functions encoded here are between single ladder operators.
         self.fermionic = True
 
         self._inverter = allToAll
 
-        self.correlators = {c: [] for c in correlators}
+# TODO??
         self._path = {c: None for c in correlators}
 
         self.transform = transform
@@ -115,7 +115,7 @@ class SingleParticleCorrelator(Measurement):
             self._indices["creation_destruction"] = "idf,bx,yixf,ya->bad"
             self._indices["destruction_creation"] = "idf,bx,xfyi,ya->bad"
 
-        self._einsum_paths = {c: None for c in self.correlators}
+        self._einsum_paths = {c: None for c in correlators}
 
         self._roll = None
 
@@ -141,35 +141,31 @@ class SingleParticleCorrelator(Measurement):
             tensors['destruction_creation'] = (self._roll, self.transform.T.conj(), S, self.transform)
             tensors['creation_destruction'] = (self._roll, self.transform.T.conj(), d-S, self.transform)
 
-        for c in self.correlators:
+        for c in self._einsum_paths:
             if self._einsum_paths[c] is None:
                 self._einsum_paths[c], _ = np.einsum_path(self._indices[c], *tensors[c], optimize='optimal')
 
         # The temporal roller sums over time, but does not *average* over time.  So, divide by nt:
-        for name, correlator in self.correlators.items():
-            self.correlators[name].append(np.einsum(self._indices[name],
-                                                   *tensors[name],
-                                                    optimize=self._einsum_paths[name]) / nt)
+        for name in self._einsum_paths:
+            res = self.nextItem(name)
+            np.einsum(self._indices[name], *tensors[name],
+                      optimize=self._einsum_paths[name], out=res)
+            res /= nt
 
-    def save(self, h5group):
-        r"""!
-        Write the transformation and correlators to a file.
-        \param h5group Base HDF5 group. Data is stored in subgroup `h5group/self.savePath`.
-        """
-        subGroup = createH5Group(h5group, self.savePath)
+    def setup(self, memoryAllowance, expectedNConfigs, file, maxBufferSize=None):
+        res = super().setup(memoryAllowance, expectedNConfigs, file, maxBufferSize)
+        with open_or_pass_file(file, None, "a") as h5f:
+            # TODO store the optimization; this line of code doesn't work.
+            # subGroup["einsum_path"] = self._path
 
-        for name, correlator in self.correlators.items():
-            subGroup[name] = correlator
+            if self.transform is None:
+                h5f[self.savePath]["transform"] = empty(dtype="complex")
+            else:
+                h5f[self.savePath]["transform"] = self.transform
+        return res
 
-        if self.transform is None:
-            subGroup["transform"] = empty(dtype=complex)
-        else:
-            subGroup["transform"] = self.transform
-        # subGroup["einsum_path"] = self._path # TODO: store the optimization; this line of code doesn't work.
 
-def read(h5group):
-    r"""!
-    Read the transform and their correlators from a file.
-    \param h5group HDF5 group which contains the data of this measurement.
-    """
-    return h5group["correlators"][()], h5group["transform"][()]
+def _checkCorrNames(actual, allowed):
+    for name in actual:
+        if name not in allowed:
+            raise ValueError(f"Unknown correlator: '{name}'. Choose from '{allowed}'")
