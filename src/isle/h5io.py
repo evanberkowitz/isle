@@ -14,6 +14,8 @@ from . import Vector, isleVersion, pythonVersion, blazeVersion, pybind11Version
 from .random import readStateH5
 from .collection import listToSlice, parseSlice, subslice, normalizeSlice
 
+def empty(dtype):
+    return h5.Empty(dtype=dtype)
 
 def createH5Group(base, name):
     r"""!

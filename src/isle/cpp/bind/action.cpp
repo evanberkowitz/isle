@@ -97,10 +97,10 @@ namespace bind {
                 ;
         }
 
-        template <HFAHopping HOPPING, HFAVariant VARIANT, HFABasis BASIS,
+        template <HFAHopping HOPPING, HFAAlgorithm ALGORITHM, HFABasis BASIS,
                   typename A>
         void bindSpecificHFA(py::module &mod, const char * const name, A &action) {
-            using HFA = HubbardFermiAction<HOPPING, VARIANT, BASIS>;
+            using HFA = HubbardFermiAction<HOPPING, ALGORITHM, BASIS>;
 
             py::class_<HFA>(mod, name, action)
                 .def(py::init<SparseMatrix<double>, double, std::int8_t, bool>(),
@@ -116,28 +116,28 @@ namespace bind {
                                           const std::int8_t sigmaKappa,
                                           const HFAHopping hopping,
                                           const HFABasis basis,
-                                          const HFAVariant variant,
+                                          const HFAAlgorithm algorithm,
                                           const bool allowShortcut) {
 
             if (basis == HFABasis::PARTICLE_HOLE) {
                 if (hopping == HFAHopping::DIA) {
-                    if (variant == HFAVariant::ONE) {
+                    if (algorithm == HFAAlgorithm::DIRECT_SINGLE) {
                         return py::cast(HubbardFermiAction<HFAHopping::DIA,
-                                        HFAVariant::ONE,
+                                        HFAAlgorithm::DIRECT_SINGLE,
                                         HFABasis::PARTICLE_HOLE>(kappaTilde, muTilde, sigmaKappa, allowShortcut));
-                    } else {  // HFAVariant::TWO
+                    } else {  // HFAAlgorithm::DIRECT_SQUARE
                         return py::cast(HubbardFermiAction<HFAHopping::DIA,
-                                        HFAVariant::TWO,
+                                        HFAAlgorithm::DIRECT_SQUARE,
                                         HFABasis::PARTICLE_HOLE>(kappaTilde, muTilde, sigmaKappa, allowShortcut));
                     }
                 } else {  // HFAHopping::EXP
-                    if (variant == HFAVariant::ONE) {
+                    if (algorithm == HFAAlgorithm::DIRECT_SINGLE) {
                         return py::cast(HubbardFermiAction<HFAHopping::EXP,
-                                        HFAVariant::ONE,
+                                        HFAAlgorithm::DIRECT_SINGLE,
                                         HFABasis::PARTICLE_HOLE>(kappaTilde, muTilde, sigmaKappa, allowShortcut));
-                    } else {  // HFAVariant::TWO
+                    } else {  // HFAAlgorithm::DIRECT_SQUARE
                         return py::cast(HubbardFermiAction<HFAHopping::EXP,
-                                        HFAVariant::TWO,
+                                        HFAAlgorithm::DIRECT_SQUARE,
                                         HFABasis::PARTICLE_HOLE>(kappaTilde, muTilde, sigmaKappa, allowShortcut));
                     }
                 }
@@ -145,23 +145,23 @@ namespace bind {
 
             else {  // HFABasis::SPIN
                 if (hopping == HFAHopping::DIA) {
-                    if (variant == HFAVariant::ONE) {
+                    if (algorithm == HFAAlgorithm::DIRECT_SINGLE) {
                         return py::cast(HubbardFermiAction<HFAHopping::DIA,
-                                        HFAVariant::ONE,
+                                        HFAAlgorithm::DIRECT_SINGLE,
                                         HFABasis::SPIN>(kappaTilde, muTilde, sigmaKappa, allowShortcut));
-                    } else {  // HFAVariant::TWO
+                    } else {  // HFAAlgorithm::DIRECT_SQUARE
                         return py::cast(HubbardFermiAction<HFAHopping::DIA,
-                                        HFAVariant::TWO,
+                                        HFAAlgorithm::DIRECT_SQUARE,
                                         HFABasis::SPIN>(kappaTilde, muTilde, sigmaKappa, allowShortcut));
                     }
                 } else {  // HFAHopping::EXP
-                    if (variant == HFAVariant::ONE) {
+                    if (algorithm == HFAAlgorithm::DIRECT_SINGLE) {
                         return py::cast(HubbardFermiAction<HFAHopping::EXP,
-                                        HFAVariant::ONE,
+                                        HFAAlgorithm::DIRECT_SINGLE,
                                         HFABasis::SPIN>(kappaTilde, muTilde, sigmaKappa, allowShortcut));
-                    } else {  // HFAVariant::TWO
+                    } else {  // HFAAlgorithm::DIRECT_SQUARE
                         return py::cast(HubbardFermiAction<HFAHopping::EXP,
-                                        HFAVariant::TWO,
+                                        HFAAlgorithm::DIRECT_SQUARE,
                                         HFABasis::SPIN>(kappaTilde, muTilde, sigmaKappa, allowShortcut));
                     }
                 }
@@ -172,9 +172,9 @@ namespace bind {
         template <typename A>
         void bindHubbardFermiAction(py::module &mod, A &action) {
             // bind enums
-            py::enum_<HFAVariant>(mod, "HFAVariant")
-                .value("ONE", HFAVariant::ONE)
-                .value("TWO", HFAVariant::TWO);
+            py::enum_<HFAAlgorithm>(mod, "HFAAlgorithm")
+                .value("DIRECT_SINGLE", HFAAlgorithm::DIRECT_SINGLE)
+                .value("DIRECT_SQUARE", HFAAlgorithm::DIRECT_SQUARE);
 
             py::enum_<HFABasis>(mod, "HFABasis")
                 .value("PARTICLE_HOLE", HFABasis::PARTICLE_HOLE)
@@ -185,39 +185,39 @@ namespace bind {
                 .value("EXP", HFAHopping::EXP);
 
             // bind all specific actions
-            bindSpecificHFA<HFAHopping::DIA, HFAVariant::ONE, HFABasis::PARTICLE_HOLE>(mod, "HubbardFermiActionDiaOneOne", action);
-            bindSpecificHFA<HFAHopping::DIA, HFAVariant::ONE, HFABasis::SPIN>(mod, "HubbardFermiActionDiaOneZero", action);
-            bindSpecificHFA<HFAHopping::DIA, HFAVariant::TWO, HFABasis::PARTICLE_HOLE>(mod, "HubbardFermiActionDiaTwoOne", action);
-            bindSpecificHFA<HFAHopping::DIA, HFAVariant::TWO, HFABasis::SPIN>(mod, "HubbardFermiActionDiaTwoZero", action);
+            bindSpecificHFA<HFAHopping::DIA, HFAAlgorithm::DIRECT_SINGLE, HFABasis::PARTICLE_HOLE>(mod, "HubbardFermiActionDiaDirsingleOne", action);
+            bindSpecificHFA<HFAHopping::DIA, HFAAlgorithm::DIRECT_SINGLE, HFABasis::SPIN>(mod, "HubbardFermiActionDiaDirsingleZero", action);
+            bindSpecificHFA<HFAHopping::DIA, HFAAlgorithm::DIRECT_SQUARE, HFABasis::PARTICLE_HOLE>(mod, "HubbardFermiActionDiaDirsquareOne", action);
+            bindSpecificHFA<HFAHopping::DIA, HFAAlgorithm::DIRECT_SQUARE, HFABasis::SPIN>(mod, "HubbardFermiActionDiaDirsquareZero", action);
 
-            bindSpecificHFA<HFAHopping::EXP, HFAVariant::ONE, HFABasis::PARTICLE_HOLE>(mod, "HubbardFermiActionExpOneOne", action);
-            bindSpecificHFA<HFAHopping::EXP, HFAVariant::ONE, HFABasis::SPIN>(mod, "HubbardFermiActionExpOneZero", action);
-            bindSpecificHFA<HFAHopping::EXP, HFAVariant::TWO, HFABasis::PARTICLE_HOLE>(mod, "HubbardFermiActionExpTwoOne", action);
-            bindSpecificHFA<HFAHopping::EXP, HFAVariant::TWO, HFABasis::SPIN>(mod, "HubbardFermiActionExpTwoZero", action);
+            bindSpecificHFA<HFAHopping::EXP, HFAAlgorithm::DIRECT_SINGLE, HFABasis::PARTICLE_HOLE>(mod, "HubbardFermiActionExpDirsingleOne", action);
+            bindSpecificHFA<HFAHopping::EXP, HFAAlgorithm::DIRECT_SINGLE, HFABasis::SPIN>(mod, "HubbardFermiActionExpDirsingleZero", action);
+            bindSpecificHFA<HFAHopping::EXP, HFAAlgorithm::DIRECT_SQUARE, HFABasis::PARTICLE_HOLE>(mod, "HubbardFermiActionExpDirsquareOne", action);
+            bindSpecificHFA<HFAHopping::EXP, HFAAlgorithm::DIRECT_SQUARE, HFABasis::SPIN>(mod, "HubbardFermiActionExpDirsquareZero", action);
 
             mod.def("makeHubbardFermiAction",
                     makeHubbardFermiAction,
                     "kappaTilde"_a, "muTilde"_a, "sigmaKappa"_a,
                     "hopping"_a=HFAHopping::DIA,
                     "basis"_a=HFABasis::PARTICLE_HOLE,
-                    "variant"_a= HFAVariant::ONE,
+                    "algorithm"_a= HFAAlgorithm::DIRECT_SINGLE,
                     "allowShortcut"_a=false);
 
             mod.def("makeHubbardFermiAction",
                     [] (const Lattice &lattice, const double beta,
                         const double muTilde, const std::int8_t sigmaKappa,
                         const HFAHopping hopping, const HFABasis basis,
-                        const HFAVariant variant, const bool allowShortcut) {
+                        const HFAAlgorithm algorithm, const bool allowShortcut) {
 
                         return makeHubbardFermiAction(
                             lattice.hopping()*beta/lattice.nt(),
                             muTilde, sigmaKappa,
-                            hopping, basis, variant, allowShortcut);
+                            hopping, basis, algorithm, allowShortcut);
                     },
                     "lat"_a, "beta"_a, "muTilde"_a, "sigmaKappa"_a,
                     "hopping"_a=HFAHopping::DIA,
                     "basis"_a=HFABasis::PARTICLE_HOLE,
-                    "variant"_a= HFAVariant::ONE,
+                    "algorithm"_a= HFAAlgorithm::DIRECT_SINGLE,
                     "allowShortcut"_a=false);
         }
     }

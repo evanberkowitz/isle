@@ -68,7 +68,8 @@ from pentinsula.h5utils import open_or_pass_file
 
 from .measurement import Measurement, BufferSpec
 from ..util import temporalRoller
-from ..h5io import createH5Group
+from ..h5io import createH5Group, empty
+from .propagator import AllToAll
 
 
 class SingleParticleCorrelator(Measurement):
@@ -158,7 +159,7 @@ class SingleParticleCorrelator(Measurement):
             # subGroup["einsum_path"] = self._path
 
             if self.transform is None:
-                h5f[self.savePath]["transform"] = h5.Empty(dtype="complex")
+                h5f[self.savePath]["transform"] = empty(dtype="complex")
             else:
                 h5f[self.savePath]["transform"] = self.transform
         return res

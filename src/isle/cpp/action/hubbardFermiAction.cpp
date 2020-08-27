@@ -8,20 +8,20 @@ using namespace std::complex_literals;
 namespace isle {
     namespace action {
         namespace {
-            /// Calculate force w/o -i using variant 1 algorithm for either particles or holes.
+            /// Calculate force w/o -i using the DIRECT_SINGLE algorithm for either particles or holes.
             /*
              * Constructs all partial A^-1 to the left of (1+A^-1)^-1 first ('left').
              * Constructs rest on the fly ('right', contains (1+A^-1)^-1).
              */
-            template <typename HFM>
-            CDVector forceVariant1Part(const HFM &hfm, const CDVector &phi,
-                                       const DSparseMatrix &k, const Species species) {
+            template <typename HFM, typename KMatrix>
+            CDVector forceDirectSinglePart(const HFM &hfm, const CDVector &phi,
+                                           const KMatrix &k, const Species species) {
 
                 const auto nx = hfm.nx();
                 const auto nt = getNt(phi, nx);
 
                 if (nt < 2)
-                    throw std::invalid_argument("nt < 2 in HubbardFermiAction algorithm variant 1 not supported");
+                    throw std::invalid_argument("nt < 2 in HubbardFermiAction algorithm DIRECT_SINGLE not supported");
 
                 // build A^-1 and partial products on the left of (1+A^-1)^-1
                 std::vector<CDMatrix> lefts;  // in reverse order
@@ -59,9 +59,9 @@ namespace isle {
                 return force;
             }
 
-            /// Calculate force using variant 2 algorithm for DIA discretization.
-            CDVector forceVariant2(const HubbardFermiMatrixDia &hfm,
-                                   const CDVector &phi) {
+            /// Calculate force using the DIRECT_SQUARE algorithm for DIA discretization.
+            CDVector forceDirectSquare(const HubbardFermiMatrixDia &hfm,
+                                       const CDVector &phi) {
                 const auto nx = hfm.nx();
                 const auto nt = getNt(phi, nx);
 
@@ -83,9 +83,9 @@ namespace isle {
                 return force;
             }
 
-            /// Calculate force using variant 2 algorithm for EXP discretization.
-            CDVector forceVariant2(const HubbardFermiMatrixExp &hfm,
-                                   const CDVector &phi) {
+            /// Calculate force using the DIRECT_SQUARE algorithm for EXP discretization.
+            CDVector forceDirectSquare(const HubbardFermiMatrixExp &hfm,
+                                       const CDVector &phi) {
                 const auto nx = hfm.nx();
                 const auto nt = getNt(phi, nx);
 
@@ -157,7 +157,7 @@ namespace isle {
         }
 
         template <> std::complex<double>
-        HubbardFermiAction<HFAHopping::DIA, HFAVariant::ONE, HFABasis::PARTICLE_HOLE>::eval(
+        HubbardFermiAction<HFAHopping::DIA, HFAAlgorithm::DIRECT_SINGLE, HFABasis::PARTICLE_HOLE>::eval(
             const CDVector &phi) const {
 
             if (_shortcutForHoles) {
@@ -170,21 +170,21 @@ namespace isle {
             }
         }
         template <> CDVector
-        HubbardFermiAction<HFAHopping::DIA, HFAVariant::ONE, HFABasis::PARTICLE_HOLE>::force(
+        HubbardFermiAction<HFAHopping::DIA, HFAAlgorithm::DIRECT_SINGLE, HFABasis::PARTICLE_HOLE>::force(
             const CDVector &phi) const {
 
             if (_shortcutForHoles) {
-                const auto fp = forceVariant1Part(_hfm, phi, _kp, Species::PARTICLE);
+                const auto fp = forceDirectSinglePart(_hfm, phi, _kp, Species::PARTICLE);
                 return -1.i*(fp - blaze::conj(fp));
             }
             else {
-                return -1.i*(forceVariant1Part(_hfm, phi, _kp, Species::PARTICLE)
-                         - forceVariant1Part(_hfm, phi, _kh, Species::HOLE));
+                return -1.i*(forceDirectSinglePart(_hfm, phi, _kp, Species::PARTICLE)
+                         - forceDirectSinglePart(_hfm, phi, _kh, Species::HOLE));
             }
         }
 
         template <> std::complex<double>
-        HubbardFermiAction<HFAHopping::DIA, HFAVariant::ONE, HFABasis::SPIN>::eval(
+        HubbardFermiAction<HFAHopping::DIA, HFAAlgorithm::DIRECT_SINGLE, HFABasis::SPIN>::eval(
             const CDVector &phi) const {
 
             const CDVector aux = -1.i*phi;
@@ -192,43 +192,43 @@ namespace isle {
                                      + logdetM(_hfm, aux, Species::HOLE));
         }
         template <> CDVector
-        HubbardFermiAction<HFAHopping::DIA, HFAVariant::ONE, HFABasis::SPIN>::force(
+        HubbardFermiAction<HFAHopping::DIA, HFAAlgorithm::DIRECT_SINGLE, HFABasis::SPIN>::force(
             const CDVector &phi) const {
 
             const CDVector aux = -1.i*phi;
-            return (forceVariant1Part(_hfm, aux, _kh, Species::HOLE)
-                    - forceVariant1Part(_hfm, aux, _kp, Species::PARTICLE));
+            return (forceDirectSinglePart(_hfm, aux, _kh, Species::HOLE)
+                    - forceDirectSinglePart(_hfm, aux, _kp, Species::PARTICLE));
         }
 
         template <> std::complex<double>
-        HubbardFermiAction<HFAHopping::DIA, HFAVariant::TWO, HFABasis::PARTICLE_HOLE>::eval(
+        HubbardFermiAction<HFAHopping::DIA, HFAAlgorithm::DIRECT_SQUARE, HFABasis::PARTICLE_HOLE>::eval(
             const CDVector &phi) const {
 
             return -logdetQ(_hfm, phi);
         }
         template <> CDVector
-        HubbardFermiAction<HFAHopping::DIA, HFAVariant::TWO, HFABasis::PARTICLE_HOLE>::force(
+        HubbardFermiAction<HFAHopping::DIA, HFAAlgorithm::DIRECT_SQUARE, HFABasis::PARTICLE_HOLE>::force(
             const CDVector &phi) const {
 
-            return forceVariant2(_hfm, phi);
+            return forceDirectSquare(_hfm, phi);
         }
 
         template <> std::complex<double>
-        HubbardFermiAction<HFAHopping::DIA, HFAVariant::TWO, HFABasis::SPIN>::eval(
+        HubbardFermiAction<HFAHopping::DIA, HFAAlgorithm::DIRECT_SQUARE, HFABasis::SPIN>::eval(
             const CDVector &phi) const {
 
             return -logdetQ(_hfm, -1.i*phi);
         }
         template <> CDVector
-        HubbardFermiAction<HFAHopping::DIA, HFAVariant::TWO, HFABasis::SPIN>::force(
+        HubbardFermiAction<HFAHopping::DIA, HFAAlgorithm::DIRECT_SQUARE, HFABasis::SPIN>::force(
             const CDVector &phi) const {
 
-            return -1.i*forceVariant2(_hfm, -1.i*phi);
+            return -1.i*forceDirectSquare(_hfm, -1.i*phi);
         }
 
 
         template <> std::complex<double>
-        HubbardFermiAction<HFAHopping::EXP, HFAVariant::ONE, HFABasis::PARTICLE_HOLE>::eval(
+        HubbardFermiAction<HFAHopping::EXP, HFAAlgorithm::DIRECT_SINGLE, HFABasis::PARTICLE_HOLE>::eval(
             const CDVector &phi) const {
 
             if (_shortcutForHoles) {
@@ -241,21 +241,21 @@ namespace isle {
             }
         }
         template <> CDVector
-        HubbardFermiAction<HFAHopping::EXP, HFAVariant::ONE, HFABasis::PARTICLE_HOLE>::force(
+        HubbardFermiAction<HFAHopping::EXP, HFAAlgorithm::DIRECT_SINGLE, HFABasis::PARTICLE_HOLE>::force(
             const CDVector &phi) const {
 
             if (_shortcutForHoles) {
-                const auto fp = forceVariant1Part(_hfm, phi, _kp, Species::PARTICLE);
+                const auto fp = forceDirectSinglePart(_hfm, phi, _kp, Species::PARTICLE);
                 return -1.i*(fp - blaze::conj(fp));
             }
             else {
-                return -1.i*(forceVariant1Part(_hfm, phi, _kp, Species::PARTICLE)
-                         - forceVariant1Part(_hfm, phi, _kh, Species::HOLE));
+                return -1.i*(forceDirectSinglePart(_hfm, phi, _kp, Species::PARTICLE)
+                         - forceDirectSinglePart(_hfm, phi, _kh, Species::HOLE));
             }
         }
 
         template <> std::complex<double>
-        HubbardFermiAction<HFAHopping::EXP, HFAVariant::ONE, HFABasis::SPIN>::eval(
+        HubbardFermiAction<HFAHopping::EXP, HFAAlgorithm::DIRECT_SINGLE, HFABasis::SPIN>::eval(
             const CDVector &phi) const {
 
             const CDVector aux = -1.i*phi;
@@ -263,50 +263,50 @@ namespace isle {
                                      + logdetM(_hfm, aux, Species::HOLE));
         }
         template <> CDVector
-        HubbardFermiAction<HFAHopping::EXP, HFAVariant::ONE, HFABasis::SPIN>::force(
+        HubbardFermiAction<HFAHopping::EXP, HFAAlgorithm::DIRECT_SINGLE, HFABasis::SPIN>::force(
             const CDVector &phi) const {
 
             const CDVector aux = -1.i*phi;
-            return (forceVariant1Part(_hfm, aux, _kh, Species::HOLE)
-                    - forceVariant1Part(_hfm, aux, _kp, Species::PARTICLE));
+            return (forceDirectSinglePart(_hfm, aux, _kh, Species::HOLE)
+                    - forceDirectSinglePart(_hfm, aux, _kp, Species::PARTICLE));
         }
 
         template <> std::complex<double>
-        HubbardFermiAction<HFAHopping::EXP, HFAVariant::TWO, HFABasis::PARTICLE_HOLE>::eval(
+        HubbardFermiAction<HFAHopping::EXP, HFAAlgorithm::DIRECT_SQUARE, HFABasis::PARTICLE_HOLE>::eval(
             const CDVector &phi) const {
 
             return -logdetQ(_hfm, phi);
         }
         template <> CDVector
-        HubbardFermiAction<HFAHopping::EXP, HFAVariant::TWO, HFABasis::PARTICLE_HOLE>::force(
+        HubbardFermiAction<HFAHopping::EXP, HFAAlgorithm::DIRECT_SQUARE, HFABasis::PARTICLE_HOLE>::force(
             const CDVector &phi) const {
 
-            return forceVariant2(_hfm, phi);
+            return forceDirectSquare(_hfm, phi);
         }
 
         template <> std::complex<double>
-        HubbardFermiAction<HFAHopping::EXP, HFAVariant::TWO, HFABasis::SPIN>::eval(
+        HubbardFermiAction<HFAHopping::EXP, HFAAlgorithm::DIRECT_SQUARE, HFABasis::SPIN>::eval(
             const CDVector &phi) const {
 
             return -logdetQ(_hfm, -1.i*phi);
         }
         template <> CDVector
-        HubbardFermiAction<HFAHopping::EXP, HFAVariant::TWO, HFABasis::SPIN>::force(
+        HubbardFermiAction<HFAHopping::EXP, HFAAlgorithm::DIRECT_SQUARE, HFABasis::SPIN>::force(
             const CDVector &phi) const {
 
-            return -1.i*forceVariant2(_hfm, -1.i*phi);
+            return -1.i*forceDirectSquare(_hfm, -1.i*phi);
         }
 
         // instantiate all the templates we need right here
-        template class HubbardFermiAction<HFAHopping::DIA, HFAVariant::ONE, HFABasis::PARTICLE_HOLE>;
-        template class HubbardFermiAction<HFAHopping::DIA, HFAVariant::ONE, HFABasis::SPIN>;
-        template class HubbardFermiAction<HFAHopping::DIA, HFAVariant::TWO, HFABasis::PARTICLE_HOLE>;
-        template class HubbardFermiAction<HFAHopping::DIA, HFAVariant::TWO, HFABasis::SPIN>;
+        template class HubbardFermiAction<HFAHopping::DIA, HFAAlgorithm::DIRECT_SINGLE, HFABasis::PARTICLE_HOLE>;
+        template class HubbardFermiAction<HFAHopping::DIA, HFAAlgorithm::DIRECT_SINGLE, HFABasis::SPIN>;
+        template class HubbardFermiAction<HFAHopping::DIA, HFAAlgorithm::DIRECT_SQUARE, HFABasis::PARTICLE_HOLE>;
+        template class HubbardFermiAction<HFAHopping::DIA, HFAAlgorithm::DIRECT_SQUARE, HFABasis::SPIN>;
 
-        template class HubbardFermiAction<HFAHopping::EXP, HFAVariant::ONE, HFABasis::PARTICLE_HOLE>;
-        template class HubbardFermiAction<HFAHopping::EXP, HFAVariant::ONE, HFABasis::SPIN>;
-        template class HubbardFermiAction<HFAHopping::EXP, HFAVariant::TWO, HFABasis::PARTICLE_HOLE>;
-        template class HubbardFermiAction<HFAHopping::EXP, HFAVariant::TWO, HFABasis::SPIN>;
+        template class HubbardFermiAction<HFAHopping::EXP, HFAAlgorithm::DIRECT_SINGLE, HFABasis::PARTICLE_HOLE>;
+        template class HubbardFermiAction<HFAHopping::EXP, HFAAlgorithm::DIRECT_SINGLE, HFABasis::SPIN>;
+        template class HubbardFermiAction<HFAHopping::EXP, HFAAlgorithm::DIRECT_SQUARE, HFABasis::PARTICLE_HOLE>;
+        template class HubbardFermiAction<HFAHopping::EXP, HFAAlgorithm::DIRECT_SQUARE, HFABasis::SPIN>;
 
     } // namespace action
 }  // namespace isle

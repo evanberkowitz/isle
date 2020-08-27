@@ -104,7 +104,7 @@ namespace isle {
         k = IdMatrix<double>(nx());
     }
 
-    DSparseMatrix HubbardFermiMatrixExp::K(const Species UNUSED(species)) const {
+    IdMatrix<double> HubbardFermiMatrixExp::K(const Species UNUSED(species)) const {
         return IdMatrix<double>(nx());
     }
 
