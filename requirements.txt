@@ -4,3 +4,5 @@ h5py
 pybind11
 scipy
 pentinsula
+psutil
+
