@@ -265,6 +265,67 @@ def _tuning(infname):
 
     fig.tight_layout()
 
+def _tuningLength(infname):
+    """!
+    Show tuning results.
+    """
+
+    log = getLogger("isle.show")
+    log.info("Showing tuning results in file %s", infname)
+
+    with h5.File(infname, "r") as h5f:
+        if not "leapfrogTuner" in h5f:
+            log.error("Can not show tuning results, no group 'leapfrogTuner' in input file.")
+            return
+
+        registrar = isle.evolver.LeapfrogTuner.loadRecording(h5f["leapfrogTuner"])
+
+    fig = plt.figure(figsize=(12, 10))
+    gspec = gridspec.GridSpec(1, 2, width_ratios=(2.8, 1))
+    fitsGspec = gridspec.GridSpecFromSubplotSpec(4, 3, subplot_spec=gspec[0, 0],
+                                                 wspace=0.05)
+
+    if len(registrar) >= fitsGspec.get_geometry()[0]*fitsGspec.get_geometry()[1]:
+        log.warning("The tuner performed %d runs with different leapfrog parameters "
+                    "but only the first %d are shown.",
+                    len(registrar), fitsGspec.get_geometry()[0]*fitsGspec.get_geometry()[1])
+
+    for idx, (x, y) in enumerate(np.ndindex(fitsGspec.get_geometry())):
+        if idx >= len(registrar):
+            break
+
+        ax = fig.add_subplot(fitsGspec[x, y])
+        ax.set_title(r"Run {}, length={}, $N_{{\mathrm{{MD}}}}$={}" \
+                     .format(idx, registrar.records[idx].length, registrar.records[idx].nstep))
+        ax.set_ylim((-0.1, 1.1))
+        if y != 0:
+            ax.tick_params(axis="y", which="both", labelleft=False)
+
+        # TODO handle different lengths
+        probabilityPoints, trajPointPoints = registrar.gather(nstep=registrar.records[-1].nstep,
+                                                              maxRecord=idx + 1)
+        invProbabilityPoints = []
+        invTrajPointPoints = []
+        for point in probabilityPoints:
+            invProbabilityPoints.append((1./point[0],point[1],point[2]))
+        for point in trajPointPoints:
+            invTrajPointPoints.append((1./point[0],point[1],point[2]))
+
+        fitResult = registrar.fitResults[idx] if idx < len(registrar.fitResults) else None
+        isle.plotting.plotTunerFit(ax, invProbabilityPoints, invTrajPointPoints, fitResult,
+                                   registrar.records[idx].verification)
+        if fitResult is not None:
+            log.info("Best fit for run %d: %s", idx, fitResult.bestFit)
+
+
+        if idx == 0:
+            ax.legend()
+
+    ax = fig.add_subplot(gspec[0, 1])
+    isle.plotting.plotTunerTrace(ax, registrar.records)
+
+    fig.tight_layout()
+
 def _verifyIsleVersion(version, fname):
     """!
     Check version of Isle, warn if it does not match.
@@ -331,6 +392,8 @@ def main(args):
                 _correlator(fname, lattice, params, makeActionSrc)
             if "tuning" in args.report:
                 _tuning(fname)
+            if "tuningLength" in args.report:
+                _tuningLength(fname)
 
         except:
             getLogger("isle.show").exception("Show command failed with file %s.", fname)
