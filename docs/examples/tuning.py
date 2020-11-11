@@ -31,9 +31,9 @@ LATTICE = "four_sites"
 # Note that all objects stored in here must be representable in and constructible
 # from YAML. You need to register new handlers if you have custom types.
 PARAMS = isle.util.parameters(
-    beta=3,         # inverse temperature
-    U=2,            # on-site coupling
-    mu=0,           # chemical potential
+    beta=3.,         # inverse temperature
+    U=2.,            # on-site coupling
+    mu=1.,           # chemical potential
     sigmaKappa=-1,  # prefactor of kappa for holes / spin down
                     # (+1 only allowed for bipartite lattices)
 
@@ -93,7 +93,7 @@ def tune(rng):
     # It handles all HMC evolution as well as I/O.
     # Last argument forbids the driver to overwrite any existing data.
     hmcState = isle.drivers.hmc.newRun(lat, PARAMS, rng, makeAction,
-                                       TUNEFILE, False)
+                                       TUNEFILE, True)
 
     # Generate a random initial condition.
     # Note that configurations must be vectors of complex numbers.
@@ -106,9 +106,9 @@ def tune(rng):
     log.info("Thermalizing")
     # Pick an evolver which linearly decreases the number of MD steps from 20 to 5.
     # The number of steps (99) must be one less than the number of trajectories below.
-    evolver = isle.evolver.LinearStepLeapfrog(hmcState.action, (1, 1), (20, 5), 99, rng)
+    evolver = isle.evolver.LinearStepLeapfrog(hmcState.action, (1, 1), (20, 5), 299, rng)
     # Thermalize configuration for 100 trajectories without saving anything.
-    evStage = hmcState(phi, evolver, 100, saveFreq=0, checkpointFreq=0)
+    evStage = hmcState(phi, evolver, 300, saveFreq=0, checkpointFreq=0)
     # Reset the internal counter so we start saving configs at index 0.
     hmcState.resetIndex()
 
@@ -119,12 +119,13 @@ def tune(rng):
     # rate close to zero in this case.
     # This is good as it anchors the fit, starting close to the expected optimum can make
     # the fit fail and slow down tuning.
-    evolver = isle.evolver.LeapfrogTuner(hmcState.action, 1, 1, rng, TUNEFILE)
+    evolver = isle.evolver.LeapfrogTuner(hmcState.action, 1, 1, rng, TUNEFILE,targetAccRate=0.7,targetConfIntProb=0.0001,runsPerParam=(50,500),maxRuns=50)
     # Run evolution with the tuner for an indefinite number of trajectories,
     # LeapfrogTuner is in charge of terminating the run.
     # Checkpointing is not supported by the tuner, so checkpointFreq must be 0.
     hmcState(evStage, evolver, None, saveFreq=1, checkpointFreq=0)
-
+    print(evolver.currentParams())
+    print(evolver.tunedParameters())
 
 def produce(rng):
     """
@@ -143,7 +144,7 @@ def produce(rng):
 
     # Set up a fresh HMC driver and write to the production file
     hmcState = isle.drivers.hmc.newRun(lat, params, rng, makeActionSrc,
-                                       PRODFILE, False)
+                                       PRODFILE, True)
 
     # We can't use isle.drivers.hmc.continueRun because there are no checkpoints
     # to continue from, so load configuration and evolver manually.
@@ -157,7 +158,7 @@ def produce(rng):
     log.info("Producing")
     # Produce configurations and save in intervals of 2 trajectories.
     # Place a checkpoint every 10 trajectories.
-    hmcState(phi, evolver, 100, saveFreq=2, checkpointFreq=10)
+    hmcState(phi, evolver, 5000, saveFreq=1, checkpointFreq=10)
 
 
 def main():
@@ -169,7 +170,7 @@ def main():
     isle.initialize("default")
 
     # Set up a random number generator.
-    rng = isle.random.NumpyRNG(1075)
+    rng = isle.random.NumpyRNG(105)
 
     tune(rng)
     produce(rng)
