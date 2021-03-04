@@ -2,7 +2,7 @@
 FROM archlinux
 
 # Write Out build info
-RUN date > /build-info.txt && uname -r >> /build-info.txt
+RUN uname -r >> /build-info.txt
 
 # system configuration
 RUN pacman -Syu --noconfirm && \
@@ -21,7 +21,8 @@ WORKDIR /
 RUN rm -rf /var/tmp/blaze
 
 # Copy in isle to var/tmp/isle
-COPY . /var/tmp/isle
+# we could also clone it...
+COPY .. /var/tmp/isle
 
 ENV Pybind11_DIR=/usr/lib/python3.9/site-packages/pybind11
 
