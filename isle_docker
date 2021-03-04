@@ -1,0 +1,33 @@
+# Choose base image, distribution we want to use
+FROM archlinux
+
+# Write Out build info
+RUN date > /build-info.txt && uname -r >> /build-info.txt
+
+# system configuration
+RUN pacman -Syu --noconfirm && \
+    pacman -S --noconfirm \
+       gcc git make cmake which blas lapack python python-pip && \
+    yes | pip install setuptools pybind11 numpy scipy h5py PyYAML scikit-learn matplotlib
+# Note that we pipe yes in the pip command to not ask for permission to install it
+# similar to the --noconfirm of pacman
+
+# Install blaze
+RUN git clone https://bitbucket.org/blaze-lib/blaze.git /var/tmp/blaze && mkdir /var/tmp/blaze/build
+WORKDIR /var/tmp/blaze/build
+RUN cmake .. -DCMAKE_INSTALL_PREFIX=/usr/local/ && \
+    make install
+WORKDIR /
+RUN rm -rf /var/tmp/blaze
+
+# Copy in isle to var/tmp/isle
+COPY isle/ /var/tmp/isle
+
+ENV Pybind11_DIR=/usr/lib/python3.9/site-packages/pybind11
+
+# Install isle
+WORKDIR /var/tmp/isle
+RUN python setup.py configure --build-type=RELEASE --blaze=/usr/local/include --blaze-parallelism=OMP && \
+    python setup.py build -j 4 && \
+    python setup.py install
+WORKDIR /
