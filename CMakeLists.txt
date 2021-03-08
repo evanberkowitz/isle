@@ -23,6 +23,14 @@ include(cmake/Cache.cmake)
 include(cmake/CompilerWarnings.cmake)
 set_project_warnings(project_warnings)
 
+if(NOT APPLE)
+  set(CMAKE_INSTALL_RPATH $ORIGIN)
+else()
+  set(CMAKE_INSTALL_RPATH @loader_path)
+endif()
+
+include(GenerateExportHeader)
+
 option(ENABLE_TESTING "Enable Test Builds" ON)
 
 # look for 3rd party packages

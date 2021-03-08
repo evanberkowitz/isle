@@ -35,7 +35,7 @@ target_link_libraries(
 target_link_libraries(${LIBNAME} PUBLIC blaze_options openmp_options)
 
 add_subdirectory(logging)
-target_link_libraries(${LIBNAME} PRIVATE isle_logging)
+target_link_libraries(${LIBNAME} PUBLIC isle_logging)
 
 # versioning - create version.hpp file
 set(ISLE_VERSION_MAJOR "0" CACHE STRING "Major version number of Isle")

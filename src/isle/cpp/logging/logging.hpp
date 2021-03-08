@@ -12,6 +12,7 @@
 #include <string>
 #include <memory>
 
+#include "isle_logging_export.h"
 #include "../core.hpp"
 
 namespace isle {
@@ -22,7 +23,7 @@ namespace isle {
      * The only difference is that the C++ functions do not perform any automatic
      * formatting, the string has to be preformatted by the user.
      */
-    class Logger {
+    class ISLE_LOGGING_EXPORT Logger {
         /// The actual implementation to keep pybing11 headers out of logging.hpp.
         class Impl;
 
