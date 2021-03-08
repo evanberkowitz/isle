@@ -4,7 +4,7 @@
 #include <limits>
 #include <cmath>
 
-#include "bind/logging.hpp"
+#include "logging/logging.hpp"
 
 using namespace std::complex_literals;
 

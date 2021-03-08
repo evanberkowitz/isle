@@ -12,7 +12,7 @@
 
 #include "core.hpp"
 #include "tmp.hpp"
-#include "bind/logging.hpp"
+#include "logging/logging.hpp"
 
 namespace isle {
     /**

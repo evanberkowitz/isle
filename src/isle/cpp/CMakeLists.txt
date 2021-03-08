@@ -41,6 +41,9 @@ set_target_properties(${LIBNAME} PROPERTIES PREFIX "" SUFFIX "${PYBIND11_LIB_SUF
 
 target_link_libraries(${LIBNAME} PUBLIC pybind11_options blaze_options openmp_options)
 
+add_subdirectory(logging)
+target_link_libraries(${LIBNAME} PRIVATE isle_logging)
+
 # versioning - create version.hpp file
 set(ISLE_VERSION_MAJOR "0" CACHE STRING "Major version number of Isle")
 set(ISLE_VERSION_MINOR "0" CACHE STRING "Minor version number of Isle")
