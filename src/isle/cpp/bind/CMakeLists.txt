@@ -6,11 +6,17 @@ set(LIBNAME "isle_cpp")
 add_library(
   ${LIBNAME} MODULE
   bindings.cpp
+  bind_version.hpp
   bind_version.cpp
+  math.hpp
   math.cpp
+  lattice.hpp
   lattice.cpp
   hubbardFermiMatrix.cpp
+  hubbardFermiMatrix.hpp
   action.cpp
+  action.hpp
+  integrator.hpp
   integrator.cpp)
 
 target_compile_definitions(${LIBNAME} PRIVATE -DISLE_LIBNAME=${LIBNAME})

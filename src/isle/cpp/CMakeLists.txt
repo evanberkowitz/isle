@@ -5,15 +5,20 @@
 
 # sources of the base library
 set(SOURCE
+    hubbardFermiMatrixDia.hpp
     hubbardFermiMatrixDia.cpp
+    hubbardFermiMatrixExp.hpp
     hubbardFermiMatrixExp.cpp
+    integrator.hpp
     integrator.cpp
+    lattice.hpp
     lattice.cpp
+    action/sumAction.hpp
     action/sumAction.cpp
+    action/hubbardGaugeAction.hpp
     action/hubbardGaugeAction.cpp
-    action/hubbardFermiAction.cpp
-    # unusual but logging must be linked against by the unit tests as well
-    logging/logging.cpp)
+    action/hubbardFermiAction.hpp
+    action/hubbardFermiAction.cpp)
 
 # store sources (w/o bindings) for other modules
 set(libsrc)
