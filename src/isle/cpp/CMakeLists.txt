@@ -9,11 +9,11 @@ set(SOURCE
   hubbardFermiMatrixExp.cpp
   integrator.cpp
   lattice.cpp
+    action/sumAction.cpp
+    action/hubbardGaugeAction.cpp
+    action/hubbardFermiAction.cpp
   # unusual but logging must be linked against by the unit tests as well
   logging/logging.cpp)
-
-# add submodules
-add_subdirectory(action)
 
 # store sources (w/o bindings) for other modules
 set(libsrc)
