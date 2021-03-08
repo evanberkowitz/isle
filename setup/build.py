@@ -24,24 +24,20 @@ def _python_config():
         return f"{sys.executable}-config"
     return "python-config"
 
-def _common_cmake_args(config, test_dir):
+def _common_cmake_args(config):
     "Format arguments for CMake common to all extensions."
     args = [f"-D{key}={val}" for key, val in config.items() if val is not None] \
         + [f"-DPYTHON_EXECUTABLE={sys.executable}",
            f"-DPYTHON_CONFIG={_python_config()}"]
-    if test_dir is not None:
-        args += [f"-DTEST_DIR={test_dir}"]
     return args
 
 
-def get_cmake_builder(config_file, test_dir=None):
+def get_cmake_builder(config_file):
     """
     Return a setuptools command class to build CMake extensions.
 
     Arguments:
        - config_file: File written by configure.Configure command
-       - test_dir: Directory which contains unit tests. If None, it is not passed
-                   to CMake and the CMake install target is not built.
     """
 
     class _BuildCMakeExtension(build_ext):
@@ -59,7 +55,7 @@ def get_cmake_builder(config_file, test_dir=None):
                       "to run the configure command first?")
                 sys.exit(2)
             config_time = config_file.stat().st_mtime
-            cmake_args = _common_cmake_args(config, test_dir)
+            cmake_args = _common_cmake_args(config)
 
             # build all extensions
             for ext in self.extensions:
@@ -121,9 +117,6 @@ def get_cmake_builder(config_file, test_dir=None):
                 build_cmd += ["--", *extra_args]
             try:
                 subprocess.check_call(build_cmd, cwd=ext_build_dir)
-                if test_dir is not None:
-                    subprocess.check_call(["cmake", "--build", ".", "--target", "install"],
-                                          cwd=ext_build_dir)
             except subprocess.CalledProcessError as err:
                 print(f"Calling cmake to build failed, arguments {err.cmd}")
                 sys.exit(1)
