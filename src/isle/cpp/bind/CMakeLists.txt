@@ -8,16 +8,16 @@ add_library(
   bindings.cpp
   bind_version.hpp
   bind_version.cpp
-  math.hpp
-  math.cpp
-  lattice.hpp
-  lattice.cpp
-  hubbardFermiMatrix.cpp
-  hubbardFermiMatrix.hpp
-  action.cpp
-  action.hpp
-  integrator.hpp
-  integrator.cpp)
+  bind_math.hpp
+  bind_math.cpp
+  bind_lattice.hpp
+  bind_lattice.cpp
+  bind_hubbardFermiMatrix.cpp
+  bind_hubbardFermiMatrix.hpp
+  bind_action.cpp
+  bind_action.hpp
+  bind_integrator.hpp
+  bind_integrator.cpp)
 
 target_compile_definitions(${LIBNAME} PRIVATE -DISLE_LIBNAME=${LIBNAME})
 

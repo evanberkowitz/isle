@@ -5,7 +5,7 @@
 #ifndef BIND_MATH_HPP
 #define BIND_MATH_HPP
 
-#include "core.hpp"
+#include "bind_core.hpp"
 
 namespace bind {
     /// Bind Vector, Matrix, and SparseMatrix.

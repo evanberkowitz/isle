@@ -1,12 +1,12 @@
-#include "math.hpp"
+#include "bind_math.hpp"
 
 #include <string>
 #include <complex>
 #include <cmath>
 
-#include "core.hpp"
 #include "../math.hpp"
 #include "../tmp.hpp"
+#include "bind_core.hpp"
 
 using namespace isle;
 

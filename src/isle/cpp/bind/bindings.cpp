@@ -1,11 +1,11 @@
-#include "core.hpp"
+#include "bind_core.hpp"
 
+#include "bind_action.hpp"
+#include "bind_hubbardFermiMatrix.hpp"
+#include "bind_integrator.hpp"
+#include "bind_lattice.hpp"
+#include "bind_math.hpp"
 #include "bind_version.hpp"
-#include "math.hpp"
-#include "lattice.hpp"
-#include "hubbardFermiMatrix.hpp"
-#include "action.hpp"
-#include "integrator.hpp"
 
 #include "../math.hpp"
 
