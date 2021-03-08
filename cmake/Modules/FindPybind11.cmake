@@ -60,7 +60,7 @@ string(REPLACE " " ";" AUX_LIST ${RAW_INCLUDES})
 # split
 extract_flags_paths(AUX_LIST "-I" PYBIND11_CXX_FLAGS PYBIND11_INCLUDE_DIR)
 # back to string
-set(PYBIND11_CXX_FLAGS "${PYBIND11_CXX_FLAGS};-fvisibility=hidden")
+set(PYBIND11_CXX_FLAGS "${PYBIND11_CXX_FLAGS}")
 unset(AUX_LIST)
 unset(RAW_INCLUDES)
 

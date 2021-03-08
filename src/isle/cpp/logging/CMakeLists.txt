@@ -4,4 +4,4 @@ add_library(${LIBNAME} SHARED
             logging.hpp
             logging.cpp)
 
-target_link_libraries(${LIBNAME} PRIVATE pybind11_options)
+target_link_libraries(${LIBNAME} PUBLIC pybind11_options)

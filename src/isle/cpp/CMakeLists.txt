@@ -23,23 +23,16 @@ endforeach ()
 set(ISLE_CPP_SOURCE ${libsrc} PARENT_SCOPE)
 unset(libsrc)
 
-# add bindings code
-add_subdirectory(bind)
-
 # define the library
-set(LIBNAME "isle_cpp")
-add_library(${LIBNAME} MODULE ${SOURCE})
-target_compile_definitions(${LIBNAME} PUBLIC -DISLE_LIBNAME=${LIBNAME})
+set(LIBNAME "isle_cpp_internal")
+add_library(${LIBNAME} SHARED ${SOURCE})
 
 target_link_libraries(
     ${LIBNAME}
     PRIVATE project_options
     project_warnings)
 
-# Set the correct file extension for a Python extension library.
-set_target_properties(${LIBNAME} PROPERTIES PREFIX "" SUFFIX "${PYBIND11_LIB_SUFFIX}")
-
-target_link_libraries(${LIBNAME} PUBLIC pybind11_options blaze_options openmp_options)
+target_link_libraries(${LIBNAME} PUBLIC blaze_options openmp_options)
 
 add_subdirectory(logging)
 target_link_libraries(${LIBNAME} PRIVATE isle_logging)
@@ -50,3 +43,6 @@ set(ISLE_VERSION_MINOR "0" CACHE STRING "Minor version number of Isle")
 set(ISLE_VERSION_EXTRA "nullptr" CACHE STRING "Extra version info of Isle")
 configure_file(version.hpp.in version.hpp)
 target_include_directories(${LIBNAME} PUBLIC ${CMAKE_CURRENT_BINARY_DIR})
+
+# add bindings code
+add_subdirectory(bind)
