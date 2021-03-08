@@ -36,29 +36,14 @@ target_link_libraries(
     PRIVATE project_options
     project_warnings)
 
+# Set the correct file extension for a Python extension library.
+set_target_properties(${LIBNAME} PROPERTIES PREFIX "" SUFFIX "${PYBIND11_LIB_SUFFIX}")
+
+target_link_libraries(${LIBNAME} PUBLIC pybind11_options blaze_options openmp_options)
+
 # versioning - create version.hpp file
 set(ISLE_VERSION_MAJOR "0" CACHE STRING "Major version number of Isle")
 set(ISLE_VERSION_MINOR "0" CACHE STRING "Minor version number of Isle")
 set(ISLE_VERSION_EXTRA "nullptr" CACHE STRING "Extra version info of Isle")
 configure_file(version.hpp.in version.hpp)
 target_include_directories(${LIBNAME} PUBLIC ${CMAKE_CURRENT_BINARY_DIR})
-
-# Pybind11
-set_target_properties(${LIBNAME} PROPERTIES PREFIX "" SUFFIX "${PYBIND11_LIB_SUFFIX}")
-target_include_directories(${LIBNAME} SYSTEM PUBLIC "${PYBIND11_INCLUDE_DIRS}")
-target_compile_options(${LIBNAME} PUBLIC ${PYBIND11_CXX_FLAGS})
-target_link_libraries(${LIBNAME} PUBLIC ${PYBIND11_LIBRARIES})
-target_link_options(${LIBNAME} PUBLIC "${PYBIND11_LINKER_FLAGS}")
-
-# blaze
-target_include_directories(${LIBNAME} SYSTEM PUBLIC ${blaze_INCLUDE_DIRS})
-target_compile_options(${LIBNAME} PUBLIC "${blaze_CXX_FLAGS}")
-target_link_libraries(${LIBNAME} PUBLIC ${blaze_LIBRARIES})
-target_link_options(${LIBNAME} PUBLIC "${blaze_LINKER_FLAGS}")
-
-# OpenMP if blaze does not use it
-if (NOT "${BLAZE_PARALLELISM}" STREQUAL "OMP")
-  target_compile_options(${LIBNAME} PUBLIC "${OpenMP_CXX_FLAGS}")
-  target_link_libraries(${LIBNAME} PUBLIC "${OpenMP_CXX_LIBRARIES}")
-  target_link_options(${LIBNAME} PUBLIC "${OpenMP_LINKER_FLAGS}")
-endif ()

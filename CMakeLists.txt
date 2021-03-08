@@ -5,18 +5,6 @@ set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/cmake/Modules/")
 # save rpath in installed library
 SET(CMAKE_INSTALL_RPATH_USE_LINK_PATH TRUE)
 
-function (target_linker_flags target flags)
-  if (flags)
-    string(REPLACE ";" " " str_flags "${flags}")
-    get_target_property(old ${target} LINK_FLAGS)
-    if ("${old}" MATCHES "^.*-NOTFOUND")
-      set_target_properties(${target} PROPERTIES LINK_FLAGS "${str_flags}")
-    else ()
-      set_target_properties(${target} PROPERTIES LINK_FLAGS "${old} ${str_flags}")
-    endif ()
-  endif ()
-endfunction ()
-
 # define the project
 project(isle CXX)
 include(cmake/StandardProjectSettings.cmake)
@@ -39,8 +27,27 @@ option(ENABLE_TESTING "Enable Test Builds" ON)
 
 # look for 3rd party packages
 find_package(OpenMP REQUIRED)
+add_library(openmp_options INTERFACE)
+# OpenMP if blaze does not use it
+if (NOT "${BLAZE_PARALLELISM}" STREQUAL "OMP")
+  target_compile_options(openmp_options INTERFACE "${OpenMP_CXX_FLAGS}")
+  target_link_libraries(openmp_options INTERFACE "${OpenMP_CXX_LIBRARIES}")
+  target_link_options(openmp_options INTERFACE "${OpenMP_LINKER_FLAGS}")
+endif ()
+
 find_package(Pybind11 REQUIRED)
+add_library(pybind11_options INTERFACE)
+target_include_directories(pybind11_options SYSTEM INTERFACE "${PYBIND11_INCLUDE_DIRS}")
+target_compile_options(pybind11_options INTERFACE ${PYBIND11_CXX_FLAGS})
+target_link_libraries(pybind11_options INTERFACE ${PYBIND11_LIBRARIES})
+target_link_options(pybind11_options INTERFACE "${PYBIND11_LINKER_FLAGS}")
+
 find_package(blaze 3.6 REQUIRED)
+add_library(blaze_options INTERFACE)
+target_include_directories(blaze_options SYSTEM INTERFACE ${blaze_INCLUDE_DIRS})
+target_compile_options(blaze_options INTERFACE "${blaze_CXX_FLAGS}")
+target_link_libraries(blaze_options INTERFACE ${blaze_LIBRARIES})
+target_link_options(blaze_options INTERFACE "${blaze_LINKER_FLAGS}")
 
 get_filename_component(SOURCE_DIR "src/isle/cpp"
   REALPATH BASE_DIR "${CMAKE_SOURCE_DIR}")
