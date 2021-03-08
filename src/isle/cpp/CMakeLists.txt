@@ -1,36 +1,35 @@
 # C++ module isle_cpp
 #
-#  ISLE_CPP_SOURCE - List of source files for isle_cpp library
+# ISLE_CPP_SOURCE - List of source files for isle_cpp library
 #
 
 # sources of the base library
 set(SOURCE
-  hubbardFermiMatrixDia.cpp
-  hubbardFermiMatrixExp.cpp
-  integrator.cpp
-  lattice.cpp
+    hubbardFermiMatrixDia.cpp
+    hubbardFermiMatrixExp.cpp
+    integrator.cpp
+    lattice.cpp
     action/sumAction.cpp
     action/hubbardGaugeAction.cpp
     action/hubbardFermiAction.cpp
-  # unusual but logging must be linked against by the unit tests as well
-  logging/logging.cpp)
+    # unusual but logging must be linked against by the unit tests as well
+    logging/logging.cpp)
 
 # store sources (w/o bindings) for other modules
 set(libsrc)
-foreach (src IN LISTS SOURCE)
+foreach(src IN LISTS SOURCE)
   list(APPEND libsrc "${CMAKE_CURRENT_LIST_DIR}/${src}")
-endforeach ()
-set(ISLE_CPP_SOURCE ${libsrc} PARENT_SCOPE)
+endforeach()
+set(ISLE_CPP_SOURCE
+    ${libsrc}
+    PARENT_SCOPE)
 unset(libsrc)
 
 # define the library
 set(LIBNAME "isle_cpp_internal")
 add_library(${LIBNAME} SHARED ${SOURCE})
 
-target_link_libraries(
-    ${LIBNAME}
-    PRIVATE project_options
-    project_warnings)
+target_link_libraries(${LIBNAME} PRIVATE project_options project_warnings)
 
 target_link_libraries(${LIBNAME} PUBLIC blaze_options openmp_options)
 
@@ -38,9 +37,15 @@ add_subdirectory(logging)
 target_link_libraries(${LIBNAME} PUBLIC isle_logging)
 
 # versioning - create version.hpp file
-set(ISLE_VERSION_MAJOR "0" CACHE STRING "Major version number of Isle")
-set(ISLE_VERSION_MINOR "0" CACHE STRING "Minor version number of Isle")
-set(ISLE_VERSION_EXTRA "nullptr" CACHE STRING "Extra version info of Isle")
+set(ISLE_VERSION_MAJOR
+    "0"
+    CACHE STRING "Major version number of Isle")
+set(ISLE_VERSION_MINOR
+    "0"
+    CACHE STRING "Minor version number of Isle")
+set(ISLE_VERSION_EXTRA
+    "nullptr"
+    CACHE STRING "Extra version info of Isle")
 configure_file(version.hpp.in version.hpp)
 target_include_directories(${LIBNAME} PUBLIC ${CMAKE_CURRENT_BINARY_DIR})
 
