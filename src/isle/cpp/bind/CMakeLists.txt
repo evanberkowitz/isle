@@ -3,8 +3,8 @@
 
 # define the library
 set(LIBNAME "isle_cpp")
-add_library(
-  ${LIBNAME} MODULE
+pybind11_add_module(
+  ${LIBNAME}
   bindings.cpp
   bind_version.hpp
   bind_version.cpp
@@ -22,12 +22,6 @@ add_library(
 target_compile_definitions(${LIBNAME} PRIVATE -DISLE_LIBNAME=${LIBNAME})
 
 target_link_libraries(${LIBNAME} PRIVATE project_options project_warnings)
-
-# Set the correct file extension for a Python extension library.
-set_target_properties(${LIBNAME} PROPERTIES PREFIX "" SUFFIX
-                                                      "${PYBIND11_LIB_SUFFIX}")
-
-target_link_libraries(${LIBNAME} PUBLIC pybind11_options)
 target_link_libraries(${LIBNAME} LINK_PRIVATE isle_cpp_internal)
 
 # Set symbol visibility to hidden to reduce binary size, as recommended in

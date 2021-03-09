@@ -13,22 +13,11 @@ from . import predicate
 from .cmake_extension import CMakeExtension
 from .version import version_from_git
 
-def _in_virtualenv():
-    "Detect whether Python is running in a virutal environment."
-    return (hasattr(sys, 'real_prefix') or
-            (hasattr(sys, 'base_prefix') and sys.base_prefix != sys.prefix))
-
-def _python_config():
-    "Return name of the python-config script."
-    if not _in_virtualenv():
-        return f"{sys.executable}-config"
-    return "python-config"
 
 def _common_cmake_args(config):
     "Format arguments for CMake common to all extensions."
     args = [f"-D{key}={val}" for key, val in config.items() if val is not None] \
-        + [f"-DPYTHON_EXECUTABLE={sys.executable}",
-           f"-DPYTHON_CONFIG={_python_config()}"]
+        + [f"-DPYTHON_EXECUTABLE={sys.executable}"]
     return args
 
 

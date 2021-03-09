@@ -12,8 +12,8 @@ include(cmake/StandardProjectSettings.cmake)
 # Link this 'library' to set the c++ standard / compile-time options requested
 add_library(project_options INTERFACE)
 target_compile_features(project_options INTERFACE cxx_std_14)
-set_target_properties(project_options PROPERTIES
-                      INTERFACE_POSITION_INDEPENDENT_CODE ON)
+set_target_properties(project_options
+                      PROPERTIES INTERFACE_POSITION_INDEPENDENT_CODE ON)
 
 # Link this 'library' to use the warnings specified in CompilerWarnings.cmake
 add_library(project_warnings INTERFACE)
@@ -43,13 +43,7 @@ if(NOT "${BLAZE_PARALLELISM}" STREQUAL "OMP")
   target_link_options(openmp_options INTERFACE "${OpenMP_LINKER_FLAGS}")
 endif()
 
-find_package(Pybind11 REQUIRED)
-add_library(pybind11_options INTERFACE)
-target_include_directories(pybind11_options SYSTEM
-                           INTERFACE "${PYBIND11_INCLUDE_DIRS}")
-target_compile_options(pybind11_options INTERFACE ${PYBIND11_CXX_FLAGS})
-target_link_libraries(pybind11_options INTERFACE ${PYBIND11_LIBRARIES})
-target_link_options(pybind11_options INTERFACE "${PYBIND11_LINKER_FLAGS}")
+include(cmake/pybind11.cmake)
 
 find_package(blaze 3.6 REQUIRED)
 add_library(blaze_options INTERFACE)
