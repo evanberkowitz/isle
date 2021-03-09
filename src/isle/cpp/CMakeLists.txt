@@ -32,7 +32,7 @@ unset(libsrc)
 
 # define the library
 set(LIBNAME "isle_cpp_internal")
-add_library(${LIBNAME} SHARED ${SOURCE})
+add_library(${LIBNAME} STATIC ${SOURCE})
 
 target_link_libraries(${LIBNAME} PRIVATE project_options project_warnings)
 

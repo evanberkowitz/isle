@@ -1,6 +1,6 @@
 set(LIBNAME isle_logging)
 
-add_library(${LIBNAME} SHARED logging.hpp logging.cpp)
+add_library(${LIBNAME} STATIC logging.hpp logging.cpp)
 
 generate_export_header(${LIBNAME})
 set_target_properties(${LIBNAME} PROPERTIES EXPORT_NAME logging)
