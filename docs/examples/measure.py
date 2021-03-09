@@ -47,8 +47,7 @@ def main():
         hfm = isle.HubbardFermiMatrixExp(kappaTilde, muTilde, params.sigmaKappa)
 
     # Define measurements to run.
-    species =   (isle.Species.PARTICLE, isle.Species.HOLE)
-    allToAll = {s: isle.meas.propagator.AllToAll(hfm, s) for s in species}
+    allToAll = {s: isle.meas.propagator.AllToAll(hfm, s) for s in isle.Species.values()}
 
     _, diagonalize = np.linalg.eigh(isle.Matrix(hfm.kappaTilde()))
 
@@ -71,7 +70,7 @@ def main():
         # spread out over many HDF5 groups
         isle.meas.CollectWeights("weights"),
         # polyakov loop
-        isle.meas.Polyakov(params.basis, lat.nt(), "polyakov", configSlice=s_[::10]),
+        isle.meas.Polyakov(params.basis, lat, "polyakov", configSlice=s_[::10]),
         # one-point functions
         isle.meas.OnePointFunctions(allToAll[isle.Species.PARTICLE],
                                     allToAll[isle.Species.HOLE],
@@ -80,25 +79,28 @@ def main():
                                     transform=diagonalize),
         # single particle correlator for particles / spin up
         isle.meas.SingleParticleCorrelator(allToAll[isle.Species.PARTICLE],
+                                           lat,
                                            "correlation_functions/single_particle",
                                            configSlice=s_[::10],
                                            transform=diagonalize),
         # single particle correlator for holes / spin down
         isle.meas.SingleParticleCorrelator(allToAll[isle.Species.HOLE],
+                                           lat,
                                            "correlation_functions/single_hole",
                                            configSlice=s_[::10],
                                            transform=diagonalize),
         isle.meas.SpinSpinCorrelator(allToAll[isle.Species.PARTICLE],
                                      allToAll[isle.Species.HOLE],
+                                     lat,
                                      "correlation_functions/spin_spin",
                                      configSlice=s_[::10],
                                      transform=diagonalize,
                                      sigmaKappa=params.sigmaKappa),
         isle.meas.DeterminantCorrelators(allToAll[isle.Species.PARTICLE],
                                          allToAll[isle.Species.HOLE],
+                                         lat,
                                          "correlation_functions/det",
-                                         configSlice=s_[::10],
-        )
+                                         configSlice=s_[::10]),
     ]
 
     # Run the measurements on all configurations in the input file.

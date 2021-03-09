@@ -58,7 +58,8 @@ class _LatticeHandle:
     def __getitem__(self, name):
         """!Load and return a built in lattice."""
         try:
-            return fileio.yaml.loadLattice(self.pkgr.resource_stream(__name__, self._fname(name)))
+            with self.pkgr.resource_stream(__name__, self._fname(name)) as latfile:
+                return fileio.yaml.loadLattice(latfile)
         except FileNotFoundError:
             getLogger(__name__).error("Unknown lattice: '%s' Installed lattices:\n %s\n"
                                       "Use isle.LATTICES.loadExternal(fname) to load "

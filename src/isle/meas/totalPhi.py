@@ -5,40 +5,22 @@ Measurement of total phi and norm of phi.
 
 import numpy as np
 
-from .measurement import Measurement
-from ..h5io import createH5Group
+from .measurement import Measurement, BufferSpec
+
 
 class TotalPhi(Measurement):
     r"""!
     \ingroup meas
-    Tabulate phi and mean value of phi^2.
+    Tabulate \f$\Phi = \sum_i \phi_i\f$ and \f$\sum_i {|\phi)_i|}^2 / N\f$.
     """
 
     def __init__(self, savePath, configSlice=slice(None, None, None)):
-        super().__init__(savePath, configSlice)
-
-        self.Phi = []
-        self.phiSq = []
+        super().__init__(savePath,
+                         (BufferSpec("Phi", (), np.complex128, "totalPhi"),
+                          BufferSpec("phiSquared", (), np.float64, "phiSquared")),
+                         configSlice)
 
     def __call__(self, stage, itr):
         """!Record the total phi and mean value of phi^2."""
-        self.Phi.append(np.sum(stage.phi))
-        self.phiSq.append(np.linalg.norm(stage.phi)**2 / len(stage.phi))
-
-    def save(self, h5group):
-        r"""!
-        Write both Phi and phiSquared.
-        \param base HDF5 group in which to store data.
-        \param h5group Base HDF5 group. Data is stored in subgroup `h5group/self.savePath`.
-        """
-        subGroup = createH5Group(h5group, self.savePath)
-        subGroup["totalPhi"] = self.Phi
-        subGroup["phiSquared"] = self.phiSq
-
-
-def read(h5group):
-    r"""!
-    Read Phi and phiSquared from a file.
-    \param h5group HDF5 group which contains the data of this measurement.
-    """
-    return h5group["totalPhi"][()], h5group["phiSquared"][()]
+        self.nextItem("Phi")[...] = np.sum(stage.phi)
+        self.nextItem("phiSquared")[...] = np.linalg.norm(stage.phi)**2 / len(stage.phi)

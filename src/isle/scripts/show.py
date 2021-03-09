@@ -4,6 +4,7 @@ Script to report on input and output files of Isle.
 Run the script via show.main().
 """
 
+from itertools import chain
 from logging import getLogger
 
 try:
@@ -52,9 +53,54 @@ def _nconfig(fname):
             return len(h5f["action"])
     return None
 
-def _loadLogWeights(measState):
-    """!Load action from previous measurement or compute from configurations."""
-    return isle.h5io.loadLogWeights(measState.infile)[0]
+def _attemptLoadPhi(h5f):
+    """!Load Phi = sum(phi) from the results of a TotalPhi measurement if possible."""
+    if "field" in h5f:
+        return h5f["field/totalPhi"][()]
+    return None
+
+def _attemptLoadLogWeights(h5f):
+    """!Load the weights from a bundles up dataset if possible."""
+    if "weights" in h5f:
+        return isle.h5io.loadDict(h5f["weights"])
+    return None
+
+def _loadConfigurationData(fname):
+    """!Load configurations, weights, and trajectory points."""
+
+    with h5.File(fname, "r") as h5f:
+        totalPhi = _attemptLoadPhi(h5f)
+        logWeights = _attemptLoadLogWeights(h5f)
+
+        try:
+            configs = isle.h5io.loadList(h5f["configuration"])
+        except KeyError:
+            getLogger(__name__).info("No configuration list found in file %s", fname)
+            return totalPhi, logWeights, None
+
+        needPhi = (totalPhi is None)
+        if needPhi:
+            totalPhi = np.empty(len(configs), dtype=complex)
+        needWeights = (logWeights is None)
+        if needWeights:
+            logWeights = {name: np.empty(len(configs), dtype=complex)
+                          for name in chain(("actVal",),
+                                            configs[0]["logWeights"] if "logWeights" in configs[0] else ())}
+        trajPoints = np.empty(len(configs), dtype=int)
+
+        for i, (_, grp) in enumerate(configs):
+            trajPoints[i] = grp["trajPoint"][()]
+            if needPhi:
+                totalPhi[i] = np.sum(grp["phi"][()])
+            if needWeights:
+                for name in logWeights.keys():
+                    if name == "actVal":
+                        logWeights[name][i] = grp["actVal"][()]
+                    else:
+                        logWeights[name][i] = grp["logWeights/"+name][()]
+
+        return totalPhi, logWeights, trajPoints
+
 
 def _formatParams(params):
     """!Format parameters as a multi line string."""
@@ -82,28 +128,24 @@ def _overview(infname, lattice, params, makeActionSrc):
                   "Need HDF5 files.")
         return
 
-    # use this to bundle information and perform simple measurements if needed
-    measState = Measure(lattice, params,
-                        callFunctionFromSource(makeActionSrc, lattice, params),
-                        infname, None, False)
+    totalPhi, logWeights, trajPoints = _loadConfigurationData(infname)
 
     # set up the figure
     fig, (axTP, axAct, axPhase, axPhase2D, axPhi, axPhiHist, axText) = _overviewFigure()
     fig.canvas.set_window_title(f"Isle Overview - {infname}")
 
     # plot a bunch of stuff
-    isle.plotting.plotTotalPhi(measState, axPhi, axPhiHist)
-    isle.plotting.plotTrajPoints(measState, axTP)
-    weights = _loadLogWeights(measState)
-    isle.plotting.plotWeights(weights, axAct)
-    isle.plotting.plotPhase(weights, axPhase, axPhase2D)
+    isle.plotting.plotTotalPhi(totalPhi, axPhi, axPhiHist)
+    isle.plotting.plotTrajPoints(trajPoints, axTP)
+    isle.plotting.plotWeights(logWeights, axAct)
+    isle.plotting.plotPhase(logWeights, axPhase, axPhase2D)
 
     # show metadata at bottom of figure
     axText.axis("off")
     axText.text(0, 0, fontsize=13, linespacing=2, verticalalignment="bottom",
                 s=rf"""Ensemble: $N_{{\mathrm{{config}}}}={_nconfig(infname)}$ in {infname}
-     Lattice: {lattice.name}   $N_t={measState.lattice.nt()}$, $N_x={measState.lattice.nx()}$    '{lattice.comment}'
-      Model: {_formatParams(measState.params)}""")
+     Lattice: {lattice.name}   $N_t={lattice.nt()}$, $N_x={lattice.nx()}$    '{lattice.comment}'
+      Model: {_formatParams(params)}""")
 
     fig.tight_layout()
 
@@ -223,6 +265,67 @@ def _tuning(infname):
 
     fig.tight_layout()
 
+def _tuningLength(infname):
+    """!
+    Show tuning results.
+    """
+
+    log = getLogger("isle.show")
+    log.info("Showing tuning results in file %s", infname)
+
+    with h5.File(infname, "r") as h5f:
+        if not "leapfrogTuner" in h5f:
+            log.error("Can not show tuning results, no group 'leapfrogTuner' in input file.")
+            return
+
+        registrar = isle.evolver.LeapfrogTuner.loadRecording(h5f["leapfrogTuner"])
+
+    fig = plt.figure(figsize=(12, 10))
+    gspec = gridspec.GridSpec(1, 2, width_ratios=(2.8, 1))
+    fitsGspec = gridspec.GridSpecFromSubplotSpec(4, 3, subplot_spec=gspec[0, 0],
+                                                 wspace=0.05)
+
+    if len(registrar) >= fitsGspec.get_geometry()[0]*fitsGspec.get_geometry()[1]:
+        log.warning("The tuner performed %d runs with different leapfrog parameters "
+                    "but only the first %d are shown.",
+                    len(registrar), fitsGspec.get_geometry()[0]*fitsGspec.get_geometry()[1])
+
+    for idx, (x, y) in enumerate(np.ndindex(fitsGspec.get_geometry())):
+        if idx >= len(registrar):
+            break
+
+        ax = fig.add_subplot(fitsGspec[x, y])
+        ax.set_title(r"Run {}, length={}, $N_{{\mathrm{{MD}}}}$={}" \
+                     .format(idx, registrar.records[idx].length, registrar.records[idx].nstep))
+        ax.set_ylim((-0.1, 1.1))
+        if y != 0:
+            ax.tick_params(axis="y", which="both", labelleft=False)
+
+        # TODO handle different lengths
+        probabilityPoints, trajPointPoints = registrar.gather(nstep=registrar.records[-1].nstep,
+                                                              maxRecord=idx + 1)
+        invProbabilityPoints = []
+        invTrajPointPoints = []
+        for point in probabilityPoints:
+            invProbabilityPoints.append((1./point[0],point[1],point[2]))
+        for point in trajPointPoints:
+            invTrajPointPoints.append((1./point[0],point[1],point[2]))
+
+        fitResult = registrar.fitResults[idx] if idx < len(registrar.fitResults) else None
+        isle.plotting.plotTunerFit(ax, invProbabilityPoints, invTrajPointPoints, fitResult,
+                                   registrar.records[idx].verification)
+        if fitResult is not None:
+            log.info("Best fit for run %d: %s", idx, fitResult.bestFit)
+
+
+        if idx == 0:
+            ax.legend()
+
+    ax = fig.add_subplot(gspec[0, 1])
+    isle.plotting.plotTunerTrace(ax, registrar.records)
+
+    fig.tight_layout()
+
 def _verifyIsleVersion(version, fname):
     """!
     Check version of Isle, warn if it does not match.
@@ -289,6 +392,8 @@ def main(args):
                 _correlator(fname, lattice, params, makeActionSrc)
             if "tuning" in args.report:
                 _tuning(fname)
+            if "tuningLength" in args.report:
+                _tuningLength(fname)
 
         except:
             getLogger("isle.show").exception("Show command failed with file %s.", fname)

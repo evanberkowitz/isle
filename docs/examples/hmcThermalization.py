@@ -18,7 +18,7 @@ LATTICE = "four_sites"
 
 ### Specify parameters.
 # Compared to fullHMCEvolution.py, we are skipping the algorithmic parameters
-# hopping, basis, and variant and use their default values.
+# hopping, basis, and algorithm and use their default values.
 PARAMS = isle.util.parameters(
     beta=2.3,         # inverse temperature
     U=4.1,            # on-site coupling

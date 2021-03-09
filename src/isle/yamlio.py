@@ -11,7 +11,7 @@ import numpy as np
 
 from . import Lattice
 from .util import parameters
-from .action import HFAHopping, HFABasis, HFAVariant
+from .action import HFAHopping, HFABasis, HFAAlgorithm
 
 def _parseLattice(adjacency, hopping, positions, nt=0, name="", comment=""):
     """!
@@ -112,12 +112,12 @@ yaml.add_constructor("!HFABasis",
                      else HFABasis.SPIN,
                      Loader=yaml.SafeLoader)
 
-# register isle.action.HFAVariant
-yaml.add_representer(HFAVariant,
+# register isle.action.HFAAlgorithm
+yaml.add_representer(HFAAlgorithm,
                      lambda dumper, var: \
-                     dumper.represent_scalar("!HFAVariant", str(var).rsplit(".")[-1]))
-yaml.add_constructor("!HFAVariant",
+                     dumper.represent_scalar("!HFAAlgorithm", str(var).rsplit(".")[-1]))
+yaml.add_constructor("!HFAAlgorithm",
                      lambda loader, node: \
-                     HFAVariant.ONE if loader.construct_scalar(node) == "ONE"
-                     else HFAVariant.TWO,
+                     {"DIRECT_SINGLE": HFAAlgorithm.DIRECT_SINGLE,
+                      "DIRECT_SQUARE": HFAAlgorithm.DIRECT_SQUARE}[loader.construct_scalar(node)],
                      Loader=yaml.SafeLoader)

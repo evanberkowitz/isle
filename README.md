@@ -1,4 +1,5 @@
-![Test](https://github.com/jl-wynen/isle/workflows/Test/badge.svg?branch=devel)
+![Linux Build](https://github.com/jl-wynen/isle/workflows/Linux%20Build/badge.svg)
+![MacOS Build](https://github.com/jl-wynen/isle/workflows/MacOS%20Build/badge.svg)
 
 Simulating carbon nanostructures.
 
@@ -25,6 +26,7 @@ It's thought that the Hubbard model approximates carbon nanostructures, such as 
 - [SciPy](https://www.scipy.org/scipylib/index.html) library
 - [h5py](http://www.h5py.org/)
 - [PyYAML](https://pyyaml.org/)
+- [Pentinsula](https://pypi.org/project/pentinsula/)
 - [scikit-learn](http://scikit-learn.org/stable/) (optional)
 - [matplotlib](https://matplotlib.org/) (optional)
 

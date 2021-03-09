@@ -1,5 +1,7 @@
 #include "bind_hubbardFermiMatrix.hpp"
 
+#include <array>
+
 #include "../species.hpp"
 #include "../hubbardFermiMatrixDia.hpp"
 #include "../hubbardFermiMatrixExp.hpp"
@@ -7,6 +9,8 @@
 using namespace isle;
 
 namespace bind {
+    static constexpr std::array<Species, 2> SPECIES_VALUES{Species::PARTICLE, Species::HOLE};
+
     namespace {
         void bindHoppingSpecific(py::module &, py::class_<HubbardFermiMatrixDia> &) {
             // nothing special in this case
@@ -57,7 +61,11 @@ namespace bind {
     void bindHubbardFermiMatrix(py::module &mod) {
         py::enum_<Species>(mod, "Species")
             .value("PARTICLE", Species::PARTICLE)
-            .value("HOLE", Species::HOLE);
+            .value("HOLE", Species::HOLE)
+            .def("values",
+                 [](){
+                     return py::make_iterator(SPECIES_VALUES.cbegin(), SPECIES_VALUES.cend());
+                 });
 
         bindHFM<HubbardFermiMatrixDia>(mod, "HubbardFermiMatrixDia");
         bindHFM<HubbardFermiMatrixExp>(mod, "HubbardFermiMatrixExp");

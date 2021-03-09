@@ -41,6 +41,12 @@ target_link_libraries(${LIBNAME} PUBLIC blaze_options openmp_options)
 add_subdirectory(logging)
 target_link_libraries(${LIBNAME} PUBLIC isle_logging)
 
+if (APPLE)
+  # Allow for undefined symbols in the library.
+  # These should all be filled in by the Python executable.
+  target_link_options(${LIBNAME} PUBLIC "-flat_namespace" "-undefined" "suppress")
+endif ()
+
 # versioning - create version.hpp file
 set(ISLE_VERSION_MAJOR
     "0"
