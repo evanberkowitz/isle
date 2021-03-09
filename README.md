@@ -73,11 +73,11 @@ python3 setup.py develop [--user]
 And just re-run the command after changing the code.
 
 ## Testing
-Unit tests are automatically compiled when using the above commands (sorry for the extra compilation time, we are working on a way around that).
-They only work however, if you are in development mode!
-You can run them via
+Unit tests are automatically compiled when using the above commands.
+You can run them with your favorite test runner, for instance
 ```
-python3 setup.py test
+cd tests
+pytest
 ```
 Keep in mind that some tests take a long time because they need to process fairly big matrices in an inefficient way to make sure the efficient algorithms are correct.
 
