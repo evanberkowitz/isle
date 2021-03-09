@@ -42,7 +42,7 @@ def type_eq(typ0, typ1):
 
 def isEqual(a, b, nOps=1, prec=1e-14):
     """
-    Check whether two numbers or iterables are equal wiht precision core.PREC.
+    Check whether two numbers or iterables are equal with precision core.PREC.
     For large scale operations, multiply scale by nOps for the check.
     """
 
