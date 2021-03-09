@@ -31,8 +31,6 @@ else()
   set(CMAKE_INSTALL_RPATH @loader_path)
 endif()
 
-include(GenerateExportHeader)
-
 option(ENABLE_TESTING "Enable Test Builds" ON)
 
 # look for 3rd party packages
