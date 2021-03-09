@@ -6,7 +6,7 @@ from pathlib import Path
 from setuptools import setup, find_packages
 
 from setup import CMakeExtension, configure_command, predicate, \
-    get_cmake_builder, version_from_git, doxygen_command, TestCommand
+    get_cmake_builder, version_from_git, doxygen_command
 
 VERSION = version_from_git(plain=True)
 PROJECT_ROOT = Path(__file__).resolve().parent
@@ -53,7 +53,6 @@ setup(
     cmdclass={
         "configure": Configure,
         "build_ext": get_cmake_builder(CONFIG_FILE, TEST_DIR),
-        "test": TestCommand,
         "doc": doxygen_command(DOXY_FILE, VERSION)
     },
     zip_safe=False,
