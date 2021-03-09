@@ -20,7 +20,7 @@ def main():
     ax.set_xlabel(ben["xlabel"])
     ax.set_ylabel(ben["ylabel"])
     for name, values in ben["results"].items():
-        ax.plot(ben["xvalues"][:len(values)], values, label=name)
+        ax.plot(ben["xvalues"][:len(values)], values, 'o-' ,label=name)
     ax.legend()
     fig.tight_layout()
     plt.show()
