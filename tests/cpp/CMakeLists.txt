@@ -1,18 +1,17 @@
 # C++ unit tests for isle
 #
 
-set(TEST_SOURCE
-  # TODO activate
-  # ${ISLE_CPP_SOURCE}
-  main.cpp
-  )
-
 set(TEST_EXE "isle_cpp_test")
-add_executable(${TEST_EXE} ${TEST_SOURCE})
+add_executable(${TEST_EXE} test_main.cpp)
 
-target_link_libraries(${TEST_EXE} PRIVATE
-                      project_options
-                      project_warnings)
+target_link_libraries(${TEST_EXE} PRIVATE project_options project_warnings
+                                          pybind11::embed)
+target_link_libraries(${TEST_EXE} LINK_PRIVATE isle_cpp_internal)
 
-# install into test directory
-install(TARGETS ${TEST_EXE} DESTINATION "${TEST_DIR}/../bin")
+set_target_properties(${TEST_EXE} PROPERTIES CXX_VISIBILITY_PRESET hidden)
+
+set(TEST_BINARY_DIRECTORY
+    "${CMAKE_CURRENT_BINARY_DIR}"
+    CACHE STRING "Python 3 executable")
+set_target_properties(${TEST_EXE} PROPERTIES RUNTIME_OUTPUT_DIRECTORY
+                                             ${TEST_BINARY_DIRECTORY})

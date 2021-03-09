@@ -12,6 +12,7 @@ VERSION = version_from_git(plain=True)
 PROJECT_ROOT = Path(__file__).resolve().parent
 BUILD_DIR = PROJECT_ROOT/"build"
 CONFIG_FILE = BUILD_DIR/"configure.out.pkl"
+TEST_DIR = PROJECT_ROOT/"tests"
 # relative path to coax doxygen into placing the output where it belongs
 DOXY_FILE = "docs/doxyfile.conf"
 
@@ -51,7 +52,7 @@ setup(
     ext_modules=[CMakeExtension("isle/isle_cpp")],
     cmdclass={
         "configure": Configure,
-        "build_ext": get_cmake_builder(CONFIG_FILE),
+        "build_ext": get_cmake_builder(CONFIG_FILE, TEST_DIR),
         "test": TestCommand,
         "doc": doxygen_command(DOXY_FILE, VERSION)
     },
