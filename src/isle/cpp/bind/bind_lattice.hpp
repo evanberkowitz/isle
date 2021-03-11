@@ -5,7 +5,7 @@
 #ifndef BIND_LATTICE_HPP
 #define BIND_LATTICE_HPP
 
-#include "core.hpp"
+#include "bind_core.hpp"
 
 namespace bind {
     /// Bind class Lattice.

@@ -1,6 +1,6 @@
 #include "lattice.hpp"
 
-#include "bind/logging.hpp"
+#include "logging/logging.hpp"
 
 
 namespace isle {
