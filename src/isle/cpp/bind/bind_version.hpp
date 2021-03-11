@@ -5,7 +5,7 @@
 #ifndef BIND_VERSION_HPP
 #define BIND_VERSION_HPP
 
-#include "core.hpp"
+#include "bind_core.hpp"
 
 namespace bind {
     /// Store versions as module attributes.

@@ -5,7 +5,7 @@
 #ifndef BIND_ACTION_HPP
 #define BIND_ACTION_HPP
 
-#include "core.hpp"
+#include "bind_core.hpp"
 
 namespace bind {
     /// Define action submodule and bind action classes.

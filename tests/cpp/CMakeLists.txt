@@ -1,47 +1,26 @@
 # C++ unit tests for isle
 #
 
-set(TEST_SOURCE
-  # TODO activate
-  # ${ISLE_CPP_SOURCE}
-  main.cpp
-  )
+include(FetchContent)
+
+FetchContent_Declare(
+  Catch2
+  GIT_REPOSITORY https://github.com/catchorg/Catch2.git
+  GIT_TAG v2.13.1)
+
+FetchContent_MakeAvailable(Catch2)
 
 set(TEST_EXE "isle_cpp_test")
-add_executable(${TEST_EXE} ${TEST_SOURCE})
+add_executable(${TEST_EXE} test_main.cpp)
 
-# set standard
-set_target_properties(${TEST_EXE} PROPERTIES CXX_STANDARD 14
-  CXX_STANDARD_REQUIRED ON)
+target_link_libraries(${TEST_EXE} PRIVATE project_options project_warnings
+                                          Catch2::Catch2 pybind11::embed)
+target_link_libraries(${TEST_EXE} LINK_PRIVATE isle_cpp_internal)
 
-# warnings
-target_compile_options(${TEST_EXE} PUBLIC -Wall -Wextra -pedantic)
-if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
-  target_compile_options(${TEST_EXE} PUBLIC -Wno-c++98-compat)
-endif ()
+set_target_properties(${TEST_EXE} PROPERTIES CXX_VISIBILITY_PRESET hidden)
 
-# use a system include because we get all the warnings from the library compilation already
-target_include_directories(${TEST_EXE} SYSTEM PUBLIC ${SOURCE_DIR})
-
-# Pybind11
-set_target_properties(${TEST_EXE} PROPERTIES PREFIX "" SUFFIX "${PYBIND11_LIB_SUFFIX}")
-target_include_directories(${TEST_EXE} SYSTEM PUBLIC "${PYBIND11_INCLUDE_DIRS}")
-target_compile_options(${TEST_EXE} PUBLIC ${PYBIND11_CXX_FLAGS})
-target_link_libraries(${TEST_EXE} ${PYBIND11_LIBRARIES})
-target_linker_flags(${TEST_EXE} "${PYBIND11_LINKER_FLAGS}")
-
-# blaze
-target_include_directories(${TEST_EXE} SYSTEM PUBLIC ${blaze_INCLUDE_DIRS})
-target_compile_options(${TEST_EXE} PUBLIC "${blaze_CXX_FLAGS}")
-target_link_libraries(${TEST_EXE} ${blaze_LIBRARIES})
-target_linker_flags(${TEST_EXE} "${blaze_LINKER_FLAGS}")
-
-# OpenMP if blaze does not use it
-if (NOT "${BLAZE_PARALLELISM}" STREQUAL "OMP")
-  target_compile_options(${TEST_EXE} PUBLIC "${OpenMP_CXX_FLAGS}")
-  target_link_libraries(${TEST_EXE} "${OpenMP_CXX_LIBRARIES}")
-  target_linker_flags(${TEST_EXE} "${OpenMP_LINKER_FLAGS}")
-endif ()
-
-# install into test directory
-install(TARGETS ${TEST_EXE} DESTINATION "${TEST_DIR}/../bin")
+set(TEST_BINARY_DIRECTORY
+    "${CMAKE_CURRENT_BINARY_DIR}"
+    CACHE STRING "Python 3 executable")
+set_target_properties(${TEST_EXE} PROPERTIES RUNTIME_OUTPUT_DIRECTORY
+                                             ${TEST_BINARY_DIRECTORY})
