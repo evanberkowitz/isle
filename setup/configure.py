@@ -12,7 +12,7 @@ import distutils.cmd
 from .predicate import executable, one_of
 
 # allowed values of build types
-_BUILD_TYPES = ("DEVEL", "RELEASE", "DEBUG")
+_BUILD_TYPES = ("Devel", "Release", "Debug", "RelWithDebInfo")
 # default arguments for options
 _DEFAULT_OPT_ARGS = dict(short_name=None, help="", bool=False, default=None, check=None)
 # options inserted into class by default
@@ -25,8 +25,13 @@ _DEFAULT_OPTIONS = dict(compiler={**_DEFAULT_OPT_ARGS,
                                     "help": f"CMake build type, allowed values are {_BUILD_TYPES}",
                                     "cmake": "CMAKE_BUILD_TYPE",
                                     "long_name": "build_type=",
-                                    "default": "DEBUG",
-                                    "check": one_of(*_BUILD_TYPES)})
+                                    "default": "RelWithDebInfo",
+                                    "check": one_of(*_BUILD_TYPES)},
+                        link_time_optimization={**_DEFAULT_OPT_ARGS,
+                                                "help": "Use link time optimization?",
+                                                "cmake": "ENABLE_IPO",
+                                                "long_name": "link_time_optimization",
+                                                "bool": True})
 # protected attribute names that may not be used as options
 _FORBIDDEN_OPTIONS = ("description", "user_options")
 
@@ -86,11 +91,16 @@ def configure_command(outfile):
             def initialize_options(self):
                 "Set defaults for all user options."
                 for name, args in self.options.items():
-                    setattr(self, name, args["default"])
+                    if name == "link_time_optimization":
+                        self.link_time_optimization = None
+                    else:
+                        setattr(self, name, args["default"])
 
             def finalize_options(self):
                 "Post process and verify user options."
                 for name, args in self.options.items():
+                    if name == "link_time_optimization" and self.link_time_optimization is None:
+                        self.link_time_optimization = self.build_type == "RELEASE"
                     if args["bool"]:
                         setattr(self, name, str(bool(getattr(self, name))).upper())
 
