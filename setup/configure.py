@@ -12,7 +12,7 @@ import distutils.cmd
 from .predicate import executable, one_of
 
 # allowed values of build types
-_BUILD_TYPES = ("DEVEL", "RELEASE", "DEBUG")
+_BUILD_TYPES = ("Devel", "Release", "Debug", "RelWithDebInfo")
 # default arguments for options
 _DEFAULT_OPT_ARGS = dict(short_name=None, help="", bool=False, default=None, check=None)
 # options inserted into class by default
@@ -25,7 +25,7 @@ _DEFAULT_OPTIONS = dict(compiler={**_DEFAULT_OPT_ARGS,
                                     "help": f"CMake build type, allowed values are {_BUILD_TYPES}",
                                     "cmake": "CMAKE_BUILD_TYPE",
                                     "long_name": "build_type=",
-                                    "default": "DEBUG",
+                                    "default": "RelWithDebInfo",
                                     "check": one_of(*_BUILD_TYPES)},
                         link_time_optimization={**_DEFAULT_OPT_ARGS,
                                                 "help": "Use link time optimization?",
