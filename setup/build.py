@@ -14,15 +14,14 @@ from .cmake_extension import CMakeExtension
 from .version import version_from_git
 
 
-def _common_cmake_args(config, test_dir):
+def _common_cmake_args(config):
     "Format arguments for CMake common to all extensions."
     args = [f"-D{key}={val}" for key, val in config.items() if val is not None] \
-        + [f"-DPYTHON_EXECUTABLE={sys.executable}",
-           f"-DTEST_BINARY_DIRECTORY={test_dir/'bin'}"]
+        + [f"-DPYTHON_EXECUTABLE={sys.executable}"]
     return args
 
 
-def get_cmake_builder(config_file, test_dir):
+def get_cmake_builder(config_file):
     """
     Return a setuptools command class to build CMake extensions.
 
@@ -45,7 +44,7 @@ def get_cmake_builder(config_file, test_dir):
                       "to run the configure command first?")
                 sys.exit(2)
             config_time = config_file.stat().st_mtime
-            cmake_args = _common_cmake_args(config, test_dir)
+            cmake_args = _common_cmake_args(config)
 
             # build all extensions
             for ext in self.extensions:

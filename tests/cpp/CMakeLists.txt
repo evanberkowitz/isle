@@ -19,8 +19,5 @@ target_link_libraries(${TEST_EXE} LINK_PRIVATE isle_cpp_internal)
 
 set_target_properties(${TEST_EXE} PROPERTIES CXX_VISIBILITY_PRESET hidden)
 
-set(TEST_BINARY_DIRECTORY
-    "${CMAKE_CURRENT_BINARY_DIR}"
-    CACHE STRING "Python 3 executable")
 set_target_properties(${TEST_EXE} PROPERTIES RUNTIME_OUTPUT_DIRECTORY
-                                             ${TEST_BINARY_DIRECTORY})
+                                             ${CMAKE_CURRENT_SOURCE_DIR}/../bin)
