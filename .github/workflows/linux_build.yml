@@ -38,7 +38,7 @@ jobs:
       run: pip install dataclasses
     - name: Build
       run: |
-        python${{ matrix.python-version }} setup.py configure --compiler=g++-9 --build-type=DEBUG --blaze-parallelism=OMP --parallel-blas --blaze=blaze
+        python${{ matrix.python-version }} setup.py configure --compiler=g++-9 --build-type=Debug --blaze-parallelism=OMP --parallel-blas --blaze=blaze
         python${{ matrix.python-version }} setup.py develop
     - name: Test
       run: |
