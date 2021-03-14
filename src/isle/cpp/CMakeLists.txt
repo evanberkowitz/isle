@@ -36,7 +36,7 @@ add_library(${LIBNAME} STATIC ${SOURCE})
 set_target_properties(${LIBNAME} PROPERTIES CXX_VISIBILITY_PRESET hidden)
 
 target_link_libraries(${LIBNAME} PRIVATE project_options project_warnings)
-target_link_libraries(${LIBNAME} PUBLIC blaze_options openmp_options)
+target_link_libraries(${LIBNAME} PUBLIC blaze_options OpenMP::OpenMP_CXX)
 
 add_subdirectory(logging)
 target_link_libraries(${LIBNAME} PUBLIC isle_logging)
