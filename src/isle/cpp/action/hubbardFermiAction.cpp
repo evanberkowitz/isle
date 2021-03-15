@@ -7,7 +7,7 @@
 namespace isle {
     namespace action {
         namespace {
-            constexpr inline std::complex<double> I{0.0, 1.0};
+            constexpr std::complex<double> I{0.0, 1.0};
 
             /// Calculate force w/o -i using the DIRECT_SINGLE algorithm for either particles or holes.
             /*
