@@ -267,6 +267,7 @@ namespace isle {
     template <typename MT>
     auto ilogdet(MT &matrix) {
         static_assert(blaze::IsDenseMatrix<MT>::value, "logdet needs dense matrices");
+        ISLE_PROFILE_NVTX_RANGE("ilogdet");
 
         using ET = ValueType_t<typename MT::ElementType>;
         const std::size_t n = matrix.rows();
@@ -306,6 +307,7 @@ namespace isle {
      */
     template <typename MT>
     auto logdet(const MT &matrix) {
+        ISLE_PROFILE_NVTX_RANGE("logdet");
         static_assert(blaze::IsDenseMatrix<MT>::value, "logdet needs dense matrices");
 
         using ET = ValueType_t<typename MT::ElementType>;
