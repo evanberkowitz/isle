@@ -44,7 +44,7 @@ def benchmark_hmc_step():
         # Those three control which implementation of the action gets used.
         # The values given here are the defaults.
         # See documentation in docs/algorithm.
-        hopping=isle.action.HFAHopping.DIA,
+        hopping=isle.action.HFAHopping.EXP,
         basis=isle.action.HFABasis.PARTICLE_HOLE,
         algorithm=isle.action.HFAAlgorithm.DIRECT_SINGLE
     )

@@ -14,5 +14,6 @@ if (USE_CUDA)
 
   if (CUDA_PROFILE)
     target_link_libraries(cuda_toolkit INTERFACE CUDA::nvToolsExt)
+    target_compile_definitions(cuda_toolkit INTERFACE -DENABLE_NVTX_PROFILE)
   endif()
 endif ()
