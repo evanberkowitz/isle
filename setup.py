@@ -27,7 +27,7 @@ class Configure:
     blaze_parallelism = dict(help="Select parallelism used by blaze. Allowed values are NONE (default), OMP, CPP",
                              cmake="BLAZE_PARALLELISM",
                              default="NONE",
-                             check=predicate.one_of("NONE", "OMP", "CPP"))
+                             check=predicate.one_of("NONE", "CPP"))
     blas_vendor = dict(help=f"Select vendor of BLAS/LAPACK. Allowed values are {BLAS_VENDORS}."
                        "See documentation of CMake for more information.",
                        cmake="BLAS_VENDOR",

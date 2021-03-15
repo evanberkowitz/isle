@@ -24,7 +24,7 @@ add_library(${LIBNAME} STATIC
 set_target_properties(${LIBNAME} PROPERTIES CXX_VISIBILITY_PRESET hidden)
 
 target_link_libraries(${LIBNAME} PRIVATE project_options project_warnings)
-target_link_libraries(${LIBNAME} PUBLIC blaze_options OpenMP::OpenMP_CXX)
+target_link_libraries(${LIBNAME} PUBLIC blaze_options)
 
 if (USE_CUDA)
   target_link_libraries(${LIBNAME} PUBLIC cuda_toolkit)

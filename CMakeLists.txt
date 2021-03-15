@@ -43,7 +43,6 @@ target_compile_options(blaze_options INTERFACE "${blaze_CXX_FLAGS}")
 target_link_libraries(blaze_options INTERFACE ${blaze_LIBRARIES})
 target_link_options(blaze_options INTERFACE "${blaze_LINKER_FLAGS}")
 
-find_package(OpenMP REQUIRED)
 include(cmake/cuda.cmake)
 
 get_filename_component(SOURCE_DIR "src/isle/cpp" REALPATH BASE_DIR

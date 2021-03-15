@@ -17,7 +17,7 @@ set(BLAZE
 )
 set(BLAZE_PARALLELISM
     "NONE"
-    CACHE STRING "Kind of parallelism used by blaze. Can be NONE, OMP, CPP.")
+    CACHE STRING "Kind of parallelism used by blaze. Can be NONE or CPP.")
 
 # search for blaze itself ###
 find_path(
@@ -93,8 +93,6 @@ endif()
 if("${BLAZE_PARALLELISM}" STREQUAL "NONE")
   set(blaze_CXX_FLAGS
       "${blaze_CXX_FLAGS};-DBLAZE_USE_SHARED_MEMORY_PARALLELIZATION=0")
-elseif("${BLAZE_PARALLELISM}" STREQUAL "OMP")
-  # nothing to do, user needs to link against OpenMP
 elseif("${BLAZE_PARALLELISM}" STREQUAL "CPP")
   set(blaze_CXX_FLAGS "${blaze_CXX_FLAGS};-DBLAZE_USE_CPP_THREADS")
 else()
