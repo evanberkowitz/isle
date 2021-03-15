@@ -2,6 +2,8 @@
 
 #include <cmath>
 
+#include "profile.hpp"
+
 using namespace std::complex_literals;
 
 
@@ -13,7 +15,7 @@ namespace isle {
              const double length,
              const std::size_t nsteps,
              const double direction) {
-
+        ISLE_PROFILE_NVTX_RANGE("leapfrog");
         const double eps = direction*length/static_cast<double>(nsteps);
 
         // initial half step
