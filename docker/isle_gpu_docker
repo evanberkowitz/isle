@@ -13,7 +13,7 @@ RUN mkdir -p /var/tmp && git config --global http.sslverify false && \
     make -j16 && \
     make install && \
     rm -rf /var/tmp/cmake && \
-    git config --global http.sslverify true && \
+    git config --global http.sslverify true
 
 ENV PATH=/usr/local/bin:$PATH
 
