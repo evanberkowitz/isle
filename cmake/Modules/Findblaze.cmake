@@ -94,12 +94,7 @@ if("${BLAZE_PARALLELISM}" STREQUAL "NONE")
   set(blaze_CXX_FLAGS
       "${blaze_CXX_FLAGS};-DBLAZE_USE_SHARED_MEMORY_PARALLELIZATION=0")
 elseif("${BLAZE_PARALLELISM}" STREQUAL "OMP")
-  if(NOT DEFINED OpenMP_FOUND)
-    find_package(OpenMP REQUIRED) # search for OMP if not already done
-  endif()
-  set(blaze_CXX_FLAGS "${blaze_CXX_FLAGS};${OpenMP_CXX_FLAGS}")
-  set(blaze_LIBRARIES "${blaze_LIBRARIES};${OpenMP_CXX_LIBRARIES}")
-  set(blaze_LINKER_FLAGS "${blaze_LINKER_FLAGS} ${OpenMP_LINKER_FLAGS}")
+  # nothing to do, user needs to link against OpenMP
 elseif("${BLAZE_PARALLELISM}" STREQUAL "CPP")
   set(blaze_CXX_FLAGS "${blaze_CXX_FLAGS};-DBLAZE_USE_CPP_THREADS")
 else()
