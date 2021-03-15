@@ -12,6 +12,7 @@
 
 #include "core.hpp"
 #include "tmp.hpp"
+#include "profile.hpp"
 #include "logging/logging.hpp"
 
 namespace isle {
@@ -221,6 +222,7 @@ namespace isle {
      */
     template <typename ET>
     void invert(Matrix<ET> &mat, std::unique_ptr<int[]> &ipiv) {
+        ISLE_PROFILE_NVTX_RANGE("invert");
         blaze::getrf(mat, ipiv.get());
         blaze::getri(mat, ipiv.get());
     }
