@@ -11,5 +11,8 @@ if (USE_CUDA)
   find_package(CUDAToolkit REQUIRED)
 
   add_library(cuda_toolkit INTERFACE)
-  target_link_libraries(cuda_toolkit INTERFACE CUDA::nvToolsExt)
+
+  if (CUDA_PROFILE)
+    target_link_libraries(cuda_toolkit INTERFACE CUDA::nvToolsExt)
+  endif()
 endif ()
