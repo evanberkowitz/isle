@@ -6,8 +6,6 @@
 
 #include "logging/logging.hpp"
 
-using namespace std::complex_literals;
-
 namespace isle {
     namespace {
         /// Resize a square matrix, throws away old elements.
@@ -125,9 +123,11 @@ namespace isle {
 
         // TODO use blaze::expand like in HFMExp
         if ((inv && species == Species::PARTICLE) || (species == Species::HOLE && !inv))
-            blaze::diagonal(f) = blaze::exp(-1.i*spacevec(phi, tm1, NX));
+          blaze::diagonal(f) = blaze::exp(std::complex<double>{0.0, -1.0} *
+                                          spacevec(phi, tm1, NX));
         else
-            blaze::diagonal(f) = blaze::exp(1.i*spacevec(phi, tm1, NX));
+          blaze::diagonal(f) = blaze::exp(std::complex<double>{0.0, 1.0} *
+                                          spacevec(phi, tm1, NX));
     }
 
     CDSparseMatrix HubbardFermiMatrixDia::F(const std::size_t tp, const CDVector &phi,
@@ -190,7 +190,9 @@ namespace isle {
 
         T = _sigmaKappa*_kappa - (1-_mu)*IdMatrix<std::complex<double>>(NX);
         for (std::size_t xp = 0; xp < NX; ++xp)
-            blaze::row(T, xp) *= antiPSign*std::exp(1.i*phi[spacetimeCoord(xp, tm1, NX, NT)]);
+          blaze::row(T, xp) *=
+              antiPSign * std::exp(std::complex<double>{0.0, 1.0} *
+                                   phi[spacetimeCoord(xp, tm1, NX, NT)]);
     }
 
     CDSparseMatrix HubbardFermiMatrixDia::Tplus(const std::size_t tp,
@@ -209,7 +211,9 @@ namespace isle {
 
         T = _kappa - (1+_mu)*IdMatrix<std::complex<double>>(NX);
         for (std::size_t x = 0; x < NX; ++x)
-            blaze::column(T, x) *= antiPSign*std::exp(-1.i*phi[spacetimeCoord(x, tp, NX, NT)]);
+          blaze::column(T, x) *=
+              antiPSign * std::exp(std::complex<double>{0.0, -1.0} *
+                                   phi[spacetimeCoord(x, tp, NX, NT)]);
     }
 
     CDSparseMatrix HubbardFermiMatrixDia::Tminus(const std::size_t tp,
@@ -587,9 +591,11 @@ namespace isle {
         // add Phi and return
         switch (species) {
         case Species::PARTICLE:
-            return toFirstLogBranch(1.0i*blaze::sum(phi) + ilogdet(aux));
+          return toFirstLogBranch(
+              std::complex<double>{0.0, 1.0} * blaze::sum(phi) + ilogdet(aux));
         case Species::HOLE:
-            return toFirstLogBranch(-1.0i*blaze::sum(phi) + ilogdet(aux));
+          return toFirstLogBranch(
+              std::complex<double>{0.0, -1.0} * blaze::sum(phi) + ilogdet(aux));
         }
 
         // We should never get here unless someone fucks up with the enum!

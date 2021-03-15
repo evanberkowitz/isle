@@ -4,11 +4,11 @@
 #include "../profile.hpp"
 #include "../logging/logging.hpp"
 
-using namespace std::complex_literals;
-
 namespace isle {
     namespace action {
         namespace {
+            constexpr inline std::complex<double> I{0.0, 1.0};
+
             /// Calculate force w/o -i using the DIRECT_SINGLE algorithm for either particles or holes.
             /*
              * Constructs all partial A^-1 to the left of (1+A^-1)^-1 first ('left').
@@ -81,9 +81,9 @@ namespace isle {
                 decltype(hfm.Tplus(0ul, phi)) T;  // sparse or dense matrix
                 for (std::size_t tau = 0; tau < nt; ++tau) {
                     hfm.Tplus(T, loopIdx(tau+1, nt), phi);
-                    spacevec(force, tau, nx) = 1.i*blaze::diagonal(T*spacemat(QInv, tau, loopIdx(tau+1, nt), nx));
+                    spacevec(force, tau, nx) = I*blaze::diagonal(T*spacemat(QInv, tau, loopIdx(tau+1, nt), nx));
                     hfm.Tminus(T, tau, phi);
-                    spacevec(force, tau, nx) -= 1.i*blaze::diagonal(spacemat(QInv, loopIdx(tau+1, nt), tau, nx)*T);
+                    spacevec(force, tau, nx) -= I*blaze::diagonal(spacemat(QInv, loopIdx(tau+1, nt), tau, nx)*T);
                 }
 
                 return force;
@@ -105,9 +105,9 @@ namespace isle {
                 decltype(hfm.Tplus(0ul, phi)) T;  // sparse or dense matrix
                 for (std::size_t tau = 0; tau < nt; ++tau) {
                     hfm.Tplus(T, loopIdx(tau+1, nt), phi);
-                    spacevec(force, tau, nx) = 1.i*blaze::diagonal(spacemat(QInv, tau, loopIdx(tau+1, nt), nx)*T);
+                    spacevec(force, tau, nx) = I*blaze::diagonal(spacemat(QInv, tau, loopIdx(tau+1, nt), nx)*T);
                     hfm.Tminus(T, tau, phi);
-                    spacevec(force, tau, nx) -= 1.i*blaze::diagonal(T*spacemat(QInv, loopIdx(tau+1, nt), tau, nx));
+                    spacevec(force, tau, nx) -= I*blaze::diagonal(T*spacemat(QInv, loopIdx(tau+1, nt), tau, nx));
                 }
 
                 return force;
@@ -181,10 +181,10 @@ namespace isle {
 
             if (_shortcutForHoles) {
                 const auto fp = forceDirectSinglePart(_hfm, phi, _kp, Species::PARTICLE);
-                return -1.i*(fp - blaze::conj(fp));
+                return -I*(fp - blaze::conj(fp));
             }
             else {
-                return -1.i*(forceDirectSinglePart(_hfm, phi, _kp, Species::PARTICLE)
+                return -I*(forceDirectSinglePart(_hfm, phi, _kp, Species::PARTICLE)
                          - forceDirectSinglePart(_hfm, phi, _kh, Species::HOLE));
             }
         }
@@ -193,7 +193,7 @@ namespace isle {
         HubbardFermiAction<HFAHopping::DIA, HFAAlgorithm::DIRECT_SINGLE, HFABasis::SPIN>::eval(
             const CDVector &phi) const {
 
-            const CDVector aux = -1.i*phi;
+            const CDVector aux = -I*phi;
             return -toFirstLogBranch(logdetM(_hfm, aux, Species::PARTICLE)
                                      + logdetM(_hfm, aux, Species::HOLE));
         }
@@ -201,7 +201,7 @@ namespace isle {
         HubbardFermiAction<HFAHopping::DIA, HFAAlgorithm::DIRECT_SINGLE, HFABasis::SPIN>::force(
             const CDVector &phi) const {
 
-            const CDVector aux = -1.i*phi;
+            const CDVector aux = -I*phi;
             return (forceDirectSinglePart(_hfm, aux, _kh, Species::HOLE)
                     - forceDirectSinglePart(_hfm, aux, _kp, Species::PARTICLE));
         }
@@ -223,13 +223,13 @@ namespace isle {
         HubbardFermiAction<HFAHopping::DIA, HFAAlgorithm::DIRECT_SQUARE, HFABasis::SPIN>::eval(
             const CDVector &phi) const {
 
-            return -logdetQ(_hfm, -1.i*phi);
+            return -logdetQ(_hfm, -I*phi);
         }
         template <> CDVector
         HubbardFermiAction<HFAHopping::DIA, HFAAlgorithm::DIRECT_SQUARE, HFABasis::SPIN>::force(
             const CDVector &phi) const {
 
-            return -1.i*forceDirectSquare(_hfm, -1.i*phi);
+            return -I*forceDirectSquare(_hfm, -I*phi);
         }
 
 
@@ -252,10 +252,10 @@ namespace isle {
 
             if (_shortcutForHoles) {
                 const auto fp = forceDirectSinglePart(_hfm, phi, _kp, Species::PARTICLE);
-                return -1.i*(fp - blaze::conj(fp));
+                return -I*(fp - blaze::conj(fp));
             }
             else {
-                return -1.i*(forceDirectSinglePart(_hfm, phi, _kp, Species::PARTICLE)
+                return -I*(forceDirectSinglePart(_hfm, phi, _kp, Species::PARTICLE)
                          - forceDirectSinglePart(_hfm, phi, _kh, Species::HOLE));
             }
         }
@@ -264,7 +264,7 @@ namespace isle {
         HubbardFermiAction<HFAHopping::EXP, HFAAlgorithm::DIRECT_SINGLE, HFABasis::SPIN>::eval(
             const CDVector &phi) const {
 
-            const CDVector aux = -1.i*phi;
+            const CDVector aux = -I*phi;
             return -toFirstLogBranch(logdetM(_hfm, aux, Species::PARTICLE)
                                      + logdetM(_hfm, aux, Species::HOLE));
         }
@@ -272,7 +272,7 @@ namespace isle {
         HubbardFermiAction<HFAHopping::EXP, HFAAlgorithm::DIRECT_SINGLE, HFABasis::SPIN>::force(
             const CDVector &phi) const {
 
-            const CDVector aux = -1.i*phi;
+            const CDVector aux = -I*phi;
             return (forceDirectSinglePart(_hfm, aux, _kh, Species::HOLE)
                     - forceDirectSinglePart(_hfm, aux, _kp, Species::PARTICLE));
         }
@@ -294,13 +294,13 @@ namespace isle {
         HubbardFermiAction<HFAHopping::EXP, HFAAlgorithm::DIRECT_SQUARE, HFABasis::SPIN>::eval(
             const CDVector &phi) const {
 
-            return -logdetQ(_hfm, -1.i*phi);
+            return -logdetQ(_hfm, -I*phi);
         }
         template <> CDVector
         HubbardFermiAction<HFAHopping::EXP, HFAAlgorithm::DIRECT_SQUARE, HFABasis::SPIN>::force(
             const CDVector &phi) const {
 
-            return -1.i*forceDirectSquare(_hfm, -1.i*phi);
+            return -I*forceDirectSquare(_hfm, -I*phi);
         }
 
         // instantiate all the templates we need right here

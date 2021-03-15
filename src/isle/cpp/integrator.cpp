@@ -4,8 +4,6 @@
 
 #include "profile.hpp"
 
-using namespace std::complex_literals;
-
 
 namespace isle {
     std::tuple<CDVector, CDVector, std::complex<double>>
@@ -169,7 +167,7 @@ namespace isle {
             }
 
             const auto attempt = rk4Step(phi, action, stepSize, direction, n);
-            const auto error = abs(exp(1.0i*(imag(actVal)-imag(attempt.second))) - 1.0);
+            const auto error = abs(exp(std::complex<double>{0.0, imag(actVal)-imag(attempt.second)}) - 1.0);
 
             if (error > imActTolerance) {
                 if (stepSize == minStepSize) {

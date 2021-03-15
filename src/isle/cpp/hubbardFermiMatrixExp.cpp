@@ -7,8 +7,6 @@
 #include "profile.hpp"
 #include "logging/logging.hpp"
 
-using namespace std::complex_literals;
-
 namespace isle {
     namespace {
         /// Resize a square matrix, throws away old elements.
@@ -131,8 +129,8 @@ namespace isle {
         // the sign in the exponential of phi
         auto const sign = ((species == Species::PARTICLE && !inv)
                            || (species == Species::HOLE && inv))
-            ? +1.0i
-            : -1.0i;
+            ? std::complex<double>{0.0, +1.0}
+            : std::complex<double>{0.0, -1.0};
 
         if (inv)
             // f = e^phi * e^kappa  (up to signs in exponents)
@@ -613,7 +611,7 @@ namespace isle {
 
             // add Phi and return
             return toFirstLogBranch(-static_cast<double>(NT)*hfm.logdetExpKappa(Species::HOLE, true)
-                                    - 1.0i*blaze::sum(phi)
+                                    - std::complex<double>{0.0, 1.0}*blaze::sum(phi)
                                     + ilogdet(aux));
         }
     }
