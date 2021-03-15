@@ -34,7 +34,10 @@ class Configure:
                        check=predicate.one_of(*BLAS_VENDORS))
     parallel_blas = dict(help="Pass flag if the BLAS implementation is parallelized",
                          cmake="PARALLEL_BLAS", bool=True)
-
+    use_cuda = dict(help="Enable CUDA support",
+                    cmake="USE_CUDA", bool=True)
+    cuda_profile = dict(help="Enable profiling for CUDA",
+                        cmake="CUDA_PROFILE", bool=True)
 
 setup(
     name="isle",
