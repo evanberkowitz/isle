@@ -1,0 +1,24 @@
+FROM nvcr.io/nvidia/nvhpc:21.1-devel-cuda11.2-ubuntu20.04
+
+RUN uname -r >> /build-info.txt
+
+RUN apt-get update -y && apt-get -y --no-install-recommends install \
+    build-essential gcc libssl-dev libffi-dev liblapack-dev python3-dev python3-pip \
+    git && \
+    yes | pip3 install nvtx setuptools psutil pybind11 numpy scipy h5py PyYAML scikit-learn matplotlib
+
+RUN mkdir -p /var/tmp && git config --global http.sslverify false && \
+    git clone --depth=1 https://gitlab.kitware.com/cmake/cmake.git /var/tmp/cmake && \
+    cd /var/tmp/cmake && ./bootstrap --prefix=/usr/local --parallel=16 && \
+    make -j16 && \
+    make install && \
+    rm -rf /var/tmp/cmake && \
+    git config --global http.sslverify true
+
+ENV PATH=/usr/local/bin:$PATH
+
+RUN git clone https://bitbucket.org/blaze-lib/blaze.git /var/tmp/blaze && \
+    mkdir /var/tmp/blaze/build && \
+    cd /var/tmp/blaze/build/ && \
+    cmake .. -DCMAKE_INSTALL_PREFIX=/usr/local/ && \
+    make install

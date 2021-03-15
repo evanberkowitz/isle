@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.15)
+cmake_minimum_required(VERSION 3.19)
 
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/cmake/Modules/")
 
@@ -44,6 +44,7 @@ target_link_libraries(blaze_options INTERFACE ${blaze_LIBRARIES})
 target_link_options(blaze_options INTERFACE "${blaze_LINKER_FLAGS}")
 
 find_package(OpenMP REQUIRED)
+include(cmake/cuda.cmake)
 
 get_filename_component(SOURCE_DIR "src/isle/cpp" REALPATH BASE_DIR
                        "${CMAKE_SOURCE_DIR}")
