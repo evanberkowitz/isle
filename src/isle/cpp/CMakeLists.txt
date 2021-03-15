@@ -3,36 +3,24 @@
 # ISLE_CPP_SOURCE - List of source files for isle_cpp library
 #
 
-# sources of the base library
-set(SOURCE
-    hubbardFermiMatrixDia.hpp
-    hubbardFermiMatrixDia.cpp
-    hubbardFermiMatrixExp.hpp
-    hubbardFermiMatrixExp.cpp
-    integrator.hpp
-    integrator.cpp
-    lattice.hpp
-    lattice.cpp
-    action/sumAction.hpp
-    action/sumAction.cpp
-    action/hubbardGaugeAction.hpp
-    action/hubbardGaugeAction.cpp
-    action/hubbardFermiAction.hpp
-    action/hubbardFermiAction.cpp)
-
-# store sources (w/o bindings) for other modules
-set(libsrc)
-foreach(src IN LISTS SOURCE)
-  list(APPEND libsrc "${CMAKE_CURRENT_LIST_DIR}/${src}")
-endforeach()
-set(ISLE_CPP_SOURCE
-    ${libsrc}
-    PARENT_SCOPE)
-unset(libsrc)
-
 # define the library
 set(LIBNAME "isle_cpp_internal")
-add_library(${LIBNAME} STATIC ${SOURCE})
+add_library(${LIBNAME} STATIC
+            hubbardFermiMatrixDia.hpp
+            hubbardFermiMatrixDia.cpp
+            hubbardFermiMatrixExp.hpp
+            hubbardFermiMatrixExp.cpp
+            integrator.hpp
+            integrator.cpp
+            lattice.hpp
+            lattice.cpp
+            action/sumAction.hpp
+            action/sumAction.cpp
+            action/hubbardGaugeAction.hpp
+            action/hubbardGaugeAction.cpp
+            action/hubbardFermiAction.hpp
+            action/hubbardFermiAction.cpp profile.hpp)
+
 set_target_properties(${LIBNAME} PROPERTIES CXX_VISIBILITY_PRESET hidden)
 
 target_link_libraries(${LIBNAME} PRIVATE project_options project_warnings)

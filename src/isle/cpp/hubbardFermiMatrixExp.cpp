@@ -4,6 +4,7 @@
 #include <limits>
 #include <cmath>
 
+#include "profile.hpp"
 #include "logging/logging.hpp"
 
 using namespace std::complex_literals;
@@ -119,6 +120,9 @@ namespace isle {
     void HubbardFermiMatrixExp::F(CDMatrix &f,
                                   const std::size_t tp, const CDVector &phi,
                                   const Species species, const bool inv) const {
+        ISLE_PROFILE_NVTX_RANGE(species == Species::PARTICLE
+                                ? "HubbardFermiMatrixExp::F(particle)"
+                                : "HubbardFermiMatrixExp::F(hole)");
         const std::size_t NX = nx();
         const std::size_t NT = getNt(phi, NX);
         const std::size_t tm1 = tp==0 ? NT-1 : tp-1;  // t' - 1
@@ -573,6 +577,7 @@ namespace isle {
         // Use version log(det(1+hat{A})).
         std::complex<double> logdetM_p(const HubbardFermiMatrixExp &hfm,
                                        const CDVector &phi) {
+            ISLE_PROFILE_NVTX_RANGE("logdetM_p(Exp)");
             const auto NX = hfm.nx();
             const auto NT = getNt(phi, NX);
             const auto species = Species::PARTICLE;
@@ -593,6 +598,7 @@ namespace isle {
         // Use version -i Phi - N_t log(det(e^{-sigmaKappa*kappa-mu})) + log(det(1+hat{A}^{-1})).
         std::complex<double> logdetM_h(const HubbardFermiMatrixExp &hfm,
                                        const CDVector &phi) {
+            ISLE_PROFILE_NVTX_RANGE("logdetM_h(Exp)");
             const auto NX = hfm.nx();
             const auto NT = getNt(phi, NX);
 
@@ -644,6 +650,9 @@ namespace isle {
 
     CDMatrix solveM(const HubbardFermiMatrixExp &hfm, const CDVector &phi,
                     const Species species, const CDMatrix &rhss) {
+        ISLE_PROFILE_NVTX_RANGE(species == Species::PARTICLE
+                                ? "solveM(Exp, particle)"
+                                : "solveM(Exp, hole)");
         const std::size_t NX = hfm.nx();
         const std::size_t NT = getNt(phi, NX);
         const std::size_t NRHS = rhss.rows();

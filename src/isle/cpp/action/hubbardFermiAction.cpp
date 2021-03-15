@@ -1,6 +1,7 @@
 #include "hubbardFermiAction.hpp"
 
 #include "../core.hpp"
+#include "../profile.hpp"
 #include "../logging/logging.hpp"
 
 using namespace std::complex_literals;
@@ -16,7 +17,9 @@ namespace isle {
             template <typename HFM, typename KMatrix>
             CDVector forceDirectSinglePart(const HFM &hfm, const CDVector &phi,
                                            const KMatrix &k, const Species species) {
-
+                ISLE_PROFILE_NVTX_RANGE(species == Species::PARTICLE
+                                        ? "action::forceDirectSinglePart(particle)"
+                                        : "action::forceDirectSinglePart(hole)");
                 const auto nx = hfm.nx();
                 const auto nt = getNt(phi, nx);
 
@@ -27,6 +30,7 @@ namespace isle {
                 std::vector<CDMatrix> lefts;  // in reverse order
                 lefts.reserve(nt-1);  // not storing full A^-1 here
 
+                ISLE_PROFILE_NVTX_PUSH("action::forceDirectSinglePart[lefts]");
                 // first term for tau = nt-2
                 auto f = hfm.F(nt-1, phi, species, true);
                 lefts.emplace_back(f*k);
@@ -38,7 +42,9 @@ namespace isle {
                 // full A^-1
                 hfm.F(f, 0, phi, species, true);
                 const CDMatrix Ainv = f * k * lefts.back();
+                ISLE_PROFILE_NVTX_POP();
 
+                ISLE_PROFILE_NVTX_PUSH("action::forceDirectSinglePart[rights]");
                 // start right with (1+A^-1)^-1
                 CDMatrix right = IdMatrix<std::complex<double>>(nx) + Ainv;
                 auto ipiv = std::make_unique<int[]>(right.rows());
@@ -55,7 +61,7 @@ namespace isle {
                     right = right * f * k;
                     spacevec(force, tau, nx) = blaze::diagonal(lefts[nt-1-tau-1]*right);
                 }
-
+                ISLE_PROFILE_NVTX_POP();
                 return force;
             }
 
