@@ -5,6 +5,8 @@ Contains Python modules and imports everything from C++ extension into the isle 
 """
 
 from logging import getLogger
+import time
+import nvtx
 
 from .cpp_wrappers import *  # (unused import) pylint: disable=wildcard-import, unused-wildcard-import
 from . import checks  # (unused import) pylint: disable=unused-import
@@ -21,6 +23,7 @@ import isle.action  # (unused import) pylint: disable=unused-import
 __version__ = str(isleVersion)
 
 
+@nvtx.annotate(message="py_initialize", color="blue")
 def initialize(*args, **kwargs):
     args = cli.init(*args, **kwargs)
 

@@ -10,6 +10,8 @@ import isle
 # Import drivers (not included in above).
 import isle.drivers
 
+import time
+import nvtx
 
 ### Specify input / output files
 # Write all data to this file.
@@ -71,12 +73,17 @@ def makeAction(lat, params):
 
 
 def main():
+    # Initialization and setup are shown in BLUE in the profiler.
+
     # Initialize Isle.
     # This sets up the command line interface, defines a barebones argument parser,
     # and parses and returns parsed arguments.
     # More complex parsers can be automatically defined or passed in manually.
     # See, e.g., `hmcThermalization.py` or `measure.py` examples.
     isle.initialize("default")
+
+    # Start a profiler range including the complete setup
+    setup_hmc_run = nvtx.start_range(message="py_setup", color="blue")
 
     # Get a logger. Use this instead of print() to output any and all information.
     log = getLogger("HMC")
@@ -107,6 +114,11 @@ def main():
                                  lat.lattSize())
                       +0j)
 
+    # End profiler setup range
+    nvtx.end_range(setup_hmc_run)
+
+    # Thermalization is shown in GREEN in the profiler.
+
     # Run thermalization.
     log.info("Thermalizing")
     # Pick an evolver which linearly decreases the number of MD steps from 20 to 5.
@@ -116,6 +128,8 @@ def main():
     evStage = hmcState(phi, evolver, 100, saveFreq=0, checkpointFreq=0)
     # Reset the internal counter so we start saving configs at index 0.
     hmcState.resetIndex()
+
+    # Production is shown in ORANGE in the profiler.
 
     # Run production.
     log.info("Producing")

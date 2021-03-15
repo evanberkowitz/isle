@@ -14,6 +14,7 @@ import random
 import shutil
 import sys
 import time
+import nvtx
 
 import isle
 
@@ -622,6 +623,7 @@ def _suppressGoogleLogWarning():
     except Exception:
         pass
 
+@nvtx.annotate(message="py_setupLogging", color="blue")
 def setupLogging(logfile=None, verbosity=0):
     r"""!
     Set up Python's logging framework.
@@ -787,6 +789,7 @@ def _makeParser(argParser, **kwargs):
 # The one function to control all the rest.
 #
 
+@nvtx.annotate(message="py_init", color="blue")
 def init(argParser="default", defaultLog=None, verbosity=0, **kwargs):
     r"""!
     Initialize command line interface.

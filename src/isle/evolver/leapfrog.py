@@ -11,12 +11,16 @@ from .selector import BinarySelector
 from .. import Vector, leapfrog
 from ..collection import hingeRange
 
+import time
+import nvtx
+
 
 class ConstStepLeapfrog(Evolver):
     r"""! \ingroup evolvers
     A leapfrog evolver with constant parameters.
     """
 
+    @nvtx.annotate(message="py_init_ConstStepLeapfrog", color="blue")
     def __init__(self, action, length, nstep, rng, transform=None):
         r"""!
         \param action Instance of isle.Action to use for molecular dynamics.
@@ -35,6 +39,7 @@ class ConstStepLeapfrog(Evolver):
         self.transform = transform
         self.trajPoints = []
 
+    @nvtx.annotate(message="py_evolve_ConstStepLeapfrog", color="orange")
     def evolve(self, stage):
         r"""!
         Run leapfrog integrator.
@@ -54,6 +59,8 @@ class ConstStepLeapfrog(Evolver):
         # transform to MC manifold
         phi1, actVal1, logdetJ1 = forwardTransform(self.transform, phiMD1, actValMD1)
 
+        accept_reject = nvtx.start_range(message="py_accept_reject", color="orange")
+
         # accept/reject on MC manifold
         energy0 = stage.sumLogWeights()+np.linalg.norm(pi)**2/2
         energy1 = actVal1+logdetJ1+np.linalg.norm(pi1)**2/2
@@ -64,6 +71,8 @@ class ConstStepLeapfrog(Evolver):
             else {"logdetJ": (logdetJ, logdetJ1)[trajPoint]}
         return stage.accept(phi1, actVal1, logWeights) if trajPoint == 1 \
             else stage.reject()
+
+        nvtx.end_range(accept_reject)
 
     def save(self, h5group, manager):
         r"""!
@@ -113,6 +122,7 @@ class LinearStepLeapfrog(Evolver):
     values.
     """
 
+    @nvtx.annotate(message="py_init_LinearStepLeapfrog", color="blue")
     def __init__(self, action, lengthRange, nstepRange, ninterp, rng, startPoint=0, transform=None):
         r"""!
         \param action Instance of isle.Action to use for molecular dynamics.
@@ -148,6 +158,7 @@ class LinearStepLeapfrog(Evolver):
             next(self._lengthIter)
             next(self._nstepIter)
 
+    @nvtx.annotate(message="py_evolve_LinearStepLeapfrog", color="green")
     def evolve(self, stage):
         r"""!
         Run leapfrog integrator.

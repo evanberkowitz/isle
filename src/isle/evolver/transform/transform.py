@@ -5,6 +5,9 @@ Base class for evolvers.
 
 from abc import ABCMeta, abstractmethod
 
+import time
+import nvtx
+
 
 class Transform(metaclass=ABCMeta):
     r"""! \ingroup evolvers
@@ -58,6 +61,7 @@ class Transform(metaclass=ABCMeta):
         """
 
 
+@nvtx.annotate(message="py_backwardTransform", color="orange")
 def backwardTransform(transform, stage):
     """!
     Backwards transform a configuration in an EvolutionStage and compute
@@ -76,6 +80,7 @@ def backwardTransform(transform, stage):
     # Jacobian is unknown
     return transform.backward(stage.phi, True)
 
+@nvtx.annotate(message="py_forwardTransform", color="orange")
 def forwardTransform(transform, phi, actVal):
     """!
     Forwards transform a configuration and compute Jacobian.

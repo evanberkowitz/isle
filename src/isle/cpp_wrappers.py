@@ -7,6 +7,9 @@ around linear algebra types.
 
 import numpy as np
 
+import time
+import nvtx
+
 from .isle_cpp import *
 
 class Vector:
@@ -17,6 +20,7 @@ class Vector:
     on the argument dtype.
     """
 
+    @nvtx.annotate(message="py_new_Vector", color="blue")
     def __new__(cls, *args, dtype=None, **kwargs):
         """!
         Create and return a Vector for given datatype.

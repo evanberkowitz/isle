@@ -6,6 +6,9 @@ from logging import getLogger
 
 import h5py as h5
 
+import time
+import nvtx
+
 from .. import Vector, fileio, cli
 from ..meta import sourceOfFunction, callFunctionFromSource
 from ..util import verifyVersionsByException
@@ -38,6 +41,7 @@ class HMC:
         self._evManager = evManager if evManager \
             else EvolverManager(outfname, definitions=definitions)
 
+    @nvtx.annotate(message="py_call_hmcState", color="orange")
     def __call__(self, stage, evolver, ntr, saveFreq, checkpointFreq, maxNtr=None):
         r"""!
         Evolve configuration using %HMC.
@@ -104,6 +108,7 @@ class HMC:
         """
         self._trajIdx += amount
 
+    @nvtx.annotate(message="py_resetIndex", color="green")
     def resetIndex(self, idx=0):
         """!
         Reset the internal trajectory index to idx.
