@@ -19,7 +19,7 @@ add_library(${LIBNAME} STATIC
             action/hubbardGaugeAction.hpp
             action/hubbardGaugeAction.cpp
             action/hubbardFermiAction.hpp
-            action/hubbardFermiAction.cpp)
+            action/hubbardFermiAction.cpp profile.hpp)
 
 set_target_properties(${LIBNAME} PROPERTIES CXX_VISIBILITY_PRESET hidden)
 
