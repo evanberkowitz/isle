@@ -11,7 +11,7 @@ RUN mkdir -p /var/tmp && git config --global http.sslverify false && \
     git clone --depth=1 https://gitlab.kitware.com/cmake/cmake.git /var/tmp/cmake && \
     cd /var/tmp/cmake && ./bootstrap --prefix=/usr/local --parallel=16 && \
     make -j16 && \
-    make install && \
+    make install && cd - && \
     rm -rf /var/tmp/cmake && \
     git config --global http.sslverify true
 
@@ -21,4 +21,4 @@ RUN git clone https://bitbucket.org/blaze-lib/blaze.git /var/tmp/blaze && \
     mkdir /var/tmp/blaze/build && \
     cd /var/tmp/blaze/build/ && \
     cmake .. -DCMAKE_INSTALL_PREFIX=/usr/local/ && \
-    make install
+    make install && cd - && rm -rf /var/tmp/blaze
