@@ -13,10 +13,14 @@ import numpy as np
 # Name of the lattice.
 LATTICE = "c60_ipr"
 OUTFILE = "hmc-benchmark_NT"
+## Benchmark
+#NTs = (16,24,32,40,48,56,64)#(16,32,64)
+#NREP = 50
 
-NTs = (16,24,32,40,48,56,64)#(16,32,64)
-#NXs = (4,8,12,16,24,32,64,96)
-NREP = 50
+# Profile
+NTs = (16,)#,24,32,40,48,56,64)#(16,32,64)
+NREP = 1
+
 
 def makeAction(lattice, params):
     # Import everything this function needs so it is self-contained.
