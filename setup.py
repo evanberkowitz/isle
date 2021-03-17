@@ -38,6 +38,8 @@ class Configure:
                     cmake="USE_CUDA", bool=True)
     cuda_profile = dict(help="Enable profiling for CUDA",
                         cmake="CUDA_PROFILE", bool=True)
+    verbose_on = dict(help="",
+                    cmake="CMAKE_VERBOSE_MAKEFILE", bool=True)
 
 setup(
     name="isle",
