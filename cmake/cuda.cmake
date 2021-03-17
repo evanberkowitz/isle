@@ -14,7 +14,6 @@ if (USE_CUDA)
   target_compile_features(cudaAllocation PRIVATE cxx_std_14)
   target_link_libraries(cudaAllocation PRIVATE CUDA::cudart)
   target_link_libraries(cudaAllocation PRIVATE project_options project_warnings)
-  #target_include_directories(cudaAllocation PUBLIC ${CMAKE_CURRENT_BINARY_DIR})
 
   if (CUDA_PROFILE)
     target_link_libraries(cuda_toolkit INTERFACE CUDA::nvToolsExt)
