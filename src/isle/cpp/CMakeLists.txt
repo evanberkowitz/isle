@@ -27,7 +27,8 @@ target_link_libraries(${LIBNAME} PRIVATE project_options project_warnings)
 target_link_libraries(${LIBNAME} PUBLIC blaze_options)
 
 if (USE_CUDA)
-  target_link_libraries(${LIBNAME} PUBLIC cuda_toolkit)
+    target_link_libraries(${LIBNAME} PUBLIC cuda_toolkit)
+    target_link_libraries(${LIBNAME} PRIVATE cudaAllocation)
 endif()
 
 add_subdirectory(logging)

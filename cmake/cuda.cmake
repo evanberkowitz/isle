@@ -7,10 +7,14 @@ if (USE_CUDA)
   enable_language(CUDA)
 
   target_compile_features(project_options INTERFACE cuda_std_14)
-
   find_package(CUDAToolkit REQUIRED)
-
   add_library(cuda_toolkit INTERFACE)
+
+  add_library(cudaAllocation STATIC src/isle/cpp/allocation_overload.cpp)
+  target_compile_features(cudaAllocation PRIVATE cxx_std_14)
+  target_link_libraries(cudaAllocation PRIVATE CUDA::cudart)
+  target_link_libraries(cudaAllocation PRIVATE project_options project_warnings)
+  #target_include_directories(cudaAllocation PUBLIC ${CMAKE_CURRENT_BINARY_DIR})
 
   if (CUDA_PROFILE)
     target_link_libraries(cuda_toolkit INTERFACE CUDA::nvToolsExt)
