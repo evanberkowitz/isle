@@ -1,21 +1,20 @@
-#include <cuda_runtime_api.h>
 #include <cstdlib>
 #include <new>
+
+#include "cuda_helper.cuh"
 
 void * operator new(std::size_t size){
     void * ptr = nullptr;
 
-    if (cudaMallocManaged(&ptr,size)){
-        throw std::bad_alloc{};
-    }
+    CHECK_CU_ERR(cudaMallocManaged(&ptr,size));
 
     return ptr;
 }
 
-void * operator new(std::size_t size, const std::nothrow_t&) {
+void * operator new(std::size_t size, const std::nothrow_t&) noexcept{
     void * ptr = nullptr;
 
-    cudaMallocManaged(&ptr,size);
+    CHECK_CU_ERR(cudaMallocManaged(&ptr,size));
 
     return ptr;
 }
@@ -23,18 +22,15 @@ void * operator new(std::size_t size, const std::nothrow_t&) {
 void * operator new[](std::size_t size){
     void * ptr = nullptr;
 
-    if(cudaMallocManaged(&ptr,size)){
-        return ptr;
-    }
+    CHECK_CU_ERR(cudaMallocManaged(&ptr,size));
 
-    throw std::bad_alloc{};
+    return ptr;
 }
 
-
-void * operator new[](std::size_t size, const std::nothrow_t& ){
+void * operator new[](std::size_t size, const std::nothrow_t& ) noexcept{
     void * ptr = nullptr;
 
-    cudaMallocManaged(&ptr,size);
+    CHECK_CU_ERR(cudaMallocManaged(&ptr,size));
 
     return ptr;
 }
@@ -42,25 +38,25 @@ void * operator new[](std::size_t size, const std::nothrow_t& ){
 // =============================================================================
 
 void operator delete( void* ptr ) noexcept {
-    cudaFree(ptr);
+    CHECK_CU_ERR(cudaFree(ptr));
 }
 
 void operator delete( void* ptr, std::size_t) noexcept {
-    cudaFree(ptr);
+    CHECK_CU_ERR(cudaFree(ptr));
 }
 
 void operator delete( void* ptr, const std::nothrow_t& ) noexcept {
-    cudaFree(ptr);
+    CHECK_CU_ERR(cudaFree(ptr));
 }
 
 void operator delete[]( void * ptr) noexcept {
-    cudaFree(ptr);
+    CHECK_CU_ERR(cudaFree(ptr));
 }
 
 void operator delete[]( void* ptr, std::size_t) noexcept {
-    cudaFree(ptr);
+    CHECK_CU_ERR(cudaFree(ptr));
 }
 
 void operator delete[]( void* ptr, const std::nothrow_t& ) noexcept {
-    cudaFree(ptr);
+    CHECK_CU_ERR(cudaFree(ptr));
 }
