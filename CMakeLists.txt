@@ -25,6 +25,9 @@ include(cmake/Cache.cmake)
 include(cmake/CompilerWarnings.cmake)
 set_project_warnings(project_warnings)
 
+# include cuda if wanted
+include(cmake/cuda.cmake)
+
 if(NOT APPLE)
   set(CMAKE_INSTALL_RPATH $ORIGIN)
 else()
