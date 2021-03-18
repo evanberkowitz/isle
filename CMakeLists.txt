@@ -36,14 +36,18 @@ option(ENABLE_TESTING "Enable Test Builds" ON)
 # look for 3rd party packages
 include(cmake/pybind11.cmake)
 
+
 find_package(blaze 3.6 REQUIRED)
 add_library(blaze_options INTERFACE)
 target_include_directories(blaze_options SYSTEM INTERFACE ${blaze_INCLUDE_DIRS})
 target_compile_options(blaze_options INTERFACE "${blaze_CXX_FLAGS}")
 target_link_libraries(blaze_options INTERFACE ${blaze_LIBRARIES})
 target_link_options(blaze_options INTERFACE "${blaze_LINKER_FLAGS}")
-
-include(cmake/cuda.cmake)
+if(USE_CUDA)
+    target_compile_definitions(
+        blaze_options INTERFACE "-DBLAZE_USE_VECTORIZATION=0"
+    )
+endif()
 
 get_filename_component(SOURCE_DIR "src/isle/cpp" REALPATH BASE_DIR
                        "${CMAKE_SOURCE_DIR}")
