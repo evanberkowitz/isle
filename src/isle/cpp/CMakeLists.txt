@@ -5,7 +5,27 @@
 
 # define the library
 set(LIBNAME "isle_cpp_internal")
-add_library(${LIBNAME} STATIC
+if(USE_CUDA)
+    message("Compiling '*.cu' files")
+    add_library(${LIBNAME} STATIC
+            hubbardFermiMatrixDia.hpp
+            hubbardFermiMatrixDia.cpp
+            hubbardFermiMatrixExp.hpp
+            hubbardFermiMatrixExp.cu
+            integrator.hpp
+            integrator.cpp
+            lattice.hpp
+            lattice.cpp
+            action/sumAction.hpp
+            action/sumAction.cpp
+            action/hubbardGaugeAction.hpp
+            action/hubbardGaugeAction.cpp
+            action/hubbardFermiAction.hpp
+            action/hubbardFermiAction.cpp profile.hpp
+    )
+    set_target_properties(${LIBNAME} PROPERTIES CUDA_SEPARABLE_COMPILATION ON)
+else()
+    add_library(${LIBNAME} STATIC
             hubbardFermiMatrixDia.hpp
             hubbardFermiMatrixDia.cpp
             hubbardFermiMatrixExp.hpp
@@ -19,7 +39,9 @@ add_library(${LIBNAME} STATIC
             action/hubbardGaugeAction.hpp
             action/hubbardGaugeAction.cpp
             action/hubbardFermiAction.hpp
-            action/hubbardFermiAction.cpp profile.hpp)
+            action/hubbardFermiAction.cpp profile.hpp
+    )
+endif()
 
 set_target_properties(${LIBNAME} PROPERTIES CXX_VISIBILITY_PRESET hidden)
 
