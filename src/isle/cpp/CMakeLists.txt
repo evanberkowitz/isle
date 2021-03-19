@@ -11,7 +11,7 @@ if(USE_CUDA)
             hubbardFermiMatrixDia.hpp
             hubbardFermiMatrixDia.cpp
             hubbardFermiMatrixExp.hpp
-            hubbardFermiMatrixExp.cu
+            hubbardFermiMatrixExp.cpp
             integrator.hpp
             integrator.cpp
             lattice.hpp
@@ -22,6 +22,8 @@ if(USE_CUDA)
             action/hubbardGaugeAction.cpp
             action/hubbardFermiAction.hpp
             action/hubbardFermiAction.cpp profile.hpp
+	    action/hubbardForces.hpp
+	    action/hubbardForces.cu
     )
     set_target_properties(${LIBNAME} PROPERTIES CUDA_SEPARABLE_COMPILATION ON)
 else()
@@ -40,6 +42,8 @@ else()
             action/hubbardGaugeAction.cpp
             action/hubbardFermiAction.hpp
             action/hubbardFermiAction.cpp profile.hpp
+	    action/hubbardForces.hpp
+	    action/hubbardForces.cpp
     )
 endif()
 
