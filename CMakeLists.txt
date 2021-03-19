@@ -48,7 +48,10 @@ target_link_libraries(blaze_options INTERFACE ${blaze_LIBRARIES})
 target_link_options(blaze_options INTERFACE "${blaze_LINKER_FLAGS}")
 if(USE_CUDA)
     target_compile_definitions(
-        blaze_options INTERFACE "-DBLAZE_USE_VECTORIZATION=0 -DBLAZE_DEFAULT_PADDING_FLAG=blaze::unpadded -DBLAZE_DEFAULT_ALIGNMENT_FLAG=blaze::unaligned"
+        blaze_options INTERFACE
+            "-DBLAZE_USE_VECTORIZATION=0"
+            "-DBLAZE_DEFAULT_PADDING_FLAG=blaze::unpadded"
+            "-DBLAZE_DEFAULT_ALIGNMENT_FLAG=blaze::unaligned"
     )
 endif()
 
