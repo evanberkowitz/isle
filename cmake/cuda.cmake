@@ -24,6 +24,7 @@ if (USE_CUDA)
             "/usr/share"
             "$ENV{HOME}"
             "$ENV{HOME}/.local/" "$ENV{HOME}/.local/include" "$ENV{HOME}/.local/share"
+	    "../"
       PATH_SUFFIXES "libcudacxx" "libcudacxx/include" "libcudacxx/include/cuda/std"
       REQUIRED
   )
