@@ -6,7 +6,6 @@
 # define the library
 set(LIBNAME "isle_cpp_internal")
 if(USE_CUDA)
-    message("Compiling '*.cu' files")
     add_library(${LIBNAME} STATIC
             hubbardFermiMatrixDia.hpp
             hubbardFermiMatrixDia.cpp
@@ -23,7 +22,7 @@ if(USE_CUDA)
             action/hubbardFermiAction.hpp
             action/hubbardFermiAction.cpp profile.hpp
 	    action/hubbardForces.hpp
-	    action/hubbardForces.cu
+	    #action/hubbardForces.cu
     )
     set_target_properties(${LIBNAME} PROPERTIES CUDA_SEPARABLE_COMPILATION ON)
 else()

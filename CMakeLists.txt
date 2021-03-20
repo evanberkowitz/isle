@@ -6,7 +6,7 @@ set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/cmake/Modules/")
 set(CMAKE_INSTALL_RPATH_USE_LINK_PATH TRUE)
 
 # define the project
-project(isle CXX)
+project(isle CXX C)
 include(ExternalProject)
 include(cmake/StandardProjectSettings.cmake)
 
