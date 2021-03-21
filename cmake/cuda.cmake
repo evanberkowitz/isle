@@ -17,18 +17,19 @@ if (USE_CUDA)
   target_link_libraries(cudaAllocation PRIVATE project_options project_warnings)
 
   # TODO: works only on linux like systems!
-  find_path(libcudacxx_INCLUDE_DIR "complex"
+  find_path(libcudacxx_INCLUDE_DIR "cuda/std/complex"
       PATHS "/opt/nvidia" "/opt/cuda"
             "/usr/include"
             "/usr/local" "/usr/local/include" "/usr/local/share"
             "/usr/share"
             "$ENV{HOME}"
             "$ENV{HOME}/.local/" "$ENV{HOME}/.local/include" "$ENV{HOME}/.local/share"
-      PATH_SUFFIXES "libcudacxx" "libcudacxx/include" "libcudacxx/include/cuda/std"
+      PATH_SUFFIXES "" "libcudacxx" "libcudacxx/include" "libcudacxx/include/cuda/std"
       REQUIRED
   )
   message("-- Found libcudacxx - ${libcudacxx_INCLUDE_DIR}")
-  target_link_directories(project_options INTERFACE SYSTEM "${libcudacxx_INCLUDE_DIR}")
+  #target_link_directories(project_options INTERFACE SYSTEM "${libcudacxx_INCLUDE_DIR}")
+  set(CMAKE_CUDA_FLAGS "-I${libcudacxx_INCLUDE_DIR} ${CMAKE_CUDA_FLAGS}")
 
   if (CUDA_PROFILE)
     target_link_libraries(cuda_toolkit INTERFACE CUDA::nvToolsExt)
