@@ -1,4 +1,4 @@
-#include "hubbardForces.cuh"
+#include "hubbardForces.hpp"
 
 namespace isle {
     namespace action {
