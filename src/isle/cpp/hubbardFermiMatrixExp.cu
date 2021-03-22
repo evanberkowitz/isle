@@ -1,17 +1,13 @@
-#include <iostream>
 #include <complex>
 #include <cuComplex.h>
-#include <cmath>
-#include "species.hpp"
-#include "array_lookup.cuh"
-#include "profile.hpp"
 
+#include "array_lookup.cuh"
 #include "cuda_cast.cuh"
 #include "cuda_helper.cuh"
+#include "math.cuh"
 
-
-//#include "hubbardFermiMatrixExp.hpp"
-
+#include "species.hpp"
+#include "profile.hpp"
 
 namespace isle{
 
@@ -64,8 +60,8 @@ void F_wrapper(std::complex<double> * f,
         const Species species, const bool inv) {
 
     ISLE_PROFILE_NVTX_RANGE(species == Species::PARTICLE
-        ? "HubbardFermiMatrixExp::F(particle)"
-        : "HubbardFermiMatrixExp::F(hole)");
+        ? "F_wrapper(particle)"
+        : "F_wrapper(hole)");
 
     // create the device pointer
     cuDoubleComplex * d_f;
@@ -84,10 +80,10 @@ void F_wrapper(std::complex<double> * f,
                         || (species == Species::HOLE && inv))
         ? cuDoubleComplex{0.0, +1.0}
         : cuDoubleComplex{0.0, -1.0};
-    std::cout << "Launching Kernel" << std::endl;
 
     auto num_blocks = ceildiv((int) NX,32);
 
+    //ToDo: warning: conversion to ‘unsigned int’ from ‘int’ may change the sign of the result [-Wsign-conversion]
     F_kernel<<<dim3(num_blocks,num_blocks,1),dim3(32,32,1)>>>(d_f,tp,d_phi,d_expKappa,sign,NX,NT,inv);
 
     cudaMemcpy(f, cast_cmpl(d_f), NX*NX*sizeof(cuDoubleComplex), cudaMemcpyDeviceToHost);
