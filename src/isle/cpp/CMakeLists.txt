@@ -22,7 +22,9 @@ if(USE_CUDA)
             action/hubbardFermiAction.hpp
             action/hubbardFermiAction.cpp profile.hpp
 	    action/hubbardForces.hpp
-	    action/hubbardForces.cu
+	    #action/hubbardForces.cu
+	    math.cuh
+	    math.cu
     )
     set_target_properties(${LIBNAME} PROPERTIES CUDA_SEPARABLE_COMPILATION ON)
 else()
