@@ -11,6 +11,7 @@ if(USE_CUDA)
             hubbardFermiMatrixDia.cpp
             hubbardFermiMatrixExp.hpp
             hubbardFermiMatrixExp.cpp
+            hubbardFermiMatrixExp.cu
             integrator.hpp
             integrator.cpp
             lattice.hpp

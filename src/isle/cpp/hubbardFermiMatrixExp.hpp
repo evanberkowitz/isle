@@ -110,25 +110,16 @@ namespace isle {
          * \param species Select whether to construct for particles or holes.
          * \param inv If `true` constructs the inverse of F.
          */
-        // GPU Version
-        void F(CDMatrix &f, const CDVector &phi,
-               Species species, bool inv=false) const;
-        // CPU Version
         void F(CDMatrix &f, std::size_t tp, const CDVector &phi,
                Species species, bool inv=false) const;
 
 
         /// Return an off-diagonal block matrix F of matrix M.
         /**
-         * \param tp Temporal row index t'. (CPU only)
-         * \param phi Auxilliary field.
+         * \param tp Temporal row index t'.          * \param phi Auxilliary field.
          * \param species Select whether to construct for particles or holes.
          * \param inv If `true` constructs the inverse of F.
          */
-        // GPU Version
-        CDMatrix F(const CDVector &phi,
-                   Species species, bool inv=false) const;
-        // CPU Version
         CDMatrix F(std::size_t tp, const CDVector &phi,
                    Species species, bool inv=false) const;
 
