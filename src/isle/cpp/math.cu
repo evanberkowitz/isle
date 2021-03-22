@@ -20,7 +20,7 @@ namespace isle{
     CHECK_CU_ERR(cudaMemcpy(A, cast_cmpl(a.data()), dim*dim*sizeof(cuDoubleComplex), cudaMemcpyHostToDevice));
     CHECK_CU_ERR(cudaMemcpy(B, cast_cmpl(b.data()), dim*dim*sizeof(cuDoubleComplex), cudaMemcpyHostToDevice));
 
-    // 2nd and 3rd arguments: CUBLAS_OP_N means no transposition or conjugation 
+    // 2nd and 3rd arguments: CUBLAS_OP_N means no transposition or conjugation
     // 4-6,9,11,14-th arguments: matrix dimensions (all equal because matrices are square)
     // calculates C = a * A*B + b * C, with a=1 and b=0 in our case
     CHECK_CUBLAS_ERR(cublasZgemm3m(handle, CUBLAS_OP_N, CUBLAS_OP_N, N, N, N, &alpha, A, N, B, N, &beta, C, N));
