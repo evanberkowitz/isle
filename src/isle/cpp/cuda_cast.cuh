@@ -21,23 +21,23 @@
 //}
 
 
-cuDoubleComplex * cast_cmpl(std::complex<double> * cptr){
+inline cuDoubleComplex * cast_cmpl(std::complex<double> * cptr){
     return reinterpret_cast<cuDoubleComplex * > (cptr);
 }
-const cuDoubleComplex * cast_cmpl(const std::complex<double> * cptr){
+inline const cuDoubleComplex * cast_cmpl(const std::complex<double> * cptr){
     return reinterpret_cast<const cuDoubleComplex * > (cptr);
 }
-cuDoubleComplex cast_cmpl(std::complex<double> c_num){
+inline cuDoubleComplex cast_cmpl(std::complex<double> c_num){
     return make_cuDoubleComplex(c_num.real(),c_num.imag());
 }
 
-std::complex<double> * cast_cmpl(cuDoubleComplex * cptr){
+inline std::complex<double> * cast_cmpl(cuDoubleComplex * cptr){
     return reinterpret_cast<std::complex<double> * > (cptr);
 }
-const std::complex<double> * cast_cmpl(const cuDoubleComplex * cptr){
+inline const std::complex<double> * cast_cmpl(const cuDoubleComplex * cptr){
     return reinterpret_cast<const std::complex<double> * > (cptr);
 }
-std::complex<double> cast_cmpl(cuDoubleComplex c_num){
+inline std::complex<double> cast_cmpl(cuDoubleComplex c_num){
     return std::complex<double>{c_num.x,c_num.y};
 }
 
