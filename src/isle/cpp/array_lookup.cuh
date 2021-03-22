@@ -7,7 +7,7 @@ __host__ __device__ std::size_t lookup_3Tensor(
     std::size_t t, std::size_t x_row, std::size_t x_col,
     const std::size_t Nx){
 
-    return t * Nx^2 + x_col * Nx + x_row;
+    return t * Nx*Nx + x_col * Nx + x_row;
 }
 
 __host__ __device__ std::size_t lookup_matrix(
