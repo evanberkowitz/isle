@@ -66,5 +66,9 @@ static const char *_cudaGetErrorEnum(cublasStatus_t error)
         } \
     } while(false)
 
+template <typename IntType>
+constexpr __host__ __device__ IntType ceildiv(IntType a, IntType b) {
+  return (a + b - 1) / b;
+}
 
 #endif // CUDA_HELPER_CUH

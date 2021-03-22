@@ -8,6 +8,11 @@
 #include "logging/logging.hpp"
 
 namespace isle {
+    // wrapper declariation for the GPU port
+#ifdef USE_CUDA
+    void F_wrapper(std::complex<double> *, std::size_t ,const std::complex<double> *,const double *,const std::size_t, const std::size_t,const Species, const bool);
+#endif
+
     namespace {
         /// Resize a square matrix, throws away old elements.
         template <typename MT>
@@ -123,8 +128,15 @@ namespace isle {
                                 : "HubbardFermiMatrixExp::F(hole)");
         const std::size_t NX = nx();
         const std::size_t NT = getNt(phi, NX);
-        const std::size_t tm1 = tp==0 ? NT-1 : tp-1;  // t' - 1
         resizeMatrix(f, NX);
+
+        #ifdef USE_CUDA
+
+        F_wrapper(f.data(),tp,phi.data(),expKappa(species,inv).data(), NX, NT,species,inv);
+
+        #else // USE_CUDA
+
+        const std::size_t tm1 = tp==0 ? NT-1 : tp-1;  // t' - 1
 
         // the sign in the exponential of phi
         auto const sign = ((species == Species::PARTICLE && !inv)
@@ -140,6 +152,8 @@ namespace isle {
             // f = e^kappa * e^phi  (up to signs in exponents)
             f = expKappa(species, inv)
                 % expand(trans(exp(sign*spacevec(phi, tm1, NX))), NX);
+
+        #endif // USE_CUDA
     }
 
     CDMatrix HubbardFermiMatrixExp::F(const std::size_t tp, const CDVector &phi,
