@@ -1,7 +1,7 @@
 #ifndef CUDA_CAST_CUH
 #define CUDA_CAST_CUH
 
-#ifdef __CUDA_ARCH__
+#ifdef USE_CUDA
 #include <complex>
 #include <cuComplex.h>
 
