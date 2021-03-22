@@ -8,24 +8,12 @@ TEST_CASE("HubbardFermiMatrixExp::F", "HFM::F"){
     const std::size_t Nt = 2;
     const std::size_t Nx = 2;
     // we work with kappaTilde = 1
-    isle::DMatrix kappaTilde(Nx,Nx);
-
-    for (std::size_t x = 0; x < Nx; ++x) {
-        for(std::size_t y = 0; y < Nx; ++y){
-            kappaTilde(x,y) = 0;
-        }
-    }
+    isle::DMatrix kappaTilde(Nx,Nx,0);
 
     // construct matrix with sigmaKappa = -1
     isle::HubbardFermiMatrixExp hfm(/*kappaTilde=*/kappaTilde,/*muTilde=*/0., /*sigmaKappa=*/-1);
 
-    isle::CDVector phi(Nx*Nt);
-
-    for(std::size_t t = 0 ; t < Nt; ++t ){
-        for(std::size_t x = 0; x < Nx; ++x){
-            phi[t*Nx + x] = std::complex<double>{0,0};
-        }
-    }
+    isle::CDVector phi(Nx*Nt,std::complex<double>(0));
 
     for (std::size_t t = 0; t < Nt; ++t){
 
