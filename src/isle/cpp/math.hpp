@@ -11,73 +11,12 @@
 #include <blaze/Math.h>
 
 #include "core.hpp"
+#include "linear_algebra.hpp"
 #include "tmp.hpp"
 #include "profile.hpp"
 #include "logging/logging.hpp"
 
 namespace isle {
-    /**
-     * \brief A generic dense vector.
-     * \tparam ET Element Type
-     */
-    template <typename ET>
-    using Vector = blaze::DynamicVector<ET>;
-
-    /**
-     * \brief Holds spatial coordinates.
-     * \tparam ET Element Type
-     */
-    template <typename ET>
-    using Vec3 = blaze::StaticVector<ET, 3>;
-
-    /**
-     * \brief A generic dense matrix.
-     * \tparam ET Element Type
-     */
-    template <typename ET>
-    using Matrix = blaze::DynamicMatrix<ET>;
-
-    /**
-     * \brief A generic sparse matrix.
-     * \tparam ET Element Type
-     */
-    template <typename ET>
-    using SparseMatrix = blaze::CompressedMatrix<ET>;
-
-    /**
-     * \brief An identity matrix.
-     * \tparam ET Element Type
-     */
-    template <typename ET>
-    using IdMatrix = blaze::IdentityMatrix<ET>;
-
-    /**
-     * \brief A generic symmetric dense matrix.
-     * \tparam ET Element Type
-     */
-    template <typename ET>
-    using SymmetricMatrix = blaze::SymmetricMatrix<blaze::DynamicMatrix<ET>>;
-
-    /**
-     * \brief A generic symmetric sparse matrix.
-     * \tparam ET Element Type
-     */
-    template <typename ET>
-    using SymmetricSparseMatrix = blaze::SymmetricMatrix<blaze::CompressedMatrix<ET>>;
-
-    // Convenience aliases.
-    using IVector = Vector<int>;
-    using DVector = Vector<double>;
-    using CDVector = Vector<std::complex<double>>;
-
-    using IMatrix = Matrix<int>;
-    using DMatrix = Matrix<double>;
-    using CDMatrix = Matrix<std::complex<double>>;
-
-    using ISparseMatrix = SparseMatrix<int>;
-    using DSparseMatrix = SparseMatrix<double>;
-    using CDSparseMatrix = SparseMatrix<std::complex<double>>;
-
 
     /// Get the value type from a given compound type.
     /**
@@ -100,50 +39,6 @@ namespace isle {
     /// Helper alias for ValueType.
     template <typename T>
     using ValueType_t = typename ValueType<T>::type;
-
-
-    /// Get the element type of a linear algebra type (vector, matrix).
-    /**
-     * Falls back to given type if it is arithmetic or std::complex.
-     * Causes failure of a static assertion if the type is not recognized.
-     *
-     * \see ValueType %ElementType does not retrieve the value type from a compund type
-     *                like std::complex but only operates on collections of elemental variables.
-     */
-    template <typename T, typename = void>
-    struct ElementType {
-        static_assert(tmp::AlwaysFalse_v<T>, "Cannot deduce element type.");
-    };
-
-    /// Overload for arithmetic types and std::complex.
-    template <typename T>
-    struct ElementType<T, std::enable_if_t<std::is_arithmetic<T>::value
-                                           || tmp::IsSpecialization<std::complex, T>::value>> {
-        using type = T;  ///< Deduced element type.
-    };
-
-    /// Overload for blaze::DynamicVector.
-    template <typename ET, bool TF>
-    struct ElementType<blaze::DynamicVector<ET, TF>> {
-        using type = ET;  ///< Deduced element type.
-    };
-
-    /// Overload for blaze::DynamicMatrix.
-    template <typename ET, bool TF>
-    struct ElementType<blaze::DynamicMatrix<ET, TF>> {
-        using type = ET;  ///< Deduced element type.
-    };
-
-    /// Overload for blaze::SparseMatrix.
-    template <typename ET, bool TF>
-    struct ElementType<blaze::CompressedMatrix<ET, TF>> {
-        using type = ET;  ///< Deduced element type.
-    };
-
-    /// Convenience alias for ElementType.
-    template <typename T>
-    using ElementType_t = typename ElementType<T>::type;
-
 
     /// Variable template for pi up to long double precision.
     template <typename T>
