@@ -10,6 +10,10 @@
 #include "../hubbardFermiMatrixExp.hpp"
 #include "../lattice.hpp"
 
+#ifdef USE_CUDA
+#include "../math.cuh"
+#endif
+
 namespace isle {
     namespace action {
         /// Indicate kind of hopping term for HubbardFermiAction.

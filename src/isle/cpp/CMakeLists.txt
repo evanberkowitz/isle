@@ -22,8 +22,6 @@ if(USE_CUDA)
             action/hubbardGaugeAction.cpp
             action/hubbardFermiAction.hpp
             action/hubbardFermiAction.cpp profile.hpp
-	    action/hubbardForces.hpp
-	    #action/hubbardForces.cu
 	    math.cuh
 	    math.cu
     )
