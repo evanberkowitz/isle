@@ -6,6 +6,7 @@
 #include "../core.hpp"
 #include "../profile.hpp"
 #include "../logging/logging.hpp"
+#include "../math.cuh"
 
 namespace isle {
     namespace action {

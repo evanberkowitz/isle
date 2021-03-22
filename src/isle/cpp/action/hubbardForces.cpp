@@ -10,6 +10,7 @@ namespace isle {
              * Constructs all partial A^-1 to the left of (1+A^-1)^-1 first ('left').
              * Constructs rest on the fly ('right', contains (1+A^-1)^-1).
              */
+
             template <typename HFM, typename KMatrix>
             CDVector forceDirectSinglePart(const HFM &hfm, const CDVector &phi,
                                            const KMatrix &k, const Species species) {
@@ -26,6 +27,41 @@ namespace isle {
                 std::vector<CDMatrix> lefts;  // in reverse order
                 lefts.reserve(nt-1);  // not storing full A^-1 here
 
+#ifdef USE_CUDA
+		// CUDA version does NOT support k != id
+
+                ISLE_PROFILE_NVTX_PUSH("action::forceDirectSinglePart[lefts]");
+                // first term for tau = nt-2
+                auto f = hfm.F(nt-1, phi, species, true);
+                lefts.emplace_back(f);
+                // other terms
+                for (std::size_t t = nt-2; t != 0; --t) {
+                    hfm.F(f, t, phi, species, true);
+                    lefts.emplace_back(mult_CDMatrix_wrapper(f, lefts.back(), nx)); // CUDA product CDMatrix * CDMatrix
+                }
+                // full A^-1
+                hfm.F(f, 0, phi, species, true);
+                const CDMatrix Ainv = mult_CDMatrix_wrapper(f, lefts.back(), nx); // CUDA product CDMatrix * CDMatrix
+                ISLE_PROFILE_NVTX_POP();
+
+                ISLE_PROFILE_NVTX_PUSH("action::forceDirectSinglePart[rights]");
+                // start right with (1+A^-1)^-1
+                CDMatrix right = IdMatrix<std::complex<double>>(nx) + Ainv; // CUDA? sum id + CDMatrix
+                auto ipiv = std::make_unique<int[]>(right.rows());
+                invert(right, ipiv); // CUDA inversion CDMatrix
+
+                CDVector force(nx*nt);  // the result
+
+                // first term, tau = nt-1
+                spacevec(force, nt-1, nx) = blaze::diagonal(mult_CDMatrix_wrapper(Ainv, right, nx)); // CUDA product CDMatrix * CDMatrix
+
+                // all sites except tau = nt-1
+                for (std::size_t tau = 0; tau < nt-1; ++tau) {
+                    hfm.F(f, tau, phi, species, true);
+                    right = mult_CDMatrix_wrapper(right, f, nx); // CUDA product CDMatrix * CDMatrix
+                    spacevec(force, tau, nx) = blaze::diagonal(mult_CDMatrix_wrapper(lefts[nt-1-tau-1]*right)); // CUDA product CDMatrix * CDMatrix
+                }
+#else // USE_CUDA
                 ISLE_PROFILE_NVTX_PUSH("action::forceDirectSinglePart[lefts]");
                 // first term for tau = nt-2
                 auto f = hfm.F(nt-1, phi, species, true);
@@ -57,6 +93,7 @@ namespace isle {
                     right = right * f * k;
                     spacevec(force, tau, nx) = blaze::diagonal(lefts[nt-1-tau-1]*right);
                 }
+#endif // USE_CUDA
                 ISLE_PROFILE_NVTX_POP();
                 return force;
             }
