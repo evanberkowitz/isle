@@ -10,6 +10,7 @@ if (USE_CUDA)
   target_compile_definitions(project_options INTERFACE -DUSE_CUDA)
   find_package(CUDAToolkit REQUIRED)
   add_library(cuda_toolkit INTERFACE)
+  target_link_libraries(cuda_toolkit INTERFACE CUDA::cublas)
 
   add_library(cudaAllocation STATIC src/isle/cpp/allocation_overload.cpp)
   target_compile_features(cudaAllocation PRIVATE cxx_std_14)
