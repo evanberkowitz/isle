@@ -10,7 +10,7 @@ if (USE_CUDA)
   target_compile_definitions(project_options INTERFACE -DUSE_CUDA)
   find_package(CUDAToolkit REQUIRED)
   add_library(cuda_toolkit INTERFACE)
-  target_link_libraries(cuda_toolkit INTERFACE CUDA::cudart CUDA::cublas)
+  target_link_libraries(cuda_toolkit INTERFACE CUDA::cudart CUDA::cublas CUDA::cusolver)
 
   if (CUDA_PROFILE)
     target_link_libraries(cuda_toolkit INTERFACE CUDA::nvToolsExt)

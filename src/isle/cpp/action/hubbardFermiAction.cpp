@@ -32,7 +32,7 @@ namespace isle {
                 lefts.reserve(nt-1);  // not storing full A^-1 here
 
 #ifdef USE_CUDA
-		// CUDA version does NOT support k != id
+                // CUDA version does NOT support k != id
 
                 ISLE_PROFILE_NVTX_PUSH("action::forceDirectSinglePart[lefts]");
                 // first term for tau = nt-2
@@ -50,19 +50,26 @@ namespace isle {
 
                 ISLE_PROFILE_NVTX_PUSH("action::forceDirectSinglePart[rights]");
                 // start right with (1+A^-1)^-1
-                CDMatrix right = IdMatrix<std::complex<double>>(nx) + Ainv; // CUDA? sum id + CDMatrix
-                auto ipiv = std::make_unique<int[]>(right.rows());
-                invert(right, ipiv); // CUDA inversion CDMatrix
+                CDMatrix AinvPlusId = IdMatrix<std::complex<double>>(nx) + Ainv; // CUDA? sum id + CDMatrix
+                auto ipiv = std::make_unique<int[]>(AinvPlusId.rows());
+                lu_CDMatrix_wrapper(AinvPlusId, ipiv, nx); // CUDA inplace LU-decomposition of CDMatrix
 
+                CDMatrix right = trans(Ainv);
                 CDVector force(nx*nt);  // the result
 
                 // first term, tau = nt-1
-                spacevec(force, nt-1, nx) = blaze::diagonal(mult_CDMatrix_wrapper(Ainv, right, nx)); // CUDA product CDMatrix * CDMatrix
+                inv_CDMatrix_wrapper(AinvPlusId, right, ipiv, nx, true); // CUDA AinvPlusId^T^-1 * right
+                spacevec(force, nt-1, nx) = blaze::diagonal(right); // CUDA product CDMatrix * CDMatrix
 
                 // all sites except tau = nt-1
                 for (std::size_t tau = 0; tau < nt-1; ++tau) {
                     hfm.F(f, tau, phi, species, true);
-                    right = mult_CDMatrix_wrapper(right, f, nx); // CUDA product CDMatrix * CDMatrix
+                    if(tau){
+                        right = mult_CDMatrix_wrapper(right, f, nx); // CUDA product CDMatrix * CDMatrix
+                    }else{
+                        right = f;
+                        inv_CDMatrix_wrapper(AinvPlusId, right, ipiv, nx, false);
+                    }
                     spacevec(force, tau, nx) = blaze::diagonal(mult_CDMatrix_wrapper(lefts[nt-1-tau-1], right, nx)); // CUDA product CDMatrix * CDMatrix
                 }
 #else // USE_CUDA

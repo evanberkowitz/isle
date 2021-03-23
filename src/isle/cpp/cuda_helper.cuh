@@ -1,11 +1,12 @@
 #ifndef CUDA_HELPER_CUH
 #define CUDA_HELPER_CUH
 #include<cstdio>
-#include<assert.h>
+#include<cassert>
 
 #include<cuda_runtime.h>
 #include<cuda_runtime_api.h>
 #include<cublas_v2.h>
+#include<cusolverDn.h>
 
 #define CHECK_CU_ERR(t_err) \
     do { \

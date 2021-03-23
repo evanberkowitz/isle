@@ -10,8 +10,10 @@
 
 namespace isle{
 
-  CDMatrix mult_CDMatrix_wrapper(const CDMatrix &a, const CDMatrix &b, const std::size_t N);
-}
+    CDMatrix mult_CDMatrix_wrapper(const CDMatrix &a, const CDMatrix &b, const std::size_t N);
+    void lu_CDMatrix_wrapper(CDMatrix &a, std::unique_ptr<int[]> &ipiv, const std::size_t dim);
+    void inv_CDMatrix_wrapper(const CDMatrix &a, CDMatrix &b, const std::unique_ptr<int[]> &ipiv, const std::size_t dim, const bool transpose);
+} // namespace isle
 
 __device__ __host__ __forceinline__ cuDoubleComplex cexp(cuDoubleComplex const z){
     double t = exp(z.x);
