@@ -66,6 +66,12 @@ static const char *_cudaGetErrorEnum(cublasStatus_t error)
         } \
     } while(false)
 
+#define CHECK_CUSOLVER_ERR(t_err) \
+    do { \
+        auto err = (t_err); \
+        assert(CUSOLVER_STATUS_SUCCESS == err);
+    } while(false)
+
 template <typename IntType>
 constexpr __host__ __device__ IntType ceildiv(IntType a, IntType b) {
   return (a + b - 1) / b;
