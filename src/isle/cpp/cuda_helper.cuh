@@ -1,6 +1,7 @@
 #ifndef CUDA_HELPER_CUH
 #define CUDA_HELPER_CUH
 #include<cstdio>
+#include<assert.h>
 
 #include<cuda_runtime.h>
 #include<cuda_runtime_api.h>
@@ -69,7 +70,7 @@ static const char *_cudaGetErrorEnum(cublasStatus_t error)
 #define CHECK_CUSOLVER_ERR(t_err) \
     do { \
         auto err = (t_err); \
-        assert(CUSOLVER_STATUS_SUCCESS == err);
+        assert(CUSOLVER_STATUS_SUCCESS == err); \
     } while(false)
 
 template <typename IntType>
