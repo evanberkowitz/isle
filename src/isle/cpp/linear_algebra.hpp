@@ -173,9 +173,6 @@ public:
     return *this;
   }
 
-  Matrix(const blaze::CompressedMatrix<ET> &other)
-      : Matrix{blaze::DynamicMatrix<ET>{other}} {}
-
   template <typename MT, bool SO2>
   Matrix(const blaze::Matrix<MT, SO2> &mat)
       : Matrix{(*mat).rows(), (*mat).columns()} {
