@@ -12,11 +12,6 @@ if (USE_CUDA)
   add_library(cuda_toolkit INTERFACE)
   target_link_libraries(cuda_toolkit INTERFACE CUDA::cudart CUDA::cublas)
 
-  #add_library(cudaAllocation STATIC src/isle/cpp/allocation_overload.cpp)
-  #target_compile_features(cudaAllocation PRIVATE cxx_std_14)
-  #target_link_libraries(cudaAllocation PRIVATE CUDA::cudart)
-  #target_link_libraries(cudaAllocation PRIVATE project_options project_warnings)
-
   if (CUDA_PROFILE)
     target_link_libraries(cuda_toolkit INTERFACE CUDA::nvToolsExt)
     target_compile_definitions(cuda_toolkit INTERFACE -DENABLE_NVTX_PROFILE)
