@@ -12,7 +12,7 @@ include(cmake/StandardProjectSettings.cmake)
 
 # Link this 'library' to set the c++ standard / compile-time options requested
 add_library(project_options INTERFACE)
-target_compile_features(project_options INTERFACE cxx_std_14)
+target_compile_features(project_options INTERFACE cxx_std_17)
 set_target_properties(project_options
                       PROPERTIES INTERFACE_POSITION_INDEPENDENT_CODE ON)
 
