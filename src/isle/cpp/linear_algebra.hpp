@@ -11,6 +11,8 @@
 #include <blaze/math/expressions/MatEvalExpr.h>
 #include <blaze/math/sparse/CompressedMatrix.h>
 #include <blaze/math/sparse/IdentityMatrix.h>
+#include <blaze/math/typetraits/IsDenseMatrix.h>
+#include <blaze/math/typetraits/IsDenseVector.h>
 #include <blaze/math/typetraits/UnderlyingElement.h>
 
 #include "tmp.hpp"
@@ -238,14 +240,22 @@ private:
 
 template <typename VT, bool TF>
 auto evaluate(const blaze::Vector<VT, TF> &expr) {
-  Vector<blaze::UnderlyingElement_t<VT>> tmp{expr};
-  return tmp;
+  if constexpr (blaze::IsDenseVector_v<VT>) {
+    Vector<blaze::UnderlyingElement_t<VT>> tmp{expr};
+    return tmp;
+  } else {
+    return blaze::evaluate(expr);
+  }
 }
 
-template <typename MT, bool SO2>
-auto evaluate(const blaze::Matrix<MT, SO2> &expr) {
-  Matrix<blaze::UnderlyingElement_t<MT>> tmp{expr};
-  return tmp;
+template <typename MT, bool SO>
+auto evaluate(const blaze::Matrix<MT, SO> &expr) {
+  if constexpr (blaze::IsDenseMatrix_v<MT>) {
+    Matrix<blaze::UnderlyingElement_t<MT>> tmp{expr};
+    return tmp;
+  } else {
+    return blaze::evaluate(expr);
+  }
 }
 
 } // namespace isle
@@ -265,9 +275,7 @@ template <typename ET> using Vector = blaze::DynamicVector<ET>;
  */
 template <typename ET> using Matrix = blaze::DynamicMatrix<ET>;
 
-
-template <typename E>
-auto evaluate(E &&expr) {
+template <typename E> auto evaluate(E &&expr) {
   return blaze::evaluate(std::forward<E>(expr));
 }
 
