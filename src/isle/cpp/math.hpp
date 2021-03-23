@@ -171,6 +171,12 @@ namespace isle {
             throw std::invalid_argument("Invalid non-square matrix provided");
 #endif
 
+        #ifdef USE_CUDA
+
+        ilogdet_wrapper();
+
+        #else // USE_CUDA
+
         // pivot indices
         std::unique_ptr<int[]> ipiv = std::make_unique<int[]>(n);
         // perform LU decomposition (mat = PLU)
@@ -186,6 +192,9 @@ namespace isle {
             // log det of U (diagonal elements)
             res += std::log(std::complex<ET>{matrix(i, i)});
         }
+
+        #endif // USE_CUDA
+
         // combine log dets and project to (-pi, pi]
         return toFirstLogBranch(res + (negDetP ? std::complex<ET>{0, pi<ET>} : 0));
     }
