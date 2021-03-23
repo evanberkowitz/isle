@@ -59,8 +59,7 @@ public:
   }
 
   Vector(const Vector &other) : Vector{other.size()} {
-    CHECK_CU_ERR(
-        cudaMemcpy(_buffer, other._buffer, other.size(), cudaMemcpyDefault));
+    std::copy(other._buffer, other._buffer + other.size(), _buffer);
   }
 
   Vector &operator=(const Vector &other) {
@@ -74,8 +73,7 @@ public:
         throw;
       }
     }
-    CHECK_CU_ERR(
-        cudaMemcpy(_buffer, other._buffer, other.size(), cudaMemcpyDefault));
+    std::copy(other._buffer, other._buffer + other.size(), _buffer);
     return *this;
   }
 
@@ -155,8 +153,8 @@ public:
   }
 
   Matrix(const Matrix &other) : Matrix{other.rows(), other.columns()} {
-    CHECK_CU_ERR(cudaMemcpy(_buffer, other._buffer,
-                            other.rows() * other.columns(), cudaMemcpyDefault));
+    std::copy(other._buffer, other._buffer + other.rows() * other.columns(),
+              _buffer);
   }
 
   Matrix &operator=(const Matrix &other) {
@@ -170,8 +168,8 @@ public:
         throw;
       }
     }
-    CHECK_CU_ERR(cudaMemcpy(_buffer, other._buffer,
-                            other.rows() * other.columns(), cudaMemcpyDefault));
+    std::copy(other._buffer, other._buffer + other.rows() * other.columns(),
+              _buffer);
     return *this;
   }
 
