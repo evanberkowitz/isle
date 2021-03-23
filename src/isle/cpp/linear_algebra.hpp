@@ -185,7 +185,7 @@ public:
   template <typename MT, bool SO2>
   Matrix &operator=(const blaze::Matrix<MT, SO2> &rhs) & {
     if ((*rhs).rows() != this->rows() || (*rhs).columns() != this->columns()) {
-      BLAZE_THROW_INVALID_ARGUMENT("Matrix sizes do not match");
+      this->resize((*rhs).rows(), (*rhs).columns());
     }
     if (blaze::IsSame_v<MT, decltype(trans(*this))> && (*rhs).isAliased(this)) {
       this->transpose();
