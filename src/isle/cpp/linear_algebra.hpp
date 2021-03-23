@@ -152,31 +152,31 @@ public:
 
   template <typename MT, bool SO2>
   Matrix(const blaze::Matrix<MT, SO2> &mat)
-      : Matrix{(~mat).rows(), (~mat).columns()} {
+      : Matrix{(*mat).rows(), (*mat).columns()} {
     if (blaze::IsSparseMatrix_v<MT> && blaze::IsBuiltin_v<ET>) {
       this->reset();
     }
-    blaze::smpAssign(*this, ~mat);
+    blaze::smpAssign(*this, *mat);
   }
 
   template <typename MT, bool SO2>
   Matrix &operator=(const blaze::Matrix<MT, SO2> &rhs) {
-    if ((~rhs).rows() != this->rows() || (~rhs).columns() != this->columns()) {
+    if ((*rhs).rows() != this->rows() || (*rhs).columns() != this->columns()) {
       BLAZE_THROW_INVALID_ARGUMENT("Matrix sizes do not match");
     }
-    if (blaze::IsSame_v<MT, decltype(trans(*this))> && (~rhs).isAliased(this)) {
+    if (blaze::IsSame_v<MT, decltype(trans(*this))> && (*rhs).isAliased(this)) {
       this->transpose();
     } else if (blaze::IsSame_v<MT, decltype(ctrans(*this))> &&
-               (~rhs).isAliased(this)) {
+               (*rhs).isAliased(this)) {
       this->ctranspose();
     } else if (!blaze::IsSame_v<MT, decltype(inv(*this))> &&
-               (~rhs).canAlias(this)) {
-      const blaze::ResultType_t<MT> tmp(~rhs);
+               (*rhs).canAlias(this)) {
+      const blaze::ResultType_t<MT> tmp(*rhs);
       blaze::smpAssign(*this, tmp);
     } else {
       if (blaze::IsSparseMatrix_v<MT>)
         this->reset();
-      blaze::smpAssign(*this, ~rhs);
+      blaze::smpAssign(*this, *rhs);
     }
 
     return *this;
