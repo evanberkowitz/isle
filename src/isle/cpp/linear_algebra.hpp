@@ -1,6 +1,7 @@
 #ifndef LINEAR_ALGEBRA_HPP
 #define LINEAR_ALGEBRA_HPP
 
+#include <algorithm>
 #include <complex>
 
 #include <blaze/math/dense/CustomMatrix.h>
@@ -75,8 +76,23 @@ public:
     return *this;
   }
 
-  template <typename E> Vector(const E &expression) : Vector{} {
-    *this = blaze::eval(expression);
+  template <typename VT>
+  Vector(const blaze::Vector<VT, blaze::defaultTransposeFlag> &vec)
+      : Vector{(*vec).size()} {
+    if (blaze::IsSparseVector_v<VT> && blaze::IsBuiltin_v<ET>) {
+      this->reset();
+    }
+    blaze::smpAssign(*this, *vec);
+  }
+
+  template <typename VT>
+  Vector &
+  operator=(const blaze::Vector<VT, blaze::defaultTransposeFlag> &rhs) & {
+    this->resize((*rhs).size(), false);
+    if (blaze::IsSparseVector_v<VT>)
+      this->reset();
+    blaze::smpAssign(*this, *rhs);
+    return *this;
   }
 
   Vector(Vector &&other) noexcept
@@ -91,6 +107,15 @@ public:
   }
 
   ~Vector() noexcept { free_managed(_buffer); }
+
+  void resize(const size_t size, const bool preserve = true) {
+    Vector aux{size};
+    if (preserve) {
+      CHECK_CU_ERR(cudaMemcpy(aux._buffer, this->_buffer,
+                              std::min(size, this->size()), cudaMemcpyDefault));
+    }
+    *this = std::move(aux);
+  }
 
   template <typename NewType> struct Rebind { using Other = Vector<NewType>; };
 
@@ -160,7 +185,7 @@ public:
   }
 
   template <typename MT, bool SO2>
-  Matrix &operator=(const blaze::Matrix<MT, SO2> &rhs) {
+  Matrix &operator=(const blaze::Matrix<MT, SO2> &rhs) & {
     if ((*rhs).rows() != this->rows() || (*rhs).columns() != this->columns()) {
       BLAZE_THROW_INVALID_ARGUMENT("Matrix sizes do not match");
     }
@@ -199,8 +224,10 @@ public:
               const bool preserve = true) {
     Matrix aux{nrow, ncol};
     if (preserve) {
-      CHECK_CU_ERR(cudaMemcpy(aux._buffer, this->_buffer, nrow * ncol,
-                              cudaMemcpyDefault));
+      CHECK_CU_ERR(
+          cudaMemcpy(aux._buffer, this->_buffer,
+                     std::min(nrow * ncol, this->rows() * this->columns()),
+                     cudaMemcpyDefault));
     }
     *this = std::move(aux);
   }
