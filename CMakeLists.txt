@@ -41,7 +41,7 @@ option(ENABLE_TESTING "Enable Test Builds" ON)
 include(cmake/pybind11.cmake)
 
 
-find_package(blaze 3.6 REQUIRED)
+find_package(blaze 3.8 REQUIRED)
 add_library(blaze_options INTERFACE)
 target_include_directories(blaze_options SYSTEM INTERFACE ${blaze_INCLUDE_DIRS})
 target_compile_options(blaze_options INTERFACE "${blaze_CXX_FLAGS}")
