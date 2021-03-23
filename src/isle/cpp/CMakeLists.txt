@@ -44,9 +44,7 @@ else ()
       action/hubbardGaugeAction.cpp
       action/hubbardFermiAction.hpp
       action/hubbardFermiAction.cpp
-      profile.hpp
-      action/hubbardForces.hpp
-      action/hubbardForces.cpp)
+      profile.hpp)
 endif ()
 
 set_target_properties(${LIBNAME} PROPERTIES CXX_VISIBILITY_PRESET hidden)
