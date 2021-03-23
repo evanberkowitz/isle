@@ -68,12 +68,12 @@ void F_wrapper(std::complex<double> * f,
     cuDoubleComplex * d_phi;
     double * d_expKappa;
 
-    cudaMallocManaged(&d_f, NX*NX*sizeof(cuDoubleComplex));
-    cudaMallocManaged(&d_phi, NT*NX*sizeof(cuDoubleComplex));
-    cudaMallocManaged(&d_expKappa,NX*NX*sizeof(cuDoubleComplex));
+    CHECK_CU_ERR(cudaMallocManaged(&d_f, NX*NX*sizeof(cuDoubleComplex)));
+    CHECK_CU_ERR(cudaMallocManaged(&d_phi, NT*NX*sizeof(cuDoubleComplex)));
+    CHECK_CU_ERR(cudaMallocManaged(&d_expKappa,NX*NX*sizeof(cuDoubleComplex)));
 
-    cudaMemcpy(d_phi, cast_cmpl(phi), NT*NX*sizeof(cuDoubleComplex), cudaMemcpyHostToDevice);
-    cudaMemcpy(d_expKappa, expKappa, NX*NX*sizeof(double), cudaMemcpyHostToDevice);
+    CHECK_CU_ERR(cudaMemcpy(d_phi, cast_cmpl(phi), NT*NX*sizeof(cuDoubleComplex), cudaMemcpyHostToDevice));
+    CHECK_CU_ERR(cudaMemcpy(d_expKappa, expKappa, NX*NX*sizeof(double), cudaMemcpyHostToDevice));
 
     // the sign in the exponential of phi
     auto const sign = ((species == Species::PARTICLE && !inv)

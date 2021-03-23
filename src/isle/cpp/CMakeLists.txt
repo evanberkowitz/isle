@@ -44,9 +44,7 @@ else ()
       action/hubbardGaugeAction.cpp
       action/hubbardFermiAction.hpp
       action/hubbardFermiAction.cpp
-      profile.hpp
-      action/hubbardForces.hpp
-      action/hubbardForces.cpp)
+      profile.hpp)
 endif ()
 
 set_target_properties(${LIBNAME} PROPERTIES CXX_VISIBILITY_PRESET hidden)
@@ -56,7 +54,6 @@ target_link_libraries(${LIBNAME} PUBLIC blaze_options)
 
 if (USE_CUDA)
   target_link_libraries(${LIBNAME} PUBLIC cuda_toolkit)
-  target_link_libraries(${LIBNAME} PRIVATE cudaAllocation)
 endif ()
 
 add_subdirectory(logging)
