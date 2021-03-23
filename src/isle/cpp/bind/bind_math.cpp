@@ -75,7 +75,7 @@ namespace {
 
         /// Perform the addition.
         static auto exec(const LHS &lhs, const RHS &rhs) {
-            return blaze::evaluate(lhs + rhs);
+            return isle::evaluate(lhs + rhs);
         }
     };
 
@@ -93,7 +93,7 @@ namespace {
 
         /// Perform the subtraction.
         static auto exec(const LHS &lhs, const RHS &rhs) {
-            return blaze::evaluate(lhs - rhs);
+            return isle::evaluate(lhs - rhs);
         }
     };
 
@@ -111,7 +111,7 @@ namespace {
 
         /// Perform the multiplication.
         static auto exec(const LHS &lhs, const RHS &rhs) {
-            return blaze::evaluate(lhs * rhs);
+            return isle::evaluate(lhs * rhs);
         }
     };
 
@@ -129,7 +129,7 @@ namespace {
 
         /// Perform the multiplication.
         static auto exec(const RHS &rhs, const LHS &lhs) {
-            return blaze::evaluate(lhs * rhs);
+            return isle::evaluate(lhs * rhs);
         }
     };
 
@@ -152,7 +152,7 @@ namespace {
 
         /// Perform division with conversion of rhs.
         static auto execWithConversion(const LHS &lhs, const RHS &rhs) {
-            return blaze::evaluate(lhs / tmp::Rebind_t<RHS, double>(rhs));
+            return isle::evaluate(lhs / tmp::Rebind_t<RHS, double>(rhs));
         }
 
         /// Bind without conversion.
@@ -164,7 +164,7 @@ namespace {
 
         /// Perform division without conversion of rhs.
         static auto execWithoutConversion(const LHS &lhs, const RHS &rhs) {
-            return blaze::evaluate(lhs / rhs);
+            return isle::evaluate(lhs / rhs);
         }
     };
 
@@ -204,7 +204,7 @@ namespace {
 
         /// Perform division without conversion of rhs.
         static auto execWithoutConversion(const LHS &lhs, const RHS &rhs) {
-            return blaze::evaluate(blaze::floor(lhs / rhs));
+            return isle::evaluate(blaze::floor(lhs / rhs));
         }
 
         /// Bind function that throws a std::invalid_argument because operands cannot be floored.
@@ -234,7 +234,7 @@ namespace {
 
         /// Perform inplace addition.
         static auto exec(LHS &lhs, const RHS &rhs) {
-            return blaze::evaluate(lhs += rhs);
+            return isle::evaluate(lhs += rhs);
         }
     };
 
@@ -252,7 +252,7 @@ namespace {
 
         /// Perform inplace subtraction.
         static auto exec(LHS &lhs, const RHS &rhs) {
-            return blaze::evaluate(lhs -= rhs);
+            return isle::evaluate(lhs -= rhs);
         }
     };
 
@@ -274,7 +274,7 @@ namespace {
 
         /// Perform inplace multiplication.
         static auto exec(LHS &lhs, const RHS &rhs) {
-            return blaze::evaluate(lhs *= rhs);
+            return isle::evaluate(lhs *= rhs);
         }
     };
 
@@ -387,7 +387,9 @@ namespace {
                 .def("__iter__", [](VT &vec) {
                         return py::make_iterator(vec.begin(), vec.end());
                     }, py::keep_alive<0, 1>())
-                .def("__len__", &VT::size)
+                .def("__len__", [](const VT &vec) {
+                             return vec.size();
+                           })
                 .def("__str__", [](const VT &vec) {
                         std::ostringstream oss;
                         oss << '[';
@@ -402,7 +404,7 @@ namespace {
                             1, {vec.size()}, {sizeof(ET)}};
                     })
                 .def("__neg__", [](const VT &vec) {
-                        return blaze::evaluate(-vec);
+                        return isle::evaluate(-vec);
                     })
                 ;
 
@@ -414,16 +416,16 @@ namespace {
 
             // bind free function on VT
             mod.def("real", [](const VT &vec) {
-                    return blaze::evaluate(blaze::real(vec));
+                    return isle::evaluate(blaze::real(vec));
                 });
             mod.def("imag", [](const VT &vec) {
-                    return blaze::evaluate(blaze::imag(vec));
+                    return isle::evaluate(blaze::imag(vec));
                 });
             mod.def("norm", [](const VT &vec) {
-                    return blaze::evaluate(blaze::norm(vec));
+                    return blaze::norm(vec);
                 });
             mod.def("sqrNorm", [](const VT &vec) {
-                    return blaze::evaluate(blaze::sqrNorm(vec));
+                    return blaze::sqrNorm(vec);
                 });
         }
     };
@@ -546,8 +548,12 @@ namespace {
                 .def("row", [](MT &mat, std::size_t i) {
                         return py::make_iterator(mat.begin(i), mat.end(i));
                     }, py::keep_alive<0, 1>())
-                .def("rows", &MT::rows)
-                .def("columns", &MT::columns)
+                .def("rows", [](const MT &mat) {
+                             return mat.rows();
+                    })
+                .def("columns", [](const MT &mat) {
+                             return mat.columns();
+                           })
                 .def("__str__", [](const MT &mat) {
                         std::ostringstream oss;
                         oss << '[';
@@ -578,7 +584,7 @@ namespace {
                             {sizeof(ET)*adjColumns, sizeof(ET)}};
                     })
                 .def("__neg__", [](const MT &mat) {
-                        return blaze::evaluate(-mat);
+                        return isle::evaluate(-mat);
                     })
                 ;
 
@@ -590,10 +596,10 @@ namespace {
 
             // bind free function on MT
             mod.def("real", [](const MT &mat) {
-                    return blaze::evaluate(blaze::real(mat));
+                    return isle::evaluate(blaze::real(mat));
                 });
             mod.def("imag", [](const MT &mat) {
-                    return blaze::evaluate(blaze::imag(mat));
+                    return isle::evaluate(blaze::imag(mat));
                 });
         }
     };
@@ -682,8 +688,12 @@ namespace {
                 .def("row", [](MT &mat, std::size_t i) {
                         return bind::makeIndexValueIterator(mat.begin(i), mat.end(i));
                     }, py::keep_alive<0, 1>())
-                .def("rows", &MT::rows)
-                .def("columns", &MT::columns)
+                .def("rows", [](const MT &mat) {
+                             return mat.rows();
+                           })
+                .def("columns", [](const MT &mat) {
+                             return mat.columns();
+                           })
                 .def("__str__", [](const MT &mat) {
                         std::ostringstream oss;
                         oss << '[';
@@ -699,7 +709,7 @@ namespace {
                         return oss.str();
                     })
                 .def("__neg__", [](const MT &mat) {
-                        return blaze::evaluate(-mat);
+                        return isle::evaluate(-mat);
                     })
                 ;
 
@@ -708,10 +718,10 @@ namespace {
 
             // bind free function on MT
             mod.def("real", [](const MT &mat) {
-                    return blaze::evaluate(blaze::real(mat));
+                    return isle::evaluate(blaze::real(mat));
                 });
             mod.def("imag", [](const MT &mat) {
-                    return blaze::evaluate(blaze::imag(mat));
+                    return isle::evaluate(blaze::imag(mat));
                 });
         }
     };
