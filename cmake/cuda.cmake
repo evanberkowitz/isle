@@ -8,6 +8,8 @@ if (USE_CUDA)
 
   target_compile_features(project_options INTERFACE cuda_std_17)
   target_compile_definitions(project_options INTERFACE -DUSE_CUDA)
+  include_directories(${CUDA_HOME})
+  link_directories(${CUDA_HOME})
   find_package(CUDAToolkit REQUIRED)
   add_library(cuda_toolkit INTERFACE)
   target_link_libraries(cuda_toolkit INTERFACE CUDA::cudart CUDA::cublas CUDA::cusolver)
