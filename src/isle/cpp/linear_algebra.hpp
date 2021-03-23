@@ -29,15 +29,14 @@ template <typename T> auto *allocate_managed(const size_t size) {
 template <typename T> void free_managed(T *ptr) { CHECK_CU_ERR(cudaFree(ptr)); }
 
 template <typename ET>
-class Vector : public blaze::CustomVector<ET, blaze::aligned, blaze::unpadded> {
+using BaseVector = blaze::CustomVector<ET, blaze::aligned, blaze::unpadded>;
+
+template <typename ET> class Vector : public BaseVector<ET> {
 public:
-  explicit Vector()
-      : blaze::CustomVector<ET, blaze::aligned, blaze::unpadded>{},
-        _buffer{nullptr} {}
+  explicit Vector() : BaseVector<ET>{}, _buffer{nullptr} {}
 
   explicit Vector(const size_t size)
-      : blaze::CustomVector<ET, blaze::aligned, blaze::unpadded>{},
-        _buffer{allocate_managed<ET>(size)} {
+      : BaseVector<ET>{}, _buffer{allocate_managed<ET>(size)} {
     try {
       this->reset(_buffer, size);
     } catch (std::invalid_argument &) {
@@ -80,8 +79,16 @@ public:
     *this = blaze::eval(expression);
   }
 
-  Vector(Vector &&other) noexcept = default;
-  Vector &operator=(Vector &&other) noexcept = default;
+  Vector(Vector &&other) noexcept
+      : BaseVector<ET>{static_cast<BaseVector<ET> &&>(other)},
+        _buffer{std::exchange(other._buffer, nullptr)} {}
+
+  Vector &operator=(Vector &&other) noexcept {
+    swap(static_cast<BaseVector<ET> &>(*this),
+         static_cast<BaseVector<ET> &>(other));
+    std::swap(_buffer, other._buffer);
+    return *this;
+  }
 
   ~Vector() noexcept { free_managed(_buffer); }
 
@@ -92,15 +99,14 @@ private:
 };
 
 template <typename ET>
-class Matrix : public blaze::CustomMatrix<ET, blaze::aligned, blaze::unpadded> {
+using BaseMatrix = blaze::CustomMatrix<ET, blaze::aligned, blaze::unpadded>;
+
+template <typename ET> class Matrix : public BaseMatrix<ET> {
 public:
-  explicit Matrix()
-      : blaze::CustomMatrix<ET, blaze::aligned, blaze::unpadded>{},
-        _buffer{nullptr} {}
+  explicit Matrix() : BaseMatrix<ET>{}, _buffer{nullptr} {}
 
   explicit Matrix(const size_t nrow, const size_t ncol)
-      : blaze::CustomMatrix<ET, blaze::aligned, blaze::unpadded>{},
-        _buffer{allocate_managed<ET>(nrow * ncol)} {
+      : BaseMatrix<ET>{}, _buffer{allocate_managed<ET>(nrow * ncol)} {
     try {
       this->reset(_buffer, nrow, ncol);
     } catch (std::invalid_argument &) {
@@ -176,8 +182,16 @@ public:
     return *this;
   }
 
-  Matrix(Matrix &&other) noexcept = default;
-  Matrix &operator=(Matrix &&other) noexcept = default;
+  Matrix(Matrix &&other) noexcept
+      : BaseMatrix<ET>{static_cast<BaseMatrix<ET> &&>(other)},
+        _buffer{std::exchange(other._buffer, nullptr)} {}
+
+  Matrix &operator=(Matrix &&other) noexcept {
+    swap(static_cast<BaseMatrix<ET> &>(*this),
+         static_cast<BaseMatrix<ET> &>(other));
+    std::swap(_buffer, other._buffer);
+    return *this;
+  }
 
   ~Matrix() noexcept { free_managed(_buffer); }
 

@@ -16,6 +16,9 @@
 #include "profile.hpp"
 #include "logging/logging.hpp"
 
+
+#include <iostream>
+
 namespace isle {
 
     /// Get the value type from a given compound type.
@@ -139,9 +142,8 @@ namespace isle {
     inline DMatrix expmSym(const DMatrix &mat) {
         // compute eigenvalues evals and eigenvectors U
         DMatrix U = mat;
-        DVector evals;
+        DVector evals(mat.rows());
         blaze::syev(U, evals, 'V', 'U');
-
         // diagonalize mat and exponentiate
         DMatrix diag(mat.rows(), mat.columns(), 0);
         blaze::diagonal(diag) = blaze::exp(blaze::diagonal(U * mat * blaze::trans(U)));
