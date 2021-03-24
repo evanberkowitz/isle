@@ -25,7 +25,7 @@ namespace isle{
         // calculates C = a * A*B + b * C, with a=1 and b=0 in our case
         CHECK_CUBLAS_ERR(cublasZgemm3m(handle, CUBLAS_OP_T, CUBLAS_OP_T, N, N, N, &alpha, A, N, B, N, &beta, C, N));
 
-        CDMatrix res = a; // WARNING: This is very dirty and has to be removed later.
+        CDMatrix res(a.rows(),a.columns()); 
         CHECK_CU_ERR(cudaMemcpy(res.data(), cast_cmpl(C), dim*dim*sizeof(cuDoubleComplex), cudaMemcpyDeviceToHost));
         cudaFree(A); cudaFree(B); cudaFree(C);
 
