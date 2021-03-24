@@ -1,4 +1,4 @@
-#include <algorithm>
+#include <cmath>
 #include <random>
 
 #include "catch2/catch.hpp"
