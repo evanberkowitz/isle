@@ -43,12 +43,13 @@ __global__ void F_kernel(cuDoubleComplex * f_begin,
 
     // ensure that only threads participate which do not access memory out of bounds
 
-    if (x_row > Nx || x_col > Nx || tp > Nt){return;}
+    if (x_row >= Nx || x_col >= Nx){return;}
+    assert(tp < Nt);
 
     if(inv){ // if the inverse has to be computed phi is expanded as column vector
-        f_begin[ lookup_matrix(x_row,x_col,Nx) ] = expKappa_begin[ lookup_matrix(x_row,x_col,Nx) ] * cexp( sign * phi_begin[ lookup_vector(tm1,x_row,Nx) ] );
+        f_begin[ lookup_matrix(x_row,x_col,Nx) ] = expKappa_begin[ lookup_matrix(x_row,x_col,Nx) ] * cexp(sign * phi_begin[ lookup_vector(tm1,x_row,Nx) ] );
     } else { // if non inverse has to ve computed phi is expanded as row vector
-        f_begin[ lookup_matrix(x_row,x_col,Nx) ] = expKappa_begin[ lookup_matrix(x_row,x_col,Nx) ] * cexp( sign*phi_begin[ lookup_vector(tm1,x_col,Nx) ] );
+        f_begin[lookup_matrix(x_row,x_col,Nx)] = expKappa_begin[lookup_matrix(x_row,x_col,Nx)] * cexp(sign * phi_begin[lookup_vector(tm1,x_col,Nx)]);
     }
 }
 
@@ -71,7 +72,7 @@ void F_wrapper(std::complex<double> * f,
 
     CHECK_CU_ERR(cudaMallocManaged(&d_f, NX*NX*sizeof(cuDoubleComplex)));
     CHECK_CU_ERR(cudaMallocManaged(&d_phi, NT*NX*sizeof(cuDoubleComplex)));
-    CHECK_CU_ERR(cudaMallocManaged(&d_expKappa,NX*NX*sizeof(cuDoubleComplex)));
+    CHECK_CU_ERR(cudaMallocManaged(&d_expKappa,NX*NX*sizeof(double)));
 
     CHECK_CU_ERR(cudaMemcpy(d_phi, cast_cmpl(phi), NT*NX*sizeof(cuDoubleComplex), cudaMemcpyHostToDevice));
     CHECK_CU_ERR(cudaMemcpy(d_expKappa, expKappa, NX*NX*sizeof(double), cudaMemcpyHostToDevice));
@@ -87,11 +88,9 @@ void F_wrapper(std::complex<double> * f,
     //ToDo: warning: conversion to ‘unsigned int’ from ‘int’ may change the sign of the result [-Wsign-conversion]
     F_kernel<<<dim3(num_blocks,num_blocks,1),dim3(32,32,1)>>>(d_f,tp,d_phi,d_expKappa,sign,NX,NT,inv);
 
-    cudaMemcpy(f, cast_cmpl(d_f), NX*NX*sizeof(cuDoubleComplex), cudaMemcpyDeviceToHost);
+    CHECK_CU_ERR(cudaMemcpy(f, cast_cmpl(d_f), NX*NX*sizeof(cuDoubleComplex), cudaMemcpyDeviceToHost));
 
-    cudaDeviceSynchronize();
-
-    cudaFree(d_f);cudaFree(d_phi);cudaFree(d_expKappa);
+    CHECK_CU_ERR(cudaFree(d_f));CHECK_CU_ERR(cudaFree(d_phi));CHECK_CU_ERR(cudaFree(d_expKappa));
 }
 
 } // namespace isle
