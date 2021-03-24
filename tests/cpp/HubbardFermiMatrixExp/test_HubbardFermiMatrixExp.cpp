@@ -22,11 +22,8 @@ TEST_CASE("HubbardFermiMatrixExp::F", "HFM::F"){
         for(std::size_t x = 0; x<Nx;++x){
             for(std::size_t y = 0; y<Nx;++y){
                 if (x==y){
-                    std::cout << t << " " << x << " " << y << " :"
-                    << abs(std::complex<double>{1,0}-f(x,y)) << std::endl;
                     REQUIRE(abs(std::complex<double>{1,0}-f(x,y)) < 1e-15);
                 } else {
-                    std::cout << t << " " << x << " " << y << " :" << abs(f(x,y)) << std::endl;
                     REQUIRE(abs(f(x,y)) < 1e-15);
                 }
             } // for y
