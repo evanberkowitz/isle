@@ -27,6 +27,8 @@ __host__ __device__ std::size_t lookup_vector(
     std::size_t t, std::size_t x,
     const std::size_t Nx){
 
+    assert(x < Nx);
+
     return t * Nx + x;
 }
 
