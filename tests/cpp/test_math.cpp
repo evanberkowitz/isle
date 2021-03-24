@@ -66,8 +66,12 @@ TEST_CASE("mat_inv", "[GPU]"){
 
     expected = expected*actual;
 
+    const bool transposed = GENERATE(true, false);
+    if (transposed) {
+      blaze::transpose(b);
+    }
     isle::lu_CDMatrix_wrapper(b, ipiv, n); // CUDA inplace LU-decomposition of CDMatrix
-    isle::inv_CDMatrix_wrapper(b, actual, ipiv, n, false);
+    isle::inv_CDMatrix_wrapper(b, actual, ipiv, n, transposed);
 
     for(size_t i = 0; i < n; ++i){
         REQUIRE(actual.data()[i].real() == Approx(expected.data()[i].real()));
