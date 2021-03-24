@@ -206,6 +206,9 @@ public:
     return *this;
   }
 
+  Matrix(const blaze::CompressedMatrix<ET> &other)
+      : Matrix{blaze::DynamicMatrix<ET>{other}} {}
+
   Matrix(Matrix &&other) noexcept
       : BaseMatrix<ET>{static_cast<BaseMatrix<ET> &&>(other)},
         _buffer{std::exchange(other._buffer, nullptr)} {}
