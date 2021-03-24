@@ -31,6 +31,7 @@ namespace isle{
 
         CHECK_CUBLAS_ERR(cublasDestroy(handle));
 
+        blaze::transpose(res);
         return res;
     }
 
