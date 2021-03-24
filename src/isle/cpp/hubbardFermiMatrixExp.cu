@@ -18,30 +18,10 @@ __global__ void F_kernel(cuDoubleComplex * f_begin,
                 const double * expKappa_begin,
                 const cuDoubleComplex sign,
                 const std::size_t Nx, const std::size_t Nt, const bool inv) {
-    //       cuDoubleComplex * f_begin  : Output matrix of size Nt x (Nx x Nx) (e^{kappaTilde - muTilde} @ e*{+/- i * Phi})
-    // const cuDoubleComplex * phi_begin: Input vector of size Nt*Nx (configuration)
-    // const double                * expKappa_begin: Input matrix of size (Nx x Nx) (e^{kappaTilde - muTilde})
-    // const cuDoubleComplex sign       : Input +/- i (phase) depending on species,inverse
-    // const std::size_t nx                        : Input spatial sites (number of atoms)
-    // const std::size_t nt                        : Input temporal sites (number of time slices)
-    // const bool inv                              : Input Flag to calculate inverse
-    // Note: It is assumed that expKappa_begin refers to the inverse if inv == True.
-    // This is handled at accessing time and must be passed correctly!
 
-    // each block operates on one time slize
     auto tm1 = tp == 0 ? Nt-1 : tp-1; // apply periodic boundary or the used t-1
-    // each 1D thread (x direction) on a given block acts as the row coordinate of the N_x by N_x sub matrix
-    auto x_row = threadIdx.y + blockIdx.y * blockDim.y;//threadIdx.y;
-    // each 1D thread (y direction) on a given block acts as the col coordinate of the N_x by N_x sub matrix
+    auto x_row = threadIdx.y + blockIdx.y * blockDim.y;
     auto x_col = threadIdx.x + blockIdx.x * blockDim.x;
-    // Note: The handling of row and col of the indices is done at referencing below
-    //       * Each time slices has an nx^2 (matrix) or nx (vector) offset
-    //       * Each col has an nx (matrix) offset
-    // example: accessing Nt x (Nx x Nx): t*nx^2 + x_row + nx*x_col
-    // example: accessing Nt x  Nx      : t*nx + x_row
-    // example: accessing Nx x  Nx      : x_col*nx + x_row
-
-    // ensure that only threads participate which do not access memory out of bounds
 
     if (x_row >= Nx || x_col >= Nx){return;}
     assert(tp < Nt);
