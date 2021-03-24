@@ -40,7 +40,6 @@ option(ENABLE_TESTING "Enable Test Builds" ON)
 # look for 3rd party packages
 include(cmake/pybind11.cmake)
 
-
 find_package(blaze 3.8 REQUIRED)
 add_library(blaze_options INTERFACE)
 target_include_directories(blaze_options SYSTEM INTERFACE ${blaze_INCLUDE_DIRS})
@@ -55,6 +54,9 @@ if(USE_CUDA)
             "-DBLAZE_DEFAULT_ALIGNMENT_FLAG=blaze::unaligned"
     )
 endif()
+
+find_package(Threads REQUIRED)
+target_link_libraries(project_options INTERFACE Threads::Threads)
 
 get_filename_component(SOURCE_DIR "src/isle/cpp" REALPATH BASE_DIR
                        "${CMAKE_SOURCE_DIR}")
