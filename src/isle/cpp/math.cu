@@ -56,9 +56,8 @@ namespace isle{
 
         int * devInfo;
         CHECK_CU_ERR(cudaMallocManaged(&devInfo, sizeof(int)));
-        // 2nd argument: CUBLAS_OP_T(N) means (no) transposition, but one additional is needed for transfer from blaze to cublas
-        // 4-6,9,11,14-th arguments: matrix dimensions (all equal because matrices are square)
-        // calculates C = a * A*B + b * C, with a=1 and b=0 in our case
+        // 2-3,5-th arguments: matrix dimensions (all equal because matrices are square)
+        // calculates LU-decomposition of A inplace: ipiv * A = L * U 
         CHECK_CUSOLVER_ERR(cusolverDnZgetrf(handle, N, N, A, N, Workspace, d_ipiv, devInfo));
         CHECK_CU_ERR(cudaStreamSynchronize(0));
         assert(*devInfo == 0);
@@ -92,9 +91,9 @@ namespace isle{
         cublasOperation_t trans = transpose? CUBLAS_OP_N : CUBLAS_OP_T;
         int * devInfo;
         CHECK_CU_ERR(cudaMallocManaged(&devInfo, sizeof(int)));
-        // 2nd argument: CUBLAS_OP_T(N) means (no) transposition, but one additional is needed for transfer from blaze to cublas
-        // 4-6,9,11,14-th arguments: matrix dimensions (all equal because matrices are square)
-        // calculates C = a * A*B + b * C, with a=1 and b=0 in our case
+        // 2nd argument: CUBLAS_OP_T(N) means (no) transposition of A, but one additional is needed for transfer from blaze to cublas
+        // 3-4,6,9-th arguments: matrix dimensions (all equal because matrices are square)
+        // solves A * x = B for x, where A has been LU-decomposed before
         CHECK_CUSOLVER_ERR(cusolverDnZgetrs(handle, trans, N, N, A, N, d_ipiv, B, N, devInfo));
         CHECK_CU_ERR(cudaStreamSynchronize(0));
         assert(*devInfo == 0);
