@@ -11,8 +11,10 @@ FetchContent_Declare(
 FetchContent_MakeAvailable(Catch2)
 
 set(TEST_EXE "isle_cpp_test")
-add_executable(${TEST_EXE} test_main.cpp test_math.cpp
-                           HubbardFermiMatrixExp/test_HubbardFermiMatrixExp.cpp)
+add_executable(${TEST_EXE}  test_main.cpp
+                            test_math.cpp
+                            test_action.cpp
+)
 
 target_link_libraries(${TEST_EXE} PRIVATE project_options project_warnings
                                           Catch2::Catch2 pybind11::embed)

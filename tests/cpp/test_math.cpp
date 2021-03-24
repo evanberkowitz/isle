@@ -52,4 +52,26 @@ TEST_CASE("matmul", "[GPU]") {
     REQUIRE(actual.data()[i].imag() == Approx(expected.data()[i].imag()));
   }
 }
+
+TEST_CASE("mat_inv", "[GPU]"){
+    const auto n = 3;
+    std::mt19937 rng{3*n};
+
+    auto ipiv = std::make_unique<int[]>(n);
+    auto expected = makeRandomCDMatrix(n,rng);
+    auto b = expected;
+    auto actual = makeRandomCDMatrix(n,rng);
+
+    isle::invert(expected,ipiv);
+
+    expected = expected*actual;
+
+    isle::lu_CDMatrix_wrapper(b, ipiv, n); // CUDA inplace LU-decomposition of CDMatrix
+    isle::inv_CDMatrix_wrapper(b, actual, ipiv, n, false);
+
+    for(size_t i = 0; i < n; ++i){
+        REQUIRE(actual.data()[i].real() == Approx(expected.data()[i].real()));
+        REQUIRE(actual.data()[i].imag() == Approx(expected.data()[i].imag()));
+    }
+}
 #endif
