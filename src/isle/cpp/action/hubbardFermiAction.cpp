@@ -59,7 +59,7 @@ namespace isle {
 
                 // first term, tau = nt-1
                 inv_CDMatrix_wrapper(AinvPlusId, right, ipiv, nx, true); // CUDA AinvPlusId^T^-1 * right
-                spacevec(force, nt-1, nx) = blaze::diagonal(right); // CUDA product CDMatrix * CDMatrix
+                spacevec(force, nt-1, nx) = blaze::diagonal(right);
 
                 // all sites except tau = nt-1
                 for (std::size_t tau = 0; tau < nt-1; ++tau) {
@@ -68,7 +68,7 @@ namespace isle {
                         right = mult_CDMatrix_wrapper(right, f, nx); // CUDA product CDMatrix * CDMatrix
                     }else{
                         right = f;
-                        inv_CDMatrix_wrapper(AinvPlusId, right, ipiv, nx, false);
+                        inv_CDMatrix_wrapper(AinvPlusId, right, ipiv, nx, false); // CUDA AinvPlusId^-1 * right
                     }
                     spacevec(force, tau, nx) = blaze::diagonal(mult_CDMatrix_wrapper(lefts[nt-1-tau-1], right, nx)); // CUDA product CDMatrix * CDMatrix
                 }
