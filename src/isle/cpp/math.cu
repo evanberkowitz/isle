@@ -83,6 +83,7 @@ namespace isle{
         CHECK_CU_ERR(cudaMalloc(&B, dim*dim*sizeof(cuDoubleComplex)));
         CHECK_CU_ERR(cudaMalloc(&d_ipiv, dim*sizeof(int)));
 
+	blaze::transpose(b);
         CHECK_CU_ERR(cudaMemcpy(A, cast_cmpl(a.data()), dim*dim*sizeof(cuDoubleComplex), cudaMemcpyHostToDevice));
         CHECK_CU_ERR(cudaMemcpy(B, cast_cmpl(b.data()), dim*dim*sizeof(cuDoubleComplex), cudaMemcpyHostToDevice));
         CHECK_CU_ERR(cudaMemcpy(d_ipiv, ipiv.get(), dim*sizeof(int), cudaMemcpyHostToDevice));
@@ -99,6 +100,8 @@ namespace isle{
 
         CHECK_CU_ERR(cudaMemcpy(b.data(), cast_cmpl(B), dim*dim*sizeof(cuDoubleComplex), cudaMemcpyDeviceToHost));
         cudaFree(A); cudaFree(B); cudaFree(d_ipiv); cudaFree(devInfo);
+
+	blaze::transpose(b);
 
         CHECK_CUSOLVER_ERR(cusolverDnDestroy(handle));
     }
