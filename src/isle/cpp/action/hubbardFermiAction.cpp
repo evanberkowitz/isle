@@ -37,15 +37,15 @@ namespace isle {
                 ISLE_PROFILE_NVTX_PUSH("action::forceDirectSinglePart[lefts]");
                 // first term for tau = nt-2
                 auto f = hfm.F(nt-1, phi, species, true);
-                lefts.emplace_back(f);
+                lefts.emplace_back(mult_CDMatrix_wrapper(f,k,nx));
                 // other terms
                 for (std::size_t t = nt-2; t != 0; --t) {
                     hfm.F(f, t, phi, species, true);
-                    lefts.emplace_back(mult_CDMatrix_wrapper(f, lefts.back(), nx)); // CUDA product CDMatrix * CDMatrix
+                    lefts.emplace_back(mult_CDMatrix_wrapper(mult_CDMatrix_wrapper(f, k, nx),lefts.back(),nx)); // CUDA product CDMatrix * CDMatrix
                 }
                 // full A^-1
                 hfm.F(f, 0, phi, species, true);
-                const CDMatrix Ainv = mult_CDMatrix_wrapper(f, lefts.back(), nx); // CUDA product CDMatrix * CDMatrix
+                const CDMatrix Ainv = mult_CDMatrix_wrapper(mult_CDMatrix_wrapper(f, k, nx), lefts.back(), nx); // CUDA product CDMatrix * CDMatrix
                 ISLE_PROFILE_NVTX_POP();
 
                 ISLE_PROFILE_NVTX_PUSH("action::forceDirectSinglePart[rights]");
@@ -65,7 +65,7 @@ namespace isle {
                 for (std::size_t tau = 0; tau < nt-1; ++tau) {
                     hfm.F(f, tau, phi, species, true);
                     if(tau){
-                        right = mult_CDMatrix_wrapper(right, f, nx); // CUDA product CDMatrix * CDMatrix
+                        right = mult_CDMatrix_wrapper(right, mult_CDMatrix_wrapper(f, k, nx), nx); // CUDA product CDMatrix * CDMatrix
                     }else{
                         right = f;
                         inv_CDMatrix_wrapper(AinvPlusId, right, ipiv, nx, false); // CUDA AinvPlusId^-1 * right
