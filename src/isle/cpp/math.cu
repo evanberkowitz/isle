@@ -45,7 +45,7 @@ namespace isle{
         cuDoubleComplex * Workspace;
 
         CHECK_CU_ERR(cudaMalloc(&A, dim*dim*sizeof(cuDoubleComplex)));
-        CHECK_CU_ERR(cudaMalloc(&d_ipiv, dim*sizeof(cuDoubleComplex)));
+        CHECK_CU_ERR(cudaMalloc(&d_ipiv, dim*sizeof(int)));
 
         CHECK_CU_ERR(cudaMemcpy(A, cast_cmpl(a.data()), dim*dim*sizeof(cuDoubleComplex), cudaMemcpyHostToDevice));
 
@@ -53,16 +53,16 @@ namespace isle{
         CHECK_CUSOLVER_ERR(cusolverDnZgetrf_bufferSize(handle, N, N, A, N, &Lwork));
         CHECK_CU_ERR(cudaMalloc(&Workspace, static_cast<std::size_t>(Lwork)*sizeof(cuDoubleComplex)));
 
-        int devInfo;
+        int * devInfo = NULL;
         // 2nd argument: CUBLAS_OP_T(N) means (no) transposition, but one additional is needed for transfer from blaze to cublas
         // 4-6,9,11,14-th arguments: matrix dimensions (all equal because matrices are square)
         // calculates C = a * A*B + b * C, with a=1 and b=0 in our case
-        CHECK_CUSOLVER_ERR(cusolverDnZgetrf(handle, N, N, A, N, Workspace, d_ipiv, &devInfo));
-        assert(devInfo == 0);
+        CHECK_CUSOLVER_ERR(cusolverDnZgetrf(handle, N, N, A, N, Workspace, d_ipiv, devInfo));
+        assert(*devInfo == 0);
 
         CHECK_CU_ERR(cudaMemcpy(a.data(), cast_cmpl(A), dim*dim*sizeof(cuDoubleComplex), cudaMemcpyDeviceToHost));
         CHECK_CU_ERR(cudaMemcpy(ipiv.get(), d_ipiv, dim*sizeof(int), cudaMemcpyDeviceToHost));
-        cudaFree(A); cudaFree(Workspace); cudaFree(d_ipiv);
+        cudaFree(A); cudaFree(Workspace); cudaFree(d_ipiv); cudaFree(devInfo);
 
         CHECK_CUSOLVER_ERR(cusolverDnDestroy(handle));
     }
@@ -79,22 +79,22 @@ namespace isle{
 
         CHECK_CU_ERR(cudaMalloc(&A, dim*dim*sizeof(cuDoubleComplex)));
         CHECK_CU_ERR(cudaMalloc(&B, dim*dim*sizeof(cuDoubleComplex)));
-        CHECK_CU_ERR(cudaMalloc(&d_ipiv, dim*sizeof(cuDoubleComplex)));
+        CHECK_CU_ERR(cudaMalloc(&d_ipiv, dim*sizeof(int)));
 
         CHECK_CU_ERR(cudaMemcpy(A, cast_cmpl(a.data()), dim*dim*sizeof(cuDoubleComplex), cudaMemcpyHostToDevice));
         CHECK_CU_ERR(cudaMemcpy(B, cast_cmpl(b.data()), dim*dim*sizeof(cuDoubleComplex), cudaMemcpyHostToDevice));
         CHECK_CU_ERR(cudaMemcpy(d_ipiv, ipiv.get(), dim*sizeof(int), cudaMemcpyHostToDevice));
 
         cublasOperation_t trans = transpose? CUBLAS_OP_N : CUBLAS_OP_T;
-        int devInfo;
+        int * devInfo = NULL;
         // 2nd argument: CUBLAS_OP_T(N) means (no) transposition, but one additional is needed for transfer from blaze to cublas
         // 4-6,9,11,14-th arguments: matrix dimensions (all equal because matrices are square)
         // calculates C = a * A*B + b * C, with a=1 and b=0 in our case
-        CHECK_CUSOLVER_ERR(cusolverDnZgetrs(handle, trans, N, N, A, N, ipiv.get(), B, N, &devInfo));
-        assert(devInfo == 0);
+        CHECK_CUSOLVER_ERR(cusolverDnZgetrs(handle, trans, N, N, A, N, d_ipiv, B, N, devInfo));
+        assert(*devInfo == 0);
 
         CHECK_CU_ERR(cudaMemcpy(b.data(), cast_cmpl(B), dim*dim*sizeof(cuDoubleComplex), cudaMemcpyDeviceToHost));
-        cudaFree(A); cudaFree(B); cudaFree(d_ipiv);
+        cudaFree(A); cudaFree(B); cudaFree(d_ipiv); cudaFree(devInfo);
 
         CHECK_CUSOLVER_ERR(cusolverDnDestroy(handle));
     }
