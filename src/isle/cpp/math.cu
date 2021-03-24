@@ -31,6 +31,7 @@ namespace isle{
 
         CHECK_CUBLAS_ERR(cublasDestroy(handle));
 
+        blaze::transpose(res);
         return res;
     }
 
@@ -59,7 +60,7 @@ namespace isle{
         // 4-6,9,11,14-th arguments: matrix dimensions (all equal because matrices are square)
         // calculates C = a * A*B + b * C, with a=1 and b=0 in our case
         CHECK_CUSOLVER_ERR(cusolverDnZgetrf(handle, N, N, A, N, Workspace, d_ipiv, devInfo));
-        cudaDeviceSynchronize();
+        CHECK_CU_ERR(cudaStreamSynchronize(0));
         assert(*devInfo == 0);
 
         CHECK_CU_ERR(cudaMemcpy(a.data(), cast_cmpl(A), dim*dim*sizeof(cuDoubleComplex), cudaMemcpyDeviceToHost));
@@ -95,7 +96,7 @@ namespace isle{
         // 4-6,9,11,14-th arguments: matrix dimensions (all equal because matrices are square)
         // calculates C = a * A*B + b * C, with a=1 and b=0 in our case
         CHECK_CUSOLVER_ERR(cusolverDnZgetrs(handle, trans, N, N, A, N, d_ipiv, B, N, devInfo));
-        cudaDeviceSynchronize();
+        CHECK_CU_ERR(cudaStreamSynchronize(0));
         assert(*devInfo == 0);
 
         CHECK_CU_ERR(cudaMemcpy(b.data(), cast_cmpl(B), dim*dim*sizeof(cuDoubleComplex), cudaMemcpyDeviceToHost));

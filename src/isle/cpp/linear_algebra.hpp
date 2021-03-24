@@ -14,6 +14,7 @@
 #include <blaze/math/typetraits/IsDenseMatrix.h>
 #include <blaze/math/typetraits/IsDenseVector.h>
 #include <blaze/math/typetraits/UnderlyingElement.h>
+#include <blaze/math/SMP.h>
 
 #include "tmp.hpp"
 
