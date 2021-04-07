@@ -5,7 +5,7 @@
 #ifndef BIND_INTEGRATOR_HPP
 #define BIND_INTEGRATOR_HPP
 
-#include "core.hpp"
+#include "bind_core.hpp"
 
 namespace bind {
     /// Bind integrators.

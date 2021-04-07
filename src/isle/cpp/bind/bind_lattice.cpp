@@ -1,4 +1,4 @@
-#include "lattice.hpp"
+#include "bind_lattice.hpp"
 
 #include "../lattice.hpp"
 

@@ -13,35 +13,21 @@ from . import predicate
 from .cmake_extension import CMakeExtension
 from .version import version_from_git
 
-def _in_virtualenv():
-    "Detect whether Python is running in a virutal environment."
-    return (hasattr(sys, 'real_prefix') or
-            (hasattr(sys, 'base_prefix') and sys.base_prefix != sys.prefix))
-
-def _python_config():
-    "Return name of the python-config script."
-    if not _in_virtualenv():
-        return f"{sys.executable}-config"
-    return "python-config"
 
 def _common_cmake_args(config, test_dir):
     "Format arguments for CMake common to all extensions."
     args = [f"-D{key}={val}" for key, val in config.items() if val is not None] \
         + [f"-DPYTHON_EXECUTABLE={sys.executable}",
-           f"-DPYTHON_CONFIG={_python_config()}"]
-    if test_dir is not None:
-        args += [f"-DTEST_DIR={test_dir}"]
+           f"-DTEST_BINARY_DIRECTORY={test_dir/'bin'}"]
     return args
 
 
-def get_cmake_builder(config_file, test_dir=None):
+def get_cmake_builder(config_file, test_dir):
     """
     Return a setuptools command class to build CMake extensions.
 
     Arguments:
        - config_file: File written by configure.Configure command
-       - test_dir: Directory which contains unit tests. If None, it is not passed
-                   to CMake and the CMake install target is not built.
     """
 
     class _BuildCMakeExtension(build_ext):
@@ -121,9 +107,6 @@ def get_cmake_builder(config_file, test_dir=None):
                 build_cmd += ["--", *extra_args]
             try:
                 subprocess.check_call(build_cmd, cwd=ext_build_dir)
-                if test_dir is not None:
-                    subprocess.check_call(["cmake", "--build", ".", "--target", "install"],
-                                          cwd=ext_build_dir)
             except subprocess.CalledProcessError as err:
                 print(f"Calling cmake to build failed, arguments {err.cmd}")
                 sys.exit(1)

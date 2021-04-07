@@ -17,7 +17,7 @@ Various basic checks.
 import numpy as np
 
 class ConsistencyCheckFailure(Exception):
-    """!
+    r"""!
     \ingroup check
     Indicate failure of a consistency check during HMC.
     """
