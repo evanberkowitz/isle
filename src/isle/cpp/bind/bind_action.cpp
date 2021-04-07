@@ -102,13 +102,7 @@ namespace bind {
         void bindSpecificHFA(py::module &mod, const char * const name, A &action) {
             using HFA = HubbardFermiAction<HOPPING, ALGORITHM, BASIS>;
 
-            py::class_<HFA>(mod, name, action)
-                .def(py::init<SparseMatrix<double>, double, std::int8_t, bool>(),
-                     "kappa"_a, "mu"_a, "sigmaKappa"_a, "allowShortcut"_a)
-                .def("eval", &HFA::eval)
-                .def("force", &HFA::force)
-                ;
-        }
+
 
         /// Make a specific HubbardFermiAction controlled through run-time parameters.
         py::object makeHubbardFermiAction(const SparseMatrix<double> &kappaTilde,
@@ -174,7 +168,11 @@ namespace bind {
             // bind enums
             py::enum_<HFAAlgorithm>(mod, "HFAAlgorithm")
                 .value("DIRECT_SINGLE", HFAAlgorithm::DIRECT_SINGLE)
-                .value("DIRECT_SQUARE", HFAAlgorithm::DIRECT_SQUARE);
+         Ml_approx_force
+                .value("DIRECT_SQUARE", HFAAlgorithm::DIRECT_SQUARE)
+                .value("ML_APPROX_FORCE", HFAAlgorithm::ML_APPROX_FORCE);
+
+                
 
             py::enum_<HFABasis>(mod, "HFABasis")
                 .value("PARTICLE_HOLE", HFABasis::PARTICLE_HOLE)
@@ -194,6 +192,9 @@ namespace bind {
             bindSpecificHFA<HFAHopping::EXP, HFAAlgorithm::DIRECT_SINGLE, HFABasis::SPIN>(mod, "HubbardFermiActionExpDirsingleZero", action);
             bindSpecificHFA<HFAHopping::EXP, HFAAlgorithm::DIRECT_SQUARE, HFABasis::PARTICLE_HOLE>(mod, "HubbardFermiActionExpDirsquareOne", action);
             bindSpecificHFA<HFAHopping::EXP, HFAAlgorithm::DIRECT_SQUARE, HFABasis::SPIN>(mod, "HubbardFermiActionExpDirsquareZero", action);
+
+            Ml_approx_force
+            bindSpecificHFA<HFAHopping::EXP, HFAAlgorithm::ML_APPROX_FORCE, HFABasis::PARTICLE_HOLE>(mod, "HubbardFermiActionExpMLApproxOne", action);
 
             mod.def("makeHubbardFermiAction",
                     makeHubbardFermiAction,

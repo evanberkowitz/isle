@@ -62,5 +62,13 @@ target_include_directories(${LIBNAME} PUBLIC ${CMAKE_CURRENT_BINARY_DIR})
 
 target_include_directories(${LIBNAME} PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
 
-# add bindings code
-add_subdirectory(bind)
+Ml_approx_force
+# OpenMP if blaze does not use it
+if (NOT "${BLAZE_PARALLELISM}" STREQUAL "OMP")
+  target_compile_options(${LIBNAME} PUBLIC "${OpenMP_CXX_FLAGS}")
+  target_link_libraries(${LIBNAME} "${OpenMP_CXX_LIBRARIES}")
+  target_linker_flags(${LIBNAME} "${OpenMP_LINKER_FLAGS}")
+endif ()
+
+
+
