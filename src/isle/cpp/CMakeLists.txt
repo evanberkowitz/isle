@@ -64,6 +64,12 @@ elseif ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
   target_compile_options(${LIBNAME} PUBLIC ${GCC_CLANG_WARNINGS} ${GCC_EXTRA_WARNINGS})
 endif ()
 
+if (APPLE)
+  # Allow for undefined symbols in the library.
+  # These should all be filled in by the Python executable.
+  target_link_options(${LIBNAME} PUBLIC "-flat_namespace" "-undefined" "suppress")
+endif ()
+
 # versioning - create version.hpp file
 set(ISLE_VERSION_MAJOR "0" CACHE STRING "Major version number of Isle")
 set(ISLE_VERSION_MINOR "0" CACHE STRING "Minor version number of Isle")
@@ -90,3 +96,5 @@ if (NOT "${BLAZE_PARALLELISM}" STREQUAL "OMP")
   target_link_libraries(${LIBNAME} "${OpenMP_CXX_LIBRARIES}")
   target_linker_flags(${LIBNAME} "${OpenMP_LINKER_FLAGS}")
 endif ()
+
+

@@ -14,6 +14,8 @@ from . import Vector, isleVersion, pythonVersion, blazeVersion, pybind11Version
 from .random import readStateH5
 from .collection import listToSlice, parseSlice, subslice, normalizeSlice
 
+def empty(dtype):
+    return h5.Empty(dtype=dtype)
 
 def createH5Group(base, name):
     r"""!
@@ -45,6 +47,19 @@ def loadDict(h5group):
     """
     return {key: dset[()] for key, dset in h5group.items()}
 
+def loadString(dset):
+    """!
+    Load a string from an HDF5 dataset and return as a Python str object.
+
+    Since version 3.0, h5py loads UTF8 strings as `bytes` objects.
+    This function provides uniform behavior across h5py 2.0 and h5py 3.0 by
+    always returning `str` objects.
+    """
+    s = dset[()]
+    if isinstance(s, str):
+        return s
+    return s.decode("utf-8")
+
 def writeMetadata(fname, lattice, params, makeActionSrc):
     """!
     Write metadata to HDF5 file.
@@ -74,10 +89,10 @@ def readMetadata(fname):
     with h5.File(str(fname), "r") as inf:
         try:
             metaGrp = inf["meta"]
-            lattice = yaml.safe_load(metaGrp["lattice"][()])
-            params = yaml.safe_load(metaGrp["params"][()])
-            makeActionSrc = metaGrp["action"][()]
-            versions = {name: val[()] for name, val in metaGrp["version"].items()}
+            lattice = yaml.safe_load(loadString(metaGrp["lattice"]))
+            params = yaml.safe_load(loadString(metaGrp["params"]))
+            makeActionSrc = loadString(metaGrp["action"])
+            versions = {name: loadString(val) for name, val in metaGrp["version"].items()}
         except KeyError as exc:
             getLogger(__name__).error("Cannot read metadata from file %s: %s",
                                       str(fname), str(exc))

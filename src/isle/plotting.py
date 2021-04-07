@@ -227,23 +227,11 @@ def setPolarTicks(ax, which="both"):
         ax.set_yticks([])
 
 
-def plotTotalPhi(measState, axPhi, axPhiHist):
+def plotTotalPhi(totalPhi, axPhi, axPhiHist):
     """!Plot MC history and histogram of total Phi."""
 
-    # load data from previous measurement or compute from configurations
-    with h5.File(str(measState.infile), "r") as h5f:
-        if "field" in h5f:
-            totalPhi = h5f["field"]["totalPhi"][()]
-        elif "configuration" in h5f:
-            meas = isle.meas.TotalPhi(None)
-            measState.mapOverConfigs([meas])
-            totalPhi = meas.Phi
-        else:
-            getLogger(__name__).info("No configurations or total Phi found.")
-            totalPhi = None
-
     # need those in any case
-    axPhi.set_title(r"$\Phi = \sum \varphi$")
+    axPhi.set_title(r"$\Phi = \sum \phi$")
     axPhiHist.set_title(r"Histogram of $\Phi$")
 
     if totalPhi is None:
@@ -279,18 +267,8 @@ def plotTotalPhi(measState, axPhi, axPhiHist):
     axPhiHist.tick_params(axis="y", which="both", labelleft=False)
     axPhiHist.set_xlabel("Frequency")
 
-def plotTrajPoints(measState, ax):
+def plotTrajPoints(trajPoints, ax):
     """!Plot MC history of accepted trajectory points."""
-
-    # load data from configurations if possible
-    with h5.File(str(measState.infile), "r") as h5f:
-        trajPoints = []
-        if "configuration" in h5f:
-            for configName in sorted(h5f["configuration"], key=int):
-                trajPoints.append(h5f["configuration"][configName]["trajPoint"][()])
-        else:
-            getLogger(__name__).info("No traj points found.")
-            trajPoints = None
 
     if trajPoints is None:
         # no data - empty frame
@@ -310,20 +288,20 @@ def plotTrajPoints(measState, ax):
     ax.legend(loc="lower center")
 
 
-def plotWeights(weights, ax):
+def plotWeights(logWeights, ax):
     """!Plot real and imaginary parts of the weights."""
-    if weights is None:
+    if logWeights is None:
         # no data - empty frame
         ax.set_title(r"Action")
         placeholder(ax)
         return
 
-    action = weights["actVal"]
+    action = logWeights["actVal"]
     ax.set_title(f"Action, average = {np.mean(np.real(action)):1.3e} + {np.mean(np.imag(action)):1.3e} i")
     ax.plot(np.real(action), c="C0", alpha=0.8, label=r"$\mathrm{Re}(S)$")
     ax.plot(np.imag(action), c="C1", alpha=0.8, label=r"$\mathrm{Im}(S)$")
-    if len(weights) > 1:
-        for i, (name, values) in enumerate(filter(lambda pair: pair[0] != "actVal", weights.items())):
+    if len(logWeights) > 1:
+        for i, (name, values) in enumerate(filter(lambda pair: pair[0] != "actVal", logWeights.items())):
             ax.plot(np.real(values), c=f"C{2*i+2}", alpha=0.8, label=rf"$\mathrm{{Re}}({name})$")
             ax.plot(np.imag(values), c=f"C{2*i+3}", alpha=0.8, label=rf"$\mathrm{{Im}}({name})$")
     ax.set_xlabel(r"$i_{\mathrm{tr}}$")
@@ -331,15 +309,15 @@ def plotWeights(weights, ax):
     ax.legend()
 
 
-def plotPhase(weights, axPhase, axPhase2D):
+def plotPhase(logWeights, axPhase, axPhase2D):
     """!Plot MC history and 2D histogram of the phase."""
-    if weights is None:
+    if logWeights is None:
         # no data - empty frame
         placeholder(axPhase)
         placeholder(axPhase2D)
         return
 
-    theta = -np.imag(sum(weights.values()))  # minus because the weight is exp(-1j*Im(S))
+    theta = -np.imag(sum(logWeights.values()))  # minus because the weight is exp(-1j*Im(S))
 
     if np.max(np.abs(theta)) > 1e-13:
         # show 1D histogram + KDE
@@ -357,6 +335,7 @@ def plotPhase(weights, axPhase, axPhase2D):
         polarHistogram(axPhase2D, theta, _DO_KDE, bins=50, ls="-", marker=".", fill=True,
                        edgecolor="C1", facealpha=0.3)
         average = np.mean(np.exp(1j*theta))
+        getLogger(__name__).info("Average phase <exp(-i Im(S))> = %s", average)
         axPhase2D.plot((np.angle(average),), (np.abs(average),), ls="", marker="x",
                        c=mpl.rcParams["text.color"], markersize=10)
         setPolarTicks(axPhase2D)
@@ -384,9 +363,9 @@ def plotCorrelators(measState, axP, axH):
     # load data from previous measurement
     with h5.File(str(measState.infile), "r") as h5f:
         if "correlation_functions" in h5f:
-            dsetP = h5f["correlation_functions/single_particle/correlators"]
+            dsetP = h5f["correlation_functions/single_particle/destruction_creation"]
             corrP = dsetP[()]
-            dsetH = h5f["correlation_functions/single_hole/correlators"]
+            dsetH = h5f["correlation_functions/single_hole/destruction_creation"]
             corrH = dsetH[()]
 
             try:

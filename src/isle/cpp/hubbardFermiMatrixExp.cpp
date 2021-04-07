@@ -104,7 +104,7 @@ namespace isle {
         k = IdMatrix<double>(nx());
     }
 
-    DSparseMatrix HubbardFermiMatrixExp::K(const Species UNUSED(species)) const {
+    IdMatrix<double> HubbardFermiMatrixExp::K(const Species UNUSED(species)) const {
         return IdMatrix<double>(nx());
     }
 
@@ -614,9 +614,6 @@ namespace isle {
 
     std::complex<double> logdetM(const HubbardFermiMatrixExp &hfm,
                                  const CDVector &phi, const Species species) {
-        if (hfm.muTilde() != 0)
-            throw std::runtime_error("Called logdetM with mu != 0. This is not supported yet because the algorithm is unstable.");
-
         switch (species) {
         case Species::PARTICLE:
             return logdetM_p(hfm, phi);
@@ -647,9 +644,6 @@ namespace isle {
 
     CDMatrix solveM(const HubbardFermiMatrixExp &hfm, const CDVector &phi,
                     const Species species, const CDMatrix &rhss) {
-        if (hfm.muTilde() != 0)
-            throw std::runtime_error("Exponential hopping is not supported for mu != 0");
-
         const std::size_t NX = hfm.nx();
         const std::size_t NT = getNt(phi, NX);
         const std::size_t NRHS = rhss.rows();

@@ -87,7 +87,7 @@ namespace isle {
         /**
          * \param species Select whether to construct for particles or holes.
          */
-        DSparseMatrix K(Species species) const;
+        IdMatrix<double> K(Species species) const;
 
         /// Return the inverse of the diagonal block matrix K of matrix M.
         /**

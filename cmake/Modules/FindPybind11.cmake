@@ -11,9 +11,11 @@
 set(PYTHON_EXECUTABLE "python3" CACHE STRING "Python 3 executable")
 set(PYTHON_CONFIG "python3-config" CACHE STRING "Python 3 config script")
 
-# Execute python-config with given arguments.
-function (python_config args output)
-  execute_process(COMMAND ${PYTHON_CONFIG} ${args}
+# Execute python-config.
+# The first argument is the output variable.
+# An arbitray number of additional arguments can be given which are passed as flags to python-config.
+function (python_config output)
+  execute_process(COMMAND ${PYTHON_CONFIG} ${ARGN}
     RESULT_VARIABLE rc
     OUTPUT_VARIABLE result
     OUTPUT_STRIP_TRAILING_WHITESPACE)
@@ -66,7 +68,7 @@ unset(RAW_INCLUDES)
 
 
 ### get linker flags and libraries ###
-python_config("--ldflags" AUX)
+python_config(AUX "--ldflags")
 # turn it into a list
 string(REPLACE " " ";" AUX_LIST ${AUX})
 # split
@@ -97,7 +99,7 @@ unset(LD_LIBRARY_PATH)
 
 
 ### get library extension suffix ###
-python_config("--extension-suffix" PYBIND11_LIB_SUFFIX)
+python_config(PYBIND11_LIB_SUFFIX "--extension-suffix")
 
 
 # handle find_package arguments

@@ -140,10 +140,10 @@ Since both $\hat{M}$ and $\hat{Q}$ have the same block structure as $M$ and $Q$,
 Based on those, results for the exponential discretization are derived where they differ.
 
 
-\section{Variant 1}\label{sec:variant1}
+\section{DIRECT\_SINGLE}\label{sec:direct_square}
 
 This is the main version of the algorithm implemented in Isle.
-It treats the fermion matrices for particles $M_p$ and holes $M_h$ separately.
+It treats the fermion matrices for particles $M_p$ and holes $M_h$ separately and uses direct solves.
 
 \subsection{LU-Decomposition}\label{sec:lu_v1}
 
@@ -371,11 +371,11 @@ and
 
 
 \clearpage
-\section{Variant 2}
+\section{DIRECT\_SQUARE}
 
 This version uses the combined matrix $Q = M(\phi, \tilde{\kappa}, \tilde{\mu}) M^T(-\phi, \sigma_{\tilde{\kappa}}\tilde{\kappa}, -\tilde{\mu})$ to treat particles and holes together.
-This variant is implemented as well because it is more stable in the spin basis ($\alpha=0$).
-It is however much slower than variant 1.
+This algorithm is implemented as well because it is more stable in the spin basis ($\alpha=0$).
+It is however much slower than DIRECT\_SINGLE.\@
 
 \subsection{LU-Decomposition}\label{sec:lu_decomposition_v2}
 
