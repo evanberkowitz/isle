@@ -1,4 +1,4 @@
-#include "hubbardFermiMatrix.hpp"
+#include "bind_hubbardFermiMatrix.hpp"
 
 #include <array>
 

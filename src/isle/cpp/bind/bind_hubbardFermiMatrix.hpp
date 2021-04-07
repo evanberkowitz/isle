@@ -5,7 +5,7 @@
 #ifndef BIND_HUBBARD_FERMI_MATRIX_HPP
 #define BIND_HUBBARD_FERMI_MATRIX_HPP
 
-#include "core.hpp"
+#include "bind_core.hpp"
 
 namespace bind {
     /// Bind class HubbardFermiMatrix, related classes, and free functions.

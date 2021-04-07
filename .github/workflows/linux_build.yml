@@ -12,7 +12,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        python-version: [3.6, 3.7, 3.8]
+        python-version: [3.6, 3.7, 3.8, 3.9]
 
     steps:
     - uses: actions/checkout@v2
@@ -38,7 +38,7 @@ jobs:
       run: pip install dataclasses
     - name: Build
       run: |
-        python${{ matrix.python-version }} setup.py configure --compiler=g++-9 --build-type=DEBUG --blaze-parallelism=OMP --parallel-blas --blaze=blaze
+        python${{ matrix.python-version }} setup.py configure --compiler=g++-9 --build-type=Debug --blaze-parallelism=OMP --parallel-blas --blaze=blaze
         python${{ matrix.python-version }} setup.py develop
     - name: Test
       run: |

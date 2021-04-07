@@ -11,8 +11,8 @@ from setup import CMakeExtension, configure_command, predicate, \
 VERSION = version_from_git(plain=True)
 PROJECT_ROOT = Path(__file__).resolve().parent
 BUILD_DIR = PROJECT_ROOT/"build"
-TEST_DIR = PROJECT_ROOT/"tests"
 CONFIG_FILE = BUILD_DIR/"configure.out.pkl"
+TEST_DIR = PROJECT_ROOT/"tests"
 # relative path to coax doxygen into placing the output where it belongs
 DOXY_FILE = "docs/doxyfile.conf"
 

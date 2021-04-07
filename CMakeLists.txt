@@ -1,43 +1,55 @@
-cmake_minimum_required(VERSION 3.9.6)
+cmake_minimum_required(VERSION 3.15)
 
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/cmake/Modules/")
 
-# do not allow any compiler specific c++ extensions
-set(CMAKE_CXX_EXTENSIONS OFF)
-
 # save rpath in installed library
-SET(CMAKE_INSTALL_RPATH_USE_LINK_PATH TRUE)
-
-function (target_linker_flags target flags)
-  if (flags)
-    string(REPLACE ";" " " str_flags "${flags}")
-    get_target_property(old ${target} LINK_FLAGS)
-    if ("${old}" MATCHES "^.*-NOTFOUND")
-      set_target_properties(${target} PROPERTIES LINK_FLAGS "${str_flags}")
-    else ()
-      set_target_properties(${target} PROPERTIES LINK_FLAGS "${old} ${str_flags}")
-    endif ()
-  endif ()
-endfunction ()
-
-# verify required arguments are there
-set(TEST_DIR "" CACHE STRING "Directory for unit tests")
-if ("${TEST_DIR}" STREQUAL "")
-  message(FATAL_ERROR "No test directory given")
-endif ()
+set(CMAKE_INSTALL_RPATH_USE_LINK_PATH TRUE)
 
 # define the project
 project(isle CXX)
+include(cmake/StandardProjectSettings.cmake)
+
+# Link this 'library' to set the c++ standard / compile-time options requested
+add_library(project_options INTERFACE)
+target_compile_features(project_options INTERFACE cxx_std_14)
+set_target_properties(project_options
+                      PROPERTIES INTERFACE_POSITION_INDEPENDENT_CODE ON)
+
+# Link this 'library' to use the warnings specified in CompilerWarnings.cmake
+add_library(project_warnings INTERFACE)
+
+# enable cache system
+include(cmake/Cache.cmake)
+
+# standard compiler warnings
+include(cmake/CompilerWarnings.cmake)
+set_project_warnings(project_warnings)
+
+if(NOT APPLE)
+  set(CMAKE_INSTALL_RPATH $ORIGIN)
+else()
+  set(CMAKE_INSTALL_RPATH @loader_path)
+endif()
+
+option(ENABLE_TESTING "Enable Test Builds" ON)
 
 # look for 3rd party packages
-find_package(OpenMP REQUIRED)
-find_package(Pybind11 REQUIRED)
-find_package(blaze 3.6 REQUIRED)
+include(cmake/pybind11.cmake)
 
-get_filename_component(SOURCE_DIR "src/isle/cpp"
-  REALPATH BASE_DIR "${CMAKE_SOURCE_DIR}")
+find_package(blaze 3.6 REQUIRED)
+add_library(blaze_options INTERFACE)
+target_include_directories(blaze_options SYSTEM INTERFACE ${blaze_INCLUDE_DIRS})
+target_compile_options(blaze_options INTERFACE "${blaze_CXX_FLAGS}")
+target_link_libraries(blaze_options INTERFACE ${blaze_LIBRARIES})
+target_link_options(blaze_options INTERFACE "${blaze_LINKER_FLAGS}")
+
+find_package(OpenMP REQUIRED)
+
+get_filename_component(SOURCE_DIR "src/isle/cpp" REALPATH BASE_DIR
+                       "${CMAKE_SOURCE_DIR}")
 add_subdirectory(${SOURCE_DIR})
 
-get_filename_component(TEST_DIR "tests/cpp"
-  REALPATH BASE_DIR "${CMAKE_SOURCE_DIR}")
-add_subdirectory(${TEST_DIR})
+if(ENABLE_TESTING)
+  message(STATUS "Building tests")
+  add_subdirectory(tests/cpp)
+endif()
