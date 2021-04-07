@@ -46,7 +46,7 @@ namespace isle {
                                        const double muTilde,
                                        const std::int8_t sigmaKappa);
 
-            
+
 
             template <> bool _holeShortcutPossible<HFABasis::PARTICLE_HOLE>(
                 const SparseMatrix<double> &hopping,
@@ -125,55 +125,13 @@ namespace isle {
                                         lat.hopping(), muTilde, sigmaKappa)}
             { }
 
-            template<>
-            HubbardFermiAction<HFAAlgorithm::EXP,HFAAlgorithm::ML_APPROX_FORCE, HFABasis::PARTICLE_HOLE>(
-            const SparseMatrix<double> &kappaTilde,
-                            const double muTilde, const std::int8_t sigmaKappa,
-                            const bool allowShortcut,const std::string pretrained_model_path ): _hfm{kappaTilde, muTilde, sigmaKappa},
-                  _kp{_hfm.K(Species::PARTICLE)},
-                  _kh{_hfm.K(Species::HOLE)},
-                  _shortcutForHoles{false},
-                  _model(torch::jit::load(pretrained_model_path))
-            { }
-
-
-            template<>
-            HubbardFermiAction<HFAAlgorithm::EXP,HFAAlgorithm::ML_APPROX_FORCE, HFABasis::PARTICLE_HOLE>(
-            const Lattice &lat, const double beta,
-                            const double muTilde, const std::int8_t sigmaKappa,
-                            const bool allowShortcut,const std::string pretrained_model_path):_hfm{lat, beta, muTilde, sigmaKappa},
-                  _kp{_hfm.K(Species::PARTICLE)},
-                  _kh{_hfm.K(Species::HOLE)},
-                  _shortcutForHoles{false},
-                  _model(torch::jit::load(pretrained_model_path))
-            { }
-
-            /// Construct from individual parameters of HubbardFermiMatrix[Dia,Exp].
             HubbardFermiAction(const SparseMatrix<double> &kappaTilde,
                                const double muTilde, const std::int8_t sigmaKappa,
-                               const bool allowShortcut)
-                : _hfm{kappaTilde, muTilde, sigmaKappa},
-                  _kp{_hfm.K(Species::PARTICLE)},
-                  _kh{_hfm.K(Species::HOLE)},
-                  _shortcutForHoles{allowShortcut
-                                    && _internal::_holeShortcutPossible<BASIS>(
-                                        kappaTilde, muTilde, sigmaKappa)}
-            { }
-           
+                               const bool allowShortcut, std::string module_path);
 
-            /// Construct from individual parameters of HubbardFermiMatrix[Dia,Exp].
             HubbardFermiAction(const Lattice &lat, const double beta,
                                const double muTilde, const std::int8_t sigmaKappa,
-                               const bool allowShortcut)
-                : _hfm{lat, beta, muTilde, sigmaKappa},
-                  _kp{_hfm.K(Species::PARTICLE)},
-                  _kh{_hfm.K(Species::HOLE)},
-                  _shortcutForHoles{allowShortcut
-                                    && _internal::_holeShortcutPossible<BASIS>(
-                                        lat.hopping(), muTilde, sigmaKappa)}
-            { }
-
-
+                               const bool allowShortcut, std::string module_path);
 
             HubbardFermiAction(const HubbardFermiAction &other) = default;
             HubbardFermiAction &operator=(const HubbardFermiAction &other) = default;
@@ -227,10 +185,10 @@ namespace isle {
             const CDVector &phi) const;
 
         template<> std::complex<double>
-        HubbardFermiAction<HFAAlgorithm::EXP,HFAAlgorithm::ML_APPROX_FORCE,HFABasis::PARTICLE_HOLE>::eval(
+        HubbardFermiAction<HFAHopping::EXP,HFAAlgorithm::ML_APPROX_FORCE,HFABasis::PARTICLE_HOLE>::eval(
             const CDVector & phi) const;
-        template<> std::complex<double>
-        HubbardFermiAction<HFAAlgorithm::EXP,HFAAlgorithm::ML_APPROX_FORCE,HFABasis::PARTICLE_HOLE>::force(
+        template<> CDVector
+        HubbardFermiAction<HFAHopping::EXP,HFAAlgorithm::ML_APPROX_FORCE,HFABasis::PARTICLE_HOLE>::force(
             const CDVector & phi) const;
 
 
