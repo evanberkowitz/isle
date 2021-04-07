@@ -9,6 +9,10 @@
 #include "../hubbardFermiMatrixDia.hpp"
 #include "../hubbardFermiMatrixExp.hpp"
 #include "../lattice.hpp"
+#include <torch/script.h>
+#include <memory>
+#include <iostream>
+#include <torch/script.h>
 
 namespace isle {
     namespace action {
@@ -22,7 +26,7 @@ namespace isle {
         /**
          * See documentation in docs/algorithm for more information.
          */
-        enum class HFAAlgorithm { DIRECT_SINGLE, DIRECT_SQUARE };
+        enum class HFAAlgorithm { DIRECT_SINGLE, DIRECT_SQUARE, ML_APPROX_FORCE};
 
         /// \cond DO_NOT_DOCUMENT
         namespace _internal {
@@ -42,6 +46,7 @@ namespace isle {
                                        const double muTilde,
                                        const std::int8_t sigmaKappa);
 
+            
 
             template <> bool _holeShortcutPossible<HFABasis::PARTICLE_HOLE>(
                 const SparseMatrix<double> &hopping,
@@ -120,6 +125,56 @@ namespace isle {
                                         lat.hopping(), muTilde, sigmaKappa)}
             { }
 
+            template<>
+            HubbardFermiAction<HFAAlgorithm::EXP,HFAAlgorithm::ML_APPROX_FORCE, HFABasis::PARTICLE_HOLE>(
+            const SparseMatrix<double> &kappaTilde,
+                            const double muTilde, const std::int8_t sigmaKappa,
+                            const bool allowShortcut,const std::string pretrained_model_path ): _hfm{kappaTilde, muTilde, sigmaKappa},
+                  _kp{_hfm.K(Species::PARTICLE)},
+                  _kh{_hfm.K(Species::HOLE)},
+                  _shortcutForHoles{false},
+                  _model(torch::jit::load(pretrained_model_path))
+            { }
+
+
+            template<>
+            HubbardFermiAction<HFAAlgorithm::EXP,HFAAlgorithm::ML_APPROX_FORCE, HFABasis::PARTICLE_HOLE>(
+            const Lattice &lat, const double beta,
+                            const double muTilde, const std::int8_t sigmaKappa,
+                            const bool allowShortcut,const std::string pretrained_model_path):_hfm{lat, beta, muTilde, sigmaKappa},
+                  _kp{_hfm.K(Species::PARTICLE)},
+                  _kh{_hfm.K(Species::HOLE)},
+                  _shortcutForHoles{false},
+                  _model(torch::jit::load(pretrained_model_path))
+            { }
+
+            /// Construct from individual parameters of HubbardFermiMatrix[Dia,Exp].
+            HubbardFermiAction(const SparseMatrix<double> &kappaTilde,
+                               const double muTilde, const std::int8_t sigmaKappa,
+                               const bool allowShortcut)
+                : _hfm{kappaTilde, muTilde, sigmaKappa},
+                  _kp{_hfm.K(Species::PARTICLE)},
+                  _kh{_hfm.K(Species::HOLE)},
+                  _shortcutForHoles{allowShortcut
+                                    && _internal::_holeShortcutPossible<BASIS>(
+                                        kappaTilde, muTilde, sigmaKappa)}
+            { }
+           
+
+            /// Construct from individual parameters of HubbardFermiMatrix[Dia,Exp].
+            HubbardFermiAction(const Lattice &lat, const double beta,
+                               const double muTilde, const std::int8_t sigmaKappa,
+                               const bool allowShortcut)
+                : _hfm{lat, beta, muTilde, sigmaKappa},
+                  _kp{_hfm.K(Species::PARTICLE)},
+                  _kh{_hfm.K(Species::HOLE)},
+                  _shortcutForHoles{allowShortcut
+                                    && _internal::_holeShortcutPossible<BASIS>(
+                                        lat.hopping(), muTilde, sigmaKappa)}
+            { }
+
+
+
             HubbardFermiAction(const HubbardFermiAction &other) = default;
             HubbardFermiAction &operator=(const HubbardFermiAction &other) = default;
             HubbardFermiAction(HubbardFermiAction &&other) = default;
@@ -139,6 +194,8 @@ namespace isle {
             const typename _internal::KMatrixType<HOPPING>::type _kh;  ///< Matrix K for holes.
             /// Can logdetM for holes be computed from logdetM from particles?
             const bool _shortcutForHoles;
+            const torch::jit::script::Module _model;
+
         };
 
         // For each specialization, forward declare specializations of eval
@@ -168,6 +225,14 @@ namespace isle {
         template <> CDVector
         HubbardFermiAction<HFAHopping::DIA, HFAAlgorithm::DIRECT_SQUARE, HFABasis::SPIN>::force(
             const CDVector &phi) const;
+
+        template<> std::complex<double>
+        HubbardFermiAction<HFAAlgorithm::EXP,HFAAlgorithm::ML_APPROX_FORCE,HFABasis::PARTICLE_HOLE>::eval(
+            const CDVector & phi) const;
+        template<> std::complex<double>
+        HubbardFermiAction<HFAAlgorithm::EXP,HFAAlgorithm::ML_APPROX_FORCE,HFABasis::PARTICLE_HOLE>::force(
+            const CDVector & phi) const;
+
 
         template <> std::complex<double>
         HubbardFermiAction<HFAHopping::EXP, HFAAlgorithm::DIRECT_SINGLE, HFABasis::PARTICLE_HOLE>::eval(
@@ -205,6 +270,8 @@ namespace isle {
         extern template class HubbardFermiAction<HFAHopping::EXP, HFAAlgorithm::DIRECT_SINGLE, HFABasis::SPIN>;
         extern template class HubbardFermiAction<HFAHopping::EXP, HFAAlgorithm::DIRECT_SQUARE, HFABasis::PARTICLE_HOLE>;
         extern template class HubbardFermiAction<HFAHopping::EXP, HFAAlgorithm::DIRECT_SQUARE, HFABasis::SPIN>;
+
+        extern template class HubbardFermiAction<HFAHopping::EXP, HFAAlgorithm::ML_APPROX_FORCE, HFABasis::PARTICLE_HOLE>;
 
     }  // namespace action
 }  // namespace isle

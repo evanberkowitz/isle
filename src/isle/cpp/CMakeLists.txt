@@ -96,3 +96,5 @@ if (NOT "${BLAZE_PARALLELISM}" STREQUAL "OMP")
   target_link_libraries(${LIBNAME} "${OpenMP_CXX_LIBRARIES}")
   target_linker_flags(${LIBNAME} "${OpenMP_LINKER_FLAGS}")
 endif ()
+
+

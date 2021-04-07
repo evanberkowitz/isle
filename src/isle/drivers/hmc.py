@@ -252,7 +252,7 @@ def _stride(values):
 
 def _loadIndices(fname):
     """!
-    Load all configuration anc checkpoint indices from a file.
+    Load all configuration and checkpoint indices from a file.
     """
     with h5.File(str(fname), "r") as h5f:
         configurations = sorted(map(int, h5f["configuration"].keys()))

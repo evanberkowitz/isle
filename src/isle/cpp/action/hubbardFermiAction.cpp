@@ -297,6 +297,18 @@ namespace isle {
             return -1.i*forceDirectSquare(_hfm, -1.i*phi);
         }
 
+        
+        template<> std::complex<double>
+        HubbardFermiAction<HFAAlgorithm::EXP,HFAAlgorithm::ML_APPROX_FORCE,HFABasis::PARTICLE_HOLE>::eval(
+            const CDVector & phi) const {
+                return -logdetQ(_hfm, phi);
+            }
+        template<> std::complex<double>
+        HubbardFermiAction<HFAAlgorithm::EXP,HFAAlgorithm::ML_APPROX_FORCE,HFABasis::PARTICLE_HOLE>::force(
+            const CDVector & phi) const{
+                return _model.forward(torch::Tensor(phi.data(),{phi.size()});
+            }
+        
         // instantiate all the templates we need right here
         template class HubbardFermiAction<HFAHopping::DIA, HFAAlgorithm::DIRECT_SINGLE, HFABasis::PARTICLE_HOLE>;
         template class HubbardFermiAction<HFAHopping::DIA, HFAAlgorithm::DIRECT_SINGLE, HFABasis::SPIN>;
@@ -307,6 +319,8 @@ namespace isle {
         template class HubbardFermiAction<HFAHopping::EXP, HFAAlgorithm::DIRECT_SINGLE, HFABasis::SPIN>;
         template class HubbardFermiAction<HFAHopping::EXP, HFAAlgorithm::DIRECT_SQUARE, HFABasis::PARTICLE_HOLE>;
         template class HubbardFermiAction<HFAHopping::EXP, HFAAlgorithm::DIRECT_SQUARE, HFABasis::SPIN>;
+
+        template class HubbardFermiAction<HFAHopping::EXP, HFAAlgorithm::ML_APPROX_FORCE, HFABasis::PARTICLE_HOLE>;
 
     } // namespace action
 }  // namespace isle
