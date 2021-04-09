@@ -168,11 +168,8 @@ namespace bind {
             // bind enums
             py::enum_<HFAAlgorithm>(mod, "HFAAlgorithm")
                 .value("DIRECT_SINGLE", HFAAlgorithm::DIRECT_SINGLE)
-         Ml_approx_force
                 .value("DIRECT_SQUARE", HFAAlgorithm::DIRECT_SQUARE)
                 .value("ML_APPROX_FORCE", HFAAlgorithm::ML_APPROX_FORCE);
-
-                
 
             py::enum_<HFABasis>(mod, "HFABasis")
                 .value("PARTICLE_HOLE", HFABasis::PARTICLE_HOLE)
@@ -193,7 +190,6 @@ namespace bind {
             bindSpecificHFA<HFAHopping::EXP, HFAAlgorithm::DIRECT_SQUARE, HFABasis::PARTICLE_HOLE>(mod, "HubbardFermiActionExpDirsquareOne", action);
             bindSpecificHFA<HFAHopping::EXP, HFAAlgorithm::DIRECT_SQUARE, HFABasis::SPIN>(mod, "HubbardFermiActionExpDirsquareZero", action);
 
-            Ml_approx_force
             bindSpecificHFA<HFAHopping::EXP, HFAAlgorithm::ML_APPROX_FORCE, HFABasis::PARTICLE_HOLE>(mod, "HubbardFermiActionExpMLApproxOne", action);
 
             mod.def("makeHubbardFermiAction",
