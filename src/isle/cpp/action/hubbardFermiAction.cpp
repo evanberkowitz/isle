@@ -298,41 +298,71 @@ namespace isle {
         }
 
 
-        template<> std::complex<double>
-        HubbardFermiAction<HFAHopping::EXP,HFAAlgorithm::ML_APPROX_FORCE,HFABasis::PARTICLE_HOLE>::eval(
-            const CDVector & phi) const {
-                return -logdetQ(_hfm, phi);
-            }
-        template<> CDVector
-        HubbardFermiAction<HFAHopping::EXP,HFAAlgorithm::ML_APPROX_FORCE,HFABasis::PARTICLE_HOLE>::force(
-            const CDVector & phi) const{
-                return _model.forward(torch::Tensor(phi.data(),{phi.size()});
-            }
+        std::complex<double>
+        HubbardFermiAction<HFAHopping::EXP, HFAAlgorithm::ML_APPROX_FORCE, HFABasis::PARTICLE_HOLE>::eval(
+            const CDVector &phi) const {
 
-        template<>
+            if (_shortcutForHoles) {
+                const auto ldp = logdetM(_hfm, phi, Species::PARTICLE);
+                return -toFirstLogBranch(ldp + std::conj(ldp));
+            }
+            else {
+                return -toFirstLogBranch(logdetM(_hfm, phi, Species::PARTICLE)
+                                         + logdetM(_hfm, phi, Species::HOLE));
+            }
+        }
+        CDVector
+        HubbardFermiAction<HFAHopping::EXP,HFAAlgorithm::ML_APPROX_FORCE,HFABasis::PARTICLE_HOLE>::force(
+        const CDVector & phi)  const{
+                
+    
+                auto b = at::zeros(phi.size(),at::dtype(at::kComplexDouble));
+                for (std::size_t i=0; i<phi.size(); ++i){
+
+                    b[i] = c10::complex<double>(phi[i]);
+                    
+                    }
+                std::vector<torch::jit::IValue> inputs ;
+                inputs.push_back(b);
+                auto output = _model.forward(inputs).toTensor();
+                CDVector y (phi.size()) ;
+                std::transform (output.data_ptr<c10::complex<double>>(),output.data_ptr<c10::complex<double>>()+phi.size(),y.begin(),
+                [](c10::complex<double> x ){return std::complex<double>(x);});
+                
+                return y;
+         
+                
+                            } 
+
+        
         HubbardFermiAction<HFAHopping::EXP,HFAAlgorithm::ML_APPROX_FORCE, HFABasis::PARTICLE_HOLE>::HubbardFermiAction(
                     const SparseMatrix<double> &kappaTilde,
                     const double muTilde, const std::int8_t sigmaKappa,
-                    const bool allowShortcut,const std::string model_path ):
-            _hfm{kappaTilde, muTilde, sigmaKappa},
-            _kp{_hfm.K(Species::PARTICLE)},
-            _kh{_hfm.K(Species::HOLE)},
-            _shortcutForHoles{false},
-            _model(torch::jit::load(pretrained_model_path))
-        { }
+                    const bool allowShortcut, const std::string model_path)
+            : _hfm{kappaTilde, muTilde, sigmaKappa},
+              _kp{_hfm.K(Species::PARTICLE)},
+              _kh{_hfm.K(Species::HOLE)},
+              _shortcutForHoles{allowShortcut
+                                    && _internal::_holeShortcutPossible<HFABasis::PARTICLE_HOLE>(
+                                        kappaTilde, muTilde, sigmaKappa)},
+              _model(torch::jit::load(model_path))
+            {}
 
 
-        template<>
+        
         HubbardFermiAction<HFAHopping::EXP,HFAAlgorithm::ML_APPROX_FORCE, HFABasis::PARTICLE_HOLE>::HubbardFermiAction(
                     const Lattice &lat, const double beta,
                     const double muTilde, const std::int8_t sigmaKappa,
-                    const bool allowShortcut,const std::string model_path):
-            _hfm{lat, beta, muTilde, sigmaKappa},
-            _kp{_hfm.K(Species::PARTICLE)},
-            _kh{_hfm.K(Species::HOLE)},
-            _shortcutForHoles{false},
-            _model(torch::jit::load(pretrained_model_path))
-        { }
+                    const bool allowShortcut,const std::string model_path)
+            :_hfm{lat, beta, muTilde, sigmaKappa},
+             _kp{_hfm.K(Species::PARTICLE)},
+             _kh{_hfm.K(Species::HOLE)},
+             _shortcutForHoles{allowShortcut
+                                    && _internal::_holeShortcutPossible<HFABasis::PARTICLE_HOLE>(
+                                        lat.hopping(), muTilde, sigmaKappa)},
+             _model(torch::jit::load(model_path))
+            {}
+                    
 
 
         // instantiate all the templates we need right here
