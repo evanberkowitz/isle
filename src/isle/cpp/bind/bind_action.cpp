@@ -102,7 +102,20 @@ namespace bind {
         void bindSpecificHFA(py::module &mod, const char * const name, A &action) {
             using HFA = HubbardFermiAction<HOPPING, ALGORITHM, BASIS>;
 
-
+        if constexpr (ALGORITHM == HFAAlgorithm::ML_APPROX_FORCE) {
+                py::class_<HFA>(mod, name, action)
+                    .def(py::init<SparseMatrix<double>, double, std::int8_t, bool, std::string>(),
+                        "kappa"_a, "mu"_a, "sigmaKappa"_a, "allowShortcut"_a, "model_path"_a)
+                    .def("eval", &HFA::eval)
+                    .def("force", &HFA::force);
+            } else{
+                py::class_<HFA>(mod, name, action)
+                    .def(py::init<SparseMatrix<double>, double, std::int8_t, bool>(),
+                        "kappa"_a, "mu"_a, "sigmaKappa"_a, "allowShortcut"_a)
+                    .def("eval", &HFA::eval)
+                    .def("force", &HFA::force);
+            }
+        }
 
         /// Make a specific HubbardFermiAction controlled through run-time parameters.
         py::object makeHubbardFermiAction(const SparseMatrix<double> &kappaTilde,
@@ -129,14 +142,15 @@ namespace bind {
                         return py::cast(HubbardFermiAction<HFAHopping::EXP,
                                         HFAAlgorithm::DIRECT_SINGLE,
                                         HFABasis::PARTICLE_HOLE>(kappaTilde, muTilde, sigmaKappa, allowShortcut));
-                    } else {  // HFAAlgorithm::DIRECT_SQUARE
+                    }  else if(algorithm == HFAAlgorithm::DIRECT_SQUARE){
                         return py::cast(HubbardFermiAction<HFAHopping::EXP,
                                         HFAAlgorithm::DIRECT_SQUARE,
                                         HFABasis::PARTICLE_HOLE>(kappaTilde, muTilde, sigmaKappa, allowShortcut));
-                    }
+                    }else {
+                    throw std::invalid_argument("makeHubbardFermiAction is not implemented for algorithm = HFAAlgorithm.ML_APPROX_FORCE");
+                            }
+                       }
                 }
-            }
-
             else {  // HFABasis::SPIN
                 if (hopping == HFAHopping::DIA) {
                     if (algorithm == HFAAlgorithm::DIRECT_SINGLE) {

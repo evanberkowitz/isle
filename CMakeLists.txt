@@ -36,6 +36,9 @@ option(ENABLE_TESTING "Enable Test Builds" ON)
 # look for 3rd party packages
 include(cmake/pybind11.cmake)
 
+#libtorch 
+include(cmake/NNgHMC.cmake)
+
 find_package(blaze 3.6 REQUIRED)
 add_library(blaze_options INTERFACE)
 target_include_directories(blaze_options SYSTEM INTERFACE ${blaze_INCLUDE_DIRS})
