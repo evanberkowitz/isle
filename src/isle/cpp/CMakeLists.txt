@@ -63,6 +63,6 @@ target_include_directories(${LIBNAME} PUBLIC ${CMAKE_CURRENT_BINARY_DIR})
 target_include_directories(${LIBNAME} PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
 
 
-#add_subdirectory(bind)
+add_subdirectory(bind)
 
 
