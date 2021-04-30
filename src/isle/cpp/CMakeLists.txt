@@ -62,5 +62,7 @@ target_include_directories(${LIBNAME} PUBLIC ${CMAKE_CURRENT_BINARY_DIR})
 
 target_include_directories(${LIBNAME} PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
 
-# add bindings code
+
 add_subdirectory(bind)
+
+
