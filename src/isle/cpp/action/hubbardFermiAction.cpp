@@ -314,27 +314,31 @@ namespace isle {
         CDVector
         HubbardFermiAction<HFAHopping::EXP,HFAAlgorithm::ML_APPROX_FORCE,HFABasis::PARTICLE_HOLE>::force(
         const CDVector & phi)  const{
-                
-    
-                auto b = at::zeros(phi.size(),at::dtype(at::kComplexDouble));
-                for (std::size_t i=0; i<phi.size(); ++i){
 
-                    b[i] = c10::complex<double>(phi[i]);
+                
+                // auto b = at::zeros(phi.size(),at::dtype(at::kComplexDouble));
+                // for (std::size_t i=0; i<phi.size(); ++i){
+
+                //     b[i] = c10::complex<double>(phi[i]);
                     
-                    }
+                //     }      
+            
+                auto b = torch::zeros(phi.size(), torch::TensorOptions().dtype(torch::kFloat64));
+                for (std::size_t i=0; i<phi.size(); ++i){
+                    b[i] = phi[i].real();                   
+                    }   
                 std::vector<torch::jit::IValue> inputs ;
                 inputs.push_back(b);
-                auto output = _model.forward(inputs).toTensor();
+                torch::Tensor output = _model.forward(inputs).toTensor();
                 CDVector y (phi.size()) ;
-                std::transform (output.data_ptr<c10::complex<double>>(),output.data_ptr<c10::complex<double>>()+phi.size(),y.begin(),
-                [](c10::complex<double> x ){return std::complex<double>(x);});
-                
+                // std::transform (output.data_ptr<c10::complex<double>>(),output.data_ptr<c10::complex<double>>()+phi.size(),y.begin(),
+                // [](c10::complex<double> x ){return std::complex<double>(x);});
+                std::transform (output.data_ptr<double>(),output.data_ptr<double>()+phi.size(),y.begin(),
+                 [](double x ){return std::complex<double>(x,0);});
+               
                 return y;
-         
-                
                             } 
 
-        
         HubbardFermiAction<HFAHopping::EXP,HFAAlgorithm::ML_APPROX_FORCE, HFABasis::PARTICLE_HOLE>::HubbardFermiAction(
                     const SparseMatrix<double> &kappaTilde,
                     const double muTilde, const std::int8_t sigmaKappa,

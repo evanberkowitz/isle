@@ -175,6 +175,34 @@ namespace bind {
             }
         }
 
+        ///Make HubbardFermiAction for ML_APPROX_FORCE Algorithm using run time parameters
+        py::object makeHubbardFermiActionMLApprox(const SparseMatrix<double> &kappaTilde,
+                                          const double muTilde,
+                                          const std::int8_t sigmaKappa,
+                                          const HFAHopping hopping,
+                                          const HFABasis basis,
+                                          const HFAAlgorithm algorithm,
+                                          const bool allowShortcut,const std::string model_path) {  
+            if (basis == HFABasis::PARTICLE_HOLE) {
+                if (hopping == HFAHopping::EXP) {
+                    if (algorithm == HFAAlgorithm::ML_APPROX_FORCE) {
+                        return py::cast(HubbardFermiAction<HFAHopping::EXP,
+                                        HFAAlgorithm::ML_APPROX_FORCE,
+                                        HFABasis::PARTICLE_HOLE>(kappaTilde, muTilde, sigmaKappa, allowShortcut,model_path));
+                         }
+                    else{
+                        throw std::invalid_argument("makeHubbardFermiActionMLApprox only for ML_APPROX_FORCE is defined ");
+                    }
+                                }
+                else{
+                    throw std::invalid_argument("makeHubbardFermiActionMLApprox only for EXP is defined ");
+                    }
+                }   
+            else{
+               throw std::invalid_argument("makeHubbardFermiActionMLApprox only for Particle_HOLE is defined "); 
+            }                                      
+         }
+
         /// Bind everything related to HubbardFermiActions.
         template <typename A>
         void bindHubbardFermiAction(py::module &mod, A &action) {
@@ -229,6 +257,33 @@ namespace bind {
                     "basis"_a=HFABasis::PARTICLE_HOLE,
                     "algorithm"_a= HFAAlgorithm::DIRECT_SINGLE,
                     "allowShortcut"_a=false);
+
+             mod.def("makeHubbardFermiActionMLApprox",
+                    makeHubbardFermiActionMLApprox,
+                    "kappaTilde"_a, "muTilde"_a, "sigmaKappa"_a,
+                    "hopping"_a=HFAHopping::EXP,
+                    "basis"_a=HFABasis::PARTICLE_HOLE,
+                    "algorithm"_a= HFAAlgorithm::ML_APPROX_FORCE,
+                    "allowShortcut"_a=false,
+                    "model_path"_a);
+
+            mod.def("makeHubbardFermiActionMLApprox",
+                    [] (const Lattice &lattice, const double beta,
+                        const double muTilde, const std::int8_t sigmaKappa,
+                        const HFAHopping hopping, const HFABasis basis,
+                        const HFAAlgorithm algorithm, const bool allowShortcut,const std::string model_path) {
+
+                        return makeHubbardFermiActionMLApprox(
+                            lattice.hopping()*beta/lattice.nt(),
+                            muTilde, sigmaKappa,
+                            hopping, basis, algorithm, allowShortcut,model_path);
+                    },
+                    "lat"_a, "beta"_a, "muTilde"_a, "sigmaKappa"_a,
+                    "hopping"_a=HFAHopping::EXP,
+                    "basis"_a=HFABasis::PARTICLE_HOLE,
+                    "algorithm"_a= HFAAlgorithm::ML_APPROX_FORCE,
+                    "allowShortcut"_a=false,
+                    "model_path"_a);
         }
     }
 

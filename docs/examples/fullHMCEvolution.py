@@ -13,11 +13,11 @@ import isle.drivers
 
 ### Specify input / output files
 # Write all data to this file.
-OUTFILE = "hmc-example.out.h5"
+OUTFILE = "Fou.h5"
 # Name of the lattice.
-LATTICE = "four_sites"
+LATTICE = "two_sites"
 
-### Specify parameters
+### Specify parameters.
 # isle.util.parameters takes arbitrary keyword arguments, constructs a new dataclass,
 # and stores the function arguments in an instance of it.
 # The object is written to the output file and read back in by all subsequent processes.
@@ -37,8 +37,7 @@ PARAMS = isle.util.parameters(
     # See documentation in docs/algorithm.
     hopping=isle.action.HFAHopping.EXP,
     basis=isle.action.HFABasis.PARTICLE_HOLE,
-    algorithm=isle.action.HFAAlgorithm.ML_APPROX_FORCE,
-    module_path="/p/project/cjjsc37/john/NNgHMC/NNg_model_trial.pt"
+    algorithm=isle.action.HFAAlgorithm.DIRECT_SINGLE
 )
 
 # Set the number of time slices.
@@ -62,13 +61,13 @@ def makeAction(lat, params):
     import isle.action
 
     return isle.action.HubbardGaugeAction(params.tilde("U", lat)) \
-        + isle.action.HubbardFermiAction(lat,
+        + isle.action.makeHubbardFermiAction(lat,
                                              params.beta,
                                              params.tilde("mu", lat),
                                              params.sigmaKappa,
                                              params.hopping,
                                              params.basis,
-                                             params.algorithm,params.module_path)
+                                             params.algorithm)
 
 
 def main():
@@ -124,7 +123,7 @@ def main():
     evolver = isle.evolver.ConstStepLeapfrog(hmcState.action, 1, 5, rng)
     # Produce configurations and save in intervals of 2 trajectories.
     # Place a checkpoint every 10 trajectories.
-    hmcState(evStage, evolver, 100, saveFreq=2, checkpointFreq=10)
+    hmcState(evStage, evolver, 10000, saveFreq=1, checkpointFreq=10)
 
     # That is it, clean up happens automatically.
 
