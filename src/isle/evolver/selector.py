@@ -39,6 +39,6 @@ class BinarySelector:
         \return `(energy0, data0, 0)` if `energy0` was selected, otherwise
                 `(energy1, data1, 1)`.
         """
-
+    
         return (energy1, data1, 1) if self.selectTrajPoint(energy0, energy1) == 1 \
             else (energy0, data0, 0)

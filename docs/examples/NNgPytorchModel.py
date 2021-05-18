@@ -8,8 +8,8 @@ import numpy as np
 
 
 # loading data for training
-xx = np.load('inputs_4sites_U2B4Nt32.npy')
-yy = np.load('targets_4sites_U2B4Nt32.npy')
+xx = np.load('trainingData_NN/inputs_2sites_U2B4Nt16.npy')
+yy = np.load('trainingData_NN/targets_2sites_U2B4Nt16.npy')
 
 input_dim = xx.shape[1]
 hidden_dim = [2*input_dim]
@@ -89,7 +89,7 @@ for epoch in tqdm(range(epochs)):
 
 #scripting the model
 script_module = torch.jit.script(model_torch)
-script_module.save("NNgModel_4sitesU2B4Nt32.pt")
+script_module.save("NNgModel_2sitesU2B4Nt16.pt")
 
 
 

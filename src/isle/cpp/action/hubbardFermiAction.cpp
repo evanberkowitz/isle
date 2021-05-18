@@ -314,7 +314,7 @@ namespace isle {
         CDVector
         HubbardFermiAction<HFAHopping::EXP,HFAAlgorithm::ML_APPROX_FORCE,HFABasis::PARTICLE_HOLE>::force(
         const CDVector & phi)  const{
-
+            /// The Pytorch Model predicts the force (Gauge+Fermi) 
                 
                 // auto b = at::zeros(phi.size(),at::dtype(at::kComplexDouble));
                 // for (std::size_t i=0; i<phi.size(); ++i){
@@ -322,7 +322,7 @@ namespace isle {
                 //     b[i] = c10::complex<double>(phi[i]);
                     
                 //     }      
-            
+                
                 auto b = torch::zeros(phi.size(), torch::TensorOptions().dtype(torch::kFloat64));
                 for (std::size_t i=0; i<phi.size(); ++i){
                     b[i] = phi[i].real();                   
@@ -331,12 +331,16 @@ namespace isle {
                 inputs.push_back(b);
                 torch::Tensor output = _model.forward(inputs).toTensor();
                 CDVector y (phi.size()) ;
-                // std::transform (output.data_ptr<c10::complex<double>>(),output.data_ptr<c10::complex<double>>()+phi.size(),y.begin(),
-                // [](c10::complex<double> x ){return std::complex<double>(x);});
+                
                 std::transform (output.data_ptr<double>(),output.data_ptr<double>()+phi.size(),y.begin(),
                  [](double x ){return std::complex<double>(x,0);});
-               
-                return y;
+
+                // std::transform (output.data_ptr<c10::complex<double>>(),output.data_ptr<c10::complex<double>>()+phi.size(),y.begin(),
+                // [](c10::complex<double> x ){return std::complex<double>(x);});
+                // std::cout <<"force="<< std::setprecision(10)<< y << std::endl;
+                // std::cout << "---------------------" <<std::endl;
+
+                return -1.0*y;
                             } 
 
         HubbardFermiAction<HFAHopping::EXP,HFAAlgorithm::ML_APPROX_FORCE, HFABasis::PARTICLE_HOLE>::HubbardFermiAction(

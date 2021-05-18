@@ -34,6 +34,7 @@ namespace bind {
                 );
             }
         };
+      
 
         void addAction(SumAction &sum, py::object &action) {
             try {
@@ -94,6 +95,17 @@ namespace bind {
                 .def_readonly("utilde", &HubbardGaugeAction::utilde)
                 .def("eval", &HubbardGaugeAction::eval)
                 .def("force", &HubbardGaugeAction::force)
+                ;
+        }
+
+        //binding HubbardGaugeAction for NN
+        template <typename a>
+        void bindHubbardGaugeActionML(py::module &mod, a &action) {
+            py::class_<HubbardGaugeActionML>(mod, "HubbardGaugeActionML", action)
+                .def(py::init<double>())
+                .def_readonly("utilde", &HubbardGaugeActionML::utilde)
+                .def("eval", &HubbardGaugeActionML::eval)
+                .def("force", &HubbardGaugeActionML::force)
                 ;
         }
 
@@ -293,6 +305,7 @@ namespace bind {
         auto action = bindBaseAction(actmod);
         bindSumAction(actmod, action);
         bindHubbardGaugeAction(actmod, action);
+        bindHubbardGaugeActionML(actmod, action);
         bindHubbardFermiAction(actmod, action);
     }
 }

@@ -19,12 +19,12 @@ import isle.drivers
 #parameters =list(map(float, input('Enter U,beta and Nt seperated by space: ').split(' ')))
 
 
-HMC_data_file = "FoursiteU3B3Nt16.h5"
+HMC_data_file = "trainingData_NN/HMC_run/FoursitesU3B3Nt32.h5"
 hf = h5.File(HMC_data_file, 'r')
 
 LATTICE = "four_sites"
 lat = isle.LATTICES[LATTICE]
-Nt = 16 # number of time steps
+Nt = 32 # number of time steps
 lat.nt(Nt)
 
 
@@ -106,10 +106,10 @@ yy[:num_samples,:] = gradient_gaus[:num_samples,:]
 yy[num_samples:,:] = gradient_actualHMC[:,:]
 
 #saving the training_data
-np.save('inputs_4sites_U3B3Nt16',xx)
-np.save('targets_4sites_U3B3Nt16',yy)
+np.save(f'trainingData_NN/inputs_4sites_U{PARAMS.U}B{PARAMS.beta}Nt{Nt}',xx)
+np.save(f'trainingData_NN/targets_4sites_U{PARAMS.U}B{PARAMS.beta}Nt{Nt}',yy)
 
 #plotting histogram of training_data
 plt.hist(np.real(xx).flatten(),density=True,bins=30,label='training_gaus + HMC')
 plt.legend()
-plt.savefig('trainingData_4sites_U3B3Nt16.pdf')
+plt.savefig(f'trainingData_NN/trainingData_4sites_U{PARAMS.U}B{PARAMS.beta}Nt{Nt}.pdf')

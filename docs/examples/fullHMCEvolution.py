@@ -13,7 +13,7 @@ import isle.drivers
 
 ### Specify input / output files
 # Write all data to this file.
-OUTFILE = "Fou.h5"
+OUTFILE = "trainingData_NN/HMC_run/TwositesU2B2Nt16.h5"
 # Name of the lattice.
 LATTICE = "two_sites"
 
@@ -26,8 +26,8 @@ LATTICE = "two_sites"
 # Note that all objects stored in here must be representable in and constructible
 # from YAML. You need to register new handlers if you have custom types.
 PARAMS = isle.util.parameters(
-    beta=3.,         # inverse temperature
-    U=2.,            # on-site coupling
+    beta=6.,         # inverse temperature
+    U=4.,            # on-site coupling
     mu=0,           # chemical potential
     sigmaKappa=-1,  # prefactor of kappa for holes / spin down
                     # (+1 only allowed for bipartite lattices)
