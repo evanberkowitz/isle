@@ -314,27 +314,35 @@ namespace isle {
         CDVector
         HubbardFermiAction<HFAHopping::EXP,HFAAlgorithm::ML_APPROX_FORCE,HFABasis::PARTICLE_HOLE>::force(
         const CDVector & phi)  const{
+            /// The Pytorch Model predicts the force (Gauge+Fermi) 
                 
-    
-                auto b = at::zeros(phi.size(),at::dtype(at::kComplexDouble));
-                for (std::size_t i=0; i<phi.size(); ++i){
+                // auto b = at::zeros(phi.size(),at::dtype(at::kComplexDouble));
+                // for (std::size_t i=0; i<phi.size(); ++i){
 
-                    b[i] = c10::complex<double>(phi[i]);
+                //     b[i] = c10::complex<double>(phi[i]);
                     
-                    }
+                //     }      
+                
+                auto b = torch::zeros(phi.size(), torch::TensorOptions().dtype(torch::kFloat64));
+                for (std::size_t i=0; i<phi.size(); ++i){
+                    b[i] = phi[i].real();                   
+                    }   
                 std::vector<torch::jit::IValue> inputs ;
                 inputs.push_back(b);
-                auto output = _model.forward(inputs).toTensor();
+                torch::Tensor output = _model.forward(inputs).toTensor();
                 CDVector y (phi.size()) ;
-                std::transform (output.data_ptr<c10::complex<double>>(),output.data_ptr<c10::complex<double>>()+phi.size(),y.begin(),
-                [](c10::complex<double> x ){return std::complex<double>(x);});
                 
-                return y;
-         
-                
+                std::transform (output.data_ptr<double>(),output.data_ptr<double>()+phi.size(),y.begin(),
+                 [](double x ){return std::complex<double>(x,0);});
+
+                // std::transform (output.data_ptr<c10::complex<double>>(),output.data_ptr<c10::complex<double>>()+phi.size(),y.begin(),
+                // [](c10::complex<double> x ){return std::complex<double>(x);});
+                // std::cout <<"force="<< std::setprecision(10)<< y << std::endl;
+                // std::cout << "---------------------" <<std::endl;
+
+                return -1.0*y;
                             } 
 
-        
         HubbardFermiAction<HFAHopping::EXP,HFAAlgorithm::ML_APPROX_FORCE, HFABasis::PARTICLE_HOLE>::HubbardFermiAction(
                     const SparseMatrix<double> &kappaTilde,
                     const double muTilde, const std::int8_t sigmaKappa,
