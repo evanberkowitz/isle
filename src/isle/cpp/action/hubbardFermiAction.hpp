@@ -9,6 +9,10 @@
 #include "../hubbardFermiMatrixDia.hpp"
 #include "../hubbardFermiMatrixExp.hpp"
 #include "../lattice.hpp"
+#include <torch/script.h>
+#include <memory>
+#include <iostream>
+
 
 namespace isle {
     namespace action {
@@ -22,7 +26,7 @@ namespace isle {
         /**
          * See documentation in docs/algorithm for more information.
          */
-        enum class HFAAlgorithm { DIRECT_SINGLE, DIRECT_SQUARE };
+        enum class HFAAlgorithm { DIRECT_SINGLE, DIRECT_SQUARE, ML_APPROX_FORCE};
 
         /// \cond DO_NOT_DOCUMENT
         namespace _internal {
@@ -41,6 +45,7 @@ namespace isle {
             bool _holeShortcutPossible(const SparseMatrix<double> &hopping,
                                        const double muTilde,
                                        const std::int8_t sigmaKappa);
+
 
 
             template <> bool _holeShortcutPossible<HFABasis::PARTICLE_HOLE>(
@@ -120,6 +125,8 @@ namespace isle {
                                         lat.hopping(), muTilde, sigmaKappa)}
             { }
 
+          
+
             HubbardFermiAction(const HubbardFermiAction &other) = default;
             HubbardFermiAction &operator=(const HubbardFermiAction &other) = default;
             HubbardFermiAction(HubbardFermiAction &&other) = default;
@@ -139,6 +146,8 @@ namespace isle {
             const typename _internal::KMatrixType<HOPPING>::type _kh;  ///< Matrix K for holes.
             /// Can logdetM for holes be computed from logdetM from particles?
             const bool _shortcutForHoles;
+            //torch::jit::script::Module _model;
+
         };
 
         // For each specialization, forward declare specializations of eval
@@ -168,6 +177,8 @@ namespace isle {
         template <> CDVector
         HubbardFermiAction<HFAHopping::DIA, HFAAlgorithm::DIRECT_SQUARE, HFABasis::SPIN>::force(
             const CDVector &phi) const;
+
+
 
         template <> std::complex<double>
         HubbardFermiAction<HFAHopping::EXP, HFAAlgorithm::DIRECT_SINGLE, HFABasis::PARTICLE_HOLE>::eval(
@@ -205,6 +216,49 @@ namespace isle {
         extern template class HubbardFermiAction<HFAHopping::EXP, HFAAlgorithm::DIRECT_SINGLE, HFABasis::SPIN>;
         extern template class HubbardFermiAction<HFAHopping::EXP, HFAAlgorithm::DIRECT_SQUARE, HFABasis::PARTICLE_HOLE>;
         extern template class HubbardFermiAction<HFAHopping::EXP, HFAAlgorithm::DIRECT_SQUARE, HFABasis::SPIN>;
+
+        template<>
+        class  HubbardFermiAction<HFAHopping::EXP, HFAAlgorithm::ML_APPROX_FORCE, HFABasis::PARTICLE_HOLE>:public Action{
+            public:
+
+            
+
+            /// Construct from individual parameters of HubbardFermiMatrix[Dia,Exp].
+            HubbardFermiAction(const SparseMatrix<double> &kappaTilde,
+                               const double muTilde, const std::int8_t sigmaKappa,
+                               const bool allowShortcut,const std::string model_path,const double utilde);
+                
+                  
+            /// Construct from individual parameters of HubbardFermiMatrix[Dia,Exp].
+            HubbardFermiAction(const Lattice &lat, const double beta,
+                               const double muTilde, const std::int8_t sigmaKappa,
+                               const bool allowShortcut,std::string model_path,const double utilde);
+
+
+            HubbardFermiAction(const HubbardFermiAction &other) = default;
+            HubbardFermiAction &operator=(const HubbardFermiAction &other) = default;
+            HubbardFermiAction(HubbardFermiAction &&other) = default;
+            HubbardFermiAction &operator=(HubbardFermiAction &&other) = default;
+            ~HubbardFermiAction() override = default;
+
+            /// Evaluate the %Action for given auxilliary field phi.
+            std::complex<double> eval(const CDVector &phi) const override;
+
+            /// Calculate force for given auxilliary field phi.
+            CDVector force(const CDVector &phi) const override;
+
+            private:
+            /// Stores all necessary parameters.
+            const typename _internal::HFM<HFAHopping::EXP>::type _hfm;
+            const typename _internal::KMatrixType<HFAHopping::EXP>::type _kp;  ///< Matrix K for particles.
+            const typename _internal::KMatrixType<HFAHopping::EXP>::type _kh;  ///< Matrix K for holes.
+            /// Can logdetM for holes be computed from logdetM from particles?
+            const bool _shortcutForHoles; 
+            mutable torch::jit::script::Module _model;
+            double _utilde;
+                
+                  
+        };        
 
     }  // namespace action
 }  // namespace isle

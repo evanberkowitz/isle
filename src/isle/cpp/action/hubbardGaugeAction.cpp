@@ -9,8 +9,9 @@ namespace isle {
         }
 
         Vector<std::complex<double>> HGA::force(const Vector<std::complex<double>> &phi) const {
-	    return -phi/utilde;
+	         return -phi/utilde;
         }
+
     }  // namespace action
 }  // namespace isle
 

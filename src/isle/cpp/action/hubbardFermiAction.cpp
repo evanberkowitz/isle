@@ -297,6 +297,89 @@ namespace isle {
             return -1.i*forceDirectSquare(_hfm, -1.i*phi);
         }
 
+
+        std::complex<double>
+        HubbardFermiAction<HFAHopping::EXP, HFAAlgorithm::ML_APPROX_FORCE, HFABasis::PARTICLE_HOLE>::eval(
+            const CDVector &phi) const {
+
+            // evaluvates the fermi and gauge action
+
+            if (_shortcutForHoles) {
+                const auto ldp = logdetM(_hfm, phi, Species::PARTICLE);
+                return -toFirstLogBranch(ldp + std::conj(ldp)) 
+                + (phi, phi)/2./_utilde ;
+            }
+            else {
+                return -toFirstLogBranch(logdetM(_hfm, phi, Species::PARTICLE)
+                                         + logdetM(_hfm, phi, Species::HOLE)) 
+                                          + (phi, phi)/2./_utilde;
+            }
+        }
+        CDVector
+        HubbardFermiAction<HFAHopping::EXP,HFAAlgorithm::ML_APPROX_FORCE,HFABasis::PARTICLE_HOLE>::force(
+        const CDVector & phi)  const{
+            /// The Pytorch Model predicts the force (Gauge+Fermi) 
+                
+                // auto b = at::zeros(phi.size(),at::dtype(at::kComplexDouble));
+                // for (std::size_t i=0; i<phi.size(); ++i){
+
+                //     b[i] = c10::complex<double>(phi[i]);
+                    
+                //     }      
+                
+                auto b = torch::zeros(phi.size(), torch::TensorOptions().dtype(torch::kFloat64));
+                for (std::size_t i=0; i<phi.size(); ++i){
+                    b[i] = phi[i].real();                   
+                    }   
+                std::vector<torch::jit::IValue> inputs ;
+                inputs.push_back(b);
+                torch::Tensor output = _model.forward(inputs).toTensor();
+                CDVector y (phi.size()) ;
+                
+                std::transform (output.data_ptr<double>(),output.data_ptr<double>()+phi.size(),y.begin(),
+                 [](double x ){return std::complex<double>(x,0);});
+
+                // std::transform (output.data_ptr<c10::complex<double>>(),output.data_ptr<c10::complex<double>>()+phi.size(),y.begin(),
+                // [](c10::complex<double> x ){return std::complex<double>(x);});
+                // std::cout <<"force="<< std::setprecision(10)<< y << std::endl;
+                // std::cout << "---------------------" <<std::endl;
+
+                return -1.0*y;
+                
+                            } 
+
+        HubbardFermiAction<HFAHopping::EXP,HFAAlgorithm::ML_APPROX_FORCE, HFABasis::PARTICLE_HOLE>::HubbardFermiAction(
+                    const SparseMatrix<double> &kappaTilde,
+                    const double muTilde, const std::int8_t sigmaKappa,
+                    const bool allowShortcut, const std::string model_path,const double utilde)
+            : _hfm{kappaTilde, muTilde, sigmaKappa},
+              _kp{_hfm.K(Species::PARTICLE)},
+              _kh{_hfm.K(Species::HOLE)},
+              _shortcutForHoles{allowShortcut
+                                    && _internal::_holeShortcutPossible<HFABasis::PARTICLE_HOLE>(
+                                        kappaTilde, muTilde, sigmaKappa)},
+              _model(torch::jit::load(model_path)),
+              _utilde{utilde}
+            {}
+
+
+        
+        HubbardFermiAction<HFAHopping::EXP,HFAAlgorithm::ML_APPROX_FORCE, HFABasis::PARTICLE_HOLE>::HubbardFermiAction(
+                    const Lattice &lat, const double beta, 
+                    const double muTilde, const std::int8_t sigmaKappa,
+                    const bool allowShortcut,const std::string model_path,const double utilde)
+            :_hfm{lat, beta, muTilde, sigmaKappa},
+             _kp{_hfm.K(Species::PARTICLE)},
+             _kh{_hfm.K(Species::HOLE)},
+             _shortcutForHoles{allowShortcut
+                                    && _internal::_holeShortcutPossible<HFABasis::PARTICLE_HOLE>(
+                                        lat.hopping(), muTilde, sigmaKappa)},
+             _model(torch::jit::load(model_path)),
+             _utilde{utilde}
+            {}
+                    
+
+
         // instantiate all the templates we need right here
         template class HubbardFermiAction<HFAHopping::DIA, HFAAlgorithm::DIRECT_SINGLE, HFABasis::PARTICLE_HOLE>;
         template class HubbardFermiAction<HFAHopping::DIA, HFAAlgorithm::DIRECT_SINGLE, HFABasis::SPIN>;
@@ -307,6 +390,8 @@ namespace isle {
         template class HubbardFermiAction<HFAHopping::EXP, HFAAlgorithm::DIRECT_SINGLE, HFABasis::SPIN>;
         template class HubbardFermiAction<HFAHopping::EXP, HFAAlgorithm::DIRECT_SQUARE, HFABasis::PARTICLE_HOLE>;
         template class HubbardFermiAction<HFAHopping::EXP, HFAAlgorithm::DIRECT_SQUARE, HFABasis::SPIN>;
+
+        template class HubbardFermiAction<HFAHopping::EXP, HFAAlgorithm::ML_APPROX_FORCE, HFABasis::PARTICLE_HOLE>;
 
     } // namespace action
 }  // namespace isle

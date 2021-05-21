@@ -21,7 +21,7 @@ class Measure:
 
     Assumes that configurations are stored in the default format as written by e.g.
     the driver isle.drivers.hmc.HMC.
-    Measurement results can be written to a new file or to the iput file.
+    Measurement results can be written to a new file or to the input file.
     The driver checks for conflicts should the output file already exist and removes
     conflicting entries iff it is initialized with `overwrite==True`.
     This assumes that the measurements only write to the file under their `savePath`

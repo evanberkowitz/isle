@@ -119,5 +119,6 @@ yaml.add_representer(HFAAlgorithm,
 yaml.add_constructor("!HFAAlgorithm",
                      lambda loader, node: \
                      {"DIRECT_SINGLE": HFAAlgorithm.DIRECT_SINGLE,
-                      "DIRECT_SQUARE": HFAAlgorithm.DIRECT_SQUARE}[loader.construct_scalar(node)],
+                      "DIRECT_SQUARE": HFAAlgorithm.DIRECT_SQUARE,
+                      "ML_APPROX_FORCE":HFAAlgorithm.ML_APPROX_FORCE}[loader.construct_scalar(node)],
                      Loader=yaml.SafeLoader)

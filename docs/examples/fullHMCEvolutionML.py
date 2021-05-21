@@ -4,20 +4,16 @@ Example script to show how to set up the HMC driver for production including the
 
 # All output should go through a logger for better control and consistency.
 from logging import getLogger
-
+import numpy as np
 # Import base functionality of Isle.
 import isle
 # Import drivers (not included in above).
 import isle.drivers
 
-
-### Specify input / output files
-# Write all data to this file.
-OUTFILE = "trainingData_NN/HMC_run/TwositesU2B2Nt16.h5"
 # Name of the lattice.
 LATTICE = "two_sites"
 
-### Specify parameters.
+### Specify parameters
 # isle.util.parameters takes arbitrary keyword arguments, constructs a new dataclass,
 # and stores the function arguments in an instance of it.
 # The object is written to the output file and read back in by all subsequent processes.
@@ -26,8 +22,8 @@ LATTICE = "two_sites"
 # Note that all objects stored in here must be representable in and constructible
 # from YAML. You need to register new handlers if you have custom types.
 PARAMS = isle.util.parameters(
-    beta=6.,         # inverse temperature
-    U=4.,            # on-site coupling
+    beta=4.,         # inverse temperature
+    U=2.,            # on-site coupling
     mu=0,           # chemical potential
     sigmaKappa=-1,  # prefactor of kappa for holes / spin down
                     # (+1 only allowed for bipartite lattices)
@@ -37,12 +33,16 @@ PARAMS = isle.util.parameters(
     # See documentation in docs/algorithm.
     hopping=isle.action.HFAHopping.EXP,
     basis=isle.action.HFABasis.PARTICLE_HOLE,
-    algorithm=isle.action.HFAAlgorithm.DIRECT_SINGLE
-)
-
+    algorithm=isle.action.HFAAlgorithm.ML_APPROX_FORCE,
+    allowShortcut = False,
+    module_path="/p/project/cjjsc37/john/testing/isle/docs/examples/NNgHMC_models/NNgModel_2sitesU2B4Nt16.pt")
 # Set the number of time slices.
 # This is stored in isle.Lattice and does not go into the above object.
 NT = 16
+
+### Specify input / output files
+# Write all data to this file.
+OUTFILE = f"testNNgHMC_2sitesNmd3_U{PARAMS.U}B{PARAMS.beta}Nt{NT}.h5"
 
 
 ### Function to construct actions.
@@ -60,14 +60,15 @@ def makeAction(lat, params):
     import isle
     import isle.action
 
-    return isle.action.HubbardGaugeAction(params.tilde("U", lat)) \
-        + isle.action.makeHubbardFermiAction(lat,
+    return   isle.action.makeHubbardFermiActionMLApprox(lat,
                                              params.beta,
                                              params.tilde("mu", lat),
                                              params.sigmaKappa,
                                              params.hopping,
                                              params.basis,
-                                             params.algorithm)
+                                             params.algorithm,
+                                             params.allowShortcut,params.module_path, 
+                                             params.tilde("U", lat))
 
 
 def main():
@@ -106,7 +107,7 @@ def main():
                                  PARAMS.tilde("U", lat)**(1/2),
                                  lat.lattSize())
                       +0j)
-
+    
     # Run thermalization.
     log.info("Thermalizing")
     # Pick an evolver which linearly decreases the number of MD steps from 20 to 5.
@@ -119,11 +120,12 @@ def main():
 
     # Run production.
     log.info("Producing")
+    
     # Pick a new evolver with a constant number of steps to get a reproducible ensemble.
-    evolver = isle.evolver.ConstStepLeapfrog(hmcState.action, 1, 5, rng)
+    evolver = isle.evolver.ConstStepLeapfrog(hmcState.action, 1,3, rng)
     # Produce configurations and save in intervals of 2 trajectories.
     # Place a checkpoint every 10 trajectories.
-    hmcState(evStage, evolver, 10000, saveFreq=1, checkpointFreq=10)
+    hmcState(phi, evolver,10000, saveFreq=1, checkpointFreq=10)
 
     # That is it, clean up happens automatically.
 
