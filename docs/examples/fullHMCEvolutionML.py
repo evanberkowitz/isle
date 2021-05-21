@@ -11,7 +11,7 @@ import isle
 import isle.drivers
 
 # Name of the lattice.
-LATTICE = "four_sites"
+LATTICE = "two_sites"
 
 ### Specify parameters
 # isle.util.parameters takes arbitrary keyword arguments, constructs a new dataclass,
@@ -22,8 +22,8 @@ LATTICE = "four_sites"
 # Note that all objects stored in here must be representable in and constructible
 # from YAML. You need to register new handlers if you have custom types.
 PARAMS = isle.util.parameters(
-    beta=6.,         # inverse temperature
-    U=4.,            # on-site coupling
+    beta=4.,         # inverse temperature
+    U=2.,            # on-site coupling
     mu=0,           # chemical potential
     sigmaKappa=-1,  # prefactor of kappa for holes / spin down
                     # (+1 only allowed for bipartite lattices)
@@ -35,14 +35,14 @@ PARAMS = isle.util.parameters(
     basis=isle.action.HFABasis.PARTICLE_HOLE,
     algorithm=isle.action.HFAAlgorithm.ML_APPROX_FORCE,
     allowShortcut = False,
-    module_path="/p/project/cjjsc37/john/testing/isle/docs/examples/NNgHMC_models/NNgModel_4sitesU4B6Nt16.pt")
+    module_path="/p/project/cjjsc37/john/testing/isle/docs/examples/NNgHMC_models/NNgModel_2sitesU2B4Nt16.pt")
 # Set the number of time slices.
 # This is stored in isle.Lattice and does not go into the above object.
 NT = 16
 
 ### Specify input / output files
 # Write all data to this file.
-OUTFILE = f"NNgHMCData/NNgHMC_4sitesNmd3_U{PARAMS.U}B{PARAMS.beta}Nt{NT}.h5"
+OUTFILE = f"testNNgHMC_2sitesNmd3_U{PARAMS.U}B{PARAMS.beta}Nt{NT}.h5"
 
 
 ### Function to construct actions.
@@ -60,15 +60,15 @@ def makeAction(lat, params):
     import isle
     import isle.action
 
-    return  isle.action.HubbardGaugeActionML(params.tilde("U", lat)) \
-             + isle.action.makeHubbardFermiActionMLApprox(lat,
+    return   isle.action.makeHubbardFermiActionMLApprox(lat,
                                              params.beta,
                                              params.tilde("mu", lat),
                                              params.sigmaKappa,
                                              params.hopping,
                                              params.basis,
                                              params.algorithm,
-                                             params.allowShortcut,params.module_path)
+                                             params.allowShortcut,params.module_path, 
+                                             params.tilde("U", lat))
 
 
 def main():
@@ -107,10 +107,7 @@ def main():
                                  PARAMS.tilde("U", lat)**(1/2),
                                  lat.lattSize())
                       +0j)
-
-
-
-
+    
     # Run thermalization.
     log.info("Thermalizing")
     # Pick an evolver which linearly decreases the number of MD steps from 20 to 5.

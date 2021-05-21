@@ -8,8 +8,9 @@ import numpy as np
 
 
 # loading data for training
-xx = np.load('trainingData_NN/inputs_2sites_U2B4Nt16.npy')
-yy = np.load('trainingData_NN/targets_2sites_U2B4Nt16.npy')
+xx = np.load('trainingData_NN/inputs_4sites_U3.0B3.0Nt32.npy')
+yy = np.load('trainingData_NN/targets_4sites_U3.0B3.0Nt32.npy')
+
 
 input_dim = xx.shape[1]
 hidden_dim = [2*input_dim]
@@ -51,8 +52,8 @@ class NNg(nn.Module):
 
 epochs = 80
 batchsize = 150
-# to access a small section of the training data using the array indexing
-inputs, targets = torch.from_numpy(xx).double(), torch.from_numpy(yy).double()
+#converting to tensors
+inputs, targets = torch.from_numpy(np.real(xx)).double(), torch.from_numpy(np.real(yy)).double()
 train_ds = TensorDataset(inputs, targets)
 # split the data into batches
 train_dl = DataLoader(train_ds, batchsize, shuffle=False)
@@ -89,7 +90,7 @@ for epoch in tqdm(range(epochs)):
 
 #scripting the model
 script_module = torch.jit.script(model_torch)
-script_module.save("NNgModel_2sitesU2B4Nt16.pt")
+script_module.save("NNgModel_del.pt")
 
 
 

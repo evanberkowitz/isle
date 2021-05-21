@@ -48,7 +48,7 @@ class ConstStepLeapfrog(Evolver):
             stage.logWeights["logdetJ"] = logdetJ
 
         # do MD integration
-        pi = Vector(self.rng.normal(0, 1, len(stage.phi))+0j)
+        pi = Vector(self.rng.normal(0, 1, len(stage.phi))+0j) 
     
         phiMD1, pi1, actValMD1 = leapfrog(phiMD, pi, self.action, self.length, self.nstep)
 
@@ -58,7 +58,7 @@ class ConstStepLeapfrog(Evolver):
         # accept/reject on MC manifold
         energy0 = stage.sumLogWeights()+0.5*np.linalg.norm(pi)**2  
         energy1 = actVal1+logdetJ1+0.5*np.linalg.norm(pi1)**2 
-
+    
         trajPoint = self.selector.selectTrajPoint(energy0, energy1)
         self.trajPoints.append(trajPoint)
 
@@ -175,6 +175,8 @@ class LinearStepLeapfrog(Evolver):
         # accept/reject on MC manifold
         energy0 = stage.sumLogWeights()+0.5*np.linalg.norm(pi)**2
         energy1 = actVal1+logdetJ1+np.linalg.norm(pi1)**2/2
+
+
         trajPoint = self.selector.selectTrajPoint(energy0, energy1)
         self.trajPoints.append(trajPoint)
 
