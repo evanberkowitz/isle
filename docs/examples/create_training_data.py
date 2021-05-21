@@ -9,25 +9,19 @@ import isle
 import isle.drivers
 
 
-# if len(sys.argv) > 1:
-#     #HMC data file 
-#     HMC_data_file = str(sys.argv[1])
-# else:
-#     print("Please enter the h5 file")
-#     sys.exit()
+if len(sys.argv) > 1:
+    #HMC data file 
+    HMC_data_file = str(sys.argv[1])
+else:
+    print("Please enter the h5 file")
+    sys.exit()
 
-#parameters =list(map(float, input('Enter U,beta and Nt seperated by space: ').split(' ')))
-
-
-HMC_data_file = "trainingData_NN/HMC_run/FoursitesU3B3Nt32.h5"
 hf = h5.File(HMC_data_file, 'r')
 
 LATTICE = "four_sites"
 lat = isle.LATTICES[LATTICE]
 Nt = 32 # number of time steps
 lat.nt(Nt)
-
-
 
 PARAMS = isle.util.parameters(
     beta=3.0,         # inverse temperature
@@ -63,12 +57,12 @@ action = makeAction(lat,PARAMS)
 
 #loading the trajectory indexes from actual HMC run
 traj_index = [int(index) for index in np.array((hf['configuration']))]
-
+check_index = [print("negative index") for i in traj_index if i < 0]
 
 ############intialization##################
 training_actualHMC = np.zeros((len(traj_index),lat.lattSize()))+ 0j
 gradient_actualHMC = np.zeros((len(traj_index),lat.lattSize()))+ 0j
-action_HMC = np.zeros(len(traj_index)) + 0.j
+# action_HMC = np.zeros(len(traj_index)) + 0.j
 
 # training data from Gaussian distribution
 num_samples = 10000
@@ -79,20 +73,16 @@ gradient_gaus = np.zeros((num_samples,lat.lattSize())) + 0j
 xx = np.zeros((len(traj_index)+ num_samples,lat.lattSize())) + 0j
 yy = np.zeros((len(traj_index)+ num_samples,lat.lattSize())) + 0j
 
+
 #loading actual HMC phi's and calculating the force
 with h5.File(HMC_data_file, "r") as h5f:
     for i,index in  tqdm(enumerate(traj_index)):
-        configuration, act = isle.h5io.loadConfiguration(h5f,index)
-        training_actualHMC[i,:] = configuration
-        action_HMC[i] = act
+        # get the configuration group with the given index
+        cfgGrp = hf["configuration"][str(index)]
+        training_actualHMC[i,:] , _ = cfgGrp["phi"][()], cfgGrp["actVal"][()]
         gradient_actualHMC[i,:] = -action.force(isle.Vector(training_actualHMC[i,:]+0j))
 
 
-# phi_r = isle.Vector(np.random.normal(0,
-#                                  PARAMS.tilde("U", lat)**(1/2),
-#                                  lat.lattSize())
-#                       +0j)
-# gradient_gaus = -action.force(phi_r)
 
 #creating gaussian samples
 for i in tqdm(range(num_samples)): 
@@ -106,10 +96,10 @@ yy[:num_samples,:] = gradient_gaus[:num_samples,:]
 yy[num_samples:,:] = gradient_actualHMC[:,:]
 
 #saving the training_data
-np.save(f'trainingData_NN/inputs_4sites_U{PARAMS.U}B{PARAMS.beta}Nt{Nt}',xx)
-np.save(f'trainingData_NN/targets_4sites_U{PARAMS.U}B{PARAMS.beta}Nt{Nt}',yy)
+np.save(f'trainingData_NN/tinputs_4sites_U{PARAMS.U}B{PARAMS.beta}Nt{Nt}',xx)
+np.save(f'trainingData_NN/ttargets_4sites_U{PARAMS.U}B{PARAMS.beta}Nt{Nt}',yy)
 
 #plotting histogram of training_data
 plt.hist(np.real(xx).flatten(),density=True,bins=30,label='training_gaus + HMC')
 plt.legend()
-plt.savefig(f'trainingData_NN/trainingData_4sites_U{PARAMS.U}B{PARAMS.beta}Nt{Nt}.pdf')
+plt.savefig(f'trainingData_NN/ttrainingData_4sites_U{PARAMS.U}B{PARAMS.beta}Nt{Nt}.pdf')

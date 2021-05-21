@@ -220,16 +220,20 @@ namespace isle {
         template<>
         class  HubbardFermiAction<HFAHopping::EXP, HFAAlgorithm::ML_APPROX_FORCE, HFABasis::PARTICLE_HOLE>:public Action{
             public:
+
+            
+
             /// Construct from individual parameters of HubbardFermiMatrix[Dia,Exp].
             HubbardFermiAction(const SparseMatrix<double> &kappaTilde,
                                const double muTilde, const std::int8_t sigmaKappa,
-                               const bool allowShortcut,const std::string model_path);
+                               const bool allowShortcut,const std::string model_path,const double utilde);
                 
                   
             /// Construct from individual parameters of HubbardFermiMatrix[Dia,Exp].
             HubbardFermiAction(const Lattice &lat, const double beta,
                                const double muTilde, const std::int8_t sigmaKappa,
-                               const bool allowShortcut,std::string model_path);
+                               const bool allowShortcut,std::string model_path,const double utilde);
+
 
             HubbardFermiAction(const HubbardFermiAction &other) = default;
             HubbardFermiAction &operator=(const HubbardFermiAction &other) = default;
@@ -249,8 +253,9 @@ namespace isle {
             const typename _internal::KMatrixType<HFAHopping::EXP>::type _kp;  ///< Matrix K for particles.
             const typename _internal::KMatrixType<HFAHopping::EXP>::type _kh;  ///< Matrix K for holes.
             /// Can logdetM for holes be computed from logdetM from particles?
-            const bool _shortcutForHoles;
+            const bool _shortcutForHoles; 
             mutable torch::jit::script::Module _model;
+            double _utilde;
                 
                   
         };        

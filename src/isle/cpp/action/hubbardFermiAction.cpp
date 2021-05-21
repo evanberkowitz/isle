@@ -302,13 +302,17 @@ namespace isle {
         HubbardFermiAction<HFAHopping::EXP, HFAAlgorithm::ML_APPROX_FORCE, HFABasis::PARTICLE_HOLE>::eval(
             const CDVector &phi) const {
 
+            // evaluvates the fermi and gauge action
+
             if (_shortcutForHoles) {
                 const auto ldp = logdetM(_hfm, phi, Species::PARTICLE);
-                return -toFirstLogBranch(ldp + std::conj(ldp));
+                return -toFirstLogBranch(ldp + std::conj(ldp)) 
+                + (phi, phi)/2./_utilde ;
             }
             else {
                 return -toFirstLogBranch(logdetM(_hfm, phi, Species::PARTICLE)
-                                         + logdetM(_hfm, phi, Species::HOLE));
+                                         + logdetM(_hfm, phi, Species::HOLE)) 
+                                          + (phi, phi)/2./_utilde;
             }
         }
         CDVector
@@ -341,34 +345,37 @@ namespace isle {
                 // std::cout << "---------------------" <<std::endl;
 
                 return -1.0*y;
+                
                             } 
 
         HubbardFermiAction<HFAHopping::EXP,HFAAlgorithm::ML_APPROX_FORCE, HFABasis::PARTICLE_HOLE>::HubbardFermiAction(
                     const SparseMatrix<double> &kappaTilde,
                     const double muTilde, const std::int8_t sigmaKappa,
-                    const bool allowShortcut, const std::string model_path)
+                    const bool allowShortcut, const std::string model_path,const double utilde)
             : _hfm{kappaTilde, muTilde, sigmaKappa},
               _kp{_hfm.K(Species::PARTICLE)},
               _kh{_hfm.K(Species::HOLE)},
               _shortcutForHoles{allowShortcut
                                     && _internal::_holeShortcutPossible<HFABasis::PARTICLE_HOLE>(
                                         kappaTilde, muTilde, sigmaKappa)},
-              _model(torch::jit::load(model_path))
+              _model(torch::jit::load(model_path)),
+              _utilde{utilde}
             {}
 
 
         
         HubbardFermiAction<HFAHopping::EXP,HFAAlgorithm::ML_APPROX_FORCE, HFABasis::PARTICLE_HOLE>::HubbardFermiAction(
-                    const Lattice &lat, const double beta,
+                    const Lattice &lat, const double beta, 
                     const double muTilde, const std::int8_t sigmaKappa,
-                    const bool allowShortcut,const std::string model_path)
+                    const bool allowShortcut,const std::string model_path,const double utilde)
             :_hfm{lat, beta, muTilde, sigmaKappa},
              _kp{_hfm.K(Species::PARTICLE)},
              _kh{_hfm.K(Species::HOLE)},
              _shortcutForHoles{allowShortcut
                                     && _internal::_holeShortcutPossible<HFABasis::PARTICLE_HOLE>(
                                         lat.hopping(), muTilde, sigmaKappa)},
-             _model(torch::jit::load(model_path))
+             _model(torch::jit::load(model_path)),
+             _utilde{utilde}
             {}
                     
 

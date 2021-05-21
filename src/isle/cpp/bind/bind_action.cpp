@@ -98,16 +98,7 @@ namespace bind {
                 ;
         }
 
-        //binding HubbardGaugeAction for NN
-        template <typename a>
-        void bindHubbardGaugeActionML(py::module &mod, a &action) {
-            py::class_<HubbardGaugeActionML>(mod, "HubbardGaugeActionML", action)
-                .def(py::init<double>())
-                .def_readonly("utilde", &HubbardGaugeActionML::utilde)
-                .def("eval", &HubbardGaugeActionML::eval)
-                .def("force", &HubbardGaugeActionML::force)
-                ;
-        }
+
 
         template <HFAHopping HOPPING, HFAAlgorithm ALGORITHM, HFABasis BASIS,
                   typename A>
@@ -116,8 +107,8 @@ namespace bind {
 
             if constexpr (ALGORITHM == HFAAlgorithm::ML_APPROX_FORCE) {
                 py::class_<HFA>(mod, name, action)
-                    .def(py::init<SparseMatrix<double>, double, std::int8_t, bool, std::string>(),
-                        "kappa"_a, "mu"_a, "sigmaKappa"_a, "allowShortcut"_a, "model_path"_a)
+                    .def(py::init<SparseMatrix<double>,double, std::int8_t, bool, std::string,double>(),
+                        "kappa"_a, "mu"_a, "sigmaKappa"_a, "allowShortcut"_a, "model_path"_a,"utilde"_a)
                     .def("eval", &HFA::eval)
                     .def("force", &HFA::force);
             } else{
@@ -194,13 +185,14 @@ namespace bind {
                                           const HFAHopping hopping,
                                           const HFABasis basis,
                                           const HFAAlgorithm algorithm,
-                                          const bool allowShortcut,const std::string model_path) {  
+                                          const bool allowShortcut,const std::string model_path,
+                                          const double utilde) {  
             if (basis == HFABasis::PARTICLE_HOLE) {
                 if (hopping == HFAHopping::EXP) {
                     if (algorithm == HFAAlgorithm::ML_APPROX_FORCE) {
                         return py::cast(HubbardFermiAction<HFAHopping::EXP,
                                         HFAAlgorithm::ML_APPROX_FORCE,
-                                        HFABasis::PARTICLE_HOLE>(kappaTilde, muTilde, sigmaKappa, allowShortcut,model_path));
+                                        HFABasis::PARTICLE_HOLE>(kappaTilde, muTilde, sigmaKappa, allowShortcut,model_path,utilde));
                          }
                     else{
                         throw std::invalid_argument("makeHubbardFermiActionMLApprox only for ML_APPROX_FORCE is defined ");
@@ -277,25 +269,28 @@ namespace bind {
                     "basis"_a=HFABasis::PARTICLE_HOLE,
                     "algorithm"_a= HFAAlgorithm::ML_APPROX_FORCE,
                     "allowShortcut"_a=false,
-                    "model_path"_a);
+                    "model_path"_a,
+                    "utilde"_a);
 
             mod.def("makeHubbardFermiActionMLApprox",
                     [] (const Lattice &lattice, const double beta,
                         const double muTilde, const std::int8_t sigmaKappa,
                         const HFAHopping hopping, const HFABasis basis,
-                        const HFAAlgorithm algorithm, const bool allowShortcut,const std::string model_path) {
+                        const HFAAlgorithm algorithm, const bool allowShortcut,
+                        const std::string model_path,const double utilde) {
 
                         return makeHubbardFermiActionMLApprox(
                             lattice.hopping()*beta/lattice.nt(),
                             muTilde, sigmaKappa,
-                            hopping, basis, algorithm, allowShortcut,model_path);
+                            hopping, basis, algorithm, allowShortcut,model_path,utilde);
                     },
-                    "lat"_a, "beta"_a, "muTilde"_a, "sigmaKappa"_a,
+                    "lat"_a, "beta"_a,"muTilde"_a, "sigmaKappa"_a,
                     "hopping"_a=HFAHopping::EXP,
                     "basis"_a=HFABasis::PARTICLE_HOLE,
                     "algorithm"_a= HFAAlgorithm::ML_APPROX_FORCE,
                     "allowShortcut"_a=false,
-                    "model_path"_a);
+                    "model_path"_a,
+                    "utilde"_a);
         }
     }
 
@@ -305,7 +300,6 @@ namespace bind {
         auto action = bindBaseAction(actmod);
         bindSumAction(actmod, action);
         bindHubbardGaugeAction(actmod, action);
-        bindHubbardGaugeActionML(actmod, action);
         bindHubbardFermiAction(actmod, action);
     }
 }
