@@ -136,6 +136,7 @@ def _makeParametersClass(fields):
                                        for key, value in fields.items()),
                                       namespace={"asdict": dataclasses.asdict,
                                                  "tilde": _tilde,
+                                                 "__getitem__": lambda obj,key: getattr(obj, key),
                                                  "replace": dataclasses.replace},
                                       frozen=True)
 
