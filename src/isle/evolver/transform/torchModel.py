@@ -11,16 +11,20 @@ class TorchTransform(Transform):
         self.action = action
 
     def forward(self, phi, actVal):
-        out, = self.torchModel(
+        out = self.torchModel(
             torch.from_numpy(np.array(phi))
         )
+        logDetJ = self.torchModel.calcLogDetJ(out)
+
+
         out = CDVector(out.detach().numpy())
         actVal = self.action.eval(out)
-        logDetJ = self.torchModel.calcLogDetJ(out)
 
         return out, actVal, logDetJ
 
     def calcLogDetJ(self, phi):
+        if not isinstance(phi,torch.Tensor):
+            phi = torch.from_numpy(np.array(phi))
         return self.torchModel.calcLogDetJ(phi)
 
     def backward(self, phi, jacobian=False):
