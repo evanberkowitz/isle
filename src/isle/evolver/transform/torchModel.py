@@ -1,6 +1,5 @@
 import torch
 import numpy as np
-
 from .transform import Transform
 from ... import CDVector
 
@@ -10,22 +9,23 @@ class TorchTransform(Transform):
         self.torchModel = torchModel
         self.action = action
 
-    def forward(self, phi, actVal):
-        out = self.torchModel(
-            torch.from_numpy(np.array(phi))
-        )
-        logDetJ = self.torchModel.calcLogDetJ(out)
+    def forward(self, phi, actVal = None):
+        if not isinstance(phi,torch.Tensor):
+            phi = torch.from_numpy(np.array(phi))
 
+        with torch.no_grad():
+            out = self.torchModel(phi).numpy()
 
-        out = CDVector(out.detach().numpy())
         actVal = self.action.eval(out)
+        logDetJ = self.calcLogDetJ(phi)
 
-        return out, actVal, logDetJ
+        return CDVector(out), actVal, logDetJ
 
     def calcLogDetJ(self, phi):
         if not isinstance(phi,torch.Tensor):
             phi = torch.from_numpy(np.array(phi))
-        return self.torchModel.calcLogDetJ(phi)
+
+        return -self.torchModel.calcLogDetJ(phi).item()
 
     def backward(self, phi, jacobian=False):
         raise NotImplementedError(

@@ -259,28 +259,53 @@ class ConstStepLeapfrogML(Evolver):
         \returns EvolutionStage at the end of this evolution step.
         """
 
-        logdetJ = self.transform.calcLogDetJ(stage.phi)
+        # if initial stage will not have logDetJ, thus we need to compute it
         if "logdetJ" not in stage.logWeights:
-             stage.logWeights["logdetJ"] = logdetJ
+            print("Initial Log Det J")
 
-        # do MD integration
+            _,S,ldJ = self.transform.forward(stage.phi_RTP)
+            stage.logWeights["actVal"] = S
+            stage.logWeights["logdetJ"] = ldJ
+
+        # get random configuration
         pi = Vector(self.rng.normal(0, 1, len(stage.phi))+0j)
-        phiMD1, pi1, actValMD1 = leapfrog(stage.phi_RTP, pi, self.action, self.length, self.nstep)
 
-        # transform to MC manifold
-        phi1, actVal1, logdetJ1 = forwardTransform(self.transform, phiMD1, actValMD1)
+        # perform MD integration
+        phiMD1, pi1, actValMD1 = leapfrog(
+            stage.phi_RTP,
+            pi,
+            self.action,
+            self.length,
+            self.nstep
+        )
+
+        # transform to learned manifold
+        phi1,actVal1,logdetJ1 = self.transform.forward(phiMD1)
 
         # accept/reject on MC manifold
         energy0 = stage.sumLogWeights()+np.linalg.norm(pi)**2/2
         energy1 = actVal1+logdetJ1+np.linalg.norm(pi1)**2/2
-        trajPoint = self.selector.selectTrajPoint(energy0, energy1)
-        self.trajPoints.append(trajPoint)
+        acceptBool = self.selector.selectTrajPoint(energy0, energy1)
+        self.trajPoints.append(acceptBool)
 
+        print(f"\nTangent plane:=================================\n"
+             +f"action initial: {self.action.eval(stage.phi_RTP)}\n"
+             +f"action new    : {self.action.eval(phiMD1)}\n"
+             +f"\nLearnifold plane:==============================\n"
+             +f"action initial: {stage.logWeights['actVal']}\n"
+             +f"lodetJ initial: {stage.logWeights['logdetJ']}\n"
+             +f"action new    : {actVal1}\n"
+             +f"lodetJ new    : {logdetJ1}\n"
+             +f"\nEnergies:======================================\n"
+             +f"Energy initial: {energy0}\n"
+             +f"Energy new    : {energy1}\n"
+             +f"Accepted      : {bool(acceptBool)}"
+        )
 
-        logWeights = None if self.transform is None \
-            else {"logdetJ": (logdetJ, logdetJ1)[trajPoint]}
-        return stage.accept(phi1, actVal1, logWeights,phi_RTP=phiMD1) if trajPoint == 1 \
-            else stage.reject()
+        if acceptBool:
+            return stage.accept(phi1, actVal1, {"logdetJ": logdetJ1},phi_RTP=phiMD1)
+        else:
+            return stage.reject()
 
     def save(self, h5group, manager):
         r"""!
