@@ -288,19 +288,19 @@ class ConstStepLeapfrogML(Evolver):
         acceptBool = self.selector.selectTrajPoint(energy0, energy1)
         self.trajPoints.append(acceptBool)
 
-        print(f"\nTangent plane:=================================\n"
-             +f"action initial: {self.action.eval(stage.phi_RTP)}\n"
-             +f"action new    : {self.action.eval(phiMD1)}\n"
-             +f"\nLearnifold plane:==============================\n"
-             +f"action initial: {stage.logWeights['actVal']}\n"
-             +f"lodetJ initial: {stage.logWeights['logdetJ']}\n"
-             +f"action new    : {actVal1}\n"
-             +f"lodetJ new    : {logdetJ1}\n"
-             +f"\nEnergies:======================================\n"
-             +f"Energy initial: {energy0}\n"
-             +f"Energy new    : {energy1}\n"
-             +f"Accepted      : {bool(acceptBool)}"
-        )
+        # print(f"\nTangent plane:=================================\n"
+        #      +f"action initial: {self.action.eval(stage.phi_RTP)}\n"
+        #      +f"action new    : {self.action.eval(phiMD1)}\n"
+        #      +f"\nLearnifold plane:==============================\n"
+        #      +f"action initial: {stage.logWeights['actVal']}\n"
+        #      +f"lodetJ initial: {stage.logWeights['logdetJ']}\n"
+        #      +f"action new    : {actVal1}\n"
+        #      +f"lodetJ new    : {logdetJ1}\n"
+        #      +f"\nEnergies:======================================\n"
+        #      +f"Energy initial: {energy0}\n"
+        #      +f"Energy new    : {energy1}\n"
+        #      +f"Accepted      : {bool(acceptBool)}"
+        # )
 
         if acceptBool:
             return stage.accept(phi1, actVal1, {"logdetJ": logdetJ1},phi_RTP=phiMD1)
