@@ -36,6 +36,9 @@ option(ENABLE_TESTING "Enable Test Builds" ON)
 # look for 3rd party packages
 include(cmake/pybind11.cmake)
 
+# include requirements on which the library is build
+include(cmake/ARM64.cmake)
+
 find_package(blaze 3.6 REQUIRED)
 add_library(blaze_options INTERFACE)
 target_include_directories(blaze_options SYSTEM INTERFACE ${blaze_INCLUDE_DIRS})
