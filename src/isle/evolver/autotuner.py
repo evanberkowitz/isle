@@ -446,10 +446,6 @@ class Fitter:
             r"""!Return the optimum nstep (float) for given target acceptance rate."""
             return skewnorm.ppf(targetAccRate, *self.bestFit)
 
-        def bestLength(self, targetAccRate):
-            r"""!Return the optimum length (float) for given target acceptance rate."""
-            return 1./skewnorm.ppf(targetAccRate, *self.bestFit)
-
         def evalOn(self, x):
             r"""!Evaluate the fit function on given values with each set of fitted parameters."""
             return _fitFunction(x, *self.bestFit), \
@@ -528,29 +524,101 @@ class Fitter:
                                                          dependent, dependenterr, params))
         self._lastFit = bestFit
         return self.Result(bestFit, otherFits)
-        
+
+def _fitFunctionL(x, *a):
+    r"""!Function to fit to the recorded length."""
+    return 1 - skewnorm.cdf(x, *a)
+
+class FitterLength:
+    r"""!
+    Fit a modified skewnormal CDF (1 - CDF) to acceptance probabilities and rates.
+
+    Can tries several starting parameters to find the best fit.
+    Arbitrary parameters can be specified in the constructor.
+    In addition the results from the best previous fit are used as well.
+    The best result is selected according to its sum of squares difference from the data.
+    """
+
+    class Result:
+        r"""!
+        Store the parameters obtained from fits to probability and trajectory point
+        versus length.
+        """
+
+        def __init__(self, bestFit, otherFits):
+            r"""!Store fitted parameters."""
+
+            ## List of parameters from best fit.
+            self.bestFit = bestFit
+            ## List of lists of parameters from other fits.
+            self.otherFits = otherFits
+
+        def bestLength(self, targetAccRate):
+            r"""!Return the optimum length (float) for given target acceptance rate."""
+            return skewnorm.ppf(1 - targetAccRate, *self.bestFit)
+    
+        def evalOn(self, x):
+            r"""!Evaluate the fit function on given values with each set of fitted parameters."""
+            return _fitFunctionL(x, *self.bestFit), \
+                [_fitFunctionL(x, *params) for params in self.otherFits]
+
+        def __eq__(self, other):
+            """!Check if results are equal to those in other."""
+            return np.array_equal(self.bestFit, other.bestFit) \
+                and np.array_equal(self.otherFits, other.otherFits)
+
+        def save(self, h5group):
+            """!Save to an HDF5 group."""
+            h5group["best"] = self.bestFit
+            h5group["others"] = self.otherFits
+
+        @classmethod
+        def fromH5(cls, h5group):
+            """!Construct from an HDF5 group."""
+            return cls(h5group["best"][()],
+                       h5group["others"][()])
+
+    def __init__(self, startParams=None, artificialPoints=None, maxLength=20):
+        r"""!
+        Setup a new fitter.
+        \param startParams List of lists of parameters to start the fit with.
+                           Each sublist must contain three parameters, the arguments
+                           passed to `scipy.skewnorm.cdf`.
+        \param artificialPoints List of points to insert into the fit regardless of
+                                measured acceptance rate or probability.
+                                Each element is a tuple `(length, value, error)`.
+        \param maxLength Maximum length of leapfrog integration.
+                        Should be much larger than the expected optimum.
+        """
+
+        ## Initial parameters to use for fit.
+        self._startParams = startParams if startParams is not None else \
+            [(2, 0.5, 0.4), (3, 0.3, 0.3), (0, 5, 3)]
+        ## Artificial data points to insert when fitting.
+        self.artificialPoints = artificialPoints if artificialPoints is not None else \
+            [(0, 1.0, 1e-8), (maxLength, 0.0, 1e-8)]
+        ## Parameters of previous best fit.
+        self._lastFit = None
+
+    def _joinFitData(self, probabilityPoints, trajPointPoints):
+        r"""!Join data for probability, trajectory points and artifical data."""
+        return np.asarray([*zip(*(probabilityPoints + trajPointPoints + self.artificialPoints))])
+
     def fitLength(self, probabilityPoints, trajPointPoints):
         r"""!
-        Fit a skewnormal CDF to both acceptance probability and rate.
+        Fit a modified skewnormal CDF (1 - CDF) to both acceptance probability and rate.
         \returns Fitter.Result with the results from all successful fits or
                  `None` if no fit succeeded.
         """
 
         # prepare inputs
-        invProbabilityPoints = []
-        invTrajPointPoints = []
-        for point in probabilityPoints:
-            invProbabilityPoints.append((1./point[0],point[1],point[2]))
-        for point in trajPointPoints:
-            invTrajPointPoints.append((1./point[0],point[1],point[2]))
-        
-        independent, dependent, dependenterr = self._joinFitData(invProbabilityPoints, invTrajPointPoints)
+        independent, dependent, dependenterr = self._joinFitData(probabilityPoints, trajPointPoints)
         startParams = self._startParams + (self._lastFit if self._lastFit is not None else[])
 
         fittedParams = []
         for guess in startParams:
             try:
-                fittedParams.append(curve_fit(_fitFunction, independent, dependent,
+                fittedParams.append(curve_fit(_fitFunctionL, independent, dependent,
                                               p0=guess, sigma=dependenterr,
                                               absolute_sigma=True, method="trf")[0])
             except RuntimeError as err:
@@ -563,7 +631,7 @@ class Fitter:
             return None
 
         bestFit, *otherFits = sorted(
-            fittedParams, key=lambda params: _sumSquares(_fitFunction, independent,
+            fittedParams, key=lambda params: _sumSquares(_fitFunctionL, independent,
                                                          dependent, dependenterr, params))
         self._lastFit = bestFit
         return self.Result(bestFit, otherFits)
@@ -1114,9 +1182,7 @@ class LeapfrogTunerLength(Evolver):  # pylint: disable=too-many-instance-attribu
     r"""! \ingroup evolvers
     Tune leapfrog parameters to achieve a targeted acceptance rate.
 
-    This auto-tuner is based on the paper
-    [Krieg et. al., 2019. 'Accelerating Hybrid Monte Carlo simulations of the Hubbard model
-    on the hexagonal lattice' Comput.Phys.Commun. 236, pp.15-25].
+    This auto-tuner is based on the standard autotuner ("LeapfrogTuner") above.
 
     <B>Usage</B><BR>
     The auto-tuner can be used like any other evolver with drivers.hmc.HMC
@@ -1126,12 +1192,12 @@ class LeapfrogTunerLength(Evolver):  # pylint: disable=too-many-instance-attribu
     This ensures that all results are written out correctly.
 
     For best results, you should start tuning with thermalized configurations.
-    It has been observed that the initial nstep should best be chosen small compared to the
+    It has been observed that the initial length should best be chosen small compared to the
     expected optimum so as to stabilize the fit.
     Once tuning has completed, you can use `LeapfrogTuner.tunedEvolver()` or
     `LeapfrogTuner.tunedParameters()` to extract the tuned parameters for production.
 
-    %LeapfrogTuner writes a detailled recording of its actions to HDF5.
+    %LeapfrogTunerLength writes a detailled recording of its actions to HDF5.
     You can use the shell command `isle show -rtuning <filename>` to get an overview
     of how the tuner performed.
 
@@ -1152,51 +1218,46 @@ class LeapfrogTunerLength(Evolver):  # pylint: disable=too-many-instance-attribu
     When a minimum number of runs (`runsPerParam[0]`) is reached and
     either probability or trajectory point are determined to a given precision
     (parameters `targetConfIntProb` and `targetConfIntTP`) or a maximum number of
-    trajectories is reached (`runsPerParam[1]`), a new nstep is chosen.
+    trajectories is reached (`runsPerParam[1]`), a new length is chosen.
 
-    There are multiple stages to the tuner which affect the way nstep is selected when the above
+    There are multiple stages to the tuner which affect the way length is selected when the above
     criterion is met.
 
-    In the search stage, a skewnormal CDF is fitted to both the recorded probabilities and
+    In the search stage, a modified skewnormal CDF (1 - CDF) is fitted to both the recorded probabilities and
     trajectory points simultaneously.
-    If the fit is not successful, the next nstep is chosen either very small or very big compared
+    If the fit is not successful, the next length is chosen either very small or very big compared
     to the values encountered so far in order to stabilize the fit.
-    If the fit is successful however, the next nstep is chosen as `floor(PPF(target))`, where
+    If the fit is successful however, the next length is chosen as `PPF(1 - target)`, where
     PPF is the inverse of the skewnormal CDF and target is the targeted acceptance rate.
-    If this value has already been used before, the ceiling is taken instead.
-    If that has also already been used, the tuner switches to the verification stage.
 
-    In the verification stage, the tuner repeats calculations with both floor and ceiling
-    of the previously determined optimum floating point nstep.
-    If either produces an nstep which deviates from the previous by more than 1, verification
+    In the verification stage, the tuner repeats calculations with the previously determined optimum length.
+    If it produces a length which deviates from the previous by more than 5%, verification
     fails and the tuner switches back to the search stage.
-    Otherwise, tuning is complete.
+    Otherwise, if the achieved acceptance rate is within +-2.5% of the target, tuning is complete.
 
-    Once finished, the optimum nstep is calculated from all runs including verifications
-    and an optimum trajectory length is estimated from a linear interpolation between
-    the verification points.
+    Once finished, the optimum length is calculated from all runs including verifications.
     Both parameters are stored and the tuner switches to its 'finished' state.
     In this state, calling evolve() immediately raises `StopIteration` to signal
     the driver to stop.
 
     The different stages are implemented as a simple state maching
-    by swapping out the function held by the instance variable `_pickNextNstep`.
-    This function implements either the search stage (`_pickNextNstep_search()`) or
+    by swapping out the function held by the instance variable `_pickNextLength`.
+    This function implements either the search stage (`_pickNextLength_search()`) or
     verification (nested functions in `_enterVerification()`).
     """
 
     def __init__(self, action, initialLength, Nstep,  # pylint: disable=too-many-arguments
                  rng, recordFname, *,
                  targetAccRate=0.7, targetConfIntProb=0.01, targetConfIntTP=None,
-                 maxLength=1000, runsPerParam=(2000, 2000), maxRuns=50,
+                 maxLength=20, runsPerParam=(2000, 2000), maxRuns=50,
                  startParams=None, artificialPoints=None,
                  transform=None):
         r"""!
         Set up a leapfrog tuner.
 
         \param action Instance of isle.Action to use for molecular dynamics.
-        \param initialLength Length of the MD trajectory.
-        \param initialNstep Number of integration steps per trajectory to start running.
+        \param initialLength Length of the MD trajectory to start running.
+        \param Nstep Number of integration steps per trajectory.
         \param rng Central random number generator for the run. Used for accept/reject.
         \param recordFname Name of an HDF5 file to write the recording to.
 
@@ -1208,7 +1269,7 @@ class LeapfrogTunerLength(Evolver):  # pylint: disable=too-many-instance-attribu
                                by the trajectory points in order to perform a fit and
                                change the number of MD steps.
                                Defaults to `targetConfIntProb / 10`.
-        \param maxLength Maximum inverse(!) length of leapfrog steps.
+        \param maxLength Maximum length of leapfrog.
                         Should be much larger than the expected optimum.
         \param runsPerParam Tuple (min, max)` of the minimum and maximum number of
                             trajectories to compute for each set of leapfrog parameters.
@@ -1219,7 +1280,7 @@ class LeapfrogTunerLength(Evolver):  # pylint: disable=too-many-instance-attribu
                            passed to `scipy.skewnorm.cdf`.
         \param artificialPoints List of points to insert into the fit regardless of
                                 measured acceptance rate or probability.
-                                Each element is a tuple `(nstep, value, error)`.
+                                Each element is a tuple `(length, value, error)`.
         \param transform (Instance of isle.evolver.transform.Transform)
                          Used this to transform a configuration after MD integration
                          but before Metropolis accept/reject.
@@ -1239,7 +1300,7 @@ class LeapfrogTunerLength(Evolver):  # pylint: disable=too-many-instance-attribu
         self.targetConfIntProb = targetConfIntProb
         ## Targetd size of 2σ confidence interval of acceptance rate.
         self.targetConfIntTP = targetConfIntTP if targetConfIntTP else targetConfIntProb / 10
-        ## Maximum number of steps in leapfrog integration.
+        ## Maximum length of leapfrog integration.
         self.maxLength = maxLength
         ## Minimum and maxiumum number of runs per set of leapfrog parameters.
         self.runsPerParam = runsPerParam
@@ -1249,10 +1310,10 @@ class LeapfrogTunerLength(Evolver):  # pylint: disable=too-many-instance-attribu
         self.transform = transform
 
         ## Perform fits.
-        self._fitter = Fitter(startParams, artificialPoints, 1000)
+        self._fitter = FitterLength(startParams, artificialPoints, maxLength)
         ## Accept or reject trajectories.
         self._selector = BinarySelector(rng)
-        ## Pick the next nstep, is swapped out when changing stage.
+        ## Pick the next length, is swapped out when changing stage.
         self._pickNextLength = self._pickNextLength_search
         ## Has tuning completed?
         self._finished = False
@@ -1290,7 +1351,7 @@ class LeapfrogTunerLength(Evolver):  # pylint: disable=too-many-instance-attribu
                 self._pickNextLength()
 
             elif len(currentRecord) > self.runsPerParam[1]:
-                log.debug("Reached maximum number of runs for current nstep, picking next Length")
+                log.debug("Reached maximum number of runs for current length, picking next Length")
                 self._pickNextLength()
 
         # Check here not at the beginning of the function because
@@ -1442,7 +1503,7 @@ class LeapfrogTunerLength(Evolver):  # pylint: disable=too-many-instance-attribu
     def _verificationLength(self, oldLength):
         r"""!
         Compute length from a fit during verification.
-        Aborts verification if the new length differs from the old one by more than 0.01
+        Aborts verification if the new length differs from the old one by more than 5%
         or if the fit fails.
         """
 
@@ -1455,8 +1516,8 @@ class LeapfrogTunerLength(Evolver):  # pylint: disable=too-many-instance-attribu
             self._cancelVerification(self._shiftLength())
             return None
 
-        if abs(length/oldLength-1) > 0.05 or abs(acceptanceRate - self.targetAccRate) > 0.01:
-            log.info("length changed by more than 5%% in verification: %f vs %f\n or target acceptance rate missed by more that 0.02: %f vs %f",
+        if abs(length/oldLength-1) > 0.05 or abs(acceptanceRate - self.targetAccRate) > 0.025:
+            log.info("length changed by more than 5%% in verification: %f vs %f\n or target acceptance rate missed by more that 0.025: %f vs %f",
                      length, oldLength, self.targetAccRate, acceptanceRate)
             self._cancelVerification(length)
             return None
