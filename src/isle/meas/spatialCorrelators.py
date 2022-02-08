@@ -41,7 +41,7 @@ from .propagator import AllToAll
 class SpatialCorrelator(Measurement):
     r"""!
     \ingroup meas
-    Tabulate single-particle correlator.
+    Tabulate spatial correlator.
     """
 
     CORRELATOR_NAMES = {"creation_destruction", "destruction_creation"}
@@ -78,15 +78,15 @@ class SpatialCorrelator(Measurement):
             self._indices["creation_destruction"] = "idf,yixf->xyd"
             self._indices["destruction_creation"] = "idf,xfyi->xyd"
         else:
-            self._indices["creation_destruction"] = "idf,bx,yixf,ya->bad"
-            self._indices["destruction_creation"] = "idf,bx,xfyi,ya->bad"
+            self._indices["creation_destruction"] = "idf,yixf,ya->xad"
+            self._indices["destruction_creation"] = "idf,xfyi,ya->xad"
 
         self._einsum_paths = {c: None for c in correlators}
 
         self._roll = None
 
     def __call__(self, stage, itr):
-        """!Record the single-particle correlators."""
+        """!Record the spatial correlators."""
 
         S = self._inverter(stage, itr)
         nx = S.shape[0]
@@ -95,7 +95,7 @@ class SpatialCorrelator(Measurement):
         d = np.eye(nx*nt).reshape(*S.shape) # A kronecker delta
 
         if self._roll is None:
-            self._roll = np.array([temporalRoller(nt, -t, fermionic=self.fermionic) for t in range(nt)])
+            self._roll = np.array([temporalRoller(nt, -t, fermionic=self.fermionic) for t in range(nt)])  # applies anti-PBCs in time
 
         # If there's no transformation needed, we should avoid doing
         # space matrix-matrix-matrix, as it will scale poorly.
@@ -104,8 +104,8 @@ class SpatialCorrelator(Measurement):
             tensors['destruction_creation'] = (self._roll, S)
             tensors['creation_destruction'] = (self._roll, d-S)
         else:
-            tensors['destruction_creation'] = (self._roll, self.transform.T.conj(), S, self.transform)
-            tensors['creation_destruction'] = (self._roll, self.transform.T.conj(), d-S, self.transform)
+            tensors['destruction_creation'] = (self._roll, S, self.transform)
+            tensors['creation_destruction'] = (self._roll, d-S, self.transform)
 
         for c in self._einsum_paths:
             if self._einsum_paths[c] is None:
