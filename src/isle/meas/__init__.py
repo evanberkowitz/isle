@@ -16,3 +16,4 @@ from .propagator import AllToAll  # (unused import) pylint: disable=W0611
 from .singleParticleCorrelator import SingleParticleCorrelator  # (unused import) pylint: disable=W0611
 from .spinSpinCorrelator import SpinSpinCorrelator  # (unused import) pylint: disable=W0611
 from .totalPhi import TotalPhi  # (unused import) pylint: disable=W0611
+from .spatialCorrelators import SpatialCorrelator #
