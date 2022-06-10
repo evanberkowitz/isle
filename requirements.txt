@@ -3,6 +3,6 @@ PyYAML
 h5py
 pybind11
 scipy
+pytest
 pentinsula
 psutil
-

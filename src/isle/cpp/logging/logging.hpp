@@ -1,15 +1,13 @@
 /** \file
  * \brief Bindings of Python's logging module to C++.
  *
- * This file is different from the other bindings as it exposes Python
- * objects to C++, not the other way around.
  * Use the class Logger for all terminal output in order to be consistent
  * with the Python part of Isle.
  * See the documentation in cli.py for more information.
  */
 
-#ifndef BIND_LOGGING_HPP
-#define BIND_LOGGING_HPP
+#ifndef LOGGING_LOGGING_HPP
+#define LOGGING_LOGGING_HPP
 
 #include <string>
 #include <memory>
@@ -76,4 +74,4 @@ namespace isle {
     }
 }  // namespace isle
 
-#endif  // ndef BIND_LOGGING_HPP
+#endif  // ndef LOGGING_LOGGING_HPP
