@@ -1691,3 +1691,294 @@ class LeapfrogTunerLength(Evolver):  # pylint: disable=too-many-instance-attribu
         """
         return f"""<Autotuner> (0x{id(self):x})
   record file = {self.recordFname}"""
+
+class LeapfrogTunerLength2(Evolver):  # pylint: disable=too-many-instance-attributes
+
+	def __init__(self, action, initialLength, Nstep,  # pylint: disable=too-many-arguments
+				 rng, recordFname, *,
+				 targetAccRate=0.7, targetConfIntProb=0.01, targetConfIntTP=None,
+				 maxLength=100, runsPerParam=(2000, 2000), maxRuns=50,
+				 artificialPoints=None,
+				 transform=None):
+		
+		self.registrar = Registrar(initialLength, Nstep)
+		self.action = action
+		self.rng = rng
+		self.recordFname = recordFname
+		self.targetAccRate = targetAccRate
+		self.targetConfIntProb = targetConfIntProb
+		self.targetConfIntTP = targetConfIntTP if targetConfIntTP else targetConfIntProb / 10
+		self.maxLength = maxLength
+		self.runsPerParam = runsPerParam
+		self.maxRuns = maxRuns
+		self.transform = transform
+
+		self._bounds = [0.0, 2*initialLength]
+		self._selector = BinarySelector(rng)
+		self._pickNextLength = self._pickNextLength_search
+		self._finished = False
+		self._tunedParameters = None
+
+	def evolve(self, stage):
+		if self._finished:
+			raise StopIteration()
+
+		stage = self._doEvolve(stage)
+
+		log = getLogger(__name__)
+		currentRecord = self.registrar.currentRecord()
+
+		if len(currentRecord) >= self.runsPerParam[0]:
+			errProb = _errorProbabilities(currentRecord.probabilities, TWO_SIGMA_PROB)
+			errTP = _errorTrajPoints(currentRecord.trajPoints, TWO_SIGMA_PROB)
+
+			if errTP < self.targetConfIntTP:
+				log.info("Reached target confidence for trajectory point, picking next Length")
+				self._pickNextLength()
+
+			elif errProb < self.targetConfIntProb:
+				log.info("Reached target confidence for probability, picking next Length")
+				self._pickNextLength()
+
+			elif len(currentRecord) > self.runsPerParam[1]:
+				log.debug("Reached maximum number of runs for current nstep, picking next Length")
+				self._pickNextLength()
+
+
+		if not self._finished and len(self.registrar) > self.maxRuns:
+			log.error("Tuning was unsuccessful within the given maximum number of runs")
+			self._finalize(None)
+
+		return stage
+
+	def currentParams(self):
+		record = self.registrar.currentRecord()
+		return {"length": record.length, "nstep": record.nstep}
+
+	def _doEvolve(self, stage):
+		params = self.currentParams()
+
+		phiMD, logdetJ = backwardTransform(self.transform, stage)
+		if self.transform is not None and "logdetJ" not in stage.logWeights:
+			stage.logWeights["logdetJ"] = logdetJ
+
+		pi = Vector(self.rng.normal(0, 1, len(stage.phi))+0j)
+		phiMD1, pi1, actValMD1 = leapfrog(phiMD, pi, self.action,
+										  params["length"], params["nstep"])
+
+		phi1, actVal1, logdetJ1 = forwardTransform(self.transform, phiMD1, actValMD1)
+
+		energy0 = stage.sumLogWeights()+np.linalg.norm(pi)**2/2
+		energy1 = actVal1+logdetJ1+np.linalg.norm(pi1)**2/2
+		trajPoint1 = self._selector.selectTrajPoint(energy0, energy1)
+
+		self.registrar.currentRecord().add(min(1, exp(np.real(energy0 - energy1))),
+										   trajPoint1)
+
+		logWeights = None if self.transform is None \
+			else {"logdetJ": (logdetJ, logdetJ1)[trajPoint1]}
+		return stage.accept(phi1, actVal1, logWeights) if trajPoint1 == 1 \
+			else stage.reject()
+
+	def _shiftLength(self):
+		trajPoints = [trajPoint for (_, trajPoint, _)
+					  in self.registrar.gather(nstep=self.currentParams()["nstep"])[1]]         #? 0/1
+		minLength = min(self.registrar.knownLengths())
+		maxLength = max(self.registrar.knownLengths())
+
+		if min(trajPoints) > 0.1:
+			nextLength = maxLength * 2
+
+			if not self.registrar.seenBefore(length=nextLength):
+				getLogger(__name__).debug("Shifted to large length: %d in run %d",
+										  nextLength, len(self.registrar)-1)
+				self.registrar.addFitResult(self._fitter.Result([0, 0, 0], []))
+				return nextLength
+
+		if max(trajPoints) < 0.9:
+			nextLength = minLength / 2
+			getLogger(__name__).debug("Shifted to smaller length: %f in run %d",
+									  nextLength, len(self.registrar)-1)
+			self.registrar.addFitResult(self._fitter.Result([0, 0, 0], []))
+			return nextLength
+
+		nextLength = (maxLength - minLength) / 2 + minLength
+		while self.registrar.seenBefore(length=nextLength):
+			aux = (nextLength - minLength) / 2 + minLength
+			if aux == nextLength:
+				getLogger(__name__).warning("Cannot shift nstep up. Tried to shift all the way up "
+											"to maximum known step and did not find any vacancies")
+				# fail-safe
+				return maxLength + 1
+		return nextLength
+
+	def currentBounds(self):
+		return self._bounds
+
+	def _lengthFromBisection(self):
+		r"""!
+		Compute the optimum length as a float from fitting to the current recording.
+		Returns None if the fit is unsuccessful.
+		"""
+
+		log = getLogger(__name__)
+		upper_length, lower_length = self.currentBounds()
+		new_length = (upper_length + lower_length)/2
+
+		if new_length is not None:
+			# pick length from fit
+			log.info("Chose new length for run %d, new length: %s",
+					 len(self.registrar)-1, new_length)
+			# self.registrar.addFitResult(new_length)			#TODO
+			length = new_length
+			log.info("Optimal length from current iteration: %f", length)
+
+			return length
+
+		return None
+
+	def _pickNextLength_search(self):
+		log = getLogger(__name__)#
+		self.saveRecording()  # save including the fit result
+
+		length = self.currentParams()["length"]
+		acceptanceRate = np.mean(self.registrar.currentRecord().probabilities)
+		log.info(f"{length=}   {acceptanceRate=}")
+		if acceptanceRate < self.targetAccRate:
+			self._bounds[1] = length
+		else:
+			self._bounds[0] = length
+		log.info("acceptance rate was %f. New bounds for bisection: [ %f , %f ]", acceptanceRate, self._bounds[0],self._bounds[1])
+
+		nextLength = self._lengthFromBisection()
+
+		if abs(self.currentParams()["length"]/nextLength - 1) < 0.2 and abs(self.targetAccRate - acceptanceRate) < 0.05:
+			self._enterVerification(nextLength)
+			return
+
+		if nextLength > self.maxLength:
+			attemptedLength = nextLength
+			nextLength = self.maxLength
+			while self.registrar.seenBefore(length=nextLength):
+				nextLength -= 1
+			log.warning("Tried to use length=%f which is above maximum of %f. Lowered to %f",
+						attemptedLength, self.maxLength, nextLength)
+
+		self.registrar.newRecord(nextLength, self.currentParams()["nstep"])
+		getLogger(__name__).debug("New length: %f", nextLength)
+
+	def _verificationLength(self, oldLength):
+		log = getLogger(__name__)
+		length = self._lengthFromBisection()
+		acceptanceRate = np.mean(self.registrar.currentRecord().probabilities)
+		self.saveRecording()
+		if length is None:
+			log.info("Fit unsuccessful in verification")
+			self._cancelVerification(self._shiftLength())
+			return None
+
+		if abs(length/oldLength-1) > 0.05 or abs(acceptanceRate - self.targetAccRate) > 0.025:
+			log.info("length changed by more than 5%% in verification: %f vs %f\n or target acceptance rate missed by more that 0.025: %f vs %f",
+					 length, oldLength, self.targetAccRate, acceptanceRate)
+			if acceptanceRate < self.targetAccRate:
+				log.info("acceptance rate too small. Reducing lower bound: %f -> %f", self._bounds[0],self._bounds[0]*0.9)
+				self._bounds[0]*=0.9
+			else:
+				log.info("acceptance rate too high. Increasing upper bound: %f -> %f", self._bounds[1],self._bounds[1]*1.1)
+				self._bounds[1]*=1.1
+			self._cancelVerification(length)
+			return None
+		log.info("acceptance rate = %f",acceptanceRate)
+		return length
+
+	def _enterVerification(self, length):
+		getLogger(__name__).info("Entering verification stage with length = %f", length)
+		self.runsPerParam = tuple([4*x for x in self.runsPerParam])
+		def _pickNextLength_verification():
+			getLogger(__name__).debug("Checking upper end of interval around floatStep")
+			nextLength = self._verificationLength(length)
+
+			if nextLength is not None:
+				self._finalize(nextLength)
+			else:
+				# something is seriously unstable if this happens
+				getLogger(__name__).error("The final fit did not converge, "
+										  "unable to extract nstep from tuning results. "
+										  "Continuing search.")
+
+		self.registrar.newRecord(length, self.currentParams()["nstep"],
+								 True)
+		self._pickNextLength = _pickNextLength_verification
+
+	def _cancelVerification(self, nextLength):
+		getLogger(__name__).info("Cancelling verification, reverting back to search")
+		self.runsPerParam = tuple([x/4 for x in self.runsPerParam])
+		self.registrar.newRecord(nextLength, self.currentParams()["nstep"], False)
+		self._pickNextLength = self._pickNextLength_search
+
+	def _finalize(self, finalLength):
+		self._finished = True
+		self.saveRecording()
+
+		if finalLength is not None:
+			nstep = self.currentParams()["nstep"]
+			length = finalLength
+			self._tunedParameters = {"nstep": nstep, "length": length}
+
+			with h5.File(self.recordFname, "a") as h5f:
+				h5f["leapfrogTuner/tuned_length"] = length
+				h5f["leapfrogTuner/tuned_nstep"] = nstep
+			getLogger(__name__).info("Finished tuning with length = %f and nstep = %d",
+									 length, nstep)
+
+	def saveRecording(self):
+		getLogger(__name__).info("Saving current recording")
+		with h5.File(self.recordFname, "a") as h5f:
+			self.registrar.save(createH5Group(h5f, "leapfrogTuner"))
+
+	def tunedParameters(self):
+		if not self._finished:
+			raise RuntimeError("LeapfrogTuner has not finished, parameters have not been tuned")
+		if not self._tunedParameters:
+			raise RuntimeError("LeapfrogTuner has finished but parameters could not be tuned")
+
+		return self._tunedParameters.copy()
+
+	def tunedEvolver(self, rng=None):
+		params = self.tunedParameters()
+		return ConstStepLeapfrog(self.action,
+								 params["length"],
+								 params["nstep"],
+								 self._selector.rng if rng is None else rng,
+								 transform=self.transform)
+
+	@classmethod
+	def loadTunedParameters(cls, h5group):
+		h5group = h5group["leapfrogTuner"]
+
+		if "tuned_length" not in h5group or "tuned_nstep" not in h5group:
+			raise RuntimeError("LeapfrogTuner has not finished, parameters have not been tuned")
+
+		return {"length": h5group["tuned_length"][()],
+				"nstep": h5group["tuned_nstep"][()]}
+
+	@classmethod
+	def loadTunedEvolver(cls, h5group, action, rng, trafo=None):
+		params = cls.loadTunedParameters(h5group)
+		return ConstStepLeapfrog(action, params["length"],
+								 params["nstep"], rng, transform=trafo)
+
+	@classmethod
+	def loadRecording(cls, h5group):
+		return Registrar.fromH5(h5group)
+
+	def save(self, h5group, manager):
+		raise NotImplementedError("Saving to HDF5 is not supported.")
+
+	@classmethod
+	def fromH5(cls, h5group, _manager, action, _lattice, rng):
+		raise NotImplementedError("Loading from HDF5 is not supported.")
+
+	def report(self):
+		return f"""<Autotuner> (0x{id(self):x})
+	record file = {self.recordFname}"""
