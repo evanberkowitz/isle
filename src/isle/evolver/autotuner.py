@@ -1869,16 +1869,17 @@ class LeapfrogTunerLength2(Evolver):  # pylint: disable=too-many-instance-attrib
 
 	def _verificationLength(self, oldLength):
 		log = getLogger(__name__)
-		length = self._lengthFromBisection()
+		# length = self._lengthFromBisection()
+		length = self.currentParams()["length"]
 		acceptanceRate = np.mean(self.registrar.currentRecord().probabilities)
 		self.saveRecording()
-		if length is None:
-			log.info("Fit unsuccessful in verification")
-			self._cancelVerification(self._shiftLength())
-			return None
+		# if length is None:
+		# 	log.info("Fit unsuccessful in verification")
+		# 	self._cancelVerification(self._shiftLength())
+		# 	return None
 
-		if abs(length/oldLength-1) > 0.05 or abs(acceptanceRate - self.targetAccRate) > 0.025:
-			log.info("length changed by more than 5%% in verification: %f vs %f\n or target acceptance rate missed by more that 0.025: %f vs %f",
+		if abs(acceptanceRate - self.targetAccRate) > 0.025:
+			log.info("length changed by more than 5%% in verification: %f vs %f\n or target acceptance rate missed by more than 0.025: %f vs %f",
 					 length, oldLength, self.targetAccRate, acceptanceRate)
 			if acceptanceRate < self.targetAccRate:
 				log.info("acceptance rate too small. Reducing lower bound: %f -> %f", self._bounds[0],self._bounds[0]*0.9)
@@ -1895,16 +1896,14 @@ class LeapfrogTunerLength2(Evolver):  # pylint: disable=too-many-instance-attrib
 		getLogger(__name__).info("Entering verification stage with length = %f", length)
 		self.runsPerParam = tuple([4*x for x in self.runsPerParam])
 		def _pickNextLength_verification():
-			getLogger(__name__).debug("Checking upper end of interval around floatStep")
+			getLogger(__name__).debug("Checking length again with higher accuracy")
 			nextLength = self._verificationLength(length)
 
 			if nextLength is not None:
 				self._finalize(nextLength)
 			else:
 				# something is seriously unstable if this happens
-				getLogger(__name__).error("The final fit did not converge, "
-										  "unable to extract nstep from tuning results. "
-										  "Continuing search.")
+				getLogger(__name__).error("Continuing search.")
 
 		self.registrar.newRecord(length, self.currentParams()["nstep"],
 								 True)
