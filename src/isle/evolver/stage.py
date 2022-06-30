@@ -16,14 +16,16 @@ class EvolutionStage:
     and the correspondint imaginary part is used for re-weighting.
     """
 
-    __slots__ = "phi", "trajPoint", "logWeights", "extra"
+    __slots__ = "phi", "trajPoint", "logWeights", "extra", "phi_RTP"
 
-    def __init__(self, phi, actVal, trajPoint=1, logWeights=None, extra=None):
+    def __init__(self, phi, actVal, trajPoint=1, logWeights=None, extra=None, phi_RTP = None):
         """!
         Store parameters.
         """
         ## Configuration.
         self.phi = phi
+        ## real-/tangentplane config
+        self.phi_RTP = phi_RTP
         ## Selected trajectory point.
         self.trajPoint = trajPoint
         ## dict(str -> complex) of log of all weights, always contains key "actVal".
@@ -50,18 +52,18 @@ class EvolutionStage:
         yield from filter(lambda item: item[0] != "actVal",
                           self.logWeights.items())
 
-    def accept(self, phi, actVal, logWeights=None, extra=None):
+    def accept(self, phi, actVal, logWeights=None, extra=None, phi_RTP=None):
         """!
         Return a new EvolutionStage which indicates acceptance with given parameters.
         """
-        return self.__class__(phi, actVal, 1, logWeights, extra)
+        return self.__class__(phi, actVal, 1, logWeights, extra, phi_RTP)
 
     def reject(self, extra=None):
         """!
         Return a new EvolutionStage which indicates rejection and reuses phi and actVal.
         `logWeights` and `extra` are always overwritten.
         """
-        return self.__class__(self.phi, self.actVal, 0, self.logWeights, extra)
+        return self.__class__(self.phi, self.actVal, 0, self.logWeights, extra, self.phi_RTP)
 
     def sumLogWeights(self):
         """!
@@ -74,6 +76,8 @@ class EvolutionStage:
         Save contents to an HDF5 group.
         """
         h5group["phi"] = self.phi
+        if self.phi_RTP is not None:
+            h5group["phi_RT-P"] = self.phi_RTP
         h5group["actVal"] = self.actVal
         h5group["trajPoint"] = self.trajPoint
 
@@ -97,7 +101,16 @@ class EvolutionStage:
             if "extra" in h5group else None
         logWeights = {key: dset[()] for key, dset in h5group["logWeights"].items()} \
             if "logWeights" in h5group else None
-        return cls(Vector(h5group["phi"][()]),
+        if "phi_RT-P" in h5group.keys():
+            return cls(Vector(h5group["phi"][()]),
+                       h5group["actVal"][()],
+                       h5group["trajPoint"][()],
+                       logWeights,
+                       extra,
+                       Vector(h5group["phi_RT-P"][()])
+                       )
+        else :
+            return cls(Vector(h5group["phi"][()]),
                    h5group["actVal"][()],
                    h5group["trajPoint"][()],
                    logWeights,

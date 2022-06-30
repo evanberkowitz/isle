@@ -226,3 +226,120 @@ class LinearStepLeapfrog(Evolver):
         return f"""<LinearStepLeapfrog> (0x{id(self):x})
   lengthRange = {self.lengthRange}, nstepRange = {self.nstepRange}, ninterp = {self.ninterp}
   acceptance rate = {np.mean(self.trajPoints)}"""
+
+
+class ConstStepLeapfrogML(Evolver):
+    r"""! \ingroup evolvers
+    A leapfrog evolver with constant parameters.
+    """
+
+    def __init__(self, action, length, nstep, rng, transform):
+        r"""!
+        \param action Instance of isle.Action to use for molecular dynamics.
+        \param length Length of the MD trajectory.
+        \param nstep Number of MD steps per trajectory.
+        \param rng Central random number generator for the run.
+        \param transform (Instance of isle.evolver.transform.Transform)
+                         Used this to transform a configuration after MD integration
+                         but before Metropolis accept/reject.
+        """
+        self.action = action
+        self.length = length
+        self.nstep = nstep
+        self.rng = rng
+        self.selector = BinarySelector(rng)
+        self.transform = transform
+        self.trajPoints = []
+        self.phiMD = None
+
+    def evolve(self, stage):
+        r"""!
+        Run leapfrog integrator.
+        \param stage EvolutionStage at the beginning of this evolution step.
+        \returns EvolutionStage at the end of this evolution step.
+        """
+
+        # if initial stage will not have logDetJ, thus we need to compute it
+        if "logdetJ" not in stage.logWeights:
+            print("Initial Log Det J")
+
+            _,S,ldJ = self.transform.forward(stage.phi_RTP)
+            stage.logWeights["actVal"] = S
+            stage.logWeights["logdetJ"] = ldJ
+
+        # get random configuration
+        pi = Vector(self.rng.normal(0, 1, len(stage.phi))+0j)
+
+        # perform MD integration
+        phiMD1, pi1, actValMD1 = leapfrog(
+            stage.phi_RTP,
+            pi,
+            self.action,
+            self.length,
+            self.nstep
+        )
+
+        # transform to learned manifold
+        phi1,actVal1,logdetJ1 = self.transform.forward(phiMD1)
+
+        # accept/reject on MC manifold
+        energy0 = stage.sumLogWeights()+np.linalg.norm(pi)**2/2
+        energy1 = actVal1+logdetJ1+np.linalg.norm(pi1)**2/2
+        acceptBool = self.selector.selectTrajPoint(energy0, energy1)
+        self.trajPoints.append(acceptBool)
+
+        # print(f"\nTangent plane:=================================\n"
+        #      +f"action initial: {self.action.eval(stage.phi_RTP)}\n"
+        #      +f"action new    : {self.action.eval(phiMD1)}\n"
+        #      +f"\nLearnifold plane:==============================\n"
+        #      +f"action initial: {stage.logWeights['actVal']}\n"
+        #      +f"lodetJ initial: {stage.logWeights['logdetJ']}\n"
+        #      +f"action new    : {actVal1}\n"
+        #      +f"lodetJ new    : {logdetJ1}\n"
+        #      +f"\nEnergies:======================================\n"
+        #      +f"Energy initial: {energy0}\n"
+        #      +f"Energy new    : {energy1}\n"
+        #      +f"Accepted      : {bool(acceptBool)}"
+        # )
+
+        if acceptBool:
+            return stage.accept(phi1, actVal1, {"logdetJ": logdetJ1},phi_RTP=phiMD1)
+        else:
+            return stage.reject()
+
+    def save(self, h5group, manager):
+        r"""!
+        Save the evolver to HDF5.
+        \param h5group HDF5 group to save to.
+        \param manager EvolverManager whose purview to save the evolver in.
+        """
+        h5group["length"] = self.length
+        h5group["nstep"] = self.nstep
+        if self.transform is not None:
+            manager.save(self.transform, h5group.create_group("transform"))
+
+    @classmethod
+    def fromH5(cls, h5group, manager, action, lattice, rng):
+        r"""!
+        Construct from HDF5.
+        \param h5group HDF5 group to load parameters from.
+        \param manager EvolverManager responsible for the HDF5 file.
+        \param action Action to use.
+        \param lattice Lattice the simulation runs on.
+        \param rng Central random number generator for the run.
+        \returns A newly constructed evolver.
+        """
+        if "transform" in h5group:
+            transform = manager.load(h5group[f"transform"], action, lattice, rng)
+        else:
+            transform = None
+        return cls(action, h5group["length"][()], h5group["nstep"][()], rng, transform)
+
+    def report(self):
+        r"""!
+        Return a string summarizing the evolution since the evolver
+        was constructed including by fromH5.
+        """
+        return f"""<ConstStepLeapfrog> (0x{id(self):x})
+  length = {self.length}, nstep = {self.nstep}
+  acceptance rate = {np.mean(self.trajPoints)}"""
