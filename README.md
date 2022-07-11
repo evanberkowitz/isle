@@ -84,7 +84,7 @@ pytest
 Keep in mind that some tests take a long time because they need to process fairly big matrices in an inefficient way to make sure the efficient algorithms are correct.
 
 # Documentation
-The documentation is available online at https://jl-wynen.github.io/isle/
+The documentation is available online at https://evanberkowitz.github.io/isle/
 
 You can generate it locally by running
 ```
