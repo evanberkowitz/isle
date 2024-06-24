@@ -1,5 +1,5 @@
-![Linux Build](https://github.com/jl-wynen/isle/workflows/Linux%20Build/badge.svg)
-![MacOS Build](https://github.com/jl-wynen/isle/workflows/MacOS%20Build/badge.svg)
+![Linux Build](https://github.com/evanberkowitz/isle/workflows/Linux%20Build/badge.svg)
+![MacOS Build](https://github.com/evanberkowitz/isle/workflows/MacOS%20Build/badge.svg)
 
 Simulating carbon nanostructures.
 
